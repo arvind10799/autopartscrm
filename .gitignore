@@ -1,0 +1,22 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Next.js
+.next/
+**/.next/
+
+# Build
+dist/
+**/dist/
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Logs
+*.log
+
+# AWS Keys
+*.pem

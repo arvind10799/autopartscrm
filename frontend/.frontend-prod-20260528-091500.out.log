@@ -1,0 +1,10 @@
+
+> auto-parts-crm-frontend@0.1.0 start
+> next start -p 3001
+
+   ▲ Next.js 15.5.18
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.31.26:3001
+
+ ✓ Starting...
+ ✓ Ready in 1252ms

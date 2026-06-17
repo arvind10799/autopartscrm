@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SALES
+  SHIPPING
+}
+
+enum OrderStatus {
+  DRAFT
+  PARTIALLY_PAID
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderPaymentMethod {
+  WIRE_TRANSFER
+  CREDIT_CARD
+}
+
+enum ShipmentStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  DELAYED
+  CANCELLED
+}
+
+enum NoteEntityType {
+  ORDER
+  SHIPMENT
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(120)
+  email        String   @unique @db.VarChar(160)
+  passwordHash String   @db.VarChar(255)
+  role         Role     @default(SALES)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  leads  Lead[]
+  orders Order[]
+  notes  Note[]
+}
+
+model Lead {
+  id               String    @id @default(uuid()) @db.Uuid
+  leadDate         DateTime
+  adviserName      String    @db.VarChar(120)
+  cmpt             String    @db.VarChar(80)
+  customerPhone    String    @db.VarChar(30)
+  customerName     String    @db.VarChar(160)
+  partDescription  String    @db.VarChar(255)
+  quote            Decimal?  @db.Decimal(12, 2)
+  comments         String?   @db.Text
+  prospects        String    @db.VarChar(255)
+  createdById      String    @db.Uuid
+  convertedOrderId String?   @unique @db.Uuid
+  convertedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  createdBy      User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  convertedOrder Order? @relation("ConvertedLeadOrder", fields: [convertedOrderId], references: [id], onDelete: SetNull)
+
+  @@index([leadDate])
+  @@index([createdById])
+  @@index([convertedAt])
+}
+
+model Order {
+  id              String      @id @default(uuid()) @db.Uuid
+  orderNumber     String      @unique @db.VarChar(50)
+  customerName    String      @db.VarChar(160)
+  partDescription String      @db.VarChar(255)
+  customerEmail   String?     @db.VarChar(160)
+  customerPhone   String?     @db.VarChar(30)
+  intakeDetails   Json?
+  price           Decimal     @db.Decimal(12, 2)
+  quantity        Int
+  totalSaleAmount Decimal     @db.Decimal(12, 2)
+  status          OrderStatus @default(DRAFT)
+  paymentMethod   OrderPaymentMethod?
+  createdById     String      @db.Uuid
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  createdBy User       @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  sourceLead Lead?     @relation("ConvertedLeadOrder")
+  shipments Shipment[]
+  notes     Note[]
+
+  @@index([orderNumber])
+  @@index([createdById])
+}
+
+model Shipment {
+  id          String         @id @default(uuid()) @db.Uuid
+  bolNumber   String         @unique @db.VarChar(50)
+  proNumber   String?        @unique @db.VarChar(50)
+  carrierName String?        @db.VarChar(120)
+  status      ShipmentStatus @default(PENDING)
+  orderId     String         @db.Uuid
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  costs   ShipmentCost[]
+  events  ShipmentEvent[]
+  notes   Note[]
+
+  @@index([bolNumber])
+  @@index([proNumber])
+  @@index([orderId])
+}
+
+model ShipmentCost {
+  id               String   @id @default(uuid()) @db.Uuid
+  shipmentId       String   @unique @db.Uuid
+  purchaseAmount   Decimal  @db.Decimal(12, 2)
+  shippingAmount   Decimal  @default(0) @db.Decimal(12, 2)
+  additionalAmount Decimal  @default(0) @db.Decimal(12, 2)
+  grossProfit      Decimal  @db.Decimal(12, 2)
+  currency         String   @default("USD") @db.VarChar(10)
+  notes            String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+
+  @@index([shipmentId])
+}
+
+model ShipmentEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  shipmentId  String   @db.Uuid
+  eventType   String   @db.VarChar(80)
+  description String?  @db.Text
+  location    String?  @db.VarChar(160)
+  eventAt     DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+
+  @@index([shipmentId])
+  @@index([eventAt])
+}
+
+model Note {
+  id         String         @id @default(uuid()) @db.Uuid
+  content    String         @db.Text
+  entityType NoteEntityType
+  authorId   String         @db.Uuid
+  orderId    String?        @db.Uuid
+  shipmentId String?        @db.Uuid
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  order    Order?    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  shipment Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+
+  @@index([authorId])
+  @@index([orderId])
+  @@index([shipmentId])
+  @@index([entityType, orderId])
+  @@index([entityType, shipmentId])
+}

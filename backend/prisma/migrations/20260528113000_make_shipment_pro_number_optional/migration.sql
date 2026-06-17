@@ -1,0 +1,2 @@
+ALTER TABLE "Shipment"
+ALTER COLUMN "proNumber" DROP NOT NULL;
