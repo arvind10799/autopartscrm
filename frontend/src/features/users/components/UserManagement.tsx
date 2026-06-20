@@ -3,15 +3,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   UserPlus,
-  TrendingUp,
   Users,
   CheckCircle2,
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,10 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  buildTimestampRangeQuery,
-  createDefaultDateRangeFilterState,
-} from '@/lib/filters/date-range';
+import { Select } from '@/components/ui/select';
 import { HttpError } from '@/lib/api/http-error';
 import { usersApi } from '../api/users-api';
 import {
@@ -46,19 +41,13 @@ export function UserManagement() {
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState(
-    createDefaultDateRangeFilterState(),
-  );
-  const dateRangeQuery = useMemo(
-    () => buildTimestampRangeQuery(dateFilter),
-    [dateFilter],
-  );
 
   const form = useForm<CreateUserSchema>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       name: '',
       email: '',
+      role: 'SALES',
       password: '',
     },
   });
@@ -66,14 +55,14 @@ export function UserManagement() {
   const loadUsers = useCallback(async () => {
     try {
       setIsLoadingUsers(true);
-      const data = await usersApi.list(dateRangeQuery);
+      const data = await usersApi.list();
       setUsers(data);
     } catch {
       // Silently fail — users will see an empty list
     } finally {
       setIsLoadingUsers(false);
     }
-  }, [dateRangeQuery]);
+  }, []);
 
   useEffect(() => {
     loadUsers();
@@ -84,13 +73,10 @@ export function UserManagement() {
     setSuccessMessage(null);
 
     try {
-      await usersApi.create({
-        ...values,
-        role: 'SALES',
-      });
-      setSuccessMessage(
-        `${values.name} has been added as a sales agent.`,
-      );
+      await usersApi.create(values);
+      const accountType =
+        values.role === 'SALES' ? 'sales agent' : 'shipping account';
+      setSuccessMessage(`${values.name} has been added as a ${accountType}.`);
       form.reset();
       await loadUsers();
 
@@ -114,10 +100,10 @@ export function UserManagement() {
             <UserPlus className="h-3.5 w-3.5" />
             Add User
           </span>
-          <CardTitle className="text-lg">Create New Sales Agent</CardTitle>
+          <CardTitle className="text-lg">Create New User Account</CardTitle>
           <CardDescription>
-            Admins can create sales agents from this workspace. Shipping and
-            admin accounts are not created here.
+            Admins can create sales agents and shipping accounts from this
+            workspace.
           </CardDescription>
         </CardHeader>
 
@@ -125,13 +111,13 @@ export function UserManagement() {
           <form className="space-y-5" onSubmit={onSubmit}>
             <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
-                <TrendingUp className="h-4 w-4" />
+                <Users className="h-4 w-4" />
               </div>
               <div>
-                <p className="font-medium">Sales agent access only</p>
+                <p className="font-medium">Sales and shipping access</p>
                 <p className="mt-1 text-emerald-700/80">
-                  Every user created here is assigned the sales role and can
-                  work with orders after signing in.
+                  Choose the right role for each new team member before they
+                  sign in.
                 </p>
               </div>
             </div>
@@ -160,12 +146,26 @@ export function UserManagement() {
                 id="create-user-email"
                 type="email"
                 autoComplete="off"
-                placeholder="agent@company.com"
+                placeholder="agent@meeautoparts.com"
                 {...form.register('email')}
               />
               {form.formState.errors.email ? (
                 <p className="text-sm text-destructive">
                   {form.formState.errors.email.message}
+                </p>
+              ) : null}
+            </div>
+
+            {/* Role */}
+            <div className="space-y-2">
+              <Label htmlFor="create-user-role">Role</Label>
+              <Select id="create-user-role" {...form.register('role')}>
+                <option value="SALES">Sales Agent</option>
+                <option value="SHIPPING">Shipping Account</option>
+              </Select>
+              {form.formState.errors.role ? (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.role.message}
                 </p>
               ) : null}
             </div>
@@ -217,7 +217,7 @@ export function UserManagement() {
               ) : (
                 <>
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Create Sales Agent
+                  Create User Account
                 </>
               )}
             </Button>
@@ -240,8 +240,6 @@ export function UserManagement() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-
           {isLoadingUsers ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
               <Loader2 className="mb-3 h-6 w-6 animate-spin" />

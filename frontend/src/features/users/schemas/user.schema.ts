@@ -7,6 +7,7 @@ export const createUserSchema = z.object({
     .min(1, 'Name is required.')
     .max(120, 'Name must be 120 characters or less.'),
   email: z.string().trim().email('Enter a valid email address.'),
+  role: z.enum(['SALES', 'SHIPPING']),
   password: z
     .string()
     .min(8, 'Password must be at least 8 characters.')

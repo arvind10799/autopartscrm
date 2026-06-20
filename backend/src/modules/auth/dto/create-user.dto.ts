@@ -1,7 +1,7 @@
 import {
-  Equals,
   IsEmail,
   IsEnum,
+  IsIn,
   IsNotEmpty,
   IsString,
   MaxLength,
@@ -25,8 +25,9 @@ export class CreateUserDto {
   password: string;
 
   @IsEnum(Role)
-  @Equals(Role.SALES, {
-    message: 'Only sales agents can be created from the admin workspace.',
+  @IsIn([Role.SALES, Role.SHIPPING], {
+    message:
+      'Only sales agents and shipping accounts can be created from the admin workspace.',
   })
   role: Role;
 }

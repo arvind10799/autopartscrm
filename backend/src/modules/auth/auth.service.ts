@@ -51,9 +51,9 @@ export class AuthService {
   }
 
   async createUser(dto: CreateUserDto) {
-    if (dto.role !== Role.SALES) {
+    if (![Role.SALES, Role.SHIPPING].includes(dto.role)) {
       throw new BadRequestException(
-        'Only sales agents can be created from the admin workspace.',
+        'Only sales agents and shipping accounts can be created from the admin workspace.',
       );
     }
 
