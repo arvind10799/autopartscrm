@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 import { cn } from '@/lib/utils/cn';
 import { getErrorMessage } from '@/lib/utils/error';
 import { ordersApi } from '../api/orders-api';
@@ -29,6 +30,7 @@ import {
 
 const defaultValues: CreateOrderFormValues = {
   leadId: undefined,
+  advisorName: '',
   orderNumber: '',
   orderDate: '',
   customerName: '',
@@ -85,6 +87,20 @@ function formatCreateOrderStatusLabel(
 
 function getFieldErrorMessage(message: unknown): string {
   return typeof message === 'string' ? message : 'Invalid value.';
+}
+
+function parseAmount(value: unknown): number {
+  if (value === '' || value === null || value === undefined) {
+    return 0;
+  }
+
+  const amount = Number(value);
+
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function formatAmountInput(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 function FormSection({
@@ -164,23 +180,114 @@ export function CreateOrderForm({
   onCreated: (order: OrderSummary) => void;
   initialValues?: Partial<CreateOrderFormValues>;
 }) {
+  const authUser = useAuthStore((state) => state.user);
   const [formError, setFormError] = useState<string | null>(null);
+  const [orderNumberError, setOrderNumberError] = useState<string | null>(null);
+  const [isLoadingOrderNumber, setIsLoadingOrderNumber] = useState(true);
   const resolvedInitialValues = buildCreateOrderFormValues(initialValues);
+  const resolvedFormValues = {
+    ...resolvedInitialValues,
+    advisorName: authUser?.name ?? resolvedInitialValues.advisorName,
+  };
   const form = useForm<CreateOrderFormValues>({
     resolver: zodResolver(createOrderFormSchema),
-    defaultValues: resolvedInitialValues,
+    defaultValues: resolvedFormValues,
   });
-  const [status, total, partialPayment] = useWatch({
+  const [
+    status,
+    total,
+    partialPayment,
+    basePrice,
+    salesTax,
+    shippingCharges,
+    profit,
+  ] = useWatch({
     control: form.control,
-    name: ['status', 'total', 'partialPayment'],
+    name: [
+      'status',
+      'total',
+      'partialPayment',
+      'basePrice',
+      'salesTax',
+      'shippingCharges',
+      'profit',
+    ],
   });
 
   const requiresPaymentMethod =
     status === 'PARTIALLY_PAID' || status === 'CONFIRMED';
+  const isPaidStatus = status === 'CONFIRMED';
+  const isPartiallyPaidStatus = status === 'PARTIALLY_PAID';
   const totalValue = Number(total || 0);
   const partialPaymentValue = Number(partialPayment || 0);
-  const remainingBalance = Math.max(totalValue - partialPaymentValue, 0);
+  const paidNowValue = isPaidStatus ? totalValue : partialPaymentValue;
+  const remainingBalance = isPaidStatus
+    ? 0
+    : Math.max(totalValue - partialPaymentValue, 0);
   const displayStatus = status === 'CONFIRMED' ? 'CONFIRMED' : 'PARTIALLY_PAID';
+
+  useEffect(() => {
+    if (authUser?.name) {
+      form.setValue('advisorName', authUser.name, {
+        shouldDirty: false,
+        shouldValidate: true,
+      });
+    }
+  }, [authUser?.name, form]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadNextOrderNumber() {
+      setIsLoadingOrderNumber(true);
+      setOrderNumberError(null);
+
+      try {
+        const nextOrder = await ordersApi.getNextOrderNumber();
+
+        if (!isActive) {
+          return;
+        }
+
+        form.setValue('orderNumber', nextOrder.orderNumber, {
+          shouldDirty: false,
+          shouldValidate: true,
+        });
+      } catch {
+        if (isActive) {
+          setOrderNumberError('Unable to load the next order number.');
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingOrderNumber(false);
+        }
+      }
+    }
+
+    loadNextOrderNumber();
+
+    return () => {
+      isActive = false;
+    };
+  }, [form]);
+
+  useEffect(() => {
+    const calculatedTotal =
+      parseAmount(basePrice) +
+      parseAmount(salesTax) +
+      parseAmount(shippingCharges) +
+      parseAmount(profit);
+    const nextTotal = calculatedTotal > 0 ? formatAmountInput(calculatedTotal) : '';
+
+    form.setValue('total', nextTotal, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    form.setValue('salePrice', nextTotal, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }, [basePrice, form, profit, salesTax, shippingCharges]);
 
   useEffect(() => {
     if (!requiresPaymentMethod) {
@@ -192,10 +299,21 @@ export function CreateOrderForm({
   }, [form, requiresPaymentMethod]);
 
   useEffect(() => {
-    form.reset(resolvedInitialValues);
+    if (isPaidStatus) {
+      form.setValue('partialPayment', undefined, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [form, isPaidStatus]);
+
+  useEffect(() => {
+    form.reset(resolvedFormValues);
   }, [
+    authUser?.name,
     form,
     resolvedInitialValues.basePrice,
+    resolvedInitialValues.advisorName,
     resolvedInitialValues.billingAddress,
     resolvedInitialValues.billingPerson,
     resolvedInitialValues.billingPhone,
@@ -239,7 +357,10 @@ export function CreateOrderForm({
       const createdOrder = await ordersApi.create(payload);
 
       onCreated(createdOrder);
-      form.reset(buildCreateOrderFormValues(initialValues));
+      form.reset({
+        ...buildCreateOrderFormValues(initialValues),
+        advisorName: authUser?.name ?? '',
+      });
     } catch (error) {
       setFormError(
         getErrorMessage(
@@ -254,6 +375,7 @@ export function CreateOrderForm({
     <form className="space-y-4" onSubmit={onSubmit}>
       <input type="hidden" {...form.register('leadId')} />
       <input type="hidden" {...form.register('quantity')} />
+      <input type="hidden" {...form.register('salePrice')} />
 
       <div className="rounded-[1.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(59,130,246,0.10),rgba(255,255,255,0.92))] p-4 shadow-sm md:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -278,8 +400,8 @@ export function CreateOrderForm({
               value={formatCreateOrderStatusLabel(displayStatus)}
             />
             <MetricCard
-              label="Partial paid"
-              value={formatCurrency(partialPaymentValue || 0)}
+              label="Paid now"
+              value={formatCurrency(paidNowValue || 0)}
             />
             <MetricCard
               label="Remaining due"
@@ -297,6 +419,19 @@ export function CreateOrderForm({
           >
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <Field
+                id="advisorName"
+                label="Advisor name"
+                error={form.formState.errors.advisorName?.message?.toString()}
+              >
+                <Input
+                  id="advisorName"
+                  readOnly
+                  className="h-11 rounded-xl bg-secondary/30 text-foreground"
+                  {...form.register('advisorName')}
+                />
+              </Field>
+
+              <Field
                 id="orderNumber"
                 label="Order number"
                 error={form.formState.errors.orderNumber?.message?.toString()}
@@ -304,10 +439,15 @@ export function CreateOrderForm({
               >
                 <Input
                   id="orderNumber"
-                  placeholder="SO-2026-001"
+                  placeholder={isLoadingOrderNumber ? 'Generating...' : 'MAPMMDDYYNN'}
                   className="h-11 rounded-xl"
+                  readOnly
+                  aria-busy={isLoadingOrderNumber}
                   {...form.register('orderNumber')}
                 />
+                {orderNumberError ? (
+                  <p className="text-xs text-destructive">{orderNumberError}</p>
+                ) : null}
               </Field>
 
               <Field
@@ -320,20 +460,6 @@ export function CreateOrderForm({
                   type="date"
                   className="h-11 rounded-xl"
                   {...form.register('orderDate')}
-                />
-              </Field>
-
-              <Field
-                id="salePrice"
-                label="Price offered"
-                error={form.formState.errors.salePrice?.message?.toString()}
-              >
-                <Input
-                  id="salePrice"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className="h-11 rounded-xl"
-                  {...form.register('salePrice')}
                 />
               </Field>
 
@@ -751,23 +877,26 @@ export function CreateOrderForm({
                   inputMode="decimal"
                   placeholder="0.00"
                   className="h-11 rounded-xl"
+                  readOnly
                   {...form.register('total')}
                 />
               </Field>
 
-              <Field
-                id="partialPayment"
-                label="Partial payment"
-                error={form.formState.errors.partialPayment?.message?.toString()}
-              >
-                <Input
+              {isPartiallyPaidStatus ? (
+                <Field
                   id="partialPayment"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className="h-11 rounded-xl"
-                  {...form.register('partialPayment')}
-                />
-              </Field>
+                  label="Partial payment"
+                  error={form.formState.errors.partialPayment?.message?.toString()}
+                >
+                  <Input
+                    id="partialPayment"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className="h-11 rounded-xl"
+                    {...form.register('partialPayment')}
+                  />
+                </Field>
+              ) : null}
             </div>
 
             <div className="rounded-[1.35rem] border border-border/70 bg-secondary/20 p-4">
@@ -781,7 +910,7 @@ export function CreateOrderForm({
                 />
                 <MetricCard
                   label="Paid now"
-                  value={formatCurrency(partialPaymentValue || 0)}
+                  value={formatCurrency(paidNowValue || 0)}
                 />
                 <MetricCard
                   label="Balance"

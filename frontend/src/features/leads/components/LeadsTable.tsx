@@ -2,15 +2,23 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
-import { ArrowRight, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  PencilLine,
+  RefreshCw,
+} from 'lucide-react';
 import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrency, formatDate, formatDateTime } from '../lib/lead-formatters';
+import { formatLeadStatusLabel } from '../lib/leads.helpers';
 import type { LeadSummary, PaginationMeta } from '../types/lead.types';
 
 function buildColumns(
   onConvert: (lead: LeadSummary) => void,
+  onEdit: (lead: LeadSummary) => void,
 ): ColumnDef<LeadSummary>[] {
   return [
     {
@@ -65,28 +73,26 @@ function buildColumns(
     },
     {
       accessorKey: 'prospects',
-      header: 'Prospects',
+      header: 'Disposition',
       cell: ({ row }) => (
         <p className="max-w-[14rem] text-sm text-foreground">{row.original.prospects}</p>
       ),
     },
     {
-      id: 'status',
+      accessorKey: 'status',
       header: 'Status',
-      cell: ({ row }) =>
-        row.original.isConverted ? (
-          <div className="space-y-1">
-            <p className="font-medium text-foreground">Converted</p>
-            <p className="text-xs text-muted-foreground">
-              {row.original.convertedOrder?.orderNumber ?? 'Order linked'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <p className="font-medium text-foreground">Open</p>
-            <p className="text-xs text-muted-foreground">Ready for order conversion</p>
-          </div>
-        ),
+      cell: ({ row }) => (
+        <div className="space-y-1">
+          <p className="font-medium text-foreground">
+            {formatLeadStatusLabel(row.original.status)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {row.original.isConverted
+              ? `Converted · ${row.original.convertedOrder?.orderNumber ?? 'Order linked'}`
+              : 'Open lead'}
+          </p>
+        </div>
+      ),
     },
     {
       id: 'actions',
@@ -101,10 +107,16 @@ function buildColumns(
             <ArrowRight className="h-4 w-4" />
           </Link>
         ) : (
-          <Button variant="outline" size="sm" onClick={() => onConvert(row.original)}>
-            <RefreshCw className="h-4 w-4" />
-            Convert to order
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+              <PencilLine className="h-4 w-4" />
+              Edit
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => onConvert(row.original)}>
+              <RefreshCw className="h-4 w-4" />
+              Convert to order
+            </Button>
+          </div>
         ),
     },
   ];
@@ -129,6 +141,7 @@ export function LeadsTable({
   onRetry,
   onPageChange,
   onConvert,
+  onEdit,
 }: {
   leads: LeadSummary[];
   meta: PaginationMeta;
@@ -137,9 +150,10 @@ export function LeadsTable({
   onRetry: () => void;
   onPageChange: (page: number) => void;
   onConvert: (lead: LeadSummary) => void;
+  onEdit: (lead: LeadSummary) => void;
 }) {
   const totalPages = meta.totalPages;
-  const columns = buildColumns(onConvert);
+  const columns = buildColumns(onConvert, onEdit);
 
   return (
     <DataTable

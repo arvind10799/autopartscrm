@@ -30,13 +30,17 @@ import {
 import { toast } from '@/lib/stores/toast.store';
 import {
   ALL_LEAD_CONVERSION_FILTER,
+  ALL_LEAD_STATUS_FILTER,
   formatLeadConversionFilterLabel,
+  formatLeadStatusLabel,
   parseLeadConversionFilter,
+  parseLeadStatusFilter,
   type LeadConversionFilter,
+  type LeadStatusFilter,
 } from '../lib/leads.helpers';
-import { formatCurrency } from '../lib/lead-formatters';
 import { useLeadsList } from '../hooks/useLeadsList';
 import type { LeadSummary } from '../types/lead.types';
+import { LEAD_STATUSES } from '../types/lead.types';
 import { CreateLeadForm } from './CreateLeadForm';
 import { LeadsTable } from './LeadsTable';
 
@@ -49,7 +53,7 @@ function buildOrderInitialValues(lead: LeadSummary): Partial<CreateOrderFormValu
     customerName: lead.customerName,
     customerPhone: lead.customerPhone,
     partDescription: lead.partDescription,
-    salePrice: quoteValue,
+    basePrice: quoteValue,
     total: quoteValue,
     note: lead.comments ?? '',
   };
@@ -60,12 +64,15 @@ export function LeadsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [convertedFilter, setConvertedFilter] =
     useState<LeadConversionFilter>(ALL_LEAD_CONVERSION_FILTER);
+  const [statusFilter, setStatusFilter] =
+    useState<LeadStatusFilter>(ALL_LEAD_STATUS_FILTER);
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedEditLead, setSelectedEditLead] = useState<LeadSummary | null>(null);
   const [selectedConversionLead, setSelectedConversionLead] =
     useState<LeadSummary | null>(null);
   const deferredSearchTerm = useDeferredValue(searchTerm);
@@ -78,17 +85,11 @@ export function LeadsPageContent() {
     page,
     search: activeSearch,
     converted: convertedFilter,
+    status: statusFilter,
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
     refreshKey,
   });
-
-  const convertedCount = leadsResponse.items.filter((lead) => lead.isConverted).length;
-  const openCount = leadsResponse.items.length - convertedCount;
-  const visibleQuoteValue = leadsResponse.items.reduce(
-    (sum, lead) => sum + (lead.quote ?? 0),
-    0,
-  );
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
@@ -100,15 +101,23 @@ export function LeadsPageContent() {
     startTransition(() => setPage(1));
   };
 
-  const handleLeadCreated = (lead: LeadSummary) => {
+  const handleStatusFilterChange = (value: LeadStatusFilter) => {
+    setStatusFilter(value);
+    startTransition(() => setPage(1));
+  };
+
+  const handleLeadSaved = (lead: LeadSummary) => {
+    const wasEditing = selectedEditLead !== null;
     setIsCreateModalOpen(false);
+    setSelectedEditLead(null);
     setSearchTerm('');
     setConvertedFilter(ALL_LEAD_CONVERSION_FILTER);
+    setStatusFilter(ALL_LEAD_STATUS_FILTER);
     startTransition(() => setPage(1));
     setRefreshKey((currentValue) => currentValue + 1);
     toast.success(
-      `${lead.customerName} lead created`,
-      'The leads table has been refreshed with the latest sales intake data.',
+      `${lead.customerName} lead ${wasEditing ? 'updated' : 'created'}`,
+      `The leads table has been refreshed with the ${wasEditing ? 'updated' : 'latest'} sales intake data.`,
     );
   };
 
@@ -118,7 +127,14 @@ export function LeadsPageContent() {
 
   const handleConvert = (lead: LeadSummary) => {
     setIsCreateModalOpen(false);
+    setSelectedEditLead(null);
     setSelectedConversionLead(lead);
+  };
+
+  const handleEdit = (lead: LeadSummary) => {
+    setIsCreateModalOpen(false);
+    setSelectedConversionLead(null);
+    setSelectedEditLead(lead);
   };
 
   const handleOrderCreated = (order: OrderSummary) => {
@@ -134,7 +150,7 @@ export function LeadsPageContent() {
   };
 
   useEffect(() => {
-    if (!isCreateModalOpen && !selectedConversionLead) {
+    if (!isCreateModalOpen && !selectedEditLead && !selectedConversionLead) {
       return;
     }
 
@@ -144,56 +160,12 @@ export function LeadsPageContent() {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isCreateModalOpen, selectedConversionLead]);
+  }, [isCreateModalOpen, selectedConversionLead, selectedEditLead]);
 
   return (
     <>
       <section className="grid gap-6">
         <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total matching leads</CardDescription>
-              <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-                {leadsResponse.meta.total}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Lead visibility follows the current sales role and active filters.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Open leads on this page</CardDescription>
-              <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-                {openCount}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Open leads can be converted straight into the order workspace.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Visible quoted value</CardDescription>
-              <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-                {formatCurrency(visibleQuoteValue)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Sum of quote values for the leads currently loaded in the table.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
 
         <Card>
           <CardHeader className="space-y-4">
@@ -211,7 +183,7 @@ export function LeadsPageContent() {
               </Button>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
+            <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -238,6 +210,20 @@ export function LeadsPageContent() {
                   {formatLeadConversionFilterLabel('CONVERTED')}
                 </option>
               </Select>
+
+              <Select
+                value={statusFilter}
+                onChange={(event) =>
+                  handleStatusFilterChange(parseLeadStatusFilter(event.target.value))
+                }
+              >
+                <option value={ALL_LEAD_STATUS_FILTER}>All statuses</option>
+                {LEAD_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {formatLeadStatusLabel(status)}
+                  </option>
+                ))}
+              </Select>
             </div>
           </CardHeader>
 
@@ -250,15 +236,19 @@ export function LeadsPageContent() {
               onRetry={handleRetry}
               onPageChange={setPage}
               onConvert={handleConvert}
+              onEdit={handleEdit}
             />
           </CardContent>
         </Card>
       </section>
 
-      {isCreateModalOpen ? (
+      {isCreateModalOpen || selectedEditLead ? (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-6"
-          onClick={() => setIsCreateModalOpen(false)}
+          onClick={() => {
+            setIsCreateModalOpen(false);
+            setSelectedEditLead(null);
+          }}
         >
           <div
             className="w-full max-w-5xl rounded-[1.75rem] border border-border/70 bg-white shadow-2xl"
@@ -267,17 +257,22 @@ export function LeadsPageContent() {
             <div className="flex items-start justify-between gap-4 border-b border-border/70 px-6 py-5">
               <div className="space-y-1">
                 <h2 className="font-[var(--font-heading)] text-2xl font-semibold tracking-[-0.03em] text-foreground">
-                  Create lead
+                  {selectedEditLead ? 'Edit lead' : 'Create lead'}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Capture a sales conversation and keep it ready for order conversion.
+                  {selectedEditLead
+                    ? 'Update this lead before it is converted into an order.'
+                    : 'Capture a sales conversation and keep it ready for order conversion.'}
                 </p>
               </div>
 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setSelectedEditLead(null);
+                }}
                 aria-label="Close create lead popup"
               >
                 <X className="h-4 w-4" />
@@ -286,8 +281,13 @@ export function LeadsPageContent() {
 
             <div className="max-h-[calc(100vh-5.5rem)] overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
               <CreateLeadForm
-                adviserName={authUser?.name ?? 'Loading adviser...'}
-                onCreated={handleLeadCreated}
+                adviserName={
+                  selectedEditLead?.adviserName ??
+                  authUser?.name ??
+                  'Loading adviser...'
+                }
+                initialLead={selectedEditLead}
+                onSaved={handleLeadSaved}
               />
             </div>
           </div>

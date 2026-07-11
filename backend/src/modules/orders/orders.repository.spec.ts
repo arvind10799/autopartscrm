@@ -23,6 +23,7 @@ describe('OrdersRepository', () => {
       count: jest.fn(),
       findFirst: jest.fn(),
     },
+    $queryRaw: jest.fn(),
     $transaction: jest.fn(),
   };
 
@@ -31,6 +32,24 @@ describe('OrdersRepository', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = new OrdersRepository(prismaService as never);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('builds the next MAP order number for the current day', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-15T10:30:00.000Z'));
+    prismaService.$queryRaw.mockResolvedValue([{ maxSuffix: 2 }]);
+
+    await expect(repository.getNextOrderNumber()).resolves.toBe('MAP06152603');
+  });
+
+  it('starts the daily MAP sequence at 01 when no orders exist', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-16T10:30:00.000Z'));
+    prismaService.$queryRaw.mockResolvedValue([{ maxSuffix: null }]);
+
+    await expect(repository.getNextOrderNumber()).resolves.toBe('MAP06162601');
   });
 
   it('filters order list by creator for sales users', async () => {

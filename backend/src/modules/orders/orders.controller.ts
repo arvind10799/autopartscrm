@@ -43,6 +43,11 @@ export class OrdersController {
     return this.ordersService.findAll(queryOrdersDto, user);
   }
 
+  @Get('next-number')
+  getNextOrderNumber() {
+    return this.ordersService.getNextOrderNumber();
+  }
+
   @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
   @Get(':id')
   findOne(

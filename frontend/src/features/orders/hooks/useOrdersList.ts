@@ -5,18 +5,18 @@ import { useRequestTracker } from '@/lib/hooks/useRequestTracker';
 import { getErrorMessage } from '@/lib/utils/error';
 import { ordersApi } from '../api/orders-api';
 import {
-  ALL_ORDER_STATUS_FILTER,
+  ALL_SHIPMENT_STATUS_FILTER,
   createEmptyOrdersResponse,
   normalizeOrdersListQuery,
   ORDER_PAGE_SIZE,
-  type OrderStatusFilter,
+  type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
 import type { OrdersListResponse } from '../types/order.types';
 
 type UseOrdersListOptions = {
   page: number;
   search: string;
-  status?: OrderStatusFilter;
+  shipmentStatus?: ShipmentStatusFilter;
   hasShipment?: boolean;
   createdFrom?: string;
   createdTo?: string;
@@ -32,7 +32,7 @@ type UseOrdersListResult = {
 export function useOrdersList({
   page,
   search,
-  status,
+  shipmentStatus,
   hasShipment,
   createdFrom,
   createdTo,
@@ -51,7 +51,8 @@ export function useOrdersList({
       page: Number.isInteger(page) && page > 0 ? page : 1,
       limit: ORDER_PAGE_SIZE,
       search,
-      status: status === ALL_ORDER_STATUS_FILTER ? undefined : status,
+      shipmentStatus:
+        shipmentStatus === ALL_SHIPMENT_STATUS_FILTER ? undefined : shipmentStatus,
       hasShipment,
       createdFrom,
       createdTo,
@@ -99,7 +100,7 @@ export function useOrdersList({
     refreshKey,
     requestTracker,
     search,
-    status,
+    shipmentStatus,
   ]);
 
   return {

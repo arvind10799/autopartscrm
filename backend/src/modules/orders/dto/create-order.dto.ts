@@ -24,6 +24,12 @@ export class CreateOrderDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
+  @MaxLength(120)
+  advisorName: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(50)
   orderNumber: string;
 

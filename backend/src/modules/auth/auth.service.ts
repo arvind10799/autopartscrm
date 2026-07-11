@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -13,6 +14,8 @@ import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.in
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { QueryUsersDto } from './dto/query-users.dto';
+import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -109,6 +112,118 @@ export class AuthService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async updateUserPassword(id: string, dto: UpdateUserPasswordDto) {
+    const existingUser = await this.prismaService.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const passwordHash = await this.hashPassword(dto.password);
+
+    return this.prismaService.user.update({
+      where: { id },
+      data: { passwordHash },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async updateUser(id: string, dto: UpdateUserDto) {
+    if (dto.email === undefined && dto.role === undefined) {
+      throw new BadRequestException('Email or role is required.');
+    }
+
+    const existingUser = await this.prismaService.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, role: true },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found.');
+    }
+
+    if (existingUser.role === Role.ADMIN && dto.role !== undefined) {
+      throw new BadRequestException('Admin roles cannot be changed.');
+    }
+
+    const normalizedEmail = dto.email?.trim().toLowerCase();
+
+    if (normalizedEmail && normalizedEmail !== existingUser.email) {
+      const duplicateUser = await this.prismaService.user.findUnique({
+        where: { email: normalizedEmail },
+        select: { id: true },
+      });
+
+      if (duplicateUser) {
+        throw new ConflictException('A user with this email already exists.');
+      }
+    }
+
+    return this.prismaService.user.update({
+      where: { id },
+      data: {
+        email: normalizedEmail,
+        role: dto.role,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async deleteUser(id: string) {
+    const existingUser = await this.prismaService.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        role: true,
+        _count: {
+          select: {
+            leads: true,
+            orders: true,
+            notes: true,
+          },
+        },
+      },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found.');
+    }
+
+    if (existingUser.role === Role.ADMIN) {
+      throw new BadRequestException('Admin users cannot be deleted.');
+    }
+
+    const activityCount =
+      existingUser._count.leads +
+      existingUser._count.orders +
+      existingUser._count.notes;
+
+    if (activityCount > 0) {
+      throw new ConflictException(
+        'This user has CRM activity and cannot be deleted because its audit history must be preserved.',
+      );
+    }
+
+    await this.prismaService.user.delete({ where: { id } });
+
+    return { id };
   }
 
   private async validateUser(

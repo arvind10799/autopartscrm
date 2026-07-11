@@ -11,6 +11,15 @@ export interface LeadConvertedOrder {
   status: string;
 }
 
+export const LEAD_STATUSES = [
+  'PROSPECT',
+  'CALL_BACK_LATER',
+  'NOT_INTERESTED',
+  'NEEDS_LOCALLY',
+] as const;
+
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
 export interface LeadSummary {
   id: string;
   date: string;
@@ -22,6 +31,7 @@ export interface LeadSummary {
   quote: number | null;
   comments: string | null;
   prospects: string;
+  status: LeadStatus;
   isConverted: boolean;
   convertedAt: string | null;
   createdAt: string;
@@ -49,6 +59,7 @@ export interface LeadsListQuery {
   limit: number;
   search?: string;
   converted?: boolean;
+  status?: LeadStatus;
   createdFrom?: string;
   createdTo?: string;
 }
@@ -62,4 +73,7 @@ export interface CreateLeadInput {
   quote?: number;
   comments?: string;
   prospects: string;
+  status: LeadStatus;
 }
+
+export type UpdateLeadInput = CreateLeadInput;

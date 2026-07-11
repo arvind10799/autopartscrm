@@ -11,6 +11,7 @@ import { handlePrismaError } from '../../common/utils/prisma-exception.util';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
+import { UpdateLeadDto } from './dto/update-lead.dto';
 
 const leadListSelect = {
   id: true,
@@ -23,6 +24,7 @@ const leadListSelect = {
   quote: true,
   comments: true,
   prospects: true,
+  status: true,
   convertedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -63,6 +65,7 @@ export class LeadsRepository {
               : undefined,
           comments: createLeadDto.comments?.trim(),
           prospects: createLeadDto.prospects.trim(),
+          status: createLeadDto.status,
           createdBy: {
             connect: {
               id: user.userId,
@@ -91,6 +94,10 @@ export class LeadsRepository {
 
     if (convertedFilter !== undefined) {
       where.convertedAt = convertedFilter ? { not: null } : null;
+    }
+
+    if (queryLeadsDto.status) {
+      where.status = queryLeadsDto.status;
     }
 
     if (leadDateFilter) {
@@ -173,6 +180,69 @@ export class LeadsRepository {
     }
 
     return lead;
+  }
+
+  async findEditableById(id: string, user: AuthenticatedUser) {
+    const lead = await this.prismaService.lead.findFirst({
+      where: {
+        id,
+        ...this.buildLeadAccessWhere(user),
+      },
+      select: {
+        id: true,
+        convertedAt: true,
+      },
+    });
+
+    if (!lead) {
+      throw new NotFoundException('Lead was not found.');
+    }
+
+    if (lead.convertedAt) {
+      throw new BadRequestException(
+        'Converted leads cannot be edited.',
+      );
+    }
+
+    return lead;
+  }
+
+  async update(id: string, updateLeadDto: UpdateLeadDto) {
+    try {
+      const result = await this.prismaService.lead.updateMany({
+        where: {
+          id,
+          convertedAt: null,
+        },
+        data: {
+          leadDate: updateLeadDto.leadDate
+            ? new Date(updateLeadDto.leadDate)
+            : undefined,
+          cmpt: updateLeadDto.cmpt,
+          customerPhone: updateLeadDto.customerPhone,
+          customerName: updateLeadDto.customerName,
+          partDescription: updateLeadDto.partDescription,
+          quote:
+            updateLeadDto.quote !== undefined
+              ? new Prisma.Decimal(updateLeadDto.quote)
+              : undefined,
+          comments: updateLeadDto.comments,
+          prospects: updateLeadDto.prospects,
+          status: updateLeadDto.status,
+        },
+      });
+
+      if (result.count !== 1) {
+        throw new BadRequestException('Converted leads cannot be edited.');
+      }
+
+      return await this.prismaService.lead.findUniqueOrThrow({
+        where: { id },
+        select: leadListSelect,
+      });
+    } catch (error) {
+      handlePrismaError(error, 'Lead');
+    }
   }
 
   async markAsConvertedWithTransaction(

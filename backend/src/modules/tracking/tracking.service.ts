@@ -1,15 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateShipmentEventDto } from './dto/create-shipment-event.dto';
 import { TrackingRepository } from './tracking.repository';
 
 @Injectable()
 export class TrackingService {
-  constructor(private readonly trackingRepository: TrackingRepository) {}
+  constructor(
+    private readonly trackingRepository: TrackingRepository,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async create(createShipmentEventDto: CreateShipmentEventDto) {
     await this.ensureShipmentExists(createShipmentEventDto.shipmentId);
 
-    return this.trackingRepository.create(createShipmentEventDto);
+    const event = await this.trackingRepository.create(createShipmentEventDto);
+    await this.notificationsService.notifyShipmentActivity(
+      createShipmentEventDto.shipmentId,
+      'Tracking activity was added.',
+    );
+
+    return event;
   }
 
   findTimelineByShipmentId(shipmentId: string) {

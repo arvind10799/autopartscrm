@@ -2,14 +2,16 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, History, PencilLine, RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { getErrorMessage } from '@/lib/utils/error';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 import { ordersApi } from '../api/orders-api';
 import { formatDateTime } from '../lib/order-formatters';
 import { useOrderDetailWithRefresh } from '../hooks/useOrderDetail';
@@ -18,6 +20,14 @@ import {
   type UpdateOrderFormValues,
 } from '../schemas/order.schema';
 import type { OrderNote, OrderSummary } from '../types/order.types';
+import {
+  ORDER_PAYMENT_METHODS,
+  ORDER_STATUSES,
+} from '../types/order.types';
+import {
+  formatOrderPaymentMethod,
+  formatOrderStatus,
+} from '../lib/order-formatters';
 
 function getFieldErrorMessage(message: unknown): string {
   return typeof message === 'string' ? message : 'Invalid value.';
@@ -36,6 +46,8 @@ export function UpdateOrderForm({
   onUpdated: (order: OrderSummary) => void;
   onCancel: () => void;
 }) {
+  const role = useAuthStore((state) => state.user?.role);
+  const isAdmin = role === 'ADMIN';
   const [formError, setFormError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { order, isLoading, error } = useOrderDetailWithRefresh(orderId, refreshKey);
@@ -44,7 +56,35 @@ export function UpdateOrderForm({
     defaultValues: {
       customerEmail: '',
       customerPhone: '',
-      quantity: '1',
+      customerName: '',
+      partDescription: '',
+      price: '',
+      total: '',
+      status: undefined,
+      paymentMethod: '',
+      advisorName: '',
+      orderDate: '',
+      vehicleMake: '',
+      vehicleModel: '',
+      vehicleYear: '',
+      vehicleVariant: '',
+      vehicleVin: '',
+      vehicleNotes: '',
+      vehicleConfiguration: '',
+      billingAddress: '',
+      billingPerson: '',
+      billingPhone: '',
+      shippingAddress: '',
+      shippingPerson: '',
+      shippingPhone: '',
+      shippingAt: '',
+      companyName: '',
+      milesOffered: '',
+      basePrice: '',
+      salesTax: '',
+      shippingCharges: '',
+      profit: '',
+      partialPayment: '',
       note: '',
     },
   });
@@ -57,7 +97,35 @@ export function UpdateOrderForm({
     form.reset({
       customerEmail: order.customerEmail ?? '',
       customerPhone: order.customerPhone ?? '',
-      quantity: String(order.quantity),
+      customerName: order.customerName,
+      partDescription: order.partDescription,
+      price: String(order.salePrice),
+      total: String(order.totalSaleAmount),
+      status: order.status,
+      paymentMethod: order.paymentMethod ?? '',
+      advisorName: order.intakeDetails.advisorName ?? '',
+      orderDate: order.intakeDetails.orderDate ?? '',
+      vehicleMake: order.intakeDetails.vehicleMake ?? '',
+      vehicleModel: order.intakeDetails.vehicleModel ?? '',
+      vehicleYear: order.intakeDetails.vehicleYear ?? '',
+      vehicleVariant: order.intakeDetails.vehicleVariant ?? '',
+      vehicleVin: order.intakeDetails.vehicleVin ?? '',
+      vehicleNotes: order.intakeDetails.vehicleNotes ?? '',
+      vehicleConfiguration: order.intakeDetails.vehicleConfiguration ?? '',
+      billingAddress: order.intakeDetails.billingAddress ?? '',
+      billingPerson: order.intakeDetails.billingPerson ?? '',
+      billingPhone: order.intakeDetails.billingPhone ?? '',
+      shippingAddress: order.intakeDetails.shippingAddress ?? '',
+      shippingPerson: order.intakeDetails.shippingPerson ?? '',
+      shippingPhone: order.intakeDetails.shippingPhone ?? '',
+      shippingAt: order.intakeDetails.shippingAt ?? '',
+      companyName: order.intakeDetails.companyName ?? '',
+      milesOffered: order.intakeDetails.milesOffered?.toString() ?? '',
+      basePrice: order.intakeDetails.basePrice?.toString() ?? '',
+      salesTax: order.intakeDetails.salesTax?.toString() ?? '',
+      shippingCharges: order.intakeDetails.shippingCharges?.toString() ?? '',
+      profit: order.intakeDetails.profit?.toString() ?? '',
+      partialPayment: order.intakeDetails.partialPayment?.toString() ?? '',
       note: '',
     });
   }, [form, order]);
@@ -66,15 +134,22 @@ export function UpdateOrderForm({
     setFormError(null);
 
     try {
-      const payload = updateOrderFormSchema.parse(values);
+      const parsedPayload = updateOrderFormSchema.parse(values);
+      const payload = isAdmin
+        ? parsedPayload
+        : {
+            customerEmail: parsedPayload.customerEmail,
+            customerPhone: parsedPayload.customerPhone,
+            note: parsedPayload.note,
+          };
       const updatedOrder = await ordersApi.update(orderId, payload);
 
       onUpdated(updatedOrder);
       setRefreshKey((currentValue) => currentValue + 1);
       form.reset({
+        ...values,
         customerEmail: payload.customerEmail ?? '',
         customerPhone: payload.customerPhone ?? '',
-        quantity: String(payload.quantity),
         note: '',
       });
     } catch (submitError) {
@@ -134,7 +209,9 @@ export function UpdateOrderForm({
           <div className="space-y-1">
             <p className="font-semibold text-foreground">Edit order</p>
             <p className="text-sm text-muted-foreground">
-              Update customer contact details, quantity, and add notes for {order.orderNumber}.
+              {isAdmin
+                ? `Update all order information and add notes for ${order.orderNumber}.`
+                : `Update customer contact details and add notes for ${order.orderNumber}.`}
             </p>
           </div>
         </div>
@@ -155,6 +232,111 @@ export function UpdateOrderForm({
             />
           </div>
         </div>
+
+        {isAdmin ? (
+          <>
+            <EditorSection title="Admin order fields">
+              <EditorField label="Customer name" id="customerName">
+                <Input id="customerName" {...form.register('customerName')} />
+              </EditorField>
+              <EditorField label="Part description" id="partDescription">
+                <Input id="partDescription" {...form.register('partDescription')} />
+              </EditorField>
+              <EditorField label="Advisor name" id="advisorName">
+                <Input id="advisorName" {...form.register('advisorName')} />
+              </EditorField>
+              <EditorField label="Order date" id="orderDate">
+                <Input id="orderDate" type="date" {...form.register('orderDate')} />
+              </EditorField>
+              <EditorField label="Sale price" id="price">
+                <Input id="price" inputMode="decimal" {...form.register('price')} />
+              </EditorField>
+              <EditorField label="Total sale amount" id="total">
+                <Input id="total" inputMode="decimal" {...form.register('total')} />
+              </EditorField>
+              <EditorField label="Order status" id="status">
+                <Select id="status" {...form.register('status')}>
+                  {ORDER_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {formatOrderStatus(status)}
+                    </option>
+                  ))}
+                </Select>
+              </EditorField>
+              <EditorField label="Payment method" id="paymentMethod">
+                <Select id="paymentMethod" {...form.register('paymentMethod')}>
+                  <option value="">Not required</option>
+                  {ORDER_PAYMENT_METHODS.map((method) => (
+                    <option key={method} value={method}>
+                      {formatOrderPaymentMethod(method)}
+                    </option>
+                  ))}
+                </Select>
+              </EditorField>
+            </EditorSection>
+
+            <EditorSection title="Vehicle information">
+              {[
+                ['vehicleMake', 'Make'],
+                ['vehicleModel', 'Model'],
+                ['vehicleYear', 'Year'],
+                ['vehicleVariant', 'Variant'],
+                ['vehicleVin', 'VIN'],
+                ['vehicleConfiguration', 'Configuration'],
+              ].map(([field, label]) => (
+                <EditorField key={field} label={label} id={field}>
+                  <Input id={field} {...form.register(field as keyof UpdateOrderFormValues)} />
+                </EditorField>
+              ))}
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="vehicleNotes">Vehicle notes</Label>
+                <Textarea id="vehicleNotes" rows={3} {...form.register('vehicleNotes')} />
+              </div>
+            </EditorSection>
+
+            <EditorSection title="Billing and shipping">
+              {[
+                ['billingPerson', 'Billing person'],
+                ['billingPhone', 'Billing phone'],
+                ['shippingPerson', 'Shipping person'],
+                ['shippingPhone', 'Shipping phone'],
+                ['shippingAt', 'Shipping date'],
+                ['companyName', 'Company name'],
+              ].map(([field, label]) => (
+                <EditorField key={field} label={label} id={field}>
+                  <Input id={field} {...form.register(field as keyof UpdateOrderFormValues)} />
+                </EditorField>
+              ))}
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="billingAddress">Billing address</Label>
+                <Textarea id="billingAddress" rows={2} {...form.register('billingAddress')} />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="shippingAddress">Shipping address</Label>
+                <Textarea id="shippingAddress" rows={2} {...form.register('shippingAddress')} />
+              </div>
+            </EditorSection>
+
+            <EditorSection title="Commercial details">
+              {[
+                ['milesOffered', 'Miles offered'],
+                ['basePrice', 'Base price'],
+                ['salesTax', 'Sales tax'],
+                ['shippingCharges', 'Shipping charges'],
+                ['profit', 'Profit'],
+                ['partialPayment', 'Paid'],
+              ].map(([field, label]) => (
+                <EditorField key={field} label={label} id={field}>
+                  <Input
+                    id={field}
+                    inputMode="decimal"
+                    {...form.register(field as keyof UpdateOrderFormValues)}
+                  />
+                </EditorField>
+              ))}
+            </EditorSection>
+          </>
+        ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="space-y-2">
@@ -184,16 +366,6 @@ export function UpdateOrderForm({
               </p>
             ) : null}
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="quantity">Quantity</Label>
-          <Input id="quantity" inputMode="numeric" {...form.register('quantity')} />
-          {form.formState.errors.quantity ? (
-            <p className="text-sm text-destructive">
-              {getFieldErrorMessage(form.formState.errors.quantity.message)}
-            </p>
-          ) : null}
         </div>
 
         <div className="space-y-2">
@@ -229,7 +401,7 @@ export function UpdateOrderForm({
             {form.formState.isSubmitting ? 'Saving changes...' : 'Save order changes'}
             <ArrowRight className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="lg" onClick={onCancel}>
+          <Button type="button" variant="outline" size="lg" onClick={onCancel}>
             Close
           </Button>
         </div>
@@ -268,6 +440,38 @@ export function UpdateOrderForm({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function EditorSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-border/70 bg-secondary/15 p-4">
+      <h3 className="mb-4 font-semibold text-foreground">{title}</h3>
+      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+    </section>
+  );
+}
+
+function EditorField({
+  label,
+  id,
+  children,
+}: {
+  label: string;
+  id: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      {children}
     </div>
   );
 }

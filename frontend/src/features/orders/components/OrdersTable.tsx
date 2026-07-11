@@ -6,6 +6,7 @@ import { ArrowRight, ChevronLeft, ChevronRight, PencilLine } from 'lucide-react'
 import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
+import type { UserRole } from '@/features/auth/types/auth.types';
 import {
   formatCurrency,
   formatDateTime,
@@ -15,96 +16,96 @@ import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentSta
 
 function buildColumns(
   onEdit: (orderId: string) => void,
+  role: UserRole | null | undefined,
 ): ColumnDef<OrderSummary>[] {
-  return [
-  {
-    accessorKey: 'orderNumber',
-    header: 'Order',
-    cell: ({ row }) => (
-      <div className="space-y-1">
-        <Link
-          href={`/orders/${row.original.id}`}
-          className="font-semibold text-primary transition hover:text-primary/80"
-        >
-          {row.original.orderNumber}
-        </Link>
-        <p className="text-xs text-muted-foreground">
-          Created {formatDateTime(row.original.createdAt)}
-        </p>
-      </div>
-    ),
-  },
-  {
-    accessorKey: 'customerName',
-    header: 'Customer',
-    cell: ({ row }) => (
-      <p className="font-medium text-foreground">{row.original.customerName}</p>
-    ),
-  },
-  {
-    accessorKey: 'partDescription',
-    header: 'Part',
-    cell: ({ row }) => (
-      <p className="max-w-xs text-sm text-foreground">
-        {row.original.partDescription}
-      </p>
-    ),
-  },
-  {
-    accessorKey: 'salePrice',
-    header: 'Sale price',
-    cell: ({ row }) => (
-      <span className="font-medium text-foreground">
-        {formatCurrency(row.original.salePrice)}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'quantity',
-    header: 'Quantity',
-    cell: ({ row }) => (
-      <span className="font-medium text-foreground">{row.original.quantity}</span>
-    ),
-  },
-  {
-    accessorKey: 'totalSaleAmount',
-    header: 'Total sale amount',
-    cell: ({ row }) => (
-      <span className="font-semibold text-foreground">
-        {formatCurrency(row.original.totalSaleAmount)}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'latestShipmentStatus',
-    header: 'Shipping status',
-    cell: ({ row }) =>
-      row.original.latestShipmentStatus ? (
-        <ShipmentStatusBadge status={row.original.latestShipmentStatus} />
-      ) : (
-        <span className="text-sm text-muted-foreground">No shipment</span>
+  const columns: ColumnDef<OrderSummary>[] = [
+    {
+      accessorKey: 'orderNumber',
+      header: 'Order',
+      cell: ({ row }) => (
+        <div className="space-y-1">
+          <Link
+            href={`/orders/${row.original.id}`}
+            className="font-semibold text-primary transition hover:text-primary/80"
+          >
+            {row.original.orderNumber}
+          </Link>
+          <p className="text-xs text-muted-foreground">
+            Created {formatDateTime(row.original.createdAt)}
+          </p>
+        </div>
       ),
-  },
-  {
-    id: 'actions',
-    header: '',
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => onEdit(row.original.id)}>
-          <PencilLine className="h-4 w-4" />
-          Edit
-        </Button>
-        <Link
-          href={`/orders/${row.original.id}`}
-          className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}
-        >
-          View
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
-    ),
-  },
+    },
+    {
+      accessorKey: 'customerName',
+      header: 'Customer',
+      cell: ({ row }) => (
+        <p className="font-medium text-foreground">{row.original.customerName}</p>
+      ),
+    },
   ];
+
+  if (role === 'ADMIN') {
+    columns.push({
+      accessorKey: 'createdBy',
+      header: 'Advisor Name',
+      cell: ({ row }) => (
+        <p className="font-medium text-foreground">{row.original.createdBy.name}</p>
+      ),
+    });
+  }
+
+  columns.push(
+    {
+      accessorKey: 'partDescription',
+      header: 'Part',
+      cell: ({ row }) => (
+        <p className="max-w-xs text-sm text-foreground">
+          {row.original.partDescription}
+        </p>
+      ),
+    },
+    {
+      accessorKey: 'totalSaleAmount',
+      header: 'Total sale amount',
+      cell: ({ row }) => (
+        <span className="font-semibold text-foreground">
+          {formatCurrency(row.original.totalSaleAmount)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'latestShipmentStatus',
+      header: 'Shipping status',
+      cell: ({ row }) =>
+        row.original.latestShipmentStatus ? (
+          <ShipmentStatusBadge status={row.original.latestShipmentStatus} />
+        ) : (
+          <span className="text-sm text-muted-foreground">No shipment</span>
+        ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => onEdit(row.original.id)}>
+            <PencilLine className="h-4 w-4" />
+            Edit
+          </Button>
+          <Link
+            href={`/orders/${row.original.id}`}
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}
+          >
+            View
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      ),
+    },
+  );
+
+  return columns;
 }
 
 function getRangeLabel(meta: PaginationMeta, currentCount: number) {
@@ -126,6 +127,7 @@ export function OrdersTable({
   onRetry,
   onPageChange,
   onEdit,
+  role,
 }: {
   orders: OrderSummary[];
   meta: PaginationMeta;
@@ -134,9 +136,10 @@ export function OrdersTable({
   onRetry: () => void;
   onPageChange: (page: number) => void;
   onEdit: (orderId: string) => void;
+  role?: UserRole | null;
 }) {
   const totalPages = meta.totalPages;
-  const columns = buildColumns(onEdit);
+  const columns = buildColumns(onEdit, role);
 
   return (
     <DataTable

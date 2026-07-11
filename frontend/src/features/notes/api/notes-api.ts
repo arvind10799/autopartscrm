@@ -12,7 +12,6 @@ import {
   noteSchema,
   notesListSchema,
 } from '../schemas/note.schema';
-import { toBackendCreateNotePayload } from '../lib/notes.helpers';
 import type {
   CreateNoteInput,
   NoteEntityType,
@@ -49,7 +48,7 @@ export const notesApi = {
 
     const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
       '/api/notes',
-      toBackendCreateNotePayload(requestPayload),
+      requestPayload,
     );
 
     return parseApiData(response, noteSchema, {

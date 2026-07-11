@@ -41,6 +41,13 @@ enum NoteEntityType {
   SHIPMENT
 }
 
+enum LeadStatus {
+  PROSPECT
+  CALL_BACK_LATER
+  NOT_INTERESTED
+  NEEDS_LOCALLY
+}
+
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   name         String   @db.VarChar(120)
@@ -53,6 +60,7 @@ model User {
   leads  Lead[]
   orders Order[]
   notes  Note[]
+  notifications Notification[]
 }
 
 model Lead {
@@ -66,6 +74,7 @@ model Lead {
   quote            Decimal?  @db.Decimal(12, 2)
   comments         String?   @db.Text
   prospects        String    @db.VarChar(255)
+  status           LeadStatus @default(PROSPECT)
   createdById      String    @db.Uuid
   convertedOrderId String?   @unique @db.Uuid
   convertedAt      DateTime?
@@ -77,6 +86,7 @@ model Lead {
 
   @@index([leadDate])
   @@index([createdById])
+  @@index([status])
   @@index([convertedAt])
 }
 
@@ -101,9 +111,46 @@ model Order {
   sourceLead Lead?     @relation("ConvertedLeadOrder")
   shipments Shipment[]
   notes     Note[]
+  invoice   Invoice?
 
   @@index([orderNumber])
   @@index([createdById])
+}
+
+model Invoice {
+  id                     String    @id @default(uuid()) @db.Uuid
+  orderId                String    @unique @db.Uuid
+  invoiceNumber          String    @unique @db.VarChar(50)
+  invoiceDate            DateTime
+  salesAssistant         String?   @db.VarChar(120)
+  customerName           String    @db.VarChar(160)
+  contactNumber          String?   @db.VarChar(30)
+  billingAddress         String?   @db.Text
+  shippingAddress        String?   @db.Text
+  shippingVendor         String    @default("LTL") @db.VarChar(80)
+  deliveryTimeline       String    @default("7-8 Business Days") @db.VarChar(120)
+  itemDescription        String    @db.VarChar(255)
+  vehiclePartDescription String?   @db.VarChar(255)
+  quantity               Int
+  saleAmount             Decimal   @db.Decimal(12, 2)
+  paymentStatus          String?   @db.VarChar(80)
+  paymentDate            DateTime?
+  paymentSource          String?   @db.VarChar(160)
+  shippingCost           Decimal   @default(0) @db.Decimal(12, 2)
+  salesTaxes             Decimal   @default(0) @db.Decimal(12, 2)
+  coreCharge             Decimal   @default(0) @db.Decimal(12, 2)
+  totalAmount            Decimal   @db.Decimal(12, 2)
+  customerSignature      String?   @db.VarChar(160)
+  signatureDate          DateTime?
+  status                 String    @default("CREATED") @db.VarChar(40)
+  pdfStorageKey          String?   @db.VarChar(255)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([invoiceNumber])
+  @@index([createdAt])
 }
 
 model Shipment {
@@ -180,4 +227,24 @@ model Note {
   @@index([shipmentId])
   @@index([entityType, orderId])
   @@index([entityType, shipmentId])
+}
+
+model Notification {
+  id              String    @id @default(uuid()) @db.Uuid
+  recipientUserId String    @db.Uuid
+  type            String    @db.VarChar(80)
+  title           String    @db.VarChar(160)
+  message         String    @db.Text
+  entityType      String    @db.VarChar(40)
+  entityId        String    @db.Uuid
+  isRead          Boolean   @default(false)
+  readAt          DateTime?
+  clearedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  recipient User @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@index([recipientUserId, clearedAt, createdAt])
+  @@index([recipientUserId, isRead, clearedAt])
+  @@index([entityType, entityId])
 }

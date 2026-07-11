@@ -4,6 +4,7 @@ export interface UserRecord {
   email: string;
   role: 'ADMIN' | 'SALES' | 'SHIPPING';
   createdAt: string;
+  status?: 'ACTIVE';
 }
 
 export interface CreateUserPayload {
@@ -11,4 +12,13 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   role: 'SALES' | 'SHIPPING';
+}
+
+export interface UpdateUserPasswordPayload {
+  password: string;
+}
+
+export interface UpdateUserPayload {
+  email?: string;
+  role?: 'SALES' | 'SHIPPING';
 }

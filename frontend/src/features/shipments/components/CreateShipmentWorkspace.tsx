@@ -355,10 +355,15 @@ function ShipmentOrderDetailsPanel({
             />
             <DetailBlock label="Customer" value={order.customerName} />
             <DetailBlock label="Mobile" value={order.customerPhone ?? 'Not provided'} />
-            <DetailBlock label="Email" value={order.customerEmail ?? 'Not provided'} />
+            <DetailBlock
+              label="Email"
+              value={order.customerEmail ?? 'Not provided'}
+              breakAnywhere
+            />
             <DetailBlock
               label="Sales agent"
               value={`${order.createdBy.name}\n${order.createdBy.email}`}
+              breakAnywhere
             />
           </DetailGrid>
         </DetailGroup>
@@ -455,8 +460,8 @@ function ShipmentOrderDetailsPanel({
               value={formatNullableCurrency(intake.profit)}
             />
             <DetailBlock
-              label="Partial payment"
-              value={formatNullableCurrency(intake.partialPayment)}
+              label="Paid"
+              value={formatPaidAmount(order)}
             />
             <DetailBlock
               label="Payment method"
@@ -540,18 +545,24 @@ function DetailBlock({
   label,
   value,
   className,
+  breakAnywhere = false,
 }: {
   label: string;
   value: string;
   className?: string;
+  breakAnywhere?: boolean;
 }) {
   return (
-    <div className={className}>
-      <div className="rounded-2xl border border-border/70 bg-secondary/20 p-4">
+    <div className={`min-w-0 ${className ?? ''}`}>
+      <div className="h-full min-w-0 rounded-2xl border border-border/70 bg-secondary/20 p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {label}
         </p>
-        <div className="mt-2 whitespace-pre-wrap text-sm text-foreground">
+        <div
+          className={`mt-2 min-w-0 whitespace-pre-wrap text-sm text-foreground ${
+            breakAnywhere ? 'break-all' : 'break-words'
+          }`}
+        >
           {value}
         </div>
       </div>
@@ -582,6 +593,14 @@ function formatNullableCurrency(value: number | null): string {
 
 function formatNullableNumber(value: number | null): string {
   return value === null ? 'Not provided' : String(value);
+}
+
+function formatPaidAmount(order: OrderDetail): string {
+  if (order.status === 'CONFIRMED') {
+    return formatCurrency(order.totalSaleAmount);
+  }
+
+  return formatNullableCurrency(order.intakeDetails.partialPayment);
 }
 
 function isHistoryNote(note: OrderNote): boolean {

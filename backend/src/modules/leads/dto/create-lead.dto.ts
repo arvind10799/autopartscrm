@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsDateString,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -8,6 +9,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { LeadStatus } from '../../../common/enums/lead-status.enum';
 import {
   trimString,
   trimToUndefined,
@@ -59,4 +61,7 @@ export class CreateLeadDto {
   @IsNotEmpty()
   @MaxLength(255)
   prospects: string;
+
+  @IsEnum(LeadStatus)
+  status: LeadStatus;
 }

@@ -7,6 +7,7 @@ import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.in
 import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
 import { CACHE_NAMESPACE_ORDERS_LIST } from '../../infrastructure/redis/redis.constants';
 import { RedisCacheService } from '../../infrastructure/redis/redis-cache.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { QueryNotesDto } from './dto/query-notes.dto';
 import { NotesRepository } from './notes.repository';
@@ -16,6 +17,7 @@ export class NotesService {
   constructor(
     private readonly notesRepository: NotesRepository,
     private readonly redisCacheService: RedisCacheService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createNoteDto: CreateNoteDto, user: AuthenticatedUser) {
@@ -36,6 +38,11 @@ export class NotesService {
         CACHE_NAMESPACE_ORDERS_LIST,
       );
     }
+    await this.notificationsService.notifyNoteCreated(
+      createNoteDto.entityType,
+      createNoteDto.entityId,
+      user,
+    );
 
     return note;
   }

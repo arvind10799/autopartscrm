@@ -2,11 +2,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, UserRound } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils/cn';
 import { getErrorMessage } from '@/lib/utils/error';
@@ -16,6 +17,8 @@ import {
   type CreateLeadFormValues,
 } from '../schemas/lead.schema';
 import type { LeadSummary } from '../types/lead.types';
+import { LEAD_STATUSES } from '../types/lead.types';
+import { formatLeadStatusLabel } from '../lib/leads.helpers';
 
 const defaultValues: CreateLeadFormValues = {
   leadDate: '',
@@ -26,7 +29,26 @@ const defaultValues: CreateLeadFormValues = {
   quote: undefined,
   comments: '',
   prospects: '',
+  status: 'PROSPECT',
 };
+
+function buildDefaultValues(lead?: LeadSummary | null): CreateLeadFormValues {
+  if (!lead) {
+    return defaultValues;
+  }
+
+  return {
+    leadDate: lead.date,
+    cmpt: lead.cmpt,
+    customerPhone: lead.customerPhone,
+    customerName: lead.customerName,
+    partDescription: lead.partDescription,
+    quote: lead.quote ?? undefined,
+    comments: lead.comments ?? '',
+    prospects: lead.prospects,
+    status: lead.status,
+  };
+}
 
 function Field({
   id,
@@ -57,23 +79,32 @@ function Field({
 
 export function CreateLeadForm({
   adviserName,
-  onCreated,
+  initialLead,
+  onSaved,
 }: {
   adviserName: string;
-  onCreated: (lead: LeadSummary) => void;
+  initialLead?: LeadSummary | null;
+  onSaved: (lead: LeadSummary) => void;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
   const form = useForm<CreateLeadFormValues>({
     resolver: zodResolver(createLeadFormSchema),
-    defaultValues,
+    defaultValues: buildDefaultValues(initialLead),
   });
+
+  useEffect(() => {
+    form.reset(buildDefaultValues(initialLead));
+  }, [form, initialLead]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
 
     try {
-      const createdLead = await leadsApi.create(createLeadFormSchema.parse(values));
-      onCreated(createdLead);
+      const payload = createLeadFormSchema.parse(values);
+      const savedLead = initialLead
+        ? await leadsApi.update(initialLead.id, payload)
+        : await leadsApi.create(payload);
+      onSaved(savedLead);
       form.reset(defaultValues);
     } catch (error) {
       setFormError(
@@ -191,15 +222,29 @@ export function CreateLeadForm({
 
           <Field
             id="prospects"
-            label="Prospects"
+            label="Disposition"
             error={form.formState.errors.prospects?.message?.toString()}
           >
             <Input
               id="prospects"
-              placeholder="Hot, warm, repeat buyer, or follow-up note"
+              placeholder="Add the lead disposition"
               className="h-11 rounded-xl"
               {...form.register('prospects')}
             />
+          </Field>
+
+          <Field
+            id="status"
+            label="Status"
+            error={form.formState.errors.status?.message?.toString()}
+          >
+            <Select id="status" className="h-11 rounded-xl" {...form.register('status')}>
+              {LEAD_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {formatLeadStatusLabel(status)}
+                </option>
+              ))}
+            </Select>
           </Field>
 
           <Field
@@ -247,7 +292,13 @@ export function CreateLeadForm({
           className="h-11 w-full rounded-xl"
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting ? 'Creating lead...' : 'Create lead'}
+          {form.formState.isSubmitting
+            ? initialLead
+              ? 'Saving lead...'
+              : 'Creating lead...'
+            : initialLead
+              ? 'Save changes'
+              : 'Create lead'}
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

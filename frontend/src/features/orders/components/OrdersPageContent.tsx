@@ -13,7 +13,6 @@ import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -24,23 +23,24 @@ import {
   createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
 import { toast } from '@/lib/stores/toast.store';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 import { useOrdersList } from '../hooks/useOrdersList';
-import { formatCurrency } from '../lib/order-formatters';
 import {
-  ALL_ORDER_STATUS_FILTER,
-  formatOrderStatusOptionLabel,
-  parseOrderStatusFilter,
-  type OrderStatusFilter,
+  ALL_SHIPMENT_STATUS_FILTER,
+  formatShipmentStatusOptionLabel,
+  parseShipmentStatusFilter,
+  type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
-import { ORDER_STATUSES, type OrderSummary } from '../types/order.types';
+import { ORDER_SHIPMENT_STATUSES, type OrderSummary } from '../types/order.types';
 import { CreateOrderForm } from './CreateOrderForm';
 import { OrdersTable } from './OrdersTable';
 import { UpdateOrderForm } from './UpdateOrderForm';
 
 export function OrdersPageContent() {
+  const authUser = useAuthStore((state) => state.user);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] =
-    useState<OrderStatusFilter>(ALL_ORDER_STATUS_FILTER);
+  const [shipmentStatusFilter, setShipmentStatusFilter] =
+    useState<ShipmentStatusFilter>(ALL_SHIPMENT_STATUS_FILTER);
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
@@ -57,34 +57,25 @@ export function OrdersPageContent() {
   const { ordersResponse, isLoading, error } = useOrdersList({
     page,
     search: activeSearch,
-    status: statusFilter,
+    shipmentStatus: shipmentStatusFilter,
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
     refreshKey,
   });
-
-  const totalVisibleRevenue = ordersResponse.items.reduce(
-    (sum, order) => sum + order.totalSaleAmount,
-    0,
-  );
-  const totalVisibleQuantity = ordersResponse.items.reduce(
-    (sum, order) => sum + order.quantity,
-    0,
-  );
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     startTransition(() => setPage(1));
   };
 
-  const handleStatusChange = (value: OrderStatusFilter) => {
-    setStatusFilter(value);
+  const handleShipmentStatusChange = (value: ShipmentStatusFilter) => {
+    setShipmentStatusFilter(value);
     startTransition(() => setPage(1));
   };
 
   const handleCreated = (order: OrderSummary) => {
     setSearchTerm('');
-    setStatusFilter(ALL_ORDER_STATUS_FILTER);
+    setShipmentStatusFilter(ALL_SHIPMENT_STATUS_FILTER);
     setSelectedOrderId(null);
     setIsCreateModalOpen(false);
     startTransition(() => setPage(1));
@@ -131,50 +122,6 @@ export function OrdersPageContent() {
       <section className="grid gap-6">
         <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total matching orders</CardDescription>
-              <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-                {ordersResponse.meta.total}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Search and pagination stay aligned with backend filtering.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Visible revenue</CardDescription>
-              <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-                {formatCurrency(totalVisibleRevenue)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Revenue total for the orders currently on this page.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Visible quantity</CardDescription>
-              <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-                {totalVisibleQuantity}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Unit count across the current page of search results.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
         <Card>
           <CardHeader className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -198,15 +145,20 @@ export function OrdersPageContent() {
               </div>
 
               <Select
-                value={statusFilter}
+                value={shipmentStatusFilter}
+                aria-label="Shipping status filter"
                 onChange={(event) =>
-                  handleStatusChange(parseOrderStatusFilter(event.target.value))
+                  handleShipmentStatusChange(
+                    parseShipmentStatusFilter(event.target.value),
+                  )
                 }
               >
-                <option value={ALL_ORDER_STATUS_FILTER}>All statuses</option>
-                {ORDER_STATUSES.map((status) => (
+                <option value={ALL_SHIPMENT_STATUS_FILTER}>
+                  All shipping statuses
+                </option>
+                {ORDER_SHIPMENT_STATUSES.map((status) => (
                   <option key={status} value={status}>
-                    {formatOrderStatusOptionLabel(status)}
+                    {formatShipmentStatusOptionLabel(status)}
                   </option>
                 ))}
               </Select>
@@ -222,6 +174,7 @@ export function OrdersPageContent() {
               onRetry={handleRetry}
               onPageChange={setPage}
               onEdit={handleEditStart}
+              role={authUser?.role}
             />
           </CardContent>
         </Card>
@@ -278,7 +231,7 @@ export function OrdersPageContent() {
                   Edit order
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Update notes, quantity, and customer contact details with full history.
+                  Update order details, customer contact information, and notes with full history.
                 </p>
               </div>
 

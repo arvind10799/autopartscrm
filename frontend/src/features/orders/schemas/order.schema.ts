@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { invoiceRecordSchema } from '@/features/invoices/schemas/invoice.schema';
 import {
   ORDER_PAYMENT_METHODS,
   ORDER_SHIPMENT_STATUSES,
@@ -108,6 +109,7 @@ const orderShipmentSchema = z.object({
 });
 
 const orderIntakeDetailsSchema = z.object({
+  advisorName: z.string().nullable().optional(),
   orderDate: z.string().nullable().optional(),
   vehicleMake: z.string().nullable().optional(),
   vehicleModel: z.string().nullable().optional(),
@@ -199,6 +201,7 @@ function normalizeOrderIntakeDetails(
   details: z.infer<typeof orderIntakeDetailsSchema> | null | undefined,
 ) {
   return {
+    advisorName: details?.advisorName ?? null,
     orderDate: details?.orderDate ?? null,
     vehicleMake: details?.vehicleMake ?? null,
     vehicleModel: details?.vehicleModel ?? null,
@@ -228,6 +231,7 @@ const orderBackendDetailSchema = orderBackendSummarySchema.extend({
   shipments: z.array(orderShipmentSchema),
   notes: z.array(orderNoteSchema),
   intakeDetails: orderIntakeDetailsSchema.nullable().optional(),
+  invoice: invoiceRecordSchema.nullable().optional(),
 });
 
 function requiresPaymentMethod(status: z.infer<typeof orderStatusSchema>): boolean {
@@ -253,10 +257,20 @@ export const orderDetailSchema = orderBackendDetailSchema.transform((order) => (
   shipments: order.shipments,
   notes: order.notes,
   intakeDetails: normalizeOrderIntakeDetails(order.intakeDetails),
+  invoice: order.invoice ?? null,
 }));
+
+export const nextOrderNumberSchema = z.object({
+  orderNumber: z.string().regex(/^MAP\d{8,}$/, 'Order number format is invalid.'),
+});
 
 export const createOrderSchema = z.object({
   leadId: z.string().uuid('Lead identifier is invalid.').optional(),
+  advisorName: z
+    .string()
+    .trim()
+    .min(1, 'Advisor name is required.')
+    .max(120, 'Advisor name must be 120 characters or fewer.'),
   orderNumber: z
     .string()
     .trim()
@@ -400,6 +414,11 @@ export const createOrderFormSchema = z.object({
     },
     z.string().uuid('Lead identifier is invalid.').optional(),
   ),
+  advisorName: z
+    .string()
+    .trim()
+    .min(1, 'Advisor name is required.')
+    .max(120, 'Advisor name must be 120 characters or fewer.'),
   orderNumber: z
     .string()
     .trim()
@@ -619,15 +638,77 @@ export const createOrderFormSchema = z.object({
       path: ['paymentMethod'],
     });
   }
+
+  if (
+    value.status === 'PARTIALLY_PAID' &&
+    (value.partialPayment === undefined || value.partialPayment <= 0)
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Partial payment is required for partially paid orders.',
+      path: ['partialPayment'],
+    });
+  }
+
+  if (
+    value.status === 'PARTIALLY_PAID' &&
+    value.partialPayment !== undefined &&
+    value.partialPayment > value.total
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Partial payment cannot be greater than the total.',
+      path: ['partialPayment'],
+    });
+  }
 }).pipe(createOrderSchema);
 
 export const updateOrderSchema = z.object({
+  customerName: createOptionalTextSchema(
+    160,
+    'Customer name must be 160 characters or fewer.',
+  ),
+  partDescription: createOptionalTextSchema(
+    255,
+    'Part description must be 255 characters or fewer.',
+  ),
   customerEmail: optionalEmailSchema,
   customerPhone: optionalPhoneSchema,
   quantity: z.coerce
     .number()
     .int('Quantity must be a whole number.')
-    .min(1, 'Quantity must be at least 1.'),
+    .min(1, 'Quantity must be at least 1.')
+    .optional(),
+  price: optionalNumericValueSchema,
+  total: optionalNumericValueSchema,
+  status: orderStatusSchema.optional(),
+  paymentMethod: orderPaymentMethodSchema.nullable().optional(),
+  advisorName: createOptionalTextSchema(
+    120,
+    'Advisor name must be 120 characters or fewer.',
+  ),
+  orderDate: createOptionalTextSchema(30, 'Order date must be 30 characters or fewer.'),
+  vehicleMake: createOptionalTextSchema(120, 'Make must be 120 characters or fewer.'),
+  vehicleModel: createOptionalTextSchema(120, 'Model must be 120 characters or fewer.'),
+  vehicleYear: createOptionalTextSchema(20, 'Year must be 20 characters or fewer.'),
+  vehicleVariant: createOptionalTextSchema(120, 'Variant must be 120 characters or fewer.'),
+  vehicleVin: createOptionalTextSchema(60, 'VIN must be 60 characters or fewer.'),
+  vehicleNotes: createOptionalTextSchema(1000, 'Vehicle notes must be 1000 characters or fewer.'),
+  vehicleConfiguration: createOptionalTextSchema(255, 'Configuration must be 255 characters or fewer.'),
+  billingAddress: createOptionalTextSchema(500, 'Billing address must be 500 characters or fewer.'),
+  billingPerson: createOptionalTextSchema(160, 'Billing person must be 160 characters or fewer.'),
+  billingPhone: createOptionalTextSchema(30, 'Billing phone must be 30 characters or fewer.'),
+  shippingAddress: createOptionalTextSchema(500, 'Shipping address must be 500 characters or fewer.'),
+  shippingPerson: createOptionalTextSchema(160, 'Shipping person must be 160 characters or fewer.'),
+  shippingPhone: createOptionalTextSchema(30, 'Shipping phone must be 30 characters or fewer.'),
+  shippingAt: createOptionalTextSchema(40, 'Shipping date must be 40 characters or fewer.'),
+  companyName: createOptionalTextSchema(160, 'Company name must be 160 characters or fewer.'),
+  milesOffered: optionalNumericValueSchema,
+  basePrice: optionalNumericValueSchema,
+  salesTax: optionalNumericValueSchema,
+  shippingCharges: optionalNumericValueSchema,
+  profit: optionalNumericValueSchema,
+  partialPayment: optionalNumericValueSchema,
   note: z
     .string()
     .trim()
@@ -636,6 +717,8 @@ export const updateOrderSchema = z.object({
 });
 
 export const updateOrderFormSchema = z.object({
+  customerName: z.string().max(160).optional(),
+  partDescription: z.string().max(255).optional(),
   customerEmail: z
     .string()
     .max(160, 'Customer email must be 160 characters or fewer.')
@@ -644,21 +727,36 @@ export const updateOrderFormSchema = z.object({
     .string()
     .max(30, 'Customer phone must be 30 characters or fewer.')
     .optional(),
-  quantity: z.preprocess(
-    (val) => (typeof val === 'number' ? String(val) : val),
-    z
-      .string()
-      .trim()
-      .min(1, 'Quantity is required.')
-      .regex(/^\d+$/, 'Quantity must be a whole number.')
-      .transform((value) => Number(value))
-      .pipe(
-        z
-          .number()
-          .int('Quantity must be a whole number.')
-          .min(1, 'Quantity must be at least 1.'),
-      ),
+  price: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().positive().optional()),
+  total: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().positive().optional()),
+  status: orderStatusSchema.optional(),
+  paymentMethod: z.preprocess(
+    (value) => (value === '' ? null : value),
+    orderPaymentMethodSchema.nullable().optional(),
   ),
+  advisorName: z.string().max(120).optional(),
+  orderDate: z.string().max(30).optional(),
+  vehicleMake: z.string().max(120).optional(),
+  vehicleModel: z.string().max(120).optional(),
+  vehicleYear: z.string().max(20).optional(),
+  vehicleVariant: z.string().max(120).optional(),
+  vehicleVin: z.string().max(60).optional(),
+  vehicleNotes: z.string().max(1000).optional(),
+  vehicleConfiguration: z.string().max(255).optional(),
+  billingAddress: z.string().max(500).optional(),
+  billingPerson: z.string().max(160).optional(),
+  billingPhone: z.string().max(30).optional(),
+  shippingAddress: z.string().max(500).optional(),
+  shippingPerson: z.string().max(160).optional(),
+  shippingPhone: z.string().max(30).optional(),
+  shippingAt: z.string().max(40).optional(),
+  companyName: z.string().max(160).optional(),
+  milesOffered: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),
+  basePrice: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),
+  salesTax: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),
+  shippingCharges: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),
+  profit: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),
+  partialPayment: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),
   note: z
     .string()
     .max(1000, 'Notes must be 1000 characters or fewer.')

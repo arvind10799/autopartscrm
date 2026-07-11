@@ -3,6 +3,7 @@ import { ShipmentStatus as PrismaShipmentStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { CACHE_NAMESPACE_ORDERS_LIST } from '../../infrastructure/redis/redis.constants';
 import { RedisCacheService } from '../../infrastructure/redis/redis-cache.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { QueryShipmentsDto } from './dto/query-shipments.dto';
 import { UpdateShipmentStatusDto } from './dto/update-shipment-status.dto';
@@ -35,6 +36,7 @@ export class ShipmentsService {
     private readonly shipmentsRepository: ShipmentsRepository,
     private readonly prismaService: PrismaService,
     private readonly redisCacheService: RedisCacheService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createShipmentDto: CreateShipmentDto) {
@@ -45,6 +47,7 @@ export class ShipmentsService {
     await this.redisCacheService.bumpNamespaceVersion(
       CACHE_NAMESPACE_ORDERS_LIST,
     );
+    await this.notificationsService.notifyShipmentCreated(shipment.id);
 
     return shipment;
   }
@@ -82,7 +85,7 @@ export class ShipmentsService {
       updateShipmentStatusDto.proNumber,
     );
 
-    return this.shipmentsRepository.updateStatus(id, {
+    const shipment = await this.shipmentsRepository.updateStatus(id, {
       status: nextStatus,
       proNumber:
         nextStatus === PrismaShipmentStatus.IN_TRANSIT &&
@@ -97,6 +100,13 @@ export class ShipmentsService {
       deliveredAt:
         nextStatus === PrismaShipmentStatus.DELIVERED ? new Date() : undefined,
     });
+    await this.notificationsService.notifyShipmentStatusUpdated(
+      id,
+      currentStatus,
+      nextStatus,
+    );
+
+    return shipment;
   }
 
   private async ensureOrderCanCreateShipment(orderId: string): Promise<void> {

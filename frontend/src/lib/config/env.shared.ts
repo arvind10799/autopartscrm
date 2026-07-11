@@ -38,4 +38,8 @@ export const serverEnvSchema = z.object({
     .int()
     .positive()
     .default(DEFAULT_AUTH_COOKIE_MAX_AGE_SECONDS),
+  AUTH_COOKIE_SECURE: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
 });

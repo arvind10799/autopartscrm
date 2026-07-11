@@ -21,7 +21,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   DRAFT: 'Draft',
   PARTIALLY_PAID: 'Partially paid',
-  CONFIRMED: 'Confirmed',
+  CONFIRMED: 'Paid',
   PROCESSING: 'Processing',
   SHIPPED: 'Shipped',
   DELIVERED: 'Delivered',

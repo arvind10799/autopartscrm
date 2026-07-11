@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, ShipmentStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateCostDto } from './dto/create-cost.dto';
 import { UpdateCostDto } from './dto/update-cost.dto';
 import { CostsRepository } from './costs.repository';
@@ -14,19 +15,26 @@ export class CostsService {
   constructor(
     private readonly costsRepository: CostsRepository,
     private readonly prismaService: PrismaService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createCostDto: CreateCostDto) {
     const shipment = await this.getShipmentWithOrder(createCostDto.shipmentId);
     await this.ensureShipmentCostDoesNotExist(createCostDto.shipmentId);
 
-    return this.costsRepository.create({
+    const cost = await this.costsRepository.create({
       ...createCostDto,
       grossProfit: this.calculateGrossProfit(
         shipment.order.totalSaleAmount,
         this.resolveCostAmounts(createCostDto),
       ),
     });
+    await this.notificationsService.notifyShipmentActivity(
+      createCostDto.shipmentId,
+      'Shipment cost was added.',
+    );
+
+    return cost;
   }
 
   findByShipmentId(shipmentId: string) {
@@ -47,13 +55,19 @@ export class CostsService {
 
     const nextAmounts = this.resolveCostAmounts(updateCostDto, existingAmounts);
 
-    return this.costsRepository.updateByShipmentId(shipmentId, {
+    const cost = await this.costsRepository.updateByShipmentId(shipmentId, {
       ...updateCostDto,
       grossProfit: this.calculateGrossProfit(
         shipment.order.totalSaleAmount,
         nextAmounts,
       ),
     });
+    await this.notificationsService.notifyShipmentActivity(
+      shipmentId,
+      'Shipment cost was updated.',
+    );
+
+    return cost;
   }
 
   private async getShipmentWithOrder(shipmentId: string) {

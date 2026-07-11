@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { roleLabels } from '@/features/auth/lib/roles';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import type { AuthUser } from '@/features/auth/types/auth.types';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { APP_SHELL_MAX_WIDTH } from './shell.constants';
 
 export function AppHeader({
@@ -78,6 +79,8 @@ export function AppHeader({
           <Badge variant="neutral" className="hidden sm:inline-flex">
             {roleLabels[user.role]}
           </Badge>
+
+          <NotificationBell />
 
           <Button variant="outline" size="sm" onClick={handleLogout} disabled={isPending}>
             <LogOut className="h-4 w-4" />

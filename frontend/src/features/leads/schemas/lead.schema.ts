@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { LEAD_STATUSES } from '../types/lead.types';
 
 const userRoleSchema = z.enum(['ADMIN', 'SALES', 'SHIPPING']);
 const numericAmountSchema = z.coerce.number().finite();
+const leadStatusSchema = z.enum(LEAD_STATUSES);
 const paginationMetaSchema = z.object({
   page: z.number(),
   limit: z.number(),
@@ -35,6 +37,7 @@ const leadBackendSummarySchema = z.object({
   quote: numericAmountSchema.nullable(),
   comments: z.string().nullable(),
   prospects: z.string(),
+  status: leadStatusSchema,
   convertedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -54,6 +57,7 @@ function normalizeLeadSummary(lead: z.infer<typeof leadBackendSummarySchema>) {
     quote: lead.quote,
     comments: lead.comments,
     prospects: lead.prospects,
+    status: lead.status,
     isConverted: lead.convertedAt !== null,
     convertedAt: lead.convertedAt,
     createdAt: lead.createdAt,
@@ -129,8 +133,9 @@ export const createLeadSchema = z.object({
   prospects: z
     .string()
     .trim()
-    .min(1, 'Prospects is required.')
-    .max(255, 'Prospects must be 255 characters or fewer.'),
+    .min(1, 'Disposition is required.')
+    .max(255, 'Disposition must be 255 characters or fewer.'),
+  status: leadStatusSchema,
 });
 
 export const createLeadFormSchema = z.object({
@@ -167,7 +172,11 @@ export const createLeadFormSchema = z.object({
     .optional(),
   prospects: z
     .string()
-    .max(255, 'Prospects must be 255 characters or fewer.'),
+    .max(255, 'Disposition must be 255 characters or fewer.'),
+  status: leadStatusSchema,
 }).pipe(createLeadSchema);
 
 export type CreateLeadFormValues = z.input<typeof createLeadFormSchema>;
+export const updateLeadSchema = createLeadSchema;
+export const updateLeadFormSchema = createLeadFormSchema;
+export type UpdateLeadFormValues = CreateLeadFormValues;

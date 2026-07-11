@@ -42,7 +42,13 @@ export function DateRangeFilter({
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3 xl:min-w-[44rem]">
+        <div
+          className={
+            isCustom
+              ? 'grid gap-3 md:grid-cols-3 xl:min-w-[44rem]'
+              : 'grid gap-3 xl:min-w-[14rem]'
+          }
+        >
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               Range
@@ -66,45 +72,45 @@ export function DateRangeFilter({
             </Select>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              From
-            </label>
-            <Input
-              className="h-11 rounded-xl"
-              aria-label="Created from"
-              type="date"
-              value={value.from}
-              onChange={(event) =>
-                onChange({
-                  ...value,
-                  preset: 'CUSTOM',
-                  from: event.target.value,
-                })
-              }
-              disabled={!isCustom}
-            />
-          </div>
+          {isCustom ? (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  From Date
+                </label>
+                <Input
+                  className="h-11 rounded-xl"
+                  aria-label="Created from"
+                  type="date"
+                  value={value.from}
+                  onChange={(event) =>
+                    onChange({
+                      ...value,
+                      from: event.target.value,
+                    })
+                  }
+                />
+              </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              To
-            </label>
-            <Input
-              className="h-11 rounded-xl"
-              aria-label="Created to"
-              type="date"
-              value={value.to}
-              onChange={(event) =>
-                onChange({
-                  ...value,
-                  preset: 'CUSTOM',
-                  to: event.target.value,
-                })
-              }
-              disabled={!isCustom}
-            />
-          </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  To Date
+                </label>
+                <Input
+                  className="h-11 rounded-xl"
+                  aria-label="Created to"
+                  type="date"
+                  value={value.to}
+                  onChange={(event) =>
+                    onChange({
+                      ...value,
+                      to: event.target.value,
+                    })
+                  }
+                />
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
     </div>

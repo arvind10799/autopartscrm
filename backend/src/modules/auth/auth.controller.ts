@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -8,6 +19,8 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
+import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RoleGuard } from './role.guard';
 
@@ -42,6 +55,36 @@ export class AuthController {
   @ResponseMessage('Users retrieved successfully.')
   async getUsers(@Query() queryUsersDto: QueryUsersDto) {
     return this.authService.findAllUsers(queryUsersDto);
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Patch('users/:id/password')
+  @ResponseMessage('Password updated successfully.')
+  async updateUserPassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateUserPasswordDto: UpdateUserPasswordDto,
+  ) {
+    return this.authService.updateUserPassword(id, updateUserPasswordDto);
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Patch('users/:id')
+  @ResponseMessage('User updated successfully.')
+  async updateUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.authService.updateUser(id, updateUserDto);
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Delete('users/:id')
+  @ResponseMessage('User deleted successfully.')
+  async deleteUser(@Param('id', ParseUUIDPipe) id: string) {
+    return this.authService.deleteUser(id);
   }
 
   @Roles(Role.ADMIN)

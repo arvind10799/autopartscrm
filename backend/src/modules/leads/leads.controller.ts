@@ -1,12 +1,23 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { UuidParamDto } from '../../common/dto/uuid-param.dto';
 import { Role } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/role.guard';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
+import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadsService } from './leads.service';
 
 @Roles(Role.ADMIN, Role.SALES)
@@ -29,5 +40,14 @@ export class LeadsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.leadsService.findAll(queryLeadsDto, user);
+  }
+
+  @Patch(':id')
+  update(
+    @Param() params: UuidParamDto,
+    @Body() updateLeadDto: UpdateLeadDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.leadsService.update(params.id, updateLeadDto, user);
   }
 }

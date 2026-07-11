@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -7,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils/cn';
 import { getNavigationForRole } from '@/features/auth/lib/permissions';
-import { roleLabels } from '@/features/auth/lib/roles';
 import type { UserRole } from '@/features/auth/types/auth.types';
 import {
   APP_SIDEBAR_COLLAPSED_WIDTH,
@@ -66,39 +66,43 @@ export function AppSidebar({
           }
         `}</style>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div
             className={cn(
-              'flex items-center gap-2 rounded-2xl border border-white/80 bg-white/65 p-2 shadow-sm shadow-sky-900/5 ring-1 ring-sky-100/80',
-              isCollapsed ? 'justify-center' : 'justify-between',
+              'relative flex items-center rounded-[1.35rem] border border-white/85 bg-white/80 shadow-sm shadow-sky-900/5 ring-1 ring-sky-100/80',
+              isCollapsed
+                ? 'justify-center px-2 py-3'
+                : 'min-h-[6.25rem] justify-center px-4 py-5',
             )}
           >
-            <div
+            <Link
+              href="/dashboard"
+              onClick={onClose}
               className={cn(
-                'flex min-w-0 items-center',
-                isCollapsed ? 'justify-center' : 'gap-3',
+                'flex min-w-0 items-center justify-center',
+                isCollapsed ? 'h-10 w-10 overflow-hidden rounded-xl bg-white' : 'w-full',
               )}
+              aria-label="Mee Auto Parts"
+              title="Mee Auto Parts"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#38bdf8,#2563eb)] font-[var(--font-heading)] text-sm font-bold text-white shadow-lg shadow-sky-500/25">
-                AP
-              </div>
-              {!isCollapsed && (
-                <div className="min-w-0">
-                  <h2 className="whitespace-nowrap font-[var(--font-heading)] text-base font-semibold tracking-[-0.03em] text-slate-950">
-                    Auto Parts CRM
-                  </h2>
-                  <p className="truncate text-[11px] font-medium uppercase tracking-[0.16em] text-sky-700/75">
-                    Operations suite
-                  </p>
-                </div>
-              )}
-            </div>
+              <Image
+                src="/images/logo.png"
+                alt="Mee Auto Parts"
+                width={224}
+                height={72}
+                priority
+                className={cn(
+                  'object-contain',
+                  isCollapsed ? 'h-8 w-24 max-w-none' : 'h-auto w-full max-w-[11.5rem]',
+                )}
+              />
+            </Link>
 
             {/* Mobile close button */}
             <Button
               variant="ghost"
               size="sm"
-              className="shrink-0 text-sky-700 hover:bg-sky-100 hover:text-sky-950 lg:hidden"
+              className="absolute right-2 top-2 shrink-0 text-sky-700 hover:bg-sky-100 hover:text-sky-950 lg:hidden"
               onClick={onClose}
               aria-label="Close navigation menu"
               type="button"
@@ -110,7 +114,7 @@ export function AppSidebar({
             <Button
               variant="ghost"
               size="sm"
-              className="hidden shrink-0 text-sky-700 hover:bg-sky-100 hover:text-sky-950 lg:flex"
+              className="absolute right-2 top-2 hidden shrink-0 text-sky-700 hover:bg-sky-100 hover:text-sky-950 lg:flex"
               onClick={onToggleCollapse}
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               type="button"
@@ -125,7 +129,7 @@ export function AppSidebar({
 
           <Separator className="my-4 bg-sky-200/80" />
 
-          <nav className="flex flex-1 flex-col gap-1">
+          <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden pr-1">
             {navigationItems.map((item) => {
               const isActive =
                 pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -175,27 +179,19 @@ export function AppSidebar({
 
           <Separator className="my-4 bg-sky-200/80" />
 
-          <div
-            className={cn(
-              'rounded-2xl border border-white/80 bg-white/55 px-3 py-3 shadow-sm shadow-sky-900/5',
-              isCollapsed && 'text-center',
-            )}
-          >
+          <div className="mt-auto border-t border-sky-200/80 pt-4 text-center">
             {isCollapsed ? (
               <p
-                className="text-[10px] font-semibold leading-tight text-sky-700"
-                title={`${roleLabels[role]} workspace`}
+                className="text-[10px] font-semibold leading-tight text-slate-500"
+                title="Auto Parts CRM Version 1.0.0 © Intracia Technologies"
               >
-                {roleLabels[role].charAt(0)}
+                CRM
               </p>
             ) : (
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700/75">
-                  Workspace
-                </p>
-                <p className="text-sm font-semibold text-slate-800">
-                  {roleLabels[role]}
-                </p>
+              <div className="space-y-1 text-[11px] leading-relaxed text-slate-500">
+                <p className="font-semibold text-slate-600">Auto Parts CRM</p>
+                <p>Version 1.0.0</p>
+                <p>© Intracia Technologies</p>
               </div>
             )}
           </div>

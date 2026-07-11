@@ -7,6 +7,7 @@ import { HttpError } from '@/lib/api/http-error';
 import { isValidOrderId, normalizeOrdersListQuery } from '../lib/orders.helpers';
 import {
   createOrderSchema,
+  nextOrderNumberSchema,
   orderDetailSchema,
   ordersListSchema,
   orderSummarySchema,
@@ -15,6 +16,7 @@ import {
 import type {
   CreateOrderInput,
   OrderDetail,
+  NextOrderNumber,
   OrdersListQuery,
   OrdersListResponse,
   OrderSummary,
@@ -44,6 +46,17 @@ export const ordersApi = {
     return parseApiData(response, orderSummarySchema, {
       emptyMessage: response.data.message || 'Create order response was empty.',
       invalidMessage: 'Create order response payload was invalid.',
+    });
+  },
+
+  async getNextOrderNumber(): Promise<NextOrderNumber> {
+    const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
+      '/api/orders/next-number',
+    );
+
+    return parseApiData(response, nextOrderNumberSchema, {
+      emptyMessage: response.data.message || 'Next order number response was empty.',
+      invalidMessage: 'Next order number response payload was invalid.',
     });
   },
 

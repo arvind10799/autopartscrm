@@ -21,14 +21,22 @@ describe('ShipmentsService', () => {
     bumpNamespaceVersion: jest.fn(),
   };
 
+  const notificationsService = {
+    notifyShipmentCreated: jest.fn(),
+    notifyShipmentStatusUpdated: jest.fn(),
+  };
+
   let service: ShipmentsService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    notificationsService.notifyShipmentCreated.mockResolvedValue(undefined);
+    notificationsService.notifyShipmentStatusUpdated.mockResolvedValue(undefined);
     service = new ShipmentsService(
       shipmentsRepository as never,
       prismaService as never,
       redisCacheService as never,
+      notificationsService as never,
     );
   });
 
@@ -54,6 +62,9 @@ describe('ShipmentsService', () => {
     });
     expect(redisCacheService.bumpNamespaceVersion).toHaveBeenCalledWith(
       CACHE_NAMESPACE_ORDERS_LIST,
+    );
+    expect(notificationsService.notifyShipmentCreated).toHaveBeenCalledWith(
+      'shipment-id',
     );
   });
 
@@ -130,6 +141,11 @@ describe('ShipmentsService', () => {
       expect.objectContaining({
         shippedAt: expect.any(Date),
       }),
+    );
+    expect(notificationsService.notifyShipmentStatusUpdated).toHaveBeenCalledWith(
+      'shipment-id',
+      PrismaShipmentStatus.PENDING,
+      PrismaShipmentStatus.IN_TRANSIT,
     );
   });
 });

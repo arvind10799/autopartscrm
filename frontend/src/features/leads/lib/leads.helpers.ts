@@ -6,17 +6,23 @@ import {
 } from '@/lib/filters/date-range';
 import type {
   CreateLeadInput,
+  LeadStatus,
   LeadsListQuery,
   LeadsListResponse,
 } from '../types/lead.types';
 
 export const LEAD_PAGE_SIZE = 10;
 export const ALL_LEAD_CONVERSION_FILTER = 'ALL' as const;
+export const ALL_LEAD_STATUS_FILTER = 'ALL' as const;
 
 export type LeadConversionFilter =
   | typeof ALL_LEAD_CONVERSION_FILTER
   | 'OPEN'
   | 'CONVERTED';
+
+export type LeadStatusFilter =
+  | typeof ALL_LEAD_STATUS_FILTER
+  | LeadStatus;
 
 const positiveIntegerSchema = z.coerce.number().int().min(1);
 const searchTermSchema = z
@@ -30,6 +36,7 @@ export type NormalizedLeadsQuery = {
   limit: number;
   search?: string;
   converted?: boolean;
+  status?: LeadStatus;
   createdFrom?: string;
   createdTo?: string;
 };
@@ -71,6 +78,30 @@ export function formatLeadConversionFilterLabel(value: LeadConversionFilter): st
   return 'All leads';
 }
 
+export function parseLeadStatusFilter(value: string): LeadStatusFilter {
+  if (
+    value === 'PROSPECT' ||
+    value === 'CALL_BACK_LATER' ||
+    value === 'NOT_INTERESTED' ||
+    value === 'NEEDS_LOCALLY'
+  ) {
+    return value;
+  }
+
+  return ALL_LEAD_STATUS_FILTER;
+}
+
+export function formatLeadStatusLabel(value: LeadStatus): string {
+  const labels: Record<LeadStatus, string> = {
+    PROSPECT: 'Prospect',
+    CALL_BACK_LATER: 'Call back later',
+    NOT_INTERESTED: 'Not Interested',
+    NEEDS_LOCALLY: 'Needs locally',
+  };
+
+  return labels[value];
+}
+
 export function parseLeadsQueryParams(
   searchParams: URLSearchParams,
 ): NormalizedLeadsQuery {
@@ -82,6 +113,7 @@ export function parseLeadsQueryParams(
     .parse(searchParams.get('limit'));
   const search = searchTermSchema.catch(undefined).parse(searchParams.get('search'));
   const convertedValue = searchParams.get('converted');
+  const status = parseLeadStatusFilter(searchParams.get('status') ?? '');
 
   return {
     page,
@@ -93,6 +125,7 @@ export function parseLeadsQueryParams(
         : convertedValue === 'false'
           ? false
           : undefined,
+    status: status === ALL_LEAD_STATUS_FILTER ? undefined : status,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
   };
@@ -112,6 +145,10 @@ export function buildLeadsQueryString(query: NormalizedLeadsQuery): string {
     baseSearchParams.set('converted', String(query.converted));
   }
 
+  if (query.status) {
+    baseSearchParams.set('status', query.status);
+  }
+
   return buildDateRangeSearchParams(baseSearchParams, query).toString();
 }
 
@@ -126,6 +163,7 @@ export function normalizeLeadsListQuery(input: LeadsListQuery): LeadsListQuery {
     limit: input.limit,
     search: input.search?.trim() || undefined,
     converted: input.converted,
+    status: input.status,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
   };
@@ -141,5 +179,6 @@ export function toBackendCreateLeadPayload(lead: CreateLeadInput) {
     quote: lead.quote,
     comments: lead.comments,
     prospects: lead.prospects,
+    status: lead.status,
   };
 }

@@ -115,6 +115,7 @@ const orderDetailInclude = {
       createdAt: 'desc',
     },
   },
+  invoice: true,
   _count: {
     select: {
       shipments: true,
@@ -132,13 +133,37 @@ const orderEditableSelect = {
   customerPhone: true,
   price: true,
   quantity: true,
+  totalSaleAmount: true,
   status: true,
   paymentMethod: true,
+  intakeDetails: true,
 } satisfies Prisma.OrderSelect;
 
 @Injectable()
 export class OrdersRepository {
+  private static readonly orderNumberPrefix = 'MAP';
+
   constructor(private readonly prismaService: PrismaService) {}
+
+  async getNextOrderNumber(
+    client: Prisma.TransactionClient | PrismaService = this.prismaService,
+  ): Promise<string> {
+    const dateSegment = this.buildOrderNumberDateSegment(new Date());
+    const prefix = `${OrdersRepository.orderNumberPrefix}${dateSegment}`;
+    const suffixStart = prefix.length + 1;
+    const rows = await client.$queryRaw<Array<{ maxSuffix: number | bigint | null }>>(
+      Prisma.sql`
+        SELECT MAX(CAST(SUBSTRING("orderNumber" FROM ${suffixStart}::integer) AS INTEGER)) AS "maxSuffix"
+        FROM "Order"
+        WHERE "orderNumber" LIKE ${`${prefix}%`}
+          AND SUBSTRING("orderNumber" FROM ${suffixStart}::integer) ~ '^[0-9]+$'
+      `,
+    );
+    const currentMax = Number(rows[0]?.maxSuffix ?? 0);
+    const nextSuffix = String(currentMax + 1).padStart(2, '0');
+
+    return `${prefix}${nextSuffix}`;
+  }
 
   async create(createOrderDto: CreateOrderPayload, createdById: string) {
     return this.createWithClient(this.prismaService, createOrderDto, createdById);
@@ -209,11 +234,19 @@ export class OrdersRepository {
       where.status = queryOrdersDto.status;
     }
 
+    if (queryOrdersDto.shipmentStatus) {
+      where.shipments = {
+        some: {
+          status: queryOrdersDto.shipmentStatus,
+        },
+      };
+    }
+
     const hasShipmentFilter = this.normalizeHasShipmentFilter(
       queryOrdersDto.hasShipment,
     );
 
-    if (hasShipmentFilter !== undefined) {
+    if (hasShipmentFilter !== undefined && !queryOrdersDto.shipmentStatus) {
       where.shipments = hasShipmentFilter ? { some: {} } : { none: {} };
     }
 
@@ -338,6 +371,14 @@ export class OrdersRepository {
   async update(id: string, updateOrderDto: UpdateOrderPayload) {
     const data: Prisma.OrderUncheckedUpdateInput = {};
 
+    if (updateOrderDto.customerName !== undefined) {
+      data.customerName = updateOrderDto.customerName.trim();
+    }
+
+    if (updateOrderDto.partDescription !== undefined) {
+      data.partDescription = updateOrderDto.partDescription.trim();
+    }
+
     if (updateOrderDto.customerEmail !== undefined) {
       data.customerEmail = updateOrderDto.customerEmail.trim().toLowerCase();
     }
@@ -350,8 +391,38 @@ export class OrdersRepository {
       data.quantity = updateOrderDto.quantity;
     }
 
-    if (updateOrderDto.totalSaleAmount !== undefined) {
-      data.totalSaleAmount = updateOrderDto.totalSaleAmount;
+    if (updateOrderDto.price !== undefined) {
+      data.price = new Prisma.Decimal(updateOrderDto.price);
+    }
+
+    if (updateOrderDto.total !== undefined) {
+      data.totalSaleAmount = new Prisma.Decimal(updateOrderDto.total);
+    }
+
+    if (updateOrderDto.status !== undefined) {
+      data.status = updateOrderDto.status;
+    }
+
+    if (updateOrderDto.paymentMethod !== undefined) {
+      data.paymentMethod = updateOrderDto.paymentMethod;
+    }
+
+    const intakeUpdates = this.buildIntakeDetailsUpdate(updateOrderDto);
+    if (Object.keys(intakeUpdates).length > 0) {
+      const existingOrder = await this.prismaService.order.findUnique({
+        where: { id },
+        select: { intakeDetails: true },
+      });
+      const currentIntake =
+        existingOrder?.intakeDetails &&
+        typeof existingOrder.intakeDetails === 'object' &&
+        !Array.isArray(existingOrder.intakeDetails)
+          ? (existingOrder.intakeDetails as Prisma.JsonObject)
+          : {};
+      data.intakeDetails = {
+        ...currentIntake,
+        ...intakeUpdates,
+      };
     }
 
     try {
@@ -363,6 +434,45 @@ export class OrdersRepository {
     } catch (error) {
       handlePrismaError(error, 'Order');
     }
+  }
+
+  private buildIntakeDetailsUpdate(
+    updateOrderDto: UpdateOrderPayload,
+  ): Prisma.JsonObject {
+    const intakeFields = [
+      'advisorName',
+      'orderDate',
+      'vehicleMake',
+      'vehicleModel',
+      'vehicleYear',
+      'vehicleVariant',
+      'vehicleVin',
+      'vehicleNotes',
+      'vehicleConfiguration',
+      'billingAddress',
+      'billingPerson',
+      'billingPhone',
+      'shippingAddress',
+      'shippingPerson',
+      'shippingPhone',
+      'shippingAt',
+      'companyName',
+      'milesOffered',
+      'basePrice',
+      'salesTax',
+      'shippingCharges',
+      'profit',
+      'partialPayment',
+    ] as const;
+    const updates: Prisma.JsonObject = {};
+
+    for (const field of intakeFields) {
+      if (updateOrderDto[field] !== undefined) {
+        updates[field] = updateOrderDto[field] as Prisma.JsonValue;
+      }
+    }
+
+    return updates;
   }
 
   private buildOrderAccessWhere(
@@ -389,8 +499,17 @@ export class OrdersRepository {
     return undefined;
   }
 
+  private buildOrderNumberDateSegment(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+
+    return `${month}${day}${year}`;
+  }
+
   private buildIntakeDetailsPayload(createOrderDto: CreateOrderPayload) {
     return {
+      advisorName: createOrderDto.advisorName,
       orderDate: createOrderDto.orderDate,
       vehicleMake: createOrderDto.vehicleMake ?? null,
       vehicleModel: createOrderDto.vehicleModel ?? null,

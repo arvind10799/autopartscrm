@@ -14,8 +14,10 @@ import { LoggingMiddleware } from './common/middleware/logging.middleware';
 import { RedisModule } from './infrastructure/redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CostsModule } from './modules/costs/costs.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { NotesModule } from './modules/notes/notes.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
@@ -31,8 +33,10 @@ import { TrackingModule } from './modules/tracking/tracking.module';
     OrdersModule,
     ShipmentsModule,
     CostsModule,
+    InvoicesModule,
     TrackingModule,
     NotesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

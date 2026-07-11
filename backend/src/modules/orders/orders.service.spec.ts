@@ -5,12 +5,18 @@ import type { AuthenticatedUser } from '../../common/interfaces/authenticated-us
 import { OrdersService } from './orders.service';
 
 describe('OrdersService', () => {
+  const prismaService = {
+    $transaction: jest.fn(),
+  };
+
   const ordersRepository = {
     create: jest.fn(),
+    createWithTransaction: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
     findEditableById: jest.fn(),
     findSummaryById: jest.fn(),
+    getNextOrderNumber: jest.fn(),
     update: jest.fn(),
   };
 
@@ -27,11 +33,28 @@ describe('OrdersService', () => {
     create: jest.fn(),
   };
 
+  const notificationsService = {
+    notifyOrderCreated: jest.fn(),
+    notifyOrderUpdated: jest.fn(),
+  };
+
+  const leadsRepository = {
+    findConvertibleById: jest.fn(),
+    markAsConvertedWithTransaction: jest.fn(),
+  };
+
   const salesUser: AuthenticatedUser = {
     userId: 'sales-user-id',
     name: 'Sales User',
     email: 'sales@example.com',
     role: Role.SALES,
+  };
+
+  const adminUser: AuthenticatedUser = {
+    userId: 'admin-user-id',
+    name: 'Admin User',
+    email: 'admin@example.com',
+    role: Role.ADMIN,
   };
 
   let service: OrdersService;
@@ -41,11 +64,16 @@ describe('OrdersService', () => {
     ordersCacheService.invalidateList.mockResolvedValue(undefined);
     ordersJobsService.enqueueLifecycleEvent.mockResolvedValue(undefined);
     notesService.create.mockResolvedValue(undefined);
+    notificationsService.notifyOrderCreated.mockResolvedValue(undefined);
+    notificationsService.notifyOrderUpdated.mockResolvedValue(undefined);
     service = new OrdersService(
+      prismaService as never,
       ordersRepository as never,
       ordersCacheService as never,
       ordersJobsService as never,
+      leadsRepository as never,
       notesService as never,
+      notificationsService as never,
     );
   });
 
@@ -53,6 +81,7 @@ describe('OrdersService', () => {
     await expect(
       service.create(
         {
+          advisorName: 'Sales User',
           orderNumber: 'SO-1001',
           orderDate: '2026-05-27',
           customerName: 'Metro Parts',
@@ -66,17 +95,40 @@ describe('OrdersService', () => {
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
 
-    expect(ordersRepository.create).not.toHaveBeenCalled();
+    expect(ordersRepository.createWithTransaction).not.toHaveBeenCalled();
   });
 
-  it('records quantity changes as edit history and returns the refreshed summary', async () => {
+  it('rejects quantity changes for sales users', async () => {
+    await expect(
+      service.update(
+        'order-id',
+        {
+          quantity: 4,
+        },
+        salesUser,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(ordersRepository.findEditableById).not.toHaveBeenCalled();
+    expect(ordersRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('allows admins to edit order fields and records edit history', async () => {
     ordersRepository.findEditableById.mockResolvedValue({
       id: 'order-id',
       orderNumber: 'SO-1001',
+      customerName: 'Metro Parts',
+      partDescription: 'Brake pads',
       customerEmail: 'sales@metro.example',
       customerPhone: '1234567890',
       price: 100,
       quantity: 2,
+      totalSaleAmount: 200,
+      status: OrderStatus.DRAFT,
+      paymentMethod: null,
+      intakeDetails: {
+        advisorName: 'Sales User',
+      },
     });
     ordersRepository.update.mockResolvedValue(undefined);
     ordersRepository.findSummaryById.mockResolvedValue({ id: 'order-id' });
@@ -84,22 +136,34 @@ describe('OrdersService', () => {
     const result = await service.update(
       'order-id',
       {
-        quantity: 4,
+        customerName: 'Metro Auto Parts',
+        advisorName: 'Admin User',
       },
-      salesUser,
+      adminUser,
     );
 
     expect(ordersRepository.update).toHaveBeenCalledWith(
       'order-id',
       expect.objectContaining({
-        quantity: 4,
+        customerName: 'Metro Auto Parts',
+        advisorName: 'Admin User',
       }),
     );
     expect(notesService.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining('Quantity: 2 -> 4'),
+        content: expect.stringContaining('Customer name: Metro Parts -> Metro Auto Parts'),
       }),
-      salesUser,
+      adminUser,
+    );
+    expect(notesService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Advisor name: Sales User -> Admin User'),
+      }),
+      adminUser,
+    );
+    expect(notificationsService.notifyOrderUpdated).toHaveBeenCalledWith(
+      'order-id',
+      adminUser,
     );
     expect(result).toEqual({ id: 'order-id' });
   });

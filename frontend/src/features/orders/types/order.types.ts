@@ -1,3 +1,5 @@
+import type { InvoiceRecord } from '@/features/invoices/types/invoice.types';
+
 export const ORDER_STATUSES = [
   'DRAFT',
   'PARTIALLY_PAID',
@@ -37,6 +39,7 @@ export interface OrderUser {
 }
 
 export interface OrderIntakeDetails {
+  advisorName: string | null;
   orderDate: string | null;
   vehicleMake: string | null;
   vehicleModel: string | null;
@@ -107,6 +110,7 @@ export interface OrderDetail extends OrderSummary {
   shipments: OrderShipment[];
   notes: OrderNote[];
   intakeDetails: OrderIntakeDetails;
+  invoice: InvoiceRecord | null;
 }
 
 export interface PaginationMeta {
@@ -128,6 +132,7 @@ export interface OrdersListQuery {
   limit: number;
   search?: string;
   status?: OrderStatus;
+  shipmentStatus?: OrderShipmentStatus;
   hasShipment?: boolean;
   createdFrom?: string;
   createdTo?: string;
@@ -135,6 +140,7 @@ export interface OrdersListQuery {
 
 export interface CreateOrderInput {
   leadId?: string;
+  advisorName: string;
   orderNumber: string;
   orderDate: string;
   customerName: string;
@@ -170,9 +176,42 @@ export interface CreateOrderInput {
   note?: string;
 }
 
+export interface NextOrderNumber {
+  orderNumber: string;
+}
+
 export interface UpdateOrderInput {
+  customerName?: string;
+  partDescription?: string;
   customerEmail?: string;
   customerPhone?: string;
-  quantity: number;
+  quantity?: number;
+  price?: number;
+  total?: number;
+  status?: OrderStatus;
+  paymentMethod?: OrderPaymentMethod | null;
+  advisorName?: string;
+  orderDate?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  vehicleYear?: string;
+  vehicleVariant?: string;
+  vehicleVin?: string;
+  vehicleNotes?: string;
+  vehicleConfiguration?: string;
+  billingAddress?: string;
+  billingPerson?: string;
+  billingPhone?: string;
+  shippingAddress?: string;
+  shippingPerson?: string;
+  shippingPhone?: string;
+  shippingAt?: string;
+  companyName?: string;
+  milesOffered?: number;
+  basePrice?: number;
+  salesTax?: number;
+  shippingCharges?: number;
+  profit?: number;
+  partialPayment?: number;
   note?: string;
 }

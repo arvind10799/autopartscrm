@@ -1,5 +1,8 @@
 import type { NextResponse } from 'next/server';
-import { getAuthCookieMaxAgeSeconds } from '@/lib/config/env.server';
+import {
+  getAuthCookieMaxAgeSeconds,
+  getAuthCookieSecure,
+} from '@/lib/config/env.server';
 import type {
   AuthBackendSession,
   AuthUser,
@@ -24,7 +27,7 @@ function getCookieOptions() {
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    secure: getAuthCookieSecure(),
     path: '/',
     maxAge: getAuthCookieMaxAgeSeconds(),
   };

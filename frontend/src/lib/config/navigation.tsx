@@ -5,8 +5,8 @@ import {
   FileText,
   Gauge,
   Phone,
-  Settings,
   Truck,
+  Users,
 } from 'lucide-react';
 import type { UserRole } from '@/features/auth/types/auth.types';
 
@@ -82,9 +82,9 @@ export const navigationConfig: NavigationItemConfig[] = [
   },
   {
     href: '/settings',
-    label: 'Settings',
-    description: 'Administrative controls and platform preferences.',
-    icon: Settings,
+    label: 'User Center',
+    description: 'Administrative user access and password management.',
+    icon: Users,
     roles: ['ADMIN'],
     group: 'administration',
   },

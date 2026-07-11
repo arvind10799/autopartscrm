@@ -10,6 +10,8 @@ import {
   LEAD_PAGE_SIZE,
   normalizeLeadsListQuery,
   type LeadConversionFilter,
+  type LeadStatusFilter,
+  ALL_LEAD_STATUS_FILTER,
 } from '../lib/leads.helpers';
 import type { LeadsListResponse } from '../types/lead.types';
 
@@ -17,6 +19,7 @@ type UseLeadsListOptions = {
   page: number;
   search: string;
   converted: LeadConversionFilter;
+  status: LeadStatusFilter;
   createdFrom?: string;
   createdTo?: string;
   refreshKey: number;
@@ -32,6 +35,7 @@ export function useLeadsList({
   page,
   search,
   converted,
+  status,
   createdFrom,
   createdTo,
   refreshKey,
@@ -53,6 +57,7 @@ export function useLeadsList({
         converted === ALL_LEAD_CONVERSION_FILTER
           ? undefined
           : converted === 'CONVERTED',
+      status: status === ALL_LEAD_STATUS_FILTER ? undefined : status,
       createdFrom,
       createdTo,
     });
@@ -88,7 +93,16 @@ export function useLeadsList({
     };
 
     void loadLeads();
-  }, [converted, createdFrom, createdTo, page, refreshKey, requestTracker, search]);
+  }, [
+    converted,
+    createdFrom,
+    createdTo,
+    page,
+    refreshKey,
+    requestTracker,
+    search,
+    status,
+  ]);
 
   return {
     leadsResponse,
