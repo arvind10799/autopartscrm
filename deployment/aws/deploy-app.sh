@@ -127,13 +127,8 @@ AUTH_COOKIE_MAX_AGE_SECONDS=86400
 AUTH_COOKIE_SECURE=$([[ "${APP_PUBLIC_URL}" == https://* ]] && echo true || echo false)
 EOF
 
-if [[ ! -f backend/node_modules/.package-lock.json ]]; then
-  npm ci --prefix backend
-fi
-
-if [[ ! -f frontend/node_modules/.package-lock.json ]]; then
-  npm ci --prefix frontend
-fi
+npm ci --prefix backend
+npm ci --prefix frontend
 
 ensure_database_exists
 npm run prisma:generate --prefix backend
