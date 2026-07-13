@@ -2,10 +2,11 @@
 
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
-import { CheckCircle2, Download, Eye, FileText, LoaderCircle, X } from 'lucide-react';
+import { CheckCircle2, Download, Eye, FileText, Link2, LoaderCircle, Send, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 import { invoicesApi } from '@/features/invoices/api/invoices-api';
 import type { CreateInvoiceInput, InvoiceDefaults, InvoiceRecord } from '@/features/invoices/types/invoice.types';
 import type { OrderDetail } from '@/features/orders/types/order.types';
@@ -33,6 +34,7 @@ type InvoiceDraft = {
   salesTaxes: string;
   coreCharge: string;
   customerSignature: string;
+  customerSignatureImage: string;
   signatureDate: string;
 };
 
@@ -50,7 +52,11 @@ export function InvoiceActions({
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSignatureActionRunning, setIsSignatureActionRunning] = useState(false);
+  const authUser = useAuthStore((state) => state.user);
   const printableInvoiceRef = useRef<HTMLDivElement>(null);
+  const canManageSignatureRequest =
+    authUser?.role === 'ADMIN' || authUser?.role === 'SALES';
 
   useEffect(() => {
     setInvoice(order.invoice);
@@ -100,7 +106,12 @@ export function InvoiceActions({
       setIsGenerateOpen(false);
       setIsViewOpen(true);
       onInvoiceCreated();
-      toast.success('Invoice generated', 'The invoice is now linked to this order.');
+      toast.success(
+        'Invoice generated',
+        createdInvoice.status === 'SIGNATURE_REQUESTED'
+          ? 'The customer signature request has been emailed.'
+          : 'The invoice is now linked to this order.',
+      );
     } catch (caughtError) {
       setFormError(
         caughtError instanceof Error
@@ -109,6 +120,36 @@ export function InvoiceActions({
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSignatureAction = async (
+    action: 'resend' | 'new-link',
+  ) => {
+    setIsSignatureActionRunning(true);
+
+    try {
+      const updatedInvoice =
+        action === 'resend'
+          ? await invoicesApi.resendSignatureRequest(order.id)
+          : await invoicesApi.generateNewSigningLink(order.id);
+      setInvoice(updatedInvoice);
+      onInvoiceCreated();
+      toast.success(
+        action === 'resend'
+          ? 'Signature request sent'
+          : 'New signing link sent',
+        'The customer has been emailed a secure signing link.',
+      );
+    } catch (caughtError) {
+      toast.error(
+        'Unable to send signing link',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    } finally {
+      setIsSignatureActionRunning(false);
     }
   };
 
@@ -159,16 +200,44 @@ export function InvoiceActions({
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="success" className="gap-1">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                Invoiced
+                {invoice.status === 'SIGNED' ? 'Signed' : 'Invoiced'}
               </Badge>
               <Button type="button" size="sm" variant="outline" onClick={() => setIsViewOpen(true)}>
                 <Eye className="h-4 w-4" />
-                View Invoice
+                {invoice.status === 'SIGNED' ? 'View Signed Invoice' : 'View Invoice'}
               </Button>
               <Button type="button" size="sm" onClick={handleDownloadInvoice}>
                 <Download className="h-4 w-4" />
-                Download Invoice (PDF)
+                {invoice.status === 'SIGNED' ? 'Download Signed Invoice' : 'Download Invoice (PDF)'}
               </Button>
+              {invoice.status !== 'SIGNED' && canManageSignatureRequest ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={isSignatureActionRunning}
+                    onClick={() => void handleSignatureAction('resend')}
+                  >
+                    {isSignatureActionRunning ? (
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    Resend Signature Request
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={isSignatureActionRunning}
+                    onClick={() => void handleSignatureAction('new-link')}
+                  >
+                    <Link2 className="h-4 w-4" />
+                    Generate New Signing Link
+                  </Button>
+                </>
+              ) : null}
             </div>
           ) : (
             <Button type="button" size="sm" onClick={openGenerateModal} disabled={isLoadingDefaults}>
@@ -401,7 +470,7 @@ function InvoiceViewModal({
   );
 }
 
-const InvoiceDocument = forwardRef<HTMLDivElement, { invoice: InvoiceRecord }>(
+export const InvoiceDocument = forwardRef<HTMLDivElement, { invoice: InvoiceRecord }>(
 function InvoiceDocument({ invoice }, ref) {
   return (
   <div ref={ref} className="invoice-document">
@@ -489,7 +558,13 @@ function InvoiceDocument({ invoice }, ref) {
 
       <section className="invoice-signature">
         <div className="invoice-signature-box">
-          <div className="invoice-signature-line">{invoice.customerSignature || ''}</div>
+          <div className="invoice-signature-line">
+            {invoice.customerSignatureImage ? (
+              <img src={invoice.customerSignatureImage} alt="Customer signature" />
+            ) : (
+              invoice.customerSignature || ''
+            )}
+          </div>
           <div className="invoice-signature-date">
             <strong>Date :</strong>
             <span>{invoice.signatureDate ? formatSignatureDate(invoice.signatureDate) : ''}</span>
@@ -641,7 +716,13 @@ function draftToInvoicePreview(orderId: string, draft: InvoiceDraft): InvoiceRec
     paymentDate: draft.paymentDate || null,
     paymentSource: draft.paymentSource || null,
     customerSignature: draft.customerSignature || null,
+    customerSignatureImage: draft.customerSignatureImage || null,
     signatureDate: draft.signatureDate || null,
+    signedAt: null,
+    signatureIpAddress: null,
+    signatureTokenExpiresAt: null,
+    signatureRequestedAt: null,
+    signatureLastSentAt: null,
     totalAmount: calculateInvoiceTotal(draft),
     status: 'PREVIEW',
     pdfStorageKey: null,
@@ -1023,6 +1104,13 @@ const INVOICE_DOCUMENT_CSS = `
     font-size: 26px;
     line-height: 52px;
     text-align: center;
+  }
+
+  .invoice-signature-line img {
+    max-width: 170px;
+    max-height: 46px;
+    object-fit: contain;
+    vertical-align: middle;
   }
 
   .invoice-signature-date {

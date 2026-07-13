@@ -22,7 +22,13 @@ export interface InvoiceRecord {
   coreCharge: number;
   totalAmount: number;
   customerSignature: string | null;
+  customerSignatureImage: string | null;
   signatureDate: string | null;
+  signedAt: string | null;
+  signatureIpAddress: string | null;
+  signatureTokenExpiresAt: string | null;
+  signatureRequestedAt: string | null;
+  signatureLastSentAt: string | null;
   status: string;
   pdfStorageKey: string | null;
   createdAt: string;
@@ -47,7 +53,13 @@ export type InvoiceDefaults = Omit<
   | 'paymentDate'
   | 'paymentSource'
   | 'customerSignature'
+  | 'customerSignatureImage'
   | 'signatureDate'
+  | 'signedAt'
+  | 'signatureIpAddress'
+  | 'signatureTokenExpiresAt'
+  | 'signatureRequestedAt'
+  | 'signatureLastSentAt'
 > & {
   invoiceDate: string;
   salesAssistant: string;
@@ -59,6 +71,7 @@ export type InvoiceDefaults = Omit<
   paymentDate: string;
   paymentSource: string;
   customerSignature: string;
+  customerSignatureImage: string;
   signatureDate: string;
 };
 
@@ -84,4 +97,13 @@ export interface CreateInvoiceInput {
   coreCharge: number;
   customerSignature?: string;
   signatureDate?: string;
+}
+
+export interface PublicInvoiceRecord extends InvoiceRecord {
+  canSign: boolean;
+}
+
+export interface SignInvoiceInput {
+  customerSignature: string;
+  customerSignatureImage: string;
 }

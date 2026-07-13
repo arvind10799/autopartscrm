@@ -9,6 +9,7 @@ const invoiceOrderSelect = {
   id: true,
   orderNumber: true,
   customerName: true,
+  customerEmail: true,
   partDescription: true,
   customerPhone: true,
   intakeDetails: true,
@@ -66,10 +67,64 @@ export class InvoicesRepository {
     });
   }
 
+  findById(id: string) {
+    return this.prismaService.invoice.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            customerEmail: true,
+            orderNumber: true,
+          },
+        },
+      },
+    });
+  }
+
   async create(data: Prisma.InvoiceUncheckedCreateInput) {
     try {
       return await this.prismaService.invoice.create({
         data,
+      });
+    } catch (error) {
+      handlePrismaError(error, 'Invoice');
+    }
+  }
+
+  findByTokenHash(signatureTokenHash: string) {
+    return this.prismaService.invoice.findUnique({
+      where: {
+        signatureTokenHash,
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            customerEmail: true,
+            orderNumber: true,
+          },
+        },
+      },
+    });
+  }
+
+  async update(id: string, data: Prisma.InvoiceUncheckedUpdateInput) {
+    try {
+      return await this.prismaService.invoice.update({
+        where: { id },
+        data,
+        include: {
+          order: {
+            select: {
+              id: true,
+              customerEmail: true,
+              orderNumber: true,
+            },
+          },
+        },
       });
     } catch (error) {
       handlePrismaError(error, 'Invoice');

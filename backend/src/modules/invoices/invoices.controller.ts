@@ -40,4 +40,22 @@ export class InvoicesController {
   ) {
     return this.invoicesService.create(params.id, createInvoiceDto, user);
   }
+
+  @Roles(Role.ADMIN, Role.SALES)
+  @Post('signature-request')
+  resendSignatureRequest(
+    @Param() params: UuidParamDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.invoicesService.resendSignatureRequest(params.id, user);
+  }
+
+  @Roles(Role.ADMIN, Role.SALES)
+  @Post('signing-link')
+  generateNewSigningLink(
+    @Param() params: UuidParamDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.invoicesService.generateNewSigningLink(params.id, user);
+  }
 }

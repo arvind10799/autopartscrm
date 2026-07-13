@@ -1,23 +1,34 @@
 import {
   BadRequestException,
   ConflictException,
+  GoneException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
+import { createHash, randomBytes } from 'crypto';
 import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { NotesService } from '../notes/notes.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { SignInvoiceDto } from './dto/sign-invoice.dto';
+import { InvoiceMailService } from './invoice-mail.service';
 import {
   InvoiceOrder,
   InvoicesRepository,
 } from './invoices.repository';
 
+const SIGNED_INVOICE_STATUS = 'SIGNED';
+const SIGNATURE_REQUESTED_STATUS = 'SIGNATURE_REQUESTED';
+
 @Injectable()
 export class InvoicesService {
   constructor(
+    private readonly configService: ConfigService,
     private readonly invoicesRepository: InvoicesRepository,
+    private readonly invoiceMailService: InvoiceMailService,
     private readonly notesService: NotesService,
   ) {}
 
@@ -53,6 +64,7 @@ export class InvoicesService {
       coreCharge: 0,
       totalAmount: Number(order.totalSaleAmount),
       customerSignature: '',
+      customerSignatureImage: '',
       signatureDate: '',
     };
   }
@@ -64,7 +76,7 @@ export class InvoicesService {
       throw new NotFoundException('Invoice was not found.');
     }
 
-    return invoice;
+    return this.serializeInvoice(invoice);
   }
 
   async create(
@@ -72,7 +84,7 @@ export class InvoicesService {
     createInvoiceDto: CreateInvoiceDto,
     user: AuthenticatedUser,
   ) {
-    await this.invoicesRepository.findAccessibleOrder(orderId, user);
+    const order = await this.invoicesRepository.findAccessibleOrder(orderId, user);
 
     const existingInvoice = await this.invoicesRepository.findByOrderId(
       orderId,
@@ -127,7 +139,81 @@ export class InvoicesService {
       user,
     );
 
-    return invoice;
+    if (order.customerEmail && this.invoiceMailService.isConfigured()) {
+      return this.issueSignatureRequest(invoice.id, user, {
+        noteMessage: `Invoice signature request sent: ${invoice.invoiceNumber}`,
+      });
+    }
+
+    return this.serializeInvoice(invoice);
+  }
+
+  async resendSignatureRequest(orderId: string, user: AuthenticatedUser) {
+    const invoice = await this.findByOrderId(orderId, user);
+
+    return this.issueSignatureRequest(invoice.id, user, {
+      noteMessage: `Invoice signature request resent: ${invoice.invoiceNumber}`,
+    });
+  }
+
+  async generateNewSigningLink(orderId: string, user: AuthenticatedUser) {
+    const invoice = await this.findByOrderId(orderId, user);
+
+    return this.issueSignatureRequest(invoice.id, user, {
+      noteMessage: `New invoice signing link generated: ${invoice.invoiceNumber}`,
+    });
+  }
+
+  async findBySigningToken(token: string) {
+    const invoice = await this.findInvoiceForToken(token);
+    this.assertTokenCanBeViewed(invoice);
+
+    return {
+      ...this.serializeInvoice(invoice),
+      canSign: invoice.status !== SIGNED_INVOICE_STATUS,
+    };
+  }
+
+  async signWithToken(
+    token: string,
+    signInvoiceDto: SignInvoiceDto,
+    ipAddress?: string,
+  ) {
+    const invoice = await this.findInvoiceForToken(token);
+
+    if (invoice.status === SIGNED_INVOICE_STATUS) {
+      throw new ConflictException('This invoice has already been signed.');
+    }
+
+    this.assertTokenIsActive(invoice);
+
+    const signedAt = new Date();
+    const signedInvoice = await this.invoicesRepository.update(invoice.id, {
+      customerSignature: signInvoiceDto.customerSignature.trim(),
+      customerSignatureImage: signInvoiceDto.customerSignatureImage,
+      signatureDate: signedAt,
+      signedAt,
+      signatureIpAddress: ipAddress,
+      status: SIGNED_INVOICE_STATUS,
+    });
+
+    const customerEmail = signedInvoice.order.customerEmail;
+    if (customerEmail && this.invoiceMailService.isConfigured()) {
+      await this.invoiceMailService.sendSignedConfirmation(
+        {
+          invoiceNumber: signedInvoice.invoiceNumber,
+          customerName: signedInvoice.customerName,
+          customerEmail,
+          signedAt,
+        },
+        this.buildSignedInvoiceHtml(signedInvoice),
+      );
+    }
+
+    return {
+      ...this.serializeInvoice(signedInvoice),
+      canSign: false,
+    };
   }
 
   private calculateTotalAmount(createInvoiceDto: CreateInvoiceDto): number {
@@ -144,6 +230,169 @@ export class InvoicesService {
     }
 
     return Number(totalAmount.toFixed(2));
+  }
+
+  private async issueSignatureRequest(
+    invoiceId: string,
+    user: AuthenticatedUser,
+    options: { noteMessage: string },
+  ) {
+    const existingInvoice = await this.invoicesRepository.findById(invoiceId);
+
+    if (!existingInvoice) {
+      throw new NotFoundException('Invoice was not found.');
+    }
+
+    if (existingInvoice.status === SIGNED_INVOICE_STATUS) {
+      throw new ConflictException('Signed invoices are read-only.');
+    }
+
+    const customerEmail = existingInvoice.order.customerEmail;
+    if (!customerEmail) {
+      throw new BadRequestException(
+        'Customer email is required before sending an invoice signature request.',
+      );
+    }
+
+    if (!this.invoiceMailService.isConfigured()) {
+      throw new ServiceUnavailableException('SMTP email is not configured.');
+    }
+
+    const signatureToken = this.buildSignatureTokenUpdate();
+    const invoice = await this.invoicesRepository.update(invoiceId, {
+      ...signatureToken.data,
+      status: SIGNATURE_REQUESTED_STATUS,
+      signatureRequestedAt: new Date(),
+      signatureLastSentAt: new Date(),
+    });
+
+    await this.invoiceMailService.sendSignatureRequest(
+      {
+        invoiceNumber: invoice.invoiceNumber,
+        customerName: invoice.customerName,
+        customerEmail,
+      },
+      this.buildSigningUrl(signatureToken.token),
+    );
+
+    await this.notesService.create(
+      {
+        content: options.noteMessage,
+        entityType: NoteEntityType.ORDER,
+        entityId: invoice.orderId,
+      },
+      user,
+    );
+
+    return this.serializeInvoice(invoice);
+  }
+
+  private serializeInvoice<
+    T extends {
+      signatureTokenHash?: string | null;
+      order?: unknown;
+    },
+  >(invoice: T) {
+    const { signatureTokenHash: _signatureTokenHash, order: _order, ...safeInvoice } =
+      invoice;
+
+    return safeInvoice;
+  }
+
+  private buildSignatureTokenUpdate(): {
+    token: string;
+    data: Prisma.InvoiceUncheckedUpdateInput;
+  } {
+    const token = randomBytes(32).toString('hex');
+
+    return {
+      token,
+      data: {
+        signatureTokenHash: this.hashToken(token),
+        signatureTokenExpiresAt: this.buildTokenExpiryDate(),
+      },
+    };
+  }
+
+  private async findInvoiceForToken(token: string) {
+    const tokenHash = this.hashToken(token);
+    const invoice = await this.invoicesRepository.findByTokenHash(tokenHash);
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice signing link was not found.');
+    }
+
+    return invoice;
+  }
+
+  private assertTokenCanBeViewed(invoice: {
+    status: string;
+    signatureTokenExpiresAt: Date | null;
+  }) {
+    if (invoice.status === SIGNED_INVOICE_STATUS) {
+      return;
+    }
+
+    this.assertTokenIsActive(invoice);
+  }
+
+  private assertTokenIsActive(invoice: { signatureTokenExpiresAt: Date | null }) {
+    if (
+      !invoice.signatureTokenExpiresAt ||
+      invoice.signatureTokenExpiresAt.getTime() < Date.now()
+    ) {
+      throw new GoneException('Invoice signing link has expired.');
+    }
+  }
+
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private buildTokenExpiryDate(): Date {
+    const ttlDays = this.configService.get<number>(
+      'INVOICE_SIGNING_TOKEN_TTL_DAYS',
+      30,
+    );
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + ttlDays);
+
+    return expiryDate;
+  }
+
+  private buildSigningUrl(token: string): string {
+    const baseUrl = this.configService
+      .get<string>('APP_BASE_URL', 'http://localhost:3001')
+      .replace(/\/$/, '');
+
+    return `${baseUrl}/invoice-sign/${token}`;
+  }
+
+  private buildSignedInvoiceHtml(invoice: {
+    invoiceNumber: string;
+    customerName: string;
+    signedAt: Date | null;
+  }): string {
+    return `
+      <!doctype html>
+      <html>
+        <body style="font-family:Arial,sans-serif;color:#1f2937;">
+          <h1>Invoice ${this.escapeHtml(invoice.invoiceNumber)}</h1>
+          <p>Customer: ${this.escapeHtml(invoice.customerName)}</p>
+          <p>Status: Signed</p>
+          <p>Signed At: ${invoice.signedAt?.toISOString() ?? ''}</p>
+        </body>
+      </html>
+    `;
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 
   private buildVehiclePartDescription(order: InvoiceOrder): string {

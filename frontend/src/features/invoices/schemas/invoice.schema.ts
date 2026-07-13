@@ -57,7 +57,13 @@ export const invoiceRecordSchema = z.object({
   coreCharge: z.coerce.number(),
   totalAmount: z.coerce.number(),
   customerSignature: z.string().nullable(),
+  customerSignatureImage: z.string().nullable(),
   signatureDate: z.string().nullable(),
+  signedAt: z.string().nullable(),
+  signatureIpAddress: z.string().nullable(),
+  signatureTokenExpiresAt: z.string().nullable(),
+  signatureRequestedAt: z.string().nullable(),
+  signatureLastSentAt: z.string().nullable(),
   status: z.string(),
   pdfStorageKey: z.string().nullable(),
   createdAt: z.string(),
@@ -86,7 +92,24 @@ export const invoiceDefaultsSchema = z.object({
   coreCharge: z.coerce.number(),
   totalAmount: z.coerce.number(),
   customerSignature: z.string(),
+  customerSignatureImage: z.string(),
   signatureDate: z.string(),
+});
+
+export const publicInvoiceRecordSchema = invoiceRecordSchema.extend({
+  canSign: z.boolean(),
+});
+
+export const signInvoiceSchema = z.object({
+  customerSignature: z
+    .string()
+    .trim()
+    .min(1, 'Signature name is required.')
+    .max(160, 'Signature name must be 160 characters or fewer.'),
+  customerSignatureImage: z
+    .string()
+    .min(20, 'Please draw your signature before submitting.')
+    .max(250000, 'Signature image is too large.'),
 });
 
 export const createInvoiceSchema = z

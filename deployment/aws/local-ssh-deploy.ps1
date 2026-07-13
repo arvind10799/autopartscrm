@@ -70,6 +70,13 @@ try {
     REDIS_HOST = Get-EnvironmentValueOrDefault "REDIS_HOST" "crm-wjf4r8.serverless.apse2.cache.amazonaws.com"
     REDIS_PORT = Get-EnvironmentValueOrDefault "REDIS_PORT" "6379"
     REDIS_TLS_ENABLED = Get-EnvironmentValueOrDefault "REDIS_TLS_ENABLED" "true"
+    APP_BASE_URL = Get-EnvironmentValueOrDefault "APP_BASE_URL" $AppPublicUrl
+    INVOICE_SIGNING_TOKEN_TTL_DAYS = Get-EnvironmentValueOrDefault "INVOICE_SIGNING_TOKEN_TTL_DAYS" "30"
+    SMTP_HOST = Get-EnvironmentValueOrDefault "SMTP_HOST" ""
+    SMTP_PORT = Get-EnvironmentValueOrDefault "SMTP_PORT" "587"
+    SMTP_USER = Get-EnvironmentValueOrDefault "SMTP_USER" ""
+    SMTP_PASS = Get-EnvironmentValueOrDefault "SMTP_PASS" ""
+    MAIL_FROM = Get-EnvironmentValueOrDefault "MAIL_FROM" "MEE Auto Parts Billing <billing@meeautoparts.com>"
   }
 
   $envContent = foreach ($entry in $environment.GetEnumerator()) {
