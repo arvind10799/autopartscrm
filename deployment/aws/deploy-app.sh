@@ -21,6 +21,7 @@ REDIS_TLS_ENABLED="${REDIS_TLS_ENABLED:-true}"
 REDIS_CONNECT_TIMEOUT_MS="${REDIS_CONNECT_TIMEOUT_MS:-5000}"
 ORDERS_CACHE_TTL_SECONDS="${ORDERS_CACHE_TTL_SECONDS:-60}"
 BULLMQ_PREFIX="${BULLMQ_PREFIX:-auto-parts-crm}"
+RUN_PRISMA_SEED="${RUN_PRISMA_SEED:-false}"
 APP_BASE_URL="${APP_BASE_URL:-${APP_PUBLIC_URL}}"
 INVOICE_SIGNING_TOKEN_TTL_DAYS="${INVOICE_SIGNING_TOKEN_TTL_DAYS:-30}"
 SMTP_HOST="${SMTP_HOST:-}"
@@ -106,6 +107,7 @@ REDIS_TLS_ENABLED=${REDIS_TLS_ENABLED}
 REDIS_CONNECT_TIMEOUT_MS=${REDIS_CONNECT_TIMEOUT_MS}
 ORDERS_CACHE_TTL_SECONDS=${ORDERS_CACHE_TTL_SECONDS}
 BULLMQ_PREFIX="${BULLMQ_PREFIX}"
+RUN_PRISMA_SEED=${RUN_PRISMA_SEED}
 APP_BASE_URL="${APP_BASE_URL}"
 INVOICE_SIGNING_TOKEN_TTL_DAYS=${INVOICE_SIGNING_TOKEN_TTL_DAYS}
 SMTP_HOST="${SMTP_HOST}"
@@ -133,7 +135,9 @@ npm ci --prefix frontend
 ensure_database_exists
 npm run prisma:generate --prefix backend
 (cd backend && npx prisma migrate deploy)
-(cd backend && npm run prisma:seed)
+if [[ "${RUN_PRISMA_SEED}" == "true" ]]; then
+  (cd backend && npm run prisma:seed)
+fi
 
 npm run build --prefix backend
 npm run build --prefix frontend

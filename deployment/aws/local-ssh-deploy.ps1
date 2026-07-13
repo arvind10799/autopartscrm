@@ -70,6 +70,7 @@ try {
     REDIS_HOST = Get-EnvironmentValueOrDefault "REDIS_HOST" "crm-wjf4r8.serverless.apse2.cache.amazonaws.com"
     REDIS_PORT = Get-EnvironmentValueOrDefault "REDIS_PORT" "6379"
     REDIS_TLS_ENABLED = Get-EnvironmentValueOrDefault "REDIS_TLS_ENABLED" "true"
+    RUN_PRISMA_SEED = Get-EnvironmentValueOrDefault "RUN_PRISMA_SEED" "false"
     APP_BASE_URL = Get-EnvironmentValueOrDefault "APP_BASE_URL" $AppPublicUrl
     INVOICE_SIGNING_TOKEN_TTL_DAYS = Get-EnvironmentValueOrDefault "INVOICE_SIGNING_TOKEN_TTL_DAYS" "30"
     SMTP_HOST = Get-EnvironmentValueOrDefault "SMTP_HOST" ""
