@@ -52,6 +52,7 @@ export function InvoiceActions({
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [isSignatureActionRunning, setIsSignatureActionRunning] = useState(false);
   const authUser = useAuthStore((state) => state.user);
   const printableInvoiceRef = useRef<HTMLDivElement>(null);
@@ -153,34 +154,29 @@ export function InvoiceActions({
     }
   };
 
-  const handleDownloadInvoice = () => {
+  const handleDownloadInvoice = async () => {
     if (!printableInvoiceRef.current) {
       toast.error('Invoice not ready', 'Open or generate the invoice and try again.');
       return;
     }
 
-    const printWindow = window.open('', '_blank', 'width=980,height=1100');
+    setIsDownloading(true);
 
-    if (!printWindow) {
-      toast.error('Popup blocked', 'Allow popups to download the invoice PDF.');
-      return;
+    try {
+      await downloadInvoicePdf(
+        printableInvoiceRef.current,
+        `${printableInvoice?.invoiceNumber ?? order.orderNumber}-invoice`,
+      );
+    } catch (caughtError) {
+      toast.error(
+        'Unable to download invoice',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    } finally {
+      setIsDownloading(false);
     }
-
-    printWindow.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <title>${escapeHtml(printableInvoice?.invoiceNumber ?? order.orderNumber)} Invoice</title>
-          <base href="${window.location.origin}" />
-        </head>
-        <body>${printableInvoiceRef.current.outerHTML}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 350);
   };
 
   return (
@@ -206,9 +202,17 @@ export function InvoiceActions({
                 <Eye className="h-4 w-4" />
                 {invoice.status === 'SIGNED' ? 'View Signed Invoice' : 'View Invoice'}
               </Button>
-              <Button type="button" size="sm" onClick={handleDownloadInvoice}>
-                <Download className="h-4 w-4" />
-                {invoice.status === 'SIGNED' ? 'Download Signed Invoice' : 'Download Invoice (PDF)'}
+              <Button type="button" size="sm" disabled={isDownloading} onClick={() => void handleDownloadInvoice()}>
+                {isDownloading ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {isDownloading
+                  ? 'Downloading...'
+                  : invoice.status === 'SIGNED'
+                    ? 'Download Signed Invoice'
+                    : 'Download Invoice (PDF)'}
               </Button>
               {invoice.status !== 'SIGNED' && canManageSignatureRequest ? (
                 <>
@@ -269,6 +273,7 @@ export function InvoiceActions({
           invoice={invoice}
           onClose={() => setIsViewOpen(false)}
           onDownload={handleDownloadInvoice}
+          isDownloading={isDownloading}
         />
       ) : null}
 
@@ -428,10 +433,12 @@ function InvoiceViewModal({
   invoice,
   onClose,
   onDownload,
+  isDownloading,
 }: {
   invoice: InvoiceRecord;
   onClose: () => void;
-  onDownload: () => void;
+  onDownload: () => Promise<void>;
+  isDownloading: boolean;
 }) {
   return (
     <div
@@ -452,9 +459,13 @@ function InvoiceViewModal({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={onDownload}>
-              <Download className="h-4 w-4" />
-              Download PDF
+            <Button type="button" disabled={isDownloading} onClick={() => void onDownload()}>
+              {isDownloading ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isDownloading ? 'Downloading...' : 'Download PDF'}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}>
               <X className="h-4 w-4" />
@@ -895,13 +906,80 @@ function formatDisplayDate(value: string): string {
   });
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+async function downloadInvoicePdf(invoiceElement: HTMLElement, filename: string) {
+  const pages = Array.from(invoiceElement.querySelectorAll<HTMLElement>('.invoice-page'));
+
+  if (pages.length === 0) {
+    throw new Error('Invoice pages are not ready.');
+  }
+
+  await waitForInvoiceAssets(invoiceElement);
+
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+    import('html2canvas'),
+    import('jspdf'),
+  ]);
+
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: 'a4',
+    compress: true,
+  });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  for (const [pageIndex, page] of pages.entries()) {
+    const canvas = await html2canvas(page, {
+      backgroundColor: '#e5e1e1',
+      height: 1123,
+      logging: false,
+      scale: 2,
+      useCORS: true,
+      width: 794,
+      windowHeight: 1123,
+      windowWidth: 794,
+    });
+    const imageData = canvas.toDataURL('image/png');
+
+    if (pageIndex > 0) {
+      pdf.addPage();
+    }
+
+    pdf.addImage(imageData, 'PNG', 0, 0, pageWidth, pageHeight);
+  }
+
+  pdf.save(`${sanitizePdfFilename(filename)}.pdf`);
+}
+
+async function waitForInvoiceAssets(invoiceElement: HTMLElement) {
+  await document.fonts?.ready;
+
+  const images = Array.from(invoiceElement.querySelectorAll('img'));
+  await Promise.all(
+    images.map(
+      (image) =>
+        new Promise<void>((resolve) => {
+          if (image.complete && image.naturalWidth > 0) {
+            resolve();
+            return;
+          }
+
+          image.addEventListener('load', () => resolve(), { once: true });
+          image.addEventListener('error', () => resolve(), { once: true });
+        }),
+    ),
+  );
+}
+
+function sanitizePdfFilename(filename: string) {
+  const sanitizedFilename = filename
+    .trim()
+    .replace(/\.pdf$/i, '')
+    .replace(/[^a-z0-9._-]+/gi, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return sanitizedFilename || 'invoice';
 }
 
 const LEGACY_INVOICE_DOCUMENT_CSS = `
