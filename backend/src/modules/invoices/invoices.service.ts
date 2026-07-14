@@ -225,6 +225,7 @@ export class InvoicesService {
           customerSignature: signedInvoice.customerSignature,
           customerSignatureImage: signedInvoice.customerSignatureImage,
           signatureDate: signedInvoice.signatureDate,
+          signedInvoicePdfBase64: signInvoiceDto.signedInvoicePdfBase64,
         },
       );
     }

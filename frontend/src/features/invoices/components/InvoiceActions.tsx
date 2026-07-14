@@ -906,7 +906,7 @@ function formatDisplayDate(value: string): string {
   });
 }
 
-async function downloadInvoicePdf(invoiceElement: HTMLElement, filename: string) {
+export async function createInvoicePdfBlob(invoiceElement: HTMLElement) {
   const pages = Array.from(invoiceElement.querySelectorAll<HTMLElement>('.invoice-page'));
 
   if (pages.length === 0) {
@@ -949,7 +949,20 @@ async function downloadInvoicePdf(invoiceElement: HTMLElement, filename: string)
     pdf.addImage(imageData, 'PNG', 0, 0, pageWidth, pageHeight);
   }
 
-  pdf.save(`${sanitizePdfFilename(filename)}.pdf`);
+  return pdf.output('blob');
+}
+
+async function downloadInvoicePdf(invoiceElement: HTMLElement, filename: string) {
+  const pdfBlob = await createInvoicePdfBlob(invoiceElement);
+  const objectUrl = URL.createObjectURL(pdfBlob);
+  const link = document.createElement('a');
+
+  link.href = objectUrl;
+  link.download = `${sanitizePdfFilename(filename)}.pdf`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 async function waitForInvoiceAssets(invoiceElement: HTMLElement) {

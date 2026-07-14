@@ -110,6 +110,11 @@ export const signInvoiceSchema = z.object({
     .string()
     .min(20, 'Please draw your signature before submitting.')
     .max(250000, 'Signature image is too large.'),
+  signedInvoicePdfBase64: z
+    .string()
+    .startsWith('data:application/pdf;base64,', 'Signed invoice PDF is invalid.')
+    .max(8_000_000, 'Signed invoice PDF is too large.')
+    .optional(),
 });
 
 export const createInvoiceSchema = z

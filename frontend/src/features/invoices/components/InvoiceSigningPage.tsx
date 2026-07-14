@@ -10,7 +10,7 @@ import { invoicesApi } from '@/features/invoices/api/invoices-api';
 import type { PublicInvoiceRecord } from '@/features/invoices/types/invoice.types';
 import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
-import { InvoiceDocument } from './InvoiceActions';
+import { createInvoicePdfBlob, InvoiceDocument } from './InvoiceActions';
 
 export function InvoiceSigningPage({ token }: { token: string }) {
   const [invoice, setInvoice] = useState<PublicInvoiceRecord | null>(null);
@@ -20,6 +20,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasDrawing, setHasDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const invoiceDocumentRef = useRef<HTMLDivElement>(null);
   const isDrawingRef = useRef(false);
 
   useEffect(() => {
@@ -141,13 +142,34 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     setIsSubmitting(true);
 
     try {
+      const signatureImage = canvasRef.current.toDataURL('image/png');
+      const signedAt = new Date().toISOString();
+      const signedPreview = {
+        ...invoice,
+        customerSignature: signatureName.trim(),
+        customerSignatureImage: signatureImage,
+        signatureDate: signedAt,
+        signedAt,
+        status: 'SIGNED',
+        canSign: false,
+      };
+
+      setInvoice(signedPreview);
+      await waitForRenderFrame();
+
+      const signedInvoicePdfBase64 = invoiceDocumentRef.current
+        ? await blobToBase64(await createInvoicePdfBlob(invoiceDocumentRef.current))
+        : undefined;
+
       const signedInvoice = await invoicesApi.signWithToken(token, {
         customerSignature: signatureName.trim(),
-        customerSignatureImage: canvasRef.current.toDataURL('image/png'),
+        customerSignatureImage: signatureImage,
+        signedInvoicePdfBase64,
       });
       setInvoice(signedInvoice);
       toast.success('Invoice signed', 'Your signed invoice has been received.');
     } catch (caughtError) {
+      setInvoice(invoice);
       toast.error(
         'Unable to sign invoice',
         caughtError instanceof Error
@@ -191,7 +213,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     <SigningShell>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="overflow-auto rounded-2xl border border-border/70 bg-slate-100 p-3">
-          <InvoiceDocument invoice={invoice} />
+          <InvoiceDocument ref={invoiceDocumentRef} invoice={invoice} />
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
@@ -301,4 +323,30 @@ function getCanvasPoint(event: PointerEvent<HTMLCanvasElement>) {
     x: event.clientX - rect.left,
     y: event.clientY - rect.top,
   };
+}
+
+function waitForRenderFrame() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
+
+function blobToBase64(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        reject(new Error('Unable to prepare signed invoice PDF.'));
+        return;
+      }
+
+      resolve(result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read signed invoice PDF.'));
+    reader.readAsDataURL(blob);
+  });
 }

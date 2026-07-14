@@ -106,4 +106,5 @@ export interface PublicInvoiceRecord extends InvoiceRecord {
 export interface SignInvoiceInput {
   customerSignature: string;
   customerSignatureImage: string;
+  signedInvoicePdfBase64?: string;
 }

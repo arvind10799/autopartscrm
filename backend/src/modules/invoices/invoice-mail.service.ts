@@ -34,6 +34,7 @@ type SignedMailInvoice = MailInvoice & {
   customerSignature?: string | null;
   customerSignatureImage?: string | null;
   signatureDate?: Date | null;
+  signedInvoicePdfBase64?: string;
 };
 
 @Injectable()
@@ -103,7 +104,9 @@ export class InvoiceMailService {
   }
 
   async sendSignedConfirmation(invoice: SignedMailInvoice) {
-    const signedInvoicePdf = await this.buildSignedInvoicePdf(invoice);
+    const signedInvoicePdf =
+      this.parsePdfDataUrl(invoice.signedInvoicePdfBase64) ??
+      (await this.buildSignedInvoicePdf(invoice));
 
     await this.sendMail({
       to: invoice.customerEmail,
@@ -561,6 +564,19 @@ export class InvoiceMailService {
     }
 
     return { buffer: Buffer.from(match[1], 'base64') };
+  }
+
+  private parsePdfDataUrl(value?: string | null): Buffer | null {
+    if (!value) {
+      return null;
+    }
+
+    const match = value.match(/^data:application\/pdf;base64,(.+)$/i);
+    if (!match?.[1]) {
+      return null;
+    }
+
+    return Buffer.from(match[1], 'base64');
   }
 
   private formatMoney(value: number): string {
