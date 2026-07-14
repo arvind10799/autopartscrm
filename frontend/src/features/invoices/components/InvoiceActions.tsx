@@ -413,7 +413,7 @@ function InvoiceFormModal({
           <div className="rounded-3xl border border-border/70 bg-secondary/20 p-3">
             <p className="mb-3 text-sm font-semibold text-muted-foreground">Live Preview</p>
             <div className="max-h-[78vh] overflow-auto rounded-2xl bg-white p-2">
-              <div className="origin-top-left scale-[0.48]">
+              <div className="mx-auto w-full max-w-[794px]">
                 <InvoiceDocument invoice={draftToInvoicePreview('preview', draft)} />
               </div>
             </div>
@@ -463,7 +463,9 @@ function InvoiceViewModal({
           </div>
         </div>
         <div className="max-h-[78vh] overflow-auto rounded-2xl bg-slate-100 p-4">
-          <InvoiceDocument invoice={invoice} />
+          <div className="mx-auto w-full max-w-[794px]">
+            <InvoiceDocument invoice={invoice} />
+          </div>
         </div>
       </div>
     </div>
@@ -485,7 +487,11 @@ function InvoiceDocument({ invoice }, ref) {
       <TemplateText className="invoice-field invoice-field-date">{formatInvoiceDate(invoice.invoiceDate)}</TemplateText>
       <TemplateText className="invoice-field invoice-field-assistant">{invoice.salesAssistant || ''}</TemplateText>
       <TemplateText className="invoice-field invoice-field-shipping-address">{invoice.shippingAddress || ''}</TemplateText>
-      <TemplateText className="invoice-field invoice-field-shipping-vendor">{invoice.shippingVendor}</TemplateText>
+      {shouldOverlayShippingVendor(invoice.shippingVendor) ? (
+        <TemplateText className="invoice-field invoice-field-shipping-vendor invoice-field-overwrite">
+          {invoice.shippingVendor}
+        </TemplateText>
+      ) : null}
       <TemplateText className="invoice-field invoice-field-customer-name">{invoice.customerName}</TemplateText>
       <TemplateText className="invoice-field invoice-field-billing-address">{invoice.billingAddress || ''}</TemplateText>
       <TemplateText className="invoice-field invoice-field-contact">{invoice.contactNumber || ''}</TemplateText>
@@ -496,9 +502,21 @@ function InvoiceDocument({ invoice }, ref) {
       <TemplateText className="invoice-field invoice-field-payment-status">{invoice.paymentStatus || ''}</TemplateText>
       <TemplateText className="invoice-field invoice-field-payment-date">{invoice.paymentDate ? formatInvoiceDate(invoice.paymentDate) : ''}</TemplateText>
       <TemplateText className="invoice-field invoice-field-payment-source">{invoice.paymentSource || ''}</TemplateText>
-      <TemplateText className="invoice-field invoice-field-shipping-cost">$ {invoice.shippingCost.toFixed(2)}</TemplateText>
-      <TemplateText className="invoice-field invoice-field-sales-taxes">$ {invoice.salesTaxes.toFixed(2)}</TemplateText>
-      <TemplateText className="invoice-field invoice-field-core-charge">$ {invoice.coreCharge.toFixed(2)}</TemplateText>
+      {shouldOverlayTemplateMoney(invoice.shippingCost) ? (
+        <TemplateText className="invoice-field invoice-field-shipping-cost invoice-field-overwrite">
+          $ {invoice.shippingCost.toFixed(2)}
+        </TemplateText>
+      ) : null}
+      {shouldOverlayTemplateMoney(invoice.salesTaxes) ? (
+        <TemplateText className="invoice-field invoice-field-sales-taxes invoice-field-overwrite">
+          $ {invoice.salesTaxes.toFixed(2)}
+        </TemplateText>
+      ) : null}
+      {shouldOverlayTemplateMoney(invoice.coreCharge) ? (
+        <TemplateText className="invoice-field invoice-field-core-charge invoice-field-overwrite">
+          $ {invoice.coreCharge.toFixed(2)}
+        </TemplateText>
+      ) : null}
       <TemplateText className="invoice-field invoice-field-total">{formatMoney(invoice.totalAmount)}</TemplateText>
       <InvoiceTemplateSignature invoice={invoice} page="purchase" />
     </div>
@@ -544,6 +562,16 @@ function InvoiceTemplateSignature({
       </div>
     </div>
   );
+}
+
+function shouldOverlayShippingVendor(value: string | null | undefined) {
+  const trimmedValue = value?.trim();
+
+  return Boolean(trimmedValue) && trimmedValue?.toUpperCase() !== 'LTL';
+}
+
+function shouldOverlayTemplateMoney(value: number) {
+  return Math.abs(value) >= 0.005;
 }
 
 function InfoLine({ label, value }: { label: string; value?: string | null }) {
@@ -1153,7 +1181,8 @@ const LEGACY_INVOICE_DOCUMENT_CSS = `
 
 const INVOICE_DOCUMENT_CSS = `
   .invoice-document {
-    width: 794px;
+    width: 100%;
+    max-width: 794px;
     color: #5f6067;
     font-family: Arial, Helvetica, sans-serif;
     background: transparent;
@@ -1161,8 +1190,9 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-template-page {
     position: relative;
-    width: 794px;
-    height: 1123px;
+    width: 100%;
+    aspect-ratio: 1655 / 2340;
+    height: auto;
     margin: 0 0 18px;
     overflow: hidden;
     background: #dfdcdd;
@@ -1187,147 +1217,151 @@ const INVOICE_DOCUMENT_CSS = `
     position: absolute;
     z-index: 1;
     color: #5f6067;
-    font-size: 14px;
+    font-size: clamp(8px, 1.45vw, 12px);
     line-height: 1.24;
     white-space: pre-wrap;
     word-break: break-word;
   }
 
+  .invoice-field-overwrite {
+    background: #e6e2e2;
+  }
+
   .invoice-field-number {
-    left: 650px;
-    top: 51px;
-    width: 118px;
+    left: 77.5%;
+    top: 6.8%;
+    width: 17%;
   }
 
   .invoice-field-date {
-    left: 650px;
-    top: 82px;
-    width: 118px;
+    left: 77.5%;
+    top: 9.6%;
+    width: 17%;
   }
 
   .invoice-field-assistant {
-    left: 650px;
-    top: 111px;
-    width: 118px;
+    left: 77.5%;
+    top: 12.5%;
+    width: 17%;
   }
 
   .invoice-field-shipping-address {
-    left: 190px;
-    top: 190px;
-    width: 205px;
+    left: 22%;
+    top: 17.1%;
+    width: 27%;
   }
 
   .invoice-field-shipping-vendor {
-    left: 340px;
-    top: 287px;
-    width: 88px;
+    left: 41.8%;
+    top: 25.4%;
+    width: 8.6%;
     text-align: center;
   }
 
   .invoice-field-customer-name {
-    left: 510px;
-    top: 188px;
-    width: 250px;
+    left: 67%;
+    top: 17.1%;
+    width: 27%;
   }
 
   .invoice-field-billing-address {
-    left: 510px;
-    top: 222px;
-    width: 250px;
+    left: 67%;
+    top: 19.8%;
+    width: 27%;
   }
 
   .invoice-field-contact {
-    left: 510px;
-    top: 284px;
-    width: 250px;
+    left: 67%;
+    top: 25.3%;
+    width: 27%;
   }
 
   .invoice-field-item-main {
-    left: 38px;
-    top: 392px;
-    width: 430px;
+    left: 4.7%;
+    top: 34.9%;
+    width: 53%;
     font-weight: 700;
   }
 
   .invoice-field-item-sub {
-    left: 38px;
-    top: 424px;
-    width: 430px;
+    left: 4.7%;
+    top: 37.7%;
+    width: 53%;
     font-weight: 700;
   }
 
   .invoice-field-qty {
-    left: 478px;
-    top: 392px;
-    width: 48px;
+    left: 60.8%;
+    top: 34.9%;
+    width: 6%;
     text-align: center;
   }
 
   .invoice-field-amount {
-    left: 618px;
-    top: 392px;
-    width: 120px;
+    left: 74.5%;
+    top: 34.9%;
+    width: 18%;
     text-align: center;
   }
 
   .invoice-field-payment-status {
-    left: 158px;
-    top: 515px;
-    width: 205px;
+    left: 15.8%;
+    top: 45.4%;
+    width: 28%;
   }
 
   .invoice-field-payment-date {
-    left: 158px;
-    top: 543px;
-    width: 205px;
+    left: 15.8%;
+    top: 47.9%;
+    width: 28%;
   }
 
   .invoice-field-payment-source {
-    left: 158px;
-    top: 570px;
-    width: 205px;
+    left: 15.8%;
+    top: 50.3%;
+    width: 28%;
   }
 
   .invoice-field-shipping-cost {
-    left: 637px;
-    top: 515px;
-    width: 70px;
+    left: 80.2%;
+    top: 45.2%;
+    width: 9.5%;
   }
 
   .invoice-field-sales-taxes {
-    left: 637px;
-    top: 543px;
-    width: 70px;
+    left: 80.2%;
+    top: 47.7%;
+    width: 9.5%;
   }
 
   .invoice-field-core-charge {
-    left: 637px;
-    top: 570px;
-    width: 70px;
+    left: 80.2%;
+    top: 50.2%;
+    width: 9.5%;
   }
 
   .invoice-field-total {
-    left: 610px;
-    top: 626px;
-    width: 130px;
+    left: 73.5%;
+    top: 55.7%;
+    width: 18%;
     font-weight: 800;
   }
 
   .invoice-template-signature {
     position: absolute;
     z-index: 1;
-    right: 23px;
-    bottom: 27px;
-    width: 180px;
-    height: 82px;
+    right: 2.9%;
+    bottom: 2.4%;
+    width: 22.7%;
+    height: 7.3%;
     color: #111;
     text-align: center;
   }
 
   .invoice-template-signature img {
     display: block;
-    max-width: 155px;
-    max-height: 45px;
+    max-width: 86%;
+    max-height: 55%;
     margin: 5px auto 0;
     object-fit: contain;
   }
@@ -1337,7 +1371,7 @@ const INVOICE_DOCUMENT_CSS = `
     height: 50px;
     padding-top: 8px;
     font-family: "Brush Script MT", cursive;
-    font-size: 24px;
+    font-size: clamp(14px, 3vw, 24px);
     line-height: 1.1;
   }
 
@@ -1348,7 +1382,7 @@ const INVOICE_DOCUMENT_CSS = `
     bottom: 3px;
     height: 22px;
     color: #111;
-    font-size: 12px;
+    font-size: clamp(8px, 1.4vw, 12px);
     line-height: 22px;
   }
 
@@ -1360,6 +1394,7 @@ const INVOICE_DOCUMENT_CSS = `
 
     .invoice-document {
       width: 794px;
+      max-width: none;
     }
 
     .invoice-template-page {
