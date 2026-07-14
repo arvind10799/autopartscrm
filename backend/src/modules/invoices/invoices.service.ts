@@ -205,8 +205,27 @@ export class InvoicesService {
           customerName: signedInvoice.customerName,
           customerEmail,
           signedAt,
+          salesAssistant: signedInvoice.salesAssistant,
+          contactNumber: signedInvoice.contactNumber,
+          billingAddress: signedInvoice.billingAddress,
+          shippingAddress: signedInvoice.shippingAddress,
+          shippingVendor: signedInvoice.shippingVendor,
+          deliveryTimeline: signedInvoice.deliveryTimeline,
+          itemDescription: signedInvoice.itemDescription,
+          vehiclePartDescription: signedInvoice.vehiclePartDescription,
+          quantity: signedInvoice.quantity,
+          saleAmount: Number(signedInvoice.saleAmount),
+          paymentStatus: signedInvoice.paymentStatus,
+          paymentDate: signedInvoice.paymentDate,
+          paymentSource: signedInvoice.paymentSource,
+          shippingCost: Number(signedInvoice.shippingCost),
+          salesTaxes: Number(signedInvoice.salesTaxes),
+          coreCharge: Number(signedInvoice.coreCharge),
+          totalAmount: Number(signedInvoice.totalAmount),
+          customerSignature: signedInvoice.customerSignature,
+          customerSignatureImage: signedInvoice.customerSignatureImage,
+          signatureDate: signedInvoice.signatureDate,
         },
-        this.buildSignedInvoiceHtml(signedInvoice),
       );
     }
 
@@ -366,33 +385,6 @@ export class InvoicesService {
       .replace(/\/$/, '');
 
     return `${baseUrl}/invoice-sign/${token}`;
-  }
-
-  private buildSignedInvoiceHtml(invoice: {
-    invoiceNumber: string;
-    customerName: string;
-    signedAt: Date | null;
-  }): string {
-    return `
-      <!doctype html>
-      <html>
-        <body style="font-family:Arial,sans-serif;color:#1f2937;">
-          <h1>Invoice ${this.escapeHtml(invoice.invoiceNumber)}</h1>
-          <p>Customer: ${this.escapeHtml(invoice.customerName)}</p>
-          <p>Status: Signed</p>
-          <p>Signed At: ${invoice.signedAt?.toISOString() ?? ''}</p>
-        </body>
-      </html>
-    `;
-  }
-
-  private escapeHtml(value: string): string {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
   }
 
   private buildVehiclePartDescription(order: InvoiceOrder): string {
