@@ -14,6 +14,7 @@ const invoiceOrderSelect = {
   customerPhone: true,
   intakeDetails: true,
   quantity: true,
+  status: true,
   totalSaleAmount: true,
   createdById: true,
   createdBy: {

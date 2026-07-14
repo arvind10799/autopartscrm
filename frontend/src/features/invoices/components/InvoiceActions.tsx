@@ -74,6 +74,14 @@ export function InvoiceActions({
   }, [draft]);
 
   const openGenerateModal = async () => {
+    if (order.status === 'PARTIALLY_PAID') {
+      toast.error(
+        'Invoice cannot be generated',
+        'This order is still partially paid.',
+      );
+      return;
+    }
+
     setIsLoadingDefaults(true);
     setFormError(null);
 
@@ -370,7 +378,7 @@ function InvoiceFormModal({
             <InvoiceFormSection title="Payment Information">
               <InvoiceInput label="Payment Status" value={draft.paymentStatus} onChange={(value) => updateField('paymentStatus', value)} />
               <InvoiceInput label="Payment Date" type="date" value={draft.paymentDate} onChange={(value) => updateField('paymentDate', value)} />
-              <InvoiceInput label="Payment Source" value={draft.paymentSource} onChange={(value) => updateField('paymentSource', value)} placeholder="Card ending ****6547" />
+              <InvoiceInput label="Payment Source" value={draft.paymentSource} onChange={(value) => updateField('paymentSource', value)} placeholder="Card ending. ****xxxx" />
             </InvoiceFormSection>
 
             <InvoiceFormSection title="Charges & Pricing">
@@ -385,11 +393,6 @@ function InvoiceFormModal({
                   {formatMoney(totalAmount)}
                 </p>
               </div>
-            </InvoiceFormSection>
-
-            <InvoiceFormSection title="Signature Section">
-              <InvoiceInput label="Customer Signature" value={draft.customerSignature} onChange={(value) => updateField('customerSignature', value)} />
-              <InvoiceInput label="Signature Date" type="date" value={draft.signatureDate} onChange={(value) => updateField('signatureDate', value)} />
             </InvoiceFormSection>
 
             {error ? (
@@ -417,9 +420,13 @@ function InvoiceFormModal({
 
           <div className="rounded-3xl border border-border/70 bg-secondary/20 p-3">
             <p className="mb-3 text-sm font-semibold text-muted-foreground">Live Preview</p>
-            <div className="max-h-[78vh] overflow-auto rounded-2xl bg-white p-2">
-              <div className="mx-auto w-full max-w-[794px]">
-                <InvoiceDocument invoice={draftToInvoicePreview('preview', draft)} />
+            <div className="max-h-[78vh] overflow-auto rounded-2xl bg-white p-3">
+              <div className="mx-auto w-[381px] max-w-full">
+                <div className="h-[1096px] w-[381px] max-w-full overflow-hidden">
+                  <div className="origin-top-left scale-[0.48]">
+                    <InvoiceDocument invoice={draftToInvoicePreview('preview', draft)} />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

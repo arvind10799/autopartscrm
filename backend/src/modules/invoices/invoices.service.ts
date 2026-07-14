@@ -34,6 +34,7 @@ export class InvoicesService {
 
   async getDefaults(orderId: string, user: AuthenticatedUser) {
     const order = await this.invoicesRepository.findAccessibleOrder(orderId, user);
+    this.assertOrderCanGenerateInvoice(order);
     const intakeDetails = this.normalizeIntakeDetails(order.intakeDetails);
     const salesAssistant =
       this.getString(intakeDetails.advisorName) ?? order.createdBy.name;
@@ -85,6 +86,7 @@ export class InvoicesService {
     user: AuthenticatedUser,
   ) {
     const order = await this.invoicesRepository.findAccessibleOrder(orderId, user);
+    this.assertOrderCanGenerateInvoice(order);
 
     const existingInvoice = await this.invoicesRepository.findByOrderId(
       orderId,
@@ -250,6 +252,12 @@ export class InvoicesService {
     }
 
     return Number(totalAmount.toFixed(2));
+  }
+
+  private assertOrderCanGenerateInvoice(order: { status: string }) {
+    if (order.status === 'PARTIALLY_PAID') {
+      throw new BadRequestException('This order is still partially paid.');
+    }
   }
 
   private async issueSignatureRequest(
