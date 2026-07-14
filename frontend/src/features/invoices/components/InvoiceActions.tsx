@@ -476,9 +476,6 @@ function InvoiceDocument({ invoice }, ref) {
   <div ref={ref} className="invoice-document">
     <style>{INVOICE_DOCUMENT_CSS}</style>
     <div className="invoice-page">
-      <img className="invoice-watermark invoice-watermark-center" src="/images/logo.png" alt="" />
-      <img className="invoice-watermark invoice-watermark-bottom" src="/images/logo.png" alt="" />
-
       <header className="invoice-header">
         <div>
           <img className="invoice-logo" src="/images/logo.png" alt="MEE Auto Parts" />
@@ -557,6 +554,7 @@ function InvoiceDocument({ invoice }, ref) {
       </section>
 
       <section className="invoice-signature">
+        <div className="invoice-signature-label">Customer Signature :</div>
         <div className="invoice-signature-box">
           <div className="invoice-signature-line">
             {invoice.customerSignatureImage ? (
@@ -573,16 +571,103 @@ function InvoiceDocument({ invoice }, ref) {
       </section>
 
       <footer className="invoice-footer">
-        <span>🚗 www.meeautoparts.com</span>
+        <span>www.meeautoparts.com</span>
         <span>|</span>
-        <span>📞 (888) 338-9652</span>
+        <span>(888) 338-9652</span>
         <span>|</span>
-        <span>📧 support@meeautoparts.com</span>
+        <span>support@meeautoparts.com</span>
+      </footer>
+    </div>
+
+    <div className="invoice-page">
+      <InvoicePageHeader title="WARRANTY - TERMS & CONDITION" invoice={invoice} />
+      <WarrantyTerms />
+      <section className="invoice-signature">
+        <div className="invoice-signature-label">Customer Signature :</div>
+        <div className="invoice-signature-box">
+          <div className="invoice-signature-line">
+            {invoice.customerSignatureImage ? (
+              <img src={invoice.customerSignatureImage} alt="Customer signature" />
+            ) : (
+              invoice.customerSignature || ''
+            )}
+          </div>
+          <div className="invoice-signature-date">
+            <span>{invoice.signatureDate ? formatSignatureDate(invoice.signatureDate) : ''}</span>
+          </div>
+        </div>
+      </section>
+
+      <footer className="invoice-footer">
+        <span>www.meeautoparts.com</span>
+        <span>|</span>
+        <span>(888) 338-9652</span>
+        <span>|</span>
+        <span>support@meeautoparts.com</span>
       </footer>
     </div>
   </div>
   );
 });
+
+function InvoicePageHeader({
+  title,
+  invoice,
+}: {
+  title: string;
+  invoice: InvoiceRecord;
+}) {
+  return (
+    <>
+      <header className="invoice-header">
+        <div>
+          <img className="invoice-logo" src="/images/logo.png" alt="MEE Auto Parts" />
+        </div>
+        <div className="invoice-title-block invoice-title-block--warranty">
+          <h1>{title}</h1>
+        </div>
+      </header>
+
+      <p className="invoice-company">
+        MEEHIKAA AUTO PARTS INC. - 440 E HUNTINGTON DR STE 300 ARCADIA, CA 91006-3775
+      </p>
+    </>
+  );
+}
+
+function WarrantyTerms() {
+  return (
+    <section className="invoice-warranty">
+      <h2>Warranty | Returns | Cancellation</h2>
+
+      <h3>Warranty ( parts only )</h3>
+      <ul>
+        <li>Standard: 90 days for non-performance engines and transmissions.</li>
+        <li>No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor -any accesories sent isn&apos;t charged or covered</li>
+        <li>Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accesories.</li>
+        <li>Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.</li>
+        <li>Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.</li>
+      </ul>
+
+      <h3>Installation & Returns</h3>
+      <ul>
+        <li>Installation: Engines and transmissions must be installed within 15 days from the day of delivery by a licensed professional at a licensed repair facility, following manufacturer guidelines.</li>
+        <li>All parts must be installed within 15 days of delivery. Failure to complete the installation within this timeframe will void any warranty claims.</li>
+        <li>Defective Parts: MEE Auto Parts will exchange defective parts or issue a refund only if the part is out of stock.</li>
+        <li>Returns: Parts must be returned in their original condition.</li>
+      </ul>
+
+      <h3>Cancellation</h3>
+      <ul>
+        <li>Cancellation request after payment confirmation will have standard 25% restocking fee remainder will be refunded to the source payment method except wire payments, also additional shipping charges will apply for any requests post 24 hrs from payment confirmation.</li>
+      </ul>
+
+      <p>
+        <strong>Note :</strong> MEE AUTO PARTS is not responsible for improper installation or usage, labor charges, loss of income, wages, salary, or car rental charges.
+      </p>
+    </section>
+  );
+}
 
 function InfoLine({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -814,42 +899,26 @@ function escapeHtml(value: string): string {
 const INVOICE_DOCUMENT_CSS = `
   .invoice-document {
     width: 794px;
-    min-height: 1123px;
-    color: #5d646b;
+    color: #56575c;
     font-family: Arial, Helvetica, sans-serif;
-    background: #d9d6d6;
+    background: transparent;
   }
 
   .invoice-page {
     position: relative;
     width: 794px;
     min-height: 1123px;
+    margin: 0 0 18px;
     padding: 14px 24px 18px;
     overflow: hidden;
-    background: #d9d6d6;
-    border-top: 10px solid #8d8b8b;
-    border-bottom: 10px solid #8d8b8b;
+    background: #dfdcdd;
+    border-top: 10px solid #8f8f8f;
+    border-bottom: 10px solid #8f8f8f;
+    page-break-after: always;
   }
 
-  .invoice-watermark {
-    position: absolute;
-    left: 50%;
-    z-index: 0;
-    width: 600px;
-    max-width: none;
-    opacity: 0.07;
-    transform: translateX(-50%);
-    pointer-events: none;
-  }
-
-  .invoice-watermark-center {
-    top: 168px;
-  }
-
-  .invoice-watermark-bottom {
-    bottom: 145px;
-    width: 660px;
-    opacity: 0.12;
+  .invoice-page:last-child {
+    margin-bottom: 0;
   }
 
   .invoice-header,
@@ -858,6 +927,7 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-delivery,
   .invoice-items,
   .invoice-payment-card,
+  .invoice-warranty,
   .invoice-signature,
   .invoice-footer {
     position: relative;
@@ -866,129 +936,139 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-header {
     display: grid;
-    grid-template-columns: 1fr 316px;
-    gap: 24px;
+    grid-template-columns: 1fr 330px;
+    gap: 22px;
     align-items: start;
   }
 
   .invoice-logo {
     width: 360px;
     height: auto;
-    margin: 2px 0 18px 25px;
+    margin: 0 0 18px 34px;
   }
 
   .invoice-title-block h1 {
-    margin: 0 0 10px;
-    color: #87929c;
-    font-size: 29px;
-    line-height: 1;
+    margin: 0 0 12px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 22px;
+    line-height: 1.1;
     font-weight: 800;
-    letter-spacing: -1px;
-    text-align: center;
+    text-align: left;
+  }
+
+  .invoice-title-block--warranty h1 {
+    margin-top: -2px;
+    font-size: 21px;
+    text-align: left;
   }
 
   .invoice-meta-grid {
     display: grid;
-    grid-template-columns: 1.05fr 1.4fr;
-    background: rgba(240, 240, 240, 0.65);
-    font-size: 14px;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 0;
+    font-size: 15px;
   }
 
   .invoice-meta-grid span,
   .invoice-meta-grid strong {
-    padding: 5px 8px;
-    min-height: 22px;
+    min-height: 28px;
+    padding: 0 0 8px;
   }
 
   .invoice-meta-grid span {
-    color: #777;
+    color: #5e6068;
     font-weight: 800;
-    border-right: 1px solid rgba(255, 255, 255, 0.9);
   }
 
   .invoice-meta-grid strong {
-    color: #777;
+    color: #5e6068;
     font-weight: 500;
   }
 
   .invoice-company {
-    margin: 8px 22px 8px;
-    padding-bottom: 8px;
-    border-bottom: 4px solid #919191;
-    color: #4f4f4f;
+    margin: 6px 22px 10px;
+    padding-bottom: 9px;
+    border-bottom: 4px solid #9b9b9b;
+    color: #4d4d4d;
     font-size: 10px;
-    letter-spacing: 0.1px;
+    letter-spacing: 0;
   }
 
   .invoice-address-section {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    min-height: 130px;
-    padding: 6px 28px 0;
-    font-size: 13px;
+    min-height: 132px;
+    padding: 3px 12px 0;
+    font-size: 15px;
   }
 
   .invoice-address-left {
-    padding-right: 22px;
+    padding-right: 24px;
   }
 
   .invoice-address-right {
-    border-left: 2px solid #8c8c8c;
-    padding-left: 8px;
+    border-left: 2px solid #8d8d8d;
+    padding-left: 12px;
   }
 
   .invoice-info-line {
     display: grid;
     grid-template-columns: max-content 1fr;
     gap: 6px;
-    margin: 0 0 46px;
+    margin: 0 0 72px;
     line-height: 1.25;
   }
 
   .invoice-address-right .invoice-info-line {
-    margin-bottom: 38px;
+    margin-bottom: 50px;
+  }
+
+  .invoice-payment-card .invoice-info-line {
+    grid-template-columns: 118px 1fr;
+    margin-bottom: 9px;
+    font-size: 13px;
   }
 
   .invoice-info-line strong {
-    color: #7c7c7c;
+    color: #4f5157;
     font-weight: 800;
   }
 
   .invoice-info-line span {
     white-space: pre-wrap;
-    color: #777;
+    color: #5c5d63;
   }
 
   .invoice-delivery {
-    margin: 0 0 8px;
-    padding: 8px 0 10px;
-    border-bottom: 4px solid #919191;
-    color: #4f4f4f;
+    margin: 0;
+    padding: 6px 0 10px;
+    border-bottom: 4px solid #9b9b9b;
+    color: #4f5157;
     font-size: 15px;
     text-align: center;
   }
 
   .invoice-items {
     display: grid;
-    grid-template-columns: 1fr 120px 155px;
-    min-height: 138px;
-    margin: 8px 0 8px;
+    grid-template-columns: 1fr 130px 160px;
+    min-height: 136px;
+    margin: 8px 0;
     padding: 10px 12px;
     border: 1px solid #111;
-    border-radius: 10px;
+    border-radius: 8px;
   }
 
   .invoice-items h2 {
-    margin: 0 0 6px;
-    color: #62666e;
+    margin: 0 0 10px;
+    color: #5e6068;
     font-size: 18px;
     line-height: 1;
     font-weight: 800;
   }
 
   .invoice-items p {
-    margin: 0 0 18px;
-    color: #777;
+    margin: 0 0 14px;
+    color: #66676c;
     font-size: 14px;
     font-weight: 700;
     line-height: 1.35;
@@ -1013,27 +1093,21 @@ const INVOICE_DOCUMENT_CSS = `
     display: grid;
     grid-template-columns: 1.25fr 1fr;
     gap: 24px;
-    min-height: 150px;
-    padding: 10px 12px 12px;
+    min-height: 148px;
+    padding: 10px 12px;
     border: 1px solid #111;
-    border-radius: 10px;
-  }
-
-  .invoice-payment-card .invoice-info-line {
-    grid-template-columns: 115px 1fr;
-    margin-bottom: 7px;
-    font-size: 13px;
+    border-radius: 8px;
   }
 
   .invoice-notice {
-    margin-top: 30px;
+    margin-top: 20px;
     font-size: 11px;
     color: #444;
   }
 
   .invoice-notice p {
     display: inline-block;
-    margin: 0 0 4px;
+    margin: 0 0 8px;
     color: #ff1717;
     text-decoration: underline;
   }
@@ -1044,7 +1118,7 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-notice li {
-    margin: 4px 0;
+    margin: 5px 0;
   }
 
   .invoice-notice span {
@@ -1052,97 +1126,150 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-charges {
-    padding: 0 58px 0 40px;
+    padding: 0 68px 0 28px;
   }
 
   .invoice-charge-line,
   .invoice-total-row {
     display: grid;
-    grid-template-columns: 1fr 92px;
+    grid-template-columns: 1fr 90px;
     gap: 10px;
-    margin: 0 0 5px;
+    margin: 0 0 6px;
     align-items: baseline;
   }
 
   .invoice-charge-line span,
   .invoice-charge-line strong {
-    color: #62666e;
-    font-size: 13px;
+    color: #62646a;
+    font-size: 14px;
     font-weight: 500;
   }
 
   .invoice-total-row {
-    margin-top: 20px;
+    margin-top: 34px;
   }
 
   .invoice-total-row span,
   .invoice-total-row strong {
-    color: #50565c;
-    font-size: 17px;
+    color: #505258;
+    font-size: 16px;
     font-weight: 800;
   }
 
+  .invoice-warranty {
+    margin-top: 40px;
+    color: #5b5c61;
+    font-size: 12.6px;
+    line-height: 1.34;
+  }
+
+  .invoice-warranty h2 {
+    margin: 0 0 28px;
+    color: #55565b;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .invoice-warranty h3 {
+    margin: 18px 0 2px;
+    color: #55565b;
+    font-size: 12.8px;
+    font-weight: 800;
+  }
+
+  .invoice-warranty ul {
+    margin: 0;
+    padding-left: 14px;
+  }
+
+  .invoice-warranty li {
+    margin: 1px 0;
+  }
+
+  .invoice-warranty p {
+    margin: 26px 0 0;
+    font-size: 13px;
+  }
+
   .invoice-signature {
-    min-height: 380px;
+    position: absolute;
+    right: 10px;
+    bottom: 18px;
+    z-index: 2;
+    width: 300px;
+    height: 95px;
+  }
+
+  .invoice-signature-label {
+    position: absolute;
+    right: 180px;
+    top: 14px;
+    width: 150px;
+    color: #17172f;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: right;
   }
 
   .invoice-signature-box {
     position: absolute;
     right: 0;
-    bottom: 54px;
-    width: 196px;
-    height: 88px;
-    border: 2px solid #111;
-    border-top: none;
+    top: 0;
+    width: 180px;
+    height: 82px;
+    border-left: 2px solid #111;
+    border-right: 2px solid #111;
   }
 
   .invoice-signature-line {
-    min-height: 52px;
+    min-height: 50px;
     border-top: 2px solid #111;
     color: #111;
     font-family: "Brush Script MT", cursive;
-    font-size: 26px;
-    line-height: 52px;
+    font-size: 24px;
+    line-height: 50px;
     text-align: center;
   }
 
   .invoice-signature-line img {
-    max-width: 170px;
-    max-height: 46px;
+    max-width: 154px;
+    max-height: 44px;
     object-fit: contain;
     vertical-align: middle;
   }
 
   .invoice-signature-date {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    border-top: 2px solid #111;
-    padding: 7px 2px;
+    min-height: 30px;
+    border-bottom: 2px solid #111;
     color: #111;
     font-size: 12px;
+    line-height: 30px;
+    text-align: center;
   }
 
   .invoice-footer {
     position: absolute;
-    left: 12px;
+    left: 16px;
     bottom: 8px;
     display: flex;
     gap: 10px;
     align-items: center;
-    color: #5f6870;
+    color: #62666f;
     font-size: 15px;
   }
 
   @media print {
     body {
       margin: 0;
-      background: #d9d6d6;
+      background: #dfdcdd;
     }
 
     .invoice-document {
       width: 794px;
-      min-height: 1123px;
+    }
+
+    .invoice-page {
+      margin: 0;
     }
   }
 `;
