@@ -563,7 +563,7 @@ function InvoiceHeader({
   return (
     <header className="invoice-header">
       <div className="invoice-logo-block">
-        <img className="invoice-logo" src="/images/logo.png" alt="MEE Auto Parts" />
+        <img className="invoice-logo" src="/images/invoice-logo.png" alt="MEE Auto Parts" />
         <p>MEEHIKAA AUTO PARTS INC. - 440 E HUNTINGTON DR STE 300 ARCADIA, CA 91006-3775</p>
       </div>
       <div className="invoice-title-block">
