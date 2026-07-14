@@ -1217,7 +1217,7 @@ const INVOICE_DOCUMENT_CSS = `
     position: absolute;
     z-index: 1;
     color: #5f6067;
-    font-size: clamp(8px, 1.45vw, 12px);
+    font-size: clamp(9px, 1.35vw, 11px);
     line-height: 1.24;
     white-space: pre-wrap;
     word-break: break-word;
@@ -1229,19 +1229,19 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-field-number {
     left: 77.5%;
-    top: 6.8%;
+    top: 4.7%;
     width: 17%;
   }
 
   .invoice-field-date {
     left: 77.5%;
-    top: 9.6%;
+    top: 7.6%;
     width: 17%;
   }
 
   .invoice-field-assistant {
     left: 77.5%;
-    top: 12.5%;
+    top: 10.5%;
     width: 17%;
   }
 
@@ -1259,21 +1259,21 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-field-customer-name {
-    left: 67%;
+    left: 75.7%;
     top: 17.1%;
-    width: 27%;
+    width: 19%;
   }
 
   .invoice-field-billing-address {
-    left: 67%;
+    left: 75.7%;
     top: 19.8%;
-    width: 27%;
+    width: 19%;
   }
 
   .invoice-field-contact {
-    left: 67%;
+    left: 75.7%;
     top: 25.3%;
-    width: 27%;
+    width: 19%;
   }
 
   .invoice-field-item-main {
@@ -1342,7 +1342,7 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-field-total {
     left: 73.5%;
-    top: 55.7%;
+    top: 52.7%;
     width: 18%;
     font-weight: 800;
   }
