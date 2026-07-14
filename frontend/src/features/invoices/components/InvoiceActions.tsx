@@ -475,197 +475,74 @@ function InvoiceDocument({ invoice }, ref) {
   return (
   <div ref={ref} className="invoice-document">
     <style>{INVOICE_DOCUMENT_CSS}</style>
-    <div className="invoice-page">
-      <header className="invoice-header">
-        <div>
-          <img className="invoice-logo" src="/images/logo.png" alt="MEE Auto Parts" />
-        </div>
-        <div className="invoice-title-block">
-          <h1>PURCHASE INVOICE</h1>
-          <div className="invoice-meta-grid">
-            <span>Invoice Number</span>
-            <strong>{invoice.invoiceNumber}</strong>
-            <span>Invoice Date</span>
-            <strong>{formatInvoiceDate(invoice.invoiceDate)}</strong>
-            <span>Sale Assistant</span>
-            <strong>{invoice.salesAssistant || ''}</strong>
-          </div>
-        </div>
-      </header>
-
-      <p className="invoice-company">
-        MEEHIKAA AUTO PARTS INC. - 440 E HUNTINGTON DR STE 300 ARCADIA, CA 91006-3775
-      </p>
-
-      <section className="invoice-address-section">
-        <div className="invoice-address-left">
-          <InfoLine label="Shipping Address" value={invoice.shippingAddress} />
-          <InfoLine label="Shipping Vendor" value={invoice.shippingVendor} />
-        </div>
-        <div className="invoice-address-right">
-          <InfoLine label="Customer Name" value={invoice.customerName} />
-          <InfoLine label="Billing Address" value={invoice.billingAddress} />
-          <InfoLine label="Contact Number" value={invoice.contactNumber} />
-        </div>
-      </section>
-
-      <p className="invoice-delivery">
-        Delivery timeline is {invoice.deliveryTimeline}, may vary due to distance and shipping vendor
-      </p>
-
-      <section className="invoice-items">
-        <div className="invoice-item-description">
-          <h2>Item Descriptions</h2>
-          <p className="invoice-item-main">{invoice.itemDescription}</p>
-          <p>{invoice.vehiclePartDescription || ''}</p>
-        </div>
-        <div className="invoice-item-qty">
-          <h2>Qty</h2>
-          <p>{invoice.quantity}</p>
-        </div>
-        <div className="invoice-item-amount">
-          <h2>Amount</h2>
-          <p>{formatMoney(invoice.saleAmount)}</p>
-        </div>
-      </section>
-
-      <section className="invoice-payment-card">
-        <div className="invoice-payment-details">
-          <InfoLine label="Payment Status" value={invoice.paymentStatus} />
-          <InfoLine label="Date" value={invoice.paymentDate ? formatInvoiceDate(invoice.paymentDate) : ''} />
-          <InfoLine label="Payment Source" value={invoice.paymentSource} />
-          <div className="invoice-notice">
-            <p>Additional charges will be applicable :</p>
-            <ul>
-              <li><span>If unloading equipment</span> is unavailable at the time of delivery ( Freight&apos;s only)</li>
-              <li><span>Reschedule delivery</span> ( Missed or reattempt delivery )</li>
-            </ul>
-          </div>
-        </div>
-        <div className="invoice-charges">
-          <ChargeLine label="Shipping Cost" value={invoice.shippingCost} />
-          <ChargeLine label="Sales Taxes" value={invoice.salesTaxes} />
-          <ChargeLine label="Core Charge" value={invoice.coreCharge} />
-          <div className="invoice-total-row">
-            <span>TOTAL</span>
-            <strong>{formatMoney(invoice.totalAmount)}</strong>
-          </div>
-        </div>
-      </section>
-
-      <section className="invoice-signature">
-        <div className="invoice-signature-label">Customer Signature :</div>
-        <div className="invoice-signature-box">
-          <div className="invoice-signature-line">
-            {invoice.customerSignatureImage ? (
-              <img src={invoice.customerSignatureImage} alt="Customer signature" />
-            ) : (
-              invoice.customerSignature || ''
-            )}
-          </div>
-          <div className="invoice-signature-date">
-            <strong>Date :</strong>
-            <span>{invoice.signatureDate ? formatSignatureDate(invoice.signatureDate) : ''}</span>
-          </div>
-        </div>
-      </section>
-
-      <footer className="invoice-footer">
-        <span>www.meeautoparts.com</span>
-        <span>|</span>
-        <span>(888) 338-9652</span>
-        <span>|</span>
-        <span>support@meeautoparts.com</span>
-      </footer>
+    <div className="invoice-page invoice-template-page">
+      <img
+        className="invoice-template-image"
+        src="/images/invoice-template/mee-invoice-template-1.png"
+        alt=""
+      />
+      <TemplateText className="invoice-field invoice-field-number">{invoice.invoiceNumber}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-date">{formatInvoiceDate(invoice.invoiceDate)}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-assistant">{invoice.salesAssistant || ''}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-shipping-address">{invoice.shippingAddress || ''}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-shipping-vendor">{invoice.shippingVendor}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-customer-name">{invoice.customerName}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-billing-address">{invoice.billingAddress || ''}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-contact">{invoice.contactNumber || ''}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-item-main">{invoice.itemDescription}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-item-sub">{invoice.vehiclePartDescription || ''}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-qty">{String(invoice.quantity)}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-amount">{formatMoney(invoice.saleAmount)}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-payment-status">{invoice.paymentStatus || ''}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-payment-date">{invoice.paymentDate ? formatInvoiceDate(invoice.paymentDate) : ''}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-payment-source">{invoice.paymentSource || ''}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-shipping-cost">$ {invoice.shippingCost.toFixed(2)}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-sales-taxes">$ {invoice.salesTaxes.toFixed(2)}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-core-charge">$ {invoice.coreCharge.toFixed(2)}</TemplateText>
+      <TemplateText className="invoice-field invoice-field-total">{formatMoney(invoice.totalAmount)}</TemplateText>
+      <InvoiceTemplateSignature invoice={invoice} page="purchase" />
     </div>
 
-    <div className="invoice-page">
-      <InvoicePageHeader title="WARRANTY - TERMS & CONDITION" invoice={invoice} />
-      <WarrantyTerms />
-      <section className="invoice-signature">
-        <div className="invoice-signature-label">Customer Signature :</div>
-        <div className="invoice-signature-box">
-          <div className="invoice-signature-line">
-            {invoice.customerSignatureImage ? (
-              <img src={invoice.customerSignatureImage} alt="Customer signature" />
-            ) : (
-              invoice.customerSignature || ''
-            )}
-          </div>
-          <div className="invoice-signature-date">
-            <span>{invoice.signatureDate ? formatSignatureDate(invoice.signatureDate) : ''}</span>
-          </div>
-        </div>
-      </section>
-
-      <footer className="invoice-footer">
-        <span>www.meeautoparts.com</span>
-        <span>|</span>
-        <span>(888) 338-9652</span>
-        <span>|</span>
-        <span>support@meeautoparts.com</span>
-      </footer>
+    <div className="invoice-page invoice-template-page">
+      <img
+        className="invoice-template-image"
+        src="/images/invoice-template/mee-invoice-template-2.png"
+        alt=""
+      />
+      <InvoiceTemplateSignature invoice={invoice} page="warranty" />
     </div>
   </div>
   );
 });
 
-function InvoicePageHeader({
-  title,
-  invoice,
+function TemplateText({
+  className,
+  children,
 }: {
-  title: string;
-  invoice: InvoiceRecord;
+  className: string;
+  children: ReactNode;
 }) {
-  return (
-    <>
-      <header className="invoice-header">
-        <div>
-          <img className="invoice-logo" src="/images/logo.png" alt="MEE Auto Parts" />
-        </div>
-        <div className="invoice-title-block invoice-title-block--warranty">
-          <h1>{title}</h1>
-        </div>
-      </header>
-
-      <p className="invoice-company">
-        MEEHIKAA AUTO PARTS INC. - 440 E HUNTINGTON DR STE 300 ARCADIA, CA 91006-3775
-      </p>
-    </>
-  );
+  return <div className={className}>{children}</div>;
 }
 
-function WarrantyTerms() {
+function InvoiceTemplateSignature({
+  invoice,
+  page,
+}: {
+  invoice: InvoiceRecord;
+  page: 'purchase' | 'warranty';
+}) {
   return (
-    <section className="invoice-warranty">
-      <h2>Warranty | Returns | Cancellation</h2>
-
-      <h3>Warranty ( parts only )</h3>
-      <ul>
-        <li>Standard: 90 days for non-performance engines and transmissions.</li>
-        <li>No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor -any accesories sent isn&apos;t charged or covered</li>
-        <li>Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accesories.</li>
-        <li>Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.</li>
-        <li>Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.</li>
-      </ul>
-
-      <h3>Installation & Returns</h3>
-      <ul>
-        <li>Installation: Engines and transmissions must be installed within 15 days from the day of delivery by a licensed professional at a licensed repair facility, following manufacturer guidelines.</li>
-        <li>All parts must be installed within 15 days of delivery. Failure to complete the installation within this timeframe will void any warranty claims.</li>
-        <li>Defective Parts: MEE Auto Parts will exchange defective parts or issue a refund only if the part is out of stock.</li>
-        <li>Returns: Parts must be returned in their original condition.</li>
-      </ul>
-
-      <h3>Cancellation</h3>
-      <ul>
-        <li>Cancellation request after payment confirmation will have standard 25% restocking fee remainder will be refunded to the source payment method except wire payments, also additional shipping charges will apply for any requests post 24 hrs from payment confirmation.</li>
-      </ul>
-
-      <p>
-        <strong>Note :</strong> MEE AUTO PARTS is not responsible for improper installation or usage, labor charges, loss of income, wages, salary, or car rental charges.
-      </p>
-    </section>
+    <div className={`invoice-template-signature invoice-template-signature-${page}`}>
+      {invoice.customerSignatureImage ? (
+        <img src={invoice.customerSignatureImage} alt="Customer signature" />
+      ) : (
+        <span>{invoice.customerSignature || ''}</span>
+      )}
+      <div className="invoice-template-signature-date">
+        {invoice.signatureDate ? formatSignatureDate(invoice.signatureDate) : ''}
+      </div>
+    </div>
   );
 }
 
@@ -896,7 +773,7 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#039;');
 }
 
-const INVOICE_DOCUMENT_CSS = `
+const LEGACY_INVOICE_DOCUMENT_CSS = `
   .invoice-document {
     width: 794px;
     color: #56575c;
@@ -1270,6 +1147,230 @@ const INVOICE_DOCUMENT_CSS = `
 
     .invoice-page {
       margin: 0;
+    }
+  }
+`;
+
+const INVOICE_DOCUMENT_CSS = `
+  .invoice-document {
+    width: 794px;
+    color: #5f6067;
+    font-family: Arial, Helvetica, sans-serif;
+    background: transparent;
+  }
+
+  .invoice-template-page {
+    position: relative;
+    width: 794px;
+    height: 1123px;
+    margin: 0 0 18px;
+    overflow: hidden;
+    background: #dfdcdd;
+    page-break-after: always;
+  }
+
+  .invoice-template-page:last-child {
+    margin-bottom: 0;
+  }
+
+  .invoice-template-image {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .invoice-field {
+    position: absolute;
+    z-index: 1;
+    color: #5f6067;
+    font-size: 14px;
+    line-height: 1.24;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .invoice-field-number {
+    left: 650px;
+    top: 51px;
+    width: 118px;
+  }
+
+  .invoice-field-date {
+    left: 650px;
+    top: 82px;
+    width: 118px;
+  }
+
+  .invoice-field-assistant {
+    left: 650px;
+    top: 111px;
+    width: 118px;
+  }
+
+  .invoice-field-shipping-address {
+    left: 190px;
+    top: 190px;
+    width: 205px;
+  }
+
+  .invoice-field-shipping-vendor {
+    left: 340px;
+    top: 287px;
+    width: 88px;
+    text-align: center;
+  }
+
+  .invoice-field-customer-name {
+    left: 510px;
+    top: 188px;
+    width: 250px;
+  }
+
+  .invoice-field-billing-address {
+    left: 510px;
+    top: 222px;
+    width: 250px;
+  }
+
+  .invoice-field-contact {
+    left: 510px;
+    top: 284px;
+    width: 250px;
+  }
+
+  .invoice-field-item-main {
+    left: 38px;
+    top: 392px;
+    width: 430px;
+    font-weight: 700;
+  }
+
+  .invoice-field-item-sub {
+    left: 38px;
+    top: 424px;
+    width: 430px;
+    font-weight: 700;
+  }
+
+  .invoice-field-qty {
+    left: 478px;
+    top: 392px;
+    width: 48px;
+    text-align: center;
+  }
+
+  .invoice-field-amount {
+    left: 618px;
+    top: 392px;
+    width: 120px;
+    text-align: center;
+  }
+
+  .invoice-field-payment-status {
+    left: 158px;
+    top: 515px;
+    width: 205px;
+  }
+
+  .invoice-field-payment-date {
+    left: 158px;
+    top: 543px;
+    width: 205px;
+  }
+
+  .invoice-field-payment-source {
+    left: 158px;
+    top: 570px;
+    width: 205px;
+  }
+
+  .invoice-field-shipping-cost {
+    left: 637px;
+    top: 515px;
+    width: 70px;
+  }
+
+  .invoice-field-sales-taxes {
+    left: 637px;
+    top: 543px;
+    width: 70px;
+  }
+
+  .invoice-field-core-charge {
+    left: 637px;
+    top: 570px;
+    width: 70px;
+  }
+
+  .invoice-field-total {
+    left: 610px;
+    top: 626px;
+    width: 130px;
+    font-weight: 800;
+  }
+
+  .invoice-template-signature {
+    position: absolute;
+    z-index: 1;
+    right: 23px;
+    bottom: 27px;
+    width: 180px;
+    height: 82px;
+    color: #111;
+    text-align: center;
+  }
+
+  .invoice-template-signature img {
+    display: block;
+    max-width: 155px;
+    max-height: 45px;
+    margin: 5px auto 0;
+    object-fit: contain;
+  }
+
+  .invoice-template-signature span {
+    display: block;
+    height: 50px;
+    padding-top: 8px;
+    font-family: "Brush Script MT", cursive;
+    font-size: 24px;
+    line-height: 1.1;
+  }
+
+  .invoice-template-signature-date {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 3px;
+    height: 22px;
+    color: #111;
+    font-size: 12px;
+    line-height: 22px;
+  }
+
+  @media print {
+    body {
+      margin: 0;
+      background: #dfdcdd;
+    }
+
+    .invoice-document {
+      width: 794px;
+    }
+
+    .invoice-template-page {
+      margin: 0;
+      break-after: page;
+      page-break-after: always;
+    }
+
+    .invoice-template-page:last-child {
+      break-after: auto;
+      page-break-after: auto;
     }
   }
 `;
