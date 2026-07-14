@@ -1285,8 +1285,9 @@ const LEGACY_INVOICE_DOCUMENT_CSS = `
 const INVOICE_DOCUMENT_CSS = `
   .invoice-document {
     width: 794px;
-    color: #56575c;
-    font-family: Arial, Helvetica, sans-serif;
+    color: #5f6067;
+    font-family: "Arial Narrow", "Helvetica Neue", Arial, Helvetica, sans-serif;
+    font-stretch: condensed;
     background: transparent;
   }
 
@@ -1328,17 +1329,18 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-logo-block p {
     margin: 0;
-    color: #6e6e72;
-    font-size: 9px;
-    letter-spacing: 0.01em;
+    color: #67686e;
+    font-size: 8.2px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   .invoice-title-block h1 {
     margin: 0 0 18px;
     color: rgba(255, 255, 255, 0.46);
-    font-size: 25px;
+    font-size: 26px;
     font-weight: 900;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.075em;
     line-height: 1;
     text-transform: uppercase;
   }
@@ -1347,8 +1349,8 @@ const INVOICE_DOCUMENT_CSS = `
     display: grid;
     grid-template-columns: 116px 1fr;
     row-gap: 14px;
-    color: #686970;
-    font-size: 11px;
+    color: #5f6067;
+    font-size: 9.4px;
     line-height: 1;
   }
 
@@ -1393,8 +1395,9 @@ const INVOICE_DOCUMENT_CSS = `
     column-gap: 8px;
     align-items: start;
     min-width: 0;
-    font-size: 11px;
-    line-height: 1.28;
+    color: #111827;
+    font-size: 9.2px;
+    line-height: 1.18;
   }
 
   .invoice-label-value--inline {
@@ -1404,8 +1407,8 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-label-value--compact {
     grid-template-columns: 98px 1fr;
     column-gap: 4px;
-    font-size: 9px;
-    line-height: 1.18;
+    font-size: 8.4px;
+    line-height: 1.12;
   }
 
   .invoice-label-value span {
@@ -1418,7 +1421,9 @@ const INVOICE_DOCUMENT_CSS = `
     padding-bottom: 10px;
     border-bottom: 3px solid #9c9c9c;
     color: #67686d;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.035em;
     line-height: 1;
   }
 
@@ -1444,7 +1449,9 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-items-header {
     color: #606168;
-    font-size: 17px;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: -0.055em;
     line-height: 1;
   }
 
@@ -1458,7 +1465,8 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-items-row {
     padding-top: 20px;
     color: #111827;
-    font-size: 10px;
+    font-size: 9.2px;
+    font-weight: 600;
     line-height: 1.1;
   }
 
@@ -1480,7 +1488,8 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-charge-info {
     padding-left: 20px;
     color: #66676d;
-    font-size: 13px;
+    font-size: 12.5px;
+    font-weight: 500;
   }
 
   .invoice-charge-line {
@@ -1493,14 +1502,14 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-extra-notice {
     margin-top: 18px;
     color: #55575d;
-    font-size: 8.5px;
+    font-size: 8px;
     line-height: 1.3;
   }
 
   .invoice-extra-notice p {
     margin: 0 0 8px;
     color: #ff1f28;
-    font-size: 10.5px;
+    font-size: 10px;
     text-decoration: underline;
   }
 
@@ -1522,11 +1531,12 @@ const INVOICE_DOCUMENT_CSS = `
     grid-template-columns: 1fr 86px;
     margin-top: 40px;
     color: #4f5056;
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .invoice-total strong:first-child {
     font-size: 15px;
+    letter-spacing: -0.05em;
   }
 
   .invoice-signature-area {
@@ -1542,8 +1552,9 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-signature-area > strong {
     padding-top: 13px;
     text-align: right;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 900;
+    letter-spacing: -0.03em;
   }
 
   .invoice-signature-box {
@@ -1586,28 +1597,34 @@ const INVOICE_DOCUMENT_CSS = `
     gap: 10px;
     align-items: center;
     color: #62666f;
-    font-size: 16px;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.04em;
   }
 
   .invoice-warranty {
     margin: 48px 42px 0;
     color: #5b5c61;
-    font-size: 13px;
-    line-height: 1.38;
+    font-size: 11.7px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1.32;
   }
 
   .invoice-warranty h2 {
     margin: 0 0 30px;
     color: #55565b;
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 900;
+    letter-spacing: -0.04em;
   }
 
   .invoice-warranty h3 {
     margin: 18px 0 3px;
     color: #55565b;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 900;
+    letter-spacing: -0.035em;
   }
 
   .invoice-warranty ul {
