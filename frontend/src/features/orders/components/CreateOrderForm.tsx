@@ -61,7 +61,7 @@ const defaultValues: CreateOrderFormValues = {
   total: '',
   partialPayment: undefined,
   quantity: '1',
-  status: 'PARTIALLY_PAID',
+  status: 'CONFIRMED',
   paymentMethod: undefined,
   note: '',
 };

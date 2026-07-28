@@ -26,6 +26,8 @@ enum OrderStatus {
 enum OrderPaymentMethod {
   WIRE_TRANSFER
   CREDIT_CARD
+  INVOICE
+  OTHER
 }
 
 enum ShipmentStatus {

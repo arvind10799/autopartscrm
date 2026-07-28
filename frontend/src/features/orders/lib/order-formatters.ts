@@ -31,6 +31,8 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 const ORDER_PAYMENT_METHOD_LABELS: Record<OrderPaymentMethod, string> = {
   WIRE_TRANSFER: 'Wire payment',
   CREDIT_CARD: 'Credit card payment',
+  INVOICE: 'Invoice',
+  OTHER: 'Other',
 };
 
 export function formatCurrency(value: number): string {

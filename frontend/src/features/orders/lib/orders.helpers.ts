@@ -88,7 +88,14 @@ export function formatShipmentStatusOptionLabel(
 export function formatOrderPaymentMethodLabel(
   paymentMethod: OrderPaymentMethod,
 ): string {
-  return paymentMethod === 'WIRE_TRANSFER' ? 'Wire payment' : 'Credit card payment';
+  const labels: Record<OrderPaymentMethod, string> = {
+    WIRE_TRANSFER: 'Wire payment',
+    CREDIT_CARD: 'Credit card payment',
+    INVOICE: 'Invoice',
+    OTHER: 'Other',
+  };
+
+  return labels[paymentMethod];
 }
 
 export function isOrderStatus(value: string): value is OrderStatus {

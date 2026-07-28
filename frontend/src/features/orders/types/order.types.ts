@@ -27,7 +27,12 @@ export const CREATE_ORDER_STATUSES = [
   'CONFIRMED',
 ] as const satisfies readonly OrderStatus[];
 
-export const ORDER_PAYMENT_METHODS = ['WIRE_TRANSFER', 'CREDIT_CARD'] as const;
+export const ORDER_PAYMENT_METHODS = [
+  'WIRE_TRANSFER',
+  'CREDIT_CARD',
+  'INVOICE',
+  'OTHER',
+] as const;
 
 export type OrderPaymentMethod = (typeof ORDER_PAYMENT_METHODS)[number];
 
