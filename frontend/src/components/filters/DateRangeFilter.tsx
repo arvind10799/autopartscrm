@@ -21,32 +21,55 @@ const PRESET_OPTIONS: Array<{
 export function DateRangeFilter({
   value,
   onChange,
+  variant = 'card',
 }: {
   value: DateRangeFilterState;
   onChange: (value: DateRangeFilterState) => void;
+  variant?: 'card' | 'inline';
 }) {
   const isCustom = value.preset === 'CUSTOM';
+  const isInline = variant === 'inline';
 
   return (
-    <div className="rounded-[1.35rem] border border-border/70 bg-white/90 p-4 shadow-sm">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex items-start gap-3">
+    <div
+      className={
+        isInline
+          ? 'w-full'
+          : 'rounded-[1.35rem] border border-border/70 bg-white/90 p-4 shadow-sm'
+      }
+    >
+      <div
+        className={
+          isInline
+            ? 'flex flex-col gap-2'
+            : 'flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between'
+        }
+      >
+        <div className={isInline ? 'space-y-1' : 'flex items-start gap-3'}>
+          {!isInline ? (
           <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <CalendarRange className="h-4 w-4" />
           </div>
-          <div className="space-y-1">
+          ) : null}
+          <div className={isInline ? '' : 'space-y-1'}>
             <p className="text-sm font-semibold text-foreground">Created date</p>
+            {!isInline ? (
             <p className="text-sm text-muted-foreground">
               Filter records by a preset window or a custom date range.
             </p>
+            ) : null}
           </div>
         </div>
 
         <div
           className={
-            isCustom
-              ? 'grid gap-3 md:grid-cols-3 xl:min-w-[44rem]'
-              : 'grid gap-3 xl:min-w-[14rem]'
+            isInline
+              ? isCustom
+                ? 'grid gap-3 sm:grid-cols-3 lg:min-w-[34rem]'
+                : 'grid gap-3 sm:min-w-[12rem]'
+              : isCustom
+                ? 'grid gap-3 md:grid-cols-3 xl:min-w-[44rem]'
+                : 'grid gap-3 xl:min-w-[14rem]'
           }
         >
           <div className="space-y-1.5">

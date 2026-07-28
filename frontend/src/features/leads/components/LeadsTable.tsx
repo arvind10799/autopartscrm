@@ -11,26 +11,23 @@ import {
 } from 'lucide-react';
 import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
+import type { UserRole } from '@/features/auth/types/auth.types';
 import { cn } from '@/lib/utils/cn';
-import { formatCurrency, formatDate, formatDateTime } from '../lib/lead-formatters';
+import { formatCurrency, formatDate } from '../lib/lead-formatters';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
 import type { LeadSummary, PaginationMeta } from '../types/lead.types';
 
 function buildColumns(
   onConvert: (lead: LeadSummary) => void,
   onEdit: (lead: LeadSummary) => void,
+  role?: UserRole,
 ): ColumnDef<LeadSummary>[] {
-  return [
+  const columns: ColumnDef<LeadSummary>[] = [
     {
       accessorKey: 'date',
-      header: 'Lead date',
+      header: 'Date',
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <p className="font-semibold text-foreground">{formatDate(row.original.date)}</p>
-          <p className="text-xs text-muted-foreground">
-            Saved {formatDateTime(row.original.createdAt)}
-          </p>
-        </div>
+        <p className="font-semibold text-foreground">{formatDate(row.original.date)}</p>
       ),
     },
     {
@@ -40,18 +37,6 @@ function buildColumns(
         <div className="space-y-1">
           <p className="font-medium text-foreground">{row.original.customerName}</p>
           <p className="text-xs text-muted-foreground">{row.original.customerPhone}</p>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'adviserName',
-      header: 'Adviser',
-      cell: ({ row }) => (
-        <div className="space-y-1">
-          <p className="font-medium text-foreground">{row.original.adviserName}</p>
-          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-            {row.original.cmpt}
-          </p>
         </div>
       ),
     },
@@ -120,6 +105,23 @@ function buildColumns(
         ),
     },
   ];
+
+  if (role === 'ADMIN') {
+    columns.splice(2, 0, {
+      accessorKey: 'adviserName',
+      header: 'Adviser',
+      cell: ({ row }) => (
+        <div className="space-y-1">
+          <p className="font-medium text-foreground">{row.original.adviserName}</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            {row.original.cmpt}
+          </p>
+        </div>
+      ),
+    });
+  }
+
+  return columns;
 }
 
 function getRangeLabel(meta: PaginationMeta, currentCount: number) {
@@ -142,6 +144,7 @@ export function LeadsTable({
   onPageChange,
   onConvert,
   onEdit,
+  role,
 }: {
   leads: LeadSummary[];
   meta: PaginationMeta;
@@ -151,9 +154,10 @@ export function LeadsTable({
   onPageChange: (page: number) => void;
   onConvert: (lead: LeadSummary) => void;
   onEdit: (lead: LeadSummary) => void;
+  role?: UserRole;
 }) {
   const totalPages = meta.totalPages;
-  const columns = buildColumns(onConvert, onEdit);
+  const columns = buildColumns(onConvert, onEdit, role);
 
   return (
     <DataTable

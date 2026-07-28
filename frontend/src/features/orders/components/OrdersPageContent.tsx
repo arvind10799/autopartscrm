@@ -120,17 +120,27 @@ export function OrdersPageContent() {
   return (
     <>
       <section className="grid gap-6">
-        <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-
         <Card>
           <CardHeader className="space-y-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <CardTitle className="text-2xl sm:text-[1.75rem]">Orders table</CardTitle>
 
-              <Button size="lg" onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Create order
-              </Button>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                <DateRangeFilter
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  variant="inline"
+                />
+
+                <Button
+                  size="lg"
+                  className="h-11 whitespace-nowrap"
+                  onClick={() => setIsCreateModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Create order
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
