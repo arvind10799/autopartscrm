@@ -34,14 +34,16 @@ function buildColumns(
       accessorKey: 'customerName',
       header: 'Customer',
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <p className="font-medium text-foreground">{row.original.customerName}</p>
-          <p className="text-xs text-muted-foreground">
-            {[row.original.customerPhone, row.original.customerEmail, row.original.state]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        </div>
+        <p className="font-medium text-foreground">{row.original.customerName}</p>
+      ),
+    },
+    {
+      accessorKey: 'customerPhone',
+      header: 'Phone No.',
+      cell: ({ row }) => (
+        <p className="whitespace-nowrap text-sm text-foreground">
+          {row.original.customerPhone}
+        </p>
       ),
     },
     {
@@ -66,16 +68,11 @@ function buildColumns(
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <p className="font-medium text-foreground">
-            {formatLeadStatusLabel(row.original.status)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {row.original.isConverted
-              ? `Converted · ${row.original.convertedOrder?.orderNumber ?? 'Order linked'}`
-              : 'Open lead'}
-          </p>
-        </div>
+        <p className="font-medium text-foreground">
+          {row.original.isConverted
+            ? 'Converted'
+            : formatLeadStatusLabel(row.original.status)}
+        </p>
       ),
     },
     {
