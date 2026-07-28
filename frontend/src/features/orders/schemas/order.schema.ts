@@ -146,6 +146,10 @@ const orderBackendSummarySchema = z.object({
   totalSaleAmount: numericAmountSchema,
   status: orderStatusSchema,
   paymentMethod: orderPaymentMethodSchema.nullable(),
+  intakeDetails: orderIntakeDetailsSchema
+    .pick({ partialPayment: true })
+    .nullable()
+    .optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   createdBy: orderUserSchema,
@@ -183,6 +187,9 @@ function normalizeOrderSummary(order: z.infer<typeof orderBackendSummarySchema>)
     totalSaleAmount: order.totalSaleAmount,
     status: order.status,
     paymentMethod: order.paymentMethod,
+    intakeDetails: order.intakeDetails
+      ? { partialPayment: order.intakeDetails.partialPayment ?? null }
+      : null,
     latestShipmentStatus: order.shipments[0]?.status ?? null,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,

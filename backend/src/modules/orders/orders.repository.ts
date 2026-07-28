@@ -36,6 +36,7 @@ const orderListSelect = {
   totalSaleAmount: true,
   status: true,
   paymentMethod: true,
+  intakeDetails: true,
   createdAt: true,
   updatedAt: true,
   createdBy: {

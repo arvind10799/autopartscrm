@@ -79,6 +79,7 @@ export interface OrderSummary {
   totalSaleAmount: number;
   status: OrderStatus;
   paymentMethod: OrderPaymentMethod | null;
+  intakeDetails: Pick<OrderIntakeDetails, 'partialPayment'> | null;
   latestShipmentStatus: OrderShipmentStatus | null;
   createdAt: string;
   updatedAt: string;
