@@ -45,21 +45,19 @@ export function DateRangeFilter({
             : 'flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between'
         }
       >
-        <div className={isInline ? 'space-y-1' : 'flex items-start gap-3'}>
-          {!isInline ? (
-          <div className="rounded-xl bg-primary/10 p-2 text-primary">
-            <CalendarRange className="h-4 w-4" />
+        {!isInline ? (
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-primary/10 p-2 text-primary">
+              <CalendarRange className="h-4 w-4" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">Created date</p>
+              <p className="text-sm text-muted-foreground">
+                Filter records by a preset window or a custom date range.
+              </p>
+            </div>
           </div>
-          ) : null}
-          <div className={isInline ? '' : 'space-y-1'}>
-            <p className="text-sm font-semibold text-foreground">Created date</p>
-            {!isInline ? (
-            <p className="text-sm text-muted-foreground">
-              Filter records by a preset window or a custom date range.
-            </p>
-            ) : null}
-          </div>
-        </div>
+        ) : null}
 
         <div
           className={
@@ -74,7 +72,7 @@ export function DateRangeFilter({
         >
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Range
+              {isInline ? 'Date filter' : 'Range'}
             </label>
             <Select
               className="h-11 rounded-xl"

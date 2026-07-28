@@ -24,6 +24,7 @@ type DataTableProps<TData> = {
   footer?: ReactNode;
   getRowId?: (originalRow: TData, index: number, parent?: unknown) => string;
   skeletonRowCount?: number;
+  density?: 'normal' | 'compact';
 };
 
 export function DataTable<TData>({
@@ -37,6 +38,7 @@ export function DataTable<TData>({
   footer,
   getRowId,
   skeletonRowCount = DEFAULT_TABLE_SKELETON_ROWS,
+  density = 'normal',
 }: DataTableProps<TData>) {
   const table = useReactTable({
     data,
@@ -45,6 +47,14 @@ export function DataTable<TData>({
     getCoreRowModel: getCoreRowModel(),
   });
   const columnCount = columns.length || 1;
+  const headerCellClassName =
+    density === 'compact'
+      ? 'px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground'
+      : 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground';
+  const bodyCellClassName =
+    density === 'compact' ? 'px-3 py-2 align-top text-sm' : 'px-4 py-3.5 align-top text-sm';
+  const skeletonCellClassName =
+    density === 'compact' ? 'px-3 py-2 align-top' : 'px-4 py-3.5 align-top';
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-sm">
@@ -59,7 +69,7 @@ export function DataTable<TData>({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                    className={headerCellClassName}
                   >
                     {header.isPlaceholder
                       ? null
@@ -80,7 +90,7 @@ export function DataTable<TData>({
                   {Array.from({ length: columnCount }).map((__, cellIndex) => (
                     <td
                       key={`skeleton-cell-${rowIndex}-${cellIndex}`}
-                      className="px-4 py-3.5 align-top"
+                      className={skeletonCellClassName}
                     >
                       <Skeleton
                         className={
@@ -129,7 +139,7 @@ export function DataTable<TData>({
                   className="border-t border-border/60 transition hover:bg-secondary/30"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3.5 align-top text-sm">
+                    <td key={cell.id} className={bodyCellClassName}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

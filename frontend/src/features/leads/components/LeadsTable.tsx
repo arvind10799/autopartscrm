@@ -57,13 +57,6 @@ function buildColumns(
       ),
     },
     {
-      accessorKey: 'prospects',
-      header: 'Disposition',
-      cell: ({ row }) => (
-        <p className="max-w-[14rem] text-sm text-foreground">{row.original.prospects}</p>
-      ),
-    },
-    {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => (
@@ -167,6 +160,7 @@ export function LeadsTable({
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
+      density="compact"
       emptyTitle="No leads found"
       emptyDescription="Create a new lead or clear the current search and conversion filters."
       footer={
