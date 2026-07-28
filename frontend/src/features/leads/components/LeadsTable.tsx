@@ -13,7 +13,7 @@ import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
 import type { UserRole } from '@/features/auth/types/auth.types';
 import { cn } from '@/lib/utils/cn';
-import { formatCurrency, formatDate } from '../lib/lead-formatters';
+import { formatDate, formatLeadCurrency } from '../lib/lead-formatters';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
 import type { LeadSummary, PaginationMeta } from '../types/lead.types';
 
@@ -36,13 +36,17 @@ function buildColumns(
       cell: ({ row }) => (
         <div className="space-y-1">
           <p className="font-medium text-foreground">{row.original.customerName}</p>
-          <p className="text-xs text-muted-foreground">{row.original.customerPhone}</p>
+          <p className="text-xs text-muted-foreground">
+            {[row.original.customerPhone, row.original.customerEmail, row.original.state]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
         </div>
       ),
     },
     {
       accessorKey: 'partDescription',
-      header: 'Part',
+      header: 'Vehicle',
       cell: ({ row }) => (
         <p className="max-w-xs text-sm text-foreground">{row.original.partDescription}</p>
       ),
@@ -52,7 +56,9 @@ function buildColumns(
       header: 'Quote',
       cell: ({ row }) => (
         <span className="font-medium text-foreground">
-          {row.original.quote !== null ? formatCurrency(row.original.quote) : '--'}
+          {row.original.quote !== null
+            ? formatLeadCurrency(row.original.quote, row.original.quoteCurrency)
+            : '--'}
         </span>
       ),
     },

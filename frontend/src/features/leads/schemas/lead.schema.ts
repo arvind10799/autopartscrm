@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { LEAD_STATUSES } from '../types/lead.types';
+import { LEAD_QUOTE_CURRENCIES, LEAD_STATUSES } from '../types/lead.types';
 
 const userRoleSchema = z.enum(['ADMIN', 'SALES', 'SHIPPING']);
 const numericAmountSchema = z.coerce.number().finite();
 const leadStatusSchema = z.enum(LEAD_STATUSES);
+const leadQuoteCurrencySchema = z.enum(LEAD_QUOTE_CURRENCIES);
 const cmptSchema = z.enum(['YES', 'NO'], {
   errorMap: () => ({ message: 'CMPT must be YES or NO.' }),
 });
@@ -39,8 +40,15 @@ const leadBackendSummarySchema = z.object({
   cmpt: z.string(),
   customerPhone: z.string(),
   customerName: z.string(),
+  customerEmail: z.string().email().nullable(),
+  state: z.string().nullable(),
   partDescription: z.string(),
+  vehicleYear: z.string().nullable(),
+  vehicleMake: z.string().nullable(),
+  vehicleModel: z.string().nullable(),
+  vehicleVariant: z.string().nullable(),
   quote: numericAmountSchema.nullable(),
+  quoteCurrency: leadQuoteCurrencySchema,
   comments: z.string().nullable(),
   prospects: z.string(),
   status: leadStatusSchema,
@@ -59,8 +67,15 @@ function normalizeLeadSummary(lead: z.infer<typeof leadBackendSummarySchema>) {
     cmpt: lead.cmpt,
     customerPhone: lead.customerPhone,
     customerName: lead.customerName,
+    customerEmail: lead.customerEmail,
+    state: lead.state,
     partDescription: lead.partDescription,
+    vehicleYear: lead.vehicleYear,
+    vehicleMake: lead.vehicleMake,
+    vehicleModel: lead.vehicleModel,
+    vehicleVariant: lead.vehicleVariant,
     quote: lead.quote,
+    quoteCurrency: lead.quoteCurrency,
     comments: lead.comments,
     prospects: lead.prospects,
     status: lead.status,
@@ -121,12 +136,40 @@ export const createLeadSchema = z.object({
     .trim()
     .min(1, 'Customer name is required.')
     .max(160, 'Customer name must be 160 characters or fewer.'),
-  partDescription: z
+  customerEmail: z
     .string()
     .trim()
-    .min(1, 'Part description is required.')
-    .max(255, 'Part description must be 255 characters or fewer.'),
+    .email('Enter a valid email address.')
+    .max(160, 'Email must be 160 characters or fewer.')
+    .optional()
+    .or(z.literal('')),
+  state: z
+    .string()
+    .trim()
+    .max(80, 'State must be 80 characters or fewer.')
+    .optional(),
+  vehicleYear: z
+    .string()
+    .trim()
+    .min(1, 'Year is required.')
+    .max(10, 'Year must be 10 characters or fewer.'),
+  vehicleMake: z
+    .string()
+    .trim()
+    .min(1, 'Make is required.')
+    .max(80, 'Make must be 80 characters or fewer.'),
+  vehicleModel: z
+    .string()
+    .trim()
+    .min(1, 'Model is required.')
+    .max(80, 'Model must be 80 characters or fewer.'),
+  vehicleVariant: z
+    .string()
+    .trim()
+    .max(80, 'Variant must be 80 characters or fewer.')
+    .optional(),
   quote: optionalNumericValueSchema,
+  quoteCurrency: leadQuoteCurrencySchema.optional().default('USD'),
   comments: z
     .string()
     .trim()
@@ -153,9 +196,27 @@ export const createLeadFormSchema = z.object({
   customerName: z
     .string()
     .max(160, 'Customer name must be 160 characters or fewer.'),
-  partDescription: z
+  customerEmail: z
     .string()
-    .max(255, 'Part description must be 255 characters or fewer.'),
+    .max(160, 'Email must be 160 characters or fewer.')
+    .optional(),
+  state: z
+    .string()
+    .max(80, 'State must be 80 characters or fewer.')
+    .optional(),
+  vehicleYear: z
+    .string()
+    .max(10, 'Year must be 10 characters or fewer.'),
+  vehicleMake: z
+    .string()
+    .max(80, 'Make must be 80 characters or fewer.'),
+  vehicleModel: z
+    .string()
+    .max(80, 'Model must be 80 characters or fewer.'),
+  vehicleVariant: z
+    .string()
+    .max(80, 'Variant must be 80 characters or fewer.')
+    .optional(),
   quote: z.preprocess(
     (value) => (value === '' ? undefined : value),
     z.coerce
@@ -167,6 +228,7 @@ export const createLeadFormSchema = z.object({
       )
       .optional(),
   ),
+  quoteCurrency: leadQuoteCurrencySchema,
   comments: z
     .string()
     .max(2000, 'Comments must be 2000 characters or fewer.')

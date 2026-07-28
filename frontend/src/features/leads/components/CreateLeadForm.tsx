@@ -17,7 +17,7 @@ import {
   type CreateLeadFormValues,
 } from '../schemas/lead.schema';
 import type { LeadSummary } from '../types/lead.types';
-import { LEAD_STATUSES } from '../types/lead.types';
+import { LEAD_QUOTE_CURRENCIES, LEAD_STATUSES } from '../types/lead.types';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
 
 const defaultValues: CreateLeadFormValues = {
@@ -25,8 +25,14 @@ const defaultValues: CreateLeadFormValues = {
   cmpt: '',
   customerPhone: '',
   customerName: '',
-  partDescription: '',
+  customerEmail: '',
+  state: '',
+  vehicleYear: '',
+  vehicleMake: '',
+  vehicleModel: '',
+  vehicleVariant: '',
   quote: undefined,
+  quoteCurrency: 'USD',
   comments: '',
   prospects: '',
   status: 'PROSPECT',
@@ -42,8 +48,14 @@ function buildDefaultValues(lead?: LeadSummary | null): CreateLeadFormValues {
     cmpt: lead.cmpt,
     customerPhone: lead.customerPhone,
     customerName: lead.customerName,
-    partDescription: lead.partDescription,
+    customerEmail: lead.customerEmail ?? '',
+    state: lead.state ?? '',
+    vehicleYear: lead.vehicleYear ?? '',
+    vehicleMake: lead.vehicleMake ?? '',
+    vehicleModel: lead.vehicleModel ?? '',
+    vehicleVariant: lead.vehicleVariant ?? '',
     quote: lead.quote ?? undefined,
+    quoteCurrency: lead.quoteCurrency,
     comments: lead.comments ?? '',
     prospects: lead.prospects,
     status: lead.status,
@@ -195,13 +207,91 @@ export function CreateLeadForm({
             id="customerName"
             label="Customer name"
             error={form.formState.errors.customerName?.message?.toString()}
-            className="xl:col-span-2"
           >
             <Input
               id="customerName"
               placeholder="Customer name"
               className="h-11 rounded-xl"
               {...form.register('customerName')}
+            />
+          </Field>
+
+          <Field
+            id="customerEmail"
+            label="Email"
+            error={form.formState.errors.customerEmail?.message?.toString()}
+          >
+            <Input
+              id="customerEmail"
+              type="email"
+              placeholder="customer@example.com"
+              className="h-11 rounded-xl"
+              {...form.register('customerEmail')}
+            />
+          </Field>
+
+          <Field
+            id="state"
+            label="State"
+            error={form.formState.errors.state?.message?.toString()}
+          >
+            <Input
+              id="state"
+              placeholder="State"
+              className="h-11 rounded-xl"
+              {...form.register('state')}
+            />
+          </Field>
+
+          <Field
+            id="vehicleYear"
+            label="Year"
+            error={form.formState.errors.vehicleYear?.message?.toString()}
+          >
+            <Input
+              id="vehicleYear"
+              placeholder="2020"
+              className="h-11 rounded-xl"
+              {...form.register('vehicleYear')}
+            />
+          </Field>
+
+          <Field
+            id="vehicleMake"
+            label="Make"
+            error={form.formState.errors.vehicleMake?.message?.toString()}
+          >
+            <Input
+              id="vehicleMake"
+              placeholder="Honda"
+              className="h-11 rounded-xl"
+              {...form.register('vehicleMake')}
+            />
+          </Field>
+
+          <Field
+            id="vehicleModel"
+            label="Model"
+            error={form.formState.errors.vehicleModel?.message?.toString()}
+          >
+            <Input
+              id="vehicleModel"
+              placeholder="Civic"
+              className="h-11 rounded-xl"
+              {...form.register('vehicleModel')}
+            />
+          </Field>
+
+          <Field
+            id="vehicleVariant"
+            label="Variant"
+            error={form.formState.errors.vehicleVariant?.message?.toString()}
+          >
+            <Input
+              id="vehicleVariant"
+              placeholder="LX"
+              className="h-11 rounded-xl"
+              {...form.register('vehicleVariant')}
             />
           </Field>
 
@@ -220,6 +310,24 @@ export function CreateLeadForm({
           </Field>
 
           <Field
+            id="quoteCurrency"
+            label="Currency"
+            error={form.formState.errors.quoteCurrency?.message?.toString()}
+          >
+            <Select
+              id="quoteCurrency"
+              className="h-11 rounded-xl"
+              {...form.register('quoteCurrency')}
+            >
+              {LEAD_QUOTE_CURRENCIES.map((currency) => (
+                <option key={currency} value={currency}>
+                  {currency}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field
             id="status"
             label="Status"
             error={form.formState.errors.status?.message?.toString()}
@@ -231,21 +339,6 @@ export function CreateLeadForm({
                 </option>
               ))}
             </Select>
-          </Field>
-
-          <Field
-            id="partDescription"
-            label="Part description"
-            error={form.formState.errors.partDescription?.message?.toString()}
-            className="xl:col-span-4"
-          >
-            <Textarea
-              id="partDescription"
-              rows={3}
-              placeholder="Describe the requested part"
-              className="min-h-[92px] rounded-xl"
-              {...form.register('partDescription')}
-            />
           </Field>
 
           <Field

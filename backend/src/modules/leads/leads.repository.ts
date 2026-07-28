@@ -20,8 +20,15 @@ const leadListSelect = {
   cmpt: true,
   customerPhone: true,
   customerName: true,
+  customerEmail: true,
+  state: true,
   partDescription: true,
+  vehicleYear: true,
+  vehicleMake: true,
+  vehicleModel: true,
+  vehicleVariant: true,
   quote: true,
+  quoteCurrency: true,
   comments: true,
   prospects: true,
   status: true,
@@ -58,11 +65,18 @@ export class LeadsRepository {
           cmpt: createLeadDto.cmpt,
           customerPhone: createLeadDto.customerPhone.trim(),
           customerName: createLeadDto.customerName.trim(),
-          partDescription: createLeadDto.partDescription.trim(),
+          customerEmail: createLeadDto.customerEmail,
+          state: createLeadDto.state,
+          partDescription: this.buildVehicleDescription(createLeadDto),
+          vehicleYear: createLeadDto.vehicleYear.trim(),
+          vehicleMake: createLeadDto.vehicleMake.trim(),
+          vehicleModel: createLeadDto.vehicleModel.trim(),
+          vehicleVariant: createLeadDto.vehicleVariant,
           quote:
             createLeadDto.quote !== undefined
               ? new Prisma.Decimal(createLeadDto.quote)
               : undefined,
+          quoteCurrency: createLeadDto.quoteCurrency ?? 'USD',
           comments: createLeadDto.comments?.trim(),
           prospects: createLeadDto.prospects?.trim() ?? '',
           status: createLeadDto.status,
@@ -131,7 +145,43 @@ export class LeadsRepository {
           },
         },
         {
+          customerEmail: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          state: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
           partDescription: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          vehicleYear: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          vehicleMake: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          vehicleModel: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          vehicleVariant: {
             contains: search,
             mode: 'insensitive',
           },
@@ -221,11 +271,20 @@ export class LeadsRepository {
           cmpt: updateLeadDto.cmpt,
           customerPhone: updateLeadDto.customerPhone,
           customerName: updateLeadDto.customerName,
-          partDescription: updateLeadDto.partDescription,
+          customerEmail: updateLeadDto.customerEmail,
+          state: updateLeadDto.state,
+          partDescription: this.shouldRefreshVehicleDescription(updateLeadDto)
+            ? this.buildVehicleDescription(updateLeadDto)
+            : undefined,
+          vehicleYear: updateLeadDto.vehicleYear,
+          vehicleMake: updateLeadDto.vehicleMake,
+          vehicleModel: updateLeadDto.vehicleModel,
+          vehicleVariant: updateLeadDto.vehicleVariant,
           quote:
             updateLeadDto.quote !== undefined
               ? new Prisma.Decimal(updateLeadDto.quote)
               : undefined,
+          quoteCurrency: updateLeadDto.quoteCurrency,
           comments: updateLeadDto.comments,
           prospects: updateLeadDto.prospects,
           status: updateLeadDto.status,
@@ -288,5 +347,32 @@ export class LeadsRepository {
     }
 
     return undefined;
+  }
+
+  private buildVehicleDescription(
+    leadDto: Pick<
+      CreateLeadDto | UpdateLeadDto,
+      'vehicleYear' | 'vehicleMake' | 'vehicleModel' | 'vehicleVariant'
+    >,
+  ): string {
+    return [
+      leadDto.vehicleYear,
+      leadDto.vehicleMake,
+      leadDto.vehicleModel,
+      leadDto.vehicleVariant,
+    ]
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value))
+      .join(' ')
+      .slice(0, 255);
+  }
+
+  private shouldRefreshVehicleDescription(updateLeadDto: UpdateLeadDto): boolean {
+    return [
+      updateLeadDto.vehicleYear,
+      updateLeadDto.vehicleMake,
+      updateLeadDto.vehicleModel,
+      updateLeadDto.vehicleVariant,
+    ].some((value) => value !== undefined);
   }
 }

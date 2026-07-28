@@ -23,6 +23,10 @@ export const LEAD_STATUSES = [
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
+export const LEAD_QUOTE_CURRENCIES = ['USD', 'CAD'] as const;
+
+export type LeadQuoteCurrency = (typeof LEAD_QUOTE_CURRENCIES)[number];
+
 export interface LeadSummary {
   id: string;
   date: string;
@@ -30,8 +34,15 @@ export interface LeadSummary {
   cmpt: string;
   customerPhone: string;
   customerName: string;
+  customerEmail: string | null;
+  state: string | null;
   partDescription: string;
+  vehicleYear: string | null;
+  vehicleMake: string | null;
+  vehicleModel: string | null;
+  vehicleVariant: string | null;
   quote: number | null;
+  quoteCurrency: LeadQuoteCurrency;
   comments: string | null;
   prospects: string;
   status: LeadStatus;
@@ -72,8 +83,14 @@ export interface CreateLeadInput {
   cmpt: string;
   customerPhone: string;
   customerName: string;
-  partDescription: string;
+  customerEmail?: string;
+  state?: string;
+  vehicleYear: string;
+  vehicleMake: string;
+  vehicleModel: string;
+  vehicleVariant?: string;
   quote?: number;
+  quoteCurrency?: LeadQuoteCurrency;
   comments?: string;
   prospects?: string;
   status: LeadStatus;

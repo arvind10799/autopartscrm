@@ -1,0 +1,8 @@
+ALTER TABLE "Lead"
+ADD COLUMN "customerEmail" VARCHAR(160),
+ADD COLUMN "state" VARCHAR(80),
+ADD COLUMN "vehicleYear" VARCHAR(10),
+ADD COLUMN "vehicleMake" VARCHAR(80),
+ADD COLUMN "vehicleModel" VARCHAR(80),
+ADD COLUMN "vehicleVariant" VARCHAR(80),
+ADD COLUMN "quoteCurrency" VARCHAR(3) NOT NULL DEFAULT 'USD';

@@ -51,8 +51,13 @@ function buildOrderInitialValues(lead: LeadSummary): Partial<CreateOrderFormValu
     leadId: lead.id,
     orderDate: lead.date,
     customerName: lead.customerName,
+    customerEmail: lead.customerEmail ?? undefined,
     customerPhone: lead.customerPhone,
     partDescription: lead.partDescription,
+    vehicleYear: lead.vehicleYear ?? undefined,
+    vehicleMake: lead.vehicleMake ?? undefined,
+    vehicleModel: lead.vehicleModel ?? undefined,
+    vehicleVariant: lead.vehicleVariant ?? undefined,
     basePrice: quoteValue,
     total: quoteValue,
     note: lead.comments ?? '',
@@ -200,7 +205,7 @@ export function LeadsPageContent() {
                   value={searchTerm}
                   onChange={(event) => handleSearchChange(event.target.value)}
                   className="pl-9"
-                  placeholder="Search by customer, phone, adviser, CMPT, or part"
+                  placeholder="Search by customer, email, phone, adviser, CMPT, state, or vehicle"
                 />
               </div>
 
@@ -316,7 +321,7 @@ export function LeadsPageContent() {
                   Convert lead to order
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  The customer, phone, part, quote, and notes from this lead are prefilled below.
+                  The customer, vehicle, quote, and notes from this lead are prefilled below.
                 </p>
               </div>
 
