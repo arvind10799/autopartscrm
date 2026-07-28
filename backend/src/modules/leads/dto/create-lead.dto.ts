@@ -2,6 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -23,6 +24,7 @@ export class CreateLeadDto {
   @Transform(({ value }) => trimToUpperCase(value))
   @IsString()
   @IsNotEmpty()
+  @IsIn(['YES', 'NO'])
   @MaxLength(80)
   cmpt: string;
 
@@ -57,10 +59,10 @@ export class CreateLeadDto {
   comments?: string;
 
   @Transform(({ value }) => trimString(value))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(255)
-  prospects: string;
+  prospects?: string;
 
   @IsEnum(LeadStatus)
   status: LeadStatus;

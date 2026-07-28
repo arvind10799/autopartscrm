@@ -13,9 +13,12 @@ export interface LeadConvertedOrder {
 
 export const LEAD_STATUSES = [
   'PROSPECT',
+  'QUOTED',
   'CALL_BACK_LATER',
+  'SHOPPING_AROUND',
   'NOT_INTERESTED',
   'NEEDS_LOCALLY',
+  'WE_DONT_SALE',
 ] as const;
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
@@ -72,7 +75,7 @@ export interface CreateLeadInput {
   partDescription: string;
   quote?: number;
   comments?: string;
-  prospects: string;
+  prospects?: string;
   status: LeadStatus;
 }
 

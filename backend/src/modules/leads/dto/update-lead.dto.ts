@@ -2,6 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -23,6 +24,7 @@ export class UpdateLeadDto {
   @Transform(({ value }) => trimToUpperCase(value))
   @IsOptional()
   @IsString()
+  @IsIn(['YES', 'NO'])
   @MaxLength(80)
   cmpt?: string;
 

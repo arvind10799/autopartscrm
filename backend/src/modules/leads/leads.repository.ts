@@ -64,7 +64,7 @@ export class LeadsRepository {
               ? new Prisma.Decimal(createLeadDto.quote)
               : undefined,
           comments: createLeadDto.comments?.trim(),
-          prospects: createLeadDto.prospects.trim(),
+          prospects: createLeadDto.prospects?.trim() ?? '',
           status: createLeadDto.status,
           createdBy: {
             connect: {

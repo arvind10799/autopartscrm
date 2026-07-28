@@ -4,6 +4,12 @@ import { LEAD_STATUSES } from '../types/lead.types';
 const userRoleSchema = z.enum(['ADMIN', 'SALES', 'SHIPPING']);
 const numericAmountSchema = z.coerce.number().finite();
 const leadStatusSchema = z.enum(LEAD_STATUSES);
+const cmptSchema = z.enum(['YES', 'NO'], {
+  errorMap: () => ({ message: 'CMPT must be YES or NO.' }),
+});
+const cmptFormSchema = z
+  .string()
+  .refine((value) => value === 'YES' || value === 'NO', 'CMPT is required.');
 const paginationMetaSchema = z.object({
   page: z.number(),
   limit: z.number(),
@@ -104,11 +110,7 @@ export const createLeadSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Lead date is required.'),
-  cmpt: z
-    .string()
-    .trim()
-    .min(1, 'CMPT is required.')
-    .max(80, 'CMPT must be 80 characters or fewer.'),
+  cmpt: cmptSchema,
   customerPhone: z
     .string()
     .trim()
@@ -133,8 +135,9 @@ export const createLeadSchema = z.object({
   prospects: z
     .string()
     .trim()
-    .min(1, 'Disposition is required.')
-    .max(255, 'Disposition must be 255 characters or fewer.'),
+    .max(255, 'Disposition must be 255 characters or fewer.')
+    .optional()
+    .default(''),
   status: leadStatusSchema,
 });
 
@@ -143,9 +146,7 @@ export const createLeadFormSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Lead date is required.'),
-  cmpt: z
-    .string()
-    .max(80, 'CMPT must be 80 characters or fewer.'),
+  cmpt: cmptFormSchema,
   customerPhone: z
     .string()
     .max(30, 'Phone number must be 30 characters or fewer.'),
@@ -172,7 +173,8 @@ export const createLeadFormSchema = z.object({
     .optional(),
   prospects: z
     .string()
-    .max(255, 'Disposition must be 255 characters or fewer.'),
+    .max(255, 'Disposition must be 255 characters or fewer.')
+    .optional(),
   status: leadStatusSchema,
 }).pipe(createLeadSchema);
 

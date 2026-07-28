@@ -81,9 +81,12 @@ export function formatLeadConversionFilterLabel(value: LeadConversionFilter): st
 export function parseLeadStatusFilter(value: string): LeadStatusFilter {
   if (
     value === 'PROSPECT' ||
+    value === 'QUOTED' ||
     value === 'CALL_BACK_LATER' ||
+    value === 'SHOPPING_AROUND' ||
     value === 'NOT_INTERESTED' ||
-    value === 'NEEDS_LOCALLY'
+    value === 'NEEDS_LOCALLY' ||
+    value === 'WE_DONT_SALE'
   ) {
     return value;
   }
@@ -94,9 +97,12 @@ export function parseLeadStatusFilter(value: string): LeadStatusFilter {
 export function formatLeadStatusLabel(value: LeadStatus): string {
   const labels: Record<LeadStatus, string> = {
     PROSPECT: 'Prospect',
+    QUOTED: 'Quoted',
     CALL_BACK_LATER: 'Call back later',
+    SHOPPING_AROUND: 'Shopping around',
     NOT_INTERESTED: 'Not Interested',
     NEEDS_LOCALLY: 'Needs locally',
+    WE_DONT_SALE: "We don't sale",
   };
 
   return labels[value];

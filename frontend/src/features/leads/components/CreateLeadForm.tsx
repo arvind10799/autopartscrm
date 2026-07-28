@@ -171,12 +171,11 @@ export function CreateLeadForm({
             label="CMPT"
             error={form.formState.errors.cmpt?.message?.toString()}
           >
-            <Input
-              id="cmpt"
-              placeholder="CMPT"
-              className="h-11 rounded-xl"
-              {...form.register('cmpt')}
-            />
+            <Select id="cmpt" className="h-11 rounded-xl" {...form.register('cmpt')}>
+              <option value="">Select CMPT</option>
+              <option value="YES">YES</option>
+              <option value="NO">NO</option>
+            </Select>
           </Field>
 
           <Field
@@ -217,19 +216,6 @@ export function CreateLeadForm({
               placeholder="0.00"
               className="h-11 rounded-xl"
               {...form.register('quote')}
-            />
-          </Field>
-
-          <Field
-            id="prospects"
-            label="Disposition"
-            error={form.formState.errors.prospects?.message?.toString()}
-          >
-            <Input
-              id="prospects"
-              placeholder="Add the lead disposition"
-              className="h-11 rounded-xl"
-              {...form.register('prospects')}
             />
           </Field>
 

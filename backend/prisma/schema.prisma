@@ -43,9 +43,12 @@ enum NoteEntityType {
 
 enum LeadStatus {
   PROSPECT
+  QUOTED
   CALL_BACK_LATER
+  SHOPPING_AROUND
   NOT_INTERESTED
   NEEDS_LOCALLY
+  WE_DONT_SALE
 }
 
 model User {
