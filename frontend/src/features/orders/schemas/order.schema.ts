@@ -144,16 +144,7 @@ const orderBackendSummarySchema = z.object({
   price: numericAmountSchema,
   quantity: z.number(),
   totalSaleAmount: numericAmountSchema,
-  status: z.preprocess(
-    (value) => {
-      if (value === '' || value === null || value === undefined) {
-        return 'CONFIRMED';
-      }
-
-      return value;
-    },
-    orderStatusSchema,
-  ),
+  status: orderStatusSchema,
   paymentMethod: orderPaymentMethodSchema.nullable(),
   intakeDetails: orderIntakeDetailsSchema
     .pick({ partialPayment: true })
@@ -393,7 +384,16 @@ export const createOrderSchema = z.object({
       'Total can include at most 2 decimal places.',
     ),
   partialPayment: optionalNumericValueSchema,
-  status: orderStatusSchema,
+  status: z.preprocess(
+    (value) => {
+      if (value === '' || value === null || value === undefined) {
+        return 'CONFIRMED';
+      }
+
+      return value;
+    },
+    orderStatusSchema,
+  ),
   paymentMethod: orderPaymentMethodSchema.optional(),
   note: z
     .string()
@@ -622,7 +622,16 @@ export const createOrderFormSchema = z.object({
       )
       .optional(),
   ),
-  status: orderStatusSchema,
+  status: z.preprocess(
+    (value) => {
+      if (value === '' || value === null || value === undefined) {
+        return 'CONFIRMED';
+      }
+
+      return value;
+    },
+    orderStatusSchema,
+  ),
   paymentMethod: z.preprocess(
     (value) => {
       if (typeof value !== 'string') {

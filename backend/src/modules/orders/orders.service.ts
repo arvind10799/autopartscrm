@@ -36,27 +36,37 @@ export class OrdersService {
   ) {}
 
   async create(createOrderDto: CreateOrderDto, user: AuthenticatedUser) {
-    const normalizedStatus = createOrderDto.status ?? OrderStatus.DRAFT;
+    const normalizedStatus = createOrderDto.status ?? OrderStatus.CONFIRMED;
+    const normalizedCreateOrderDto =
+      normalizedStatus === OrderStatus.CONFIRMED
+        ? {
+            ...createOrderDto,
+            partialPayment: undefined,
+          }
+        : createOrderDto;
 
     this.validatePaymentMethodForStatus(
       normalizedStatus,
-      createOrderDto.paymentMethod,
+      normalizedCreateOrderDto.paymentMethod,
     );
 
-    if (createOrderDto.leadId) {
-      await this.leadsRepository.findConvertibleById(createOrderDto.leadId, user);
+    if (normalizedCreateOrderDto.leadId) {
+      await this.leadsRepository.findConvertibleById(
+        normalizedCreateOrderDto.leadId,
+        user,
+      );
     }
 
     const order = await this.createWithGeneratedOrderNumber(
-      createOrderDto,
+      normalizedCreateOrderDto,
       normalizedStatus,
       user,
     );
 
-    if (createOrderDto.note) {
+    if (normalizedCreateOrderDto.note) {
       await this.notesService.create(
         {
-          content: createOrderDto.note,
+          content: normalizedCreateOrderDto.note,
           entityType: NoteEntityType.ORDER,
           entityId: order.id,
         },
