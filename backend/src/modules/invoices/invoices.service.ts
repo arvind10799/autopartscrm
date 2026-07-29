@@ -299,6 +299,7 @@ export class InvoicesService {
         invoiceNumber: invoice.invoiceNumber,
         customerName: invoice.customerName,
         customerEmail,
+        signatureTokenExpiresAt: invoice.signatureTokenExpiresAt,
       },
       this.buildSigningUrl(signatureToken.token),
     );

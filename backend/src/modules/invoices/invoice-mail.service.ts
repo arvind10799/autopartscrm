@@ -10,6 +10,7 @@ type MailInvoice = {
   invoiceNumber: string;
   customerName: string;
   customerEmail: string;
+  signatureTokenExpiresAt?: Date | null;
   signedAt?: Date | null;
 };
 
@@ -71,34 +72,25 @@ export class InvoiceMailService {
     await this.sendMail({
       to: invoice.customerEmail,
       subject: `Invoice #${invoice.invoiceNumber} - Signature Required`,
-      html: `
-        <p>Hello ${this.escapeHtml(invoice.customerName)},</p>
-        <p>Thank you for choosing MEE Auto Parts.</p>
-        <p>Your invoice is ready.</p>
-        <p>Please review and electronically sign the invoice using the secure link below.</p>
-        <p>
-          <a href="${this.escapeHtml(signingUrl)}" style="display:inline-block;background:#f26b2f;color:#ffffff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700;">
-            Review &amp; Sign Invoice
-          </a>
-        </p>
-        <p>This link is secure and can only be used for this invoice.</p>
-        <p>Thank you,<br />MEE Auto Parts</p>
-      `,
+      html: this.buildSignatureRequestHtml(invoice, signingUrl),
       text: [
-        `Hello ${invoice.customerName},`,
+        `Hi ${invoice.customerName},`,
         '',
-        'Thank you for choosing MEE Auto Parts.',
+        'MEEHIKAA AUTO PARTS INC has requested you to review and sign the document Invoice - Mee Auto Parts.',
         '',
-        'Your invoice is ready.',
-        '',
-        'Please review and electronically sign the invoice using the secure link below.',
-        '',
+        'Review and sign:',
         signingUrl,
         '',
-        'This link is secure and can only be used for this invoice.',
+        'Document Details',
+        'Document Title: Invoice - Mee Auto Parts',
+        `Invoice Number: ${invoice.invoiceNumber}`,
+        `Expiry Date: ${this.formatSignatureRequestExpiry(invoice.signatureTokenExpiresAt)}`,
         '',
-        'Thank you,',
-        'MEE Auto Parts',
+        'Signer(s):',
+        `${invoice.customerName} (${invoice.customerEmail})`,
+        '',
+        'Please do not share this email since it contains your unique link for signing the document.',
+        signingUrl,
       ].join('\n'),
     });
   }
@@ -168,6 +160,122 @@ export class InvoiceMailService {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#039;');
+  }
+
+  private buildSignatureRequestHtml(
+    invoice: MailInvoice,
+    signingUrl: string,
+  ): string {
+    const safeCustomerName = this.escapeHtml(invoice.customerName);
+    const safeCustomerEmail = this.escapeHtml(invoice.customerEmail);
+    const safeSigningUrl = this.escapeHtml(signingUrl);
+    const safeInvoiceNumber = this.escapeHtml(invoice.invoiceNumber);
+    const safeExpiry = this.escapeHtml(
+      this.formatSignatureRequestExpiry(invoice.signatureTokenExpiresAt),
+    );
+    const safeLogoUrl = this.escapeHtml(this.buildPublicAssetUrl('/images/logo.png'));
+    const safeBillingEmail = this.escapeHtml(
+      this.configService.get<string>('SMTP_USER', 'billing@meeautoparts.com'),
+    );
+
+    return `
+      <!doctype html>
+      <html>
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Invoice Signature Required</title>
+        </head>
+        <body style="margin:0;padding:0;background:#fdeaea;font-family:Arial,Helvetica,sans-serif;color:#101828;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fdeaea;margin:0;padding:46px 16px;">
+            <tr>
+              <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:575px;margin:0 auto;">
+                  <tr>
+                    <td align="center" style="padding:0 0 20px;">
+                      <img src="${safeLogoUrl}" width="140" alt="MEE Auto Parts" style="display:block;border:0;outline:none;text-decoration:none;width:140px;height:auto;" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="background:#ffffff;padding:36px 48px 0;">
+                      <p style="margin:0 0 22px;font-size:16px;line-height:1.5;color:#101828;">Hi ${safeCustomerName},</p>
+                      <p style="margin:0 0 26px;font-size:16px;line-height:1.5;color:#101828;">
+                        <strong>MEEHIKAA AUTO PARTS INC</strong>
+                        (<a href="mailto:${safeBillingEmail}" style="color:#0645ff;text-decoration:underline;font-weight:700;">${safeBillingEmail}</a>)
+                        has requested you to review and sign the document
+                        <strong>Invoice - Mee Auto Parts</strong>.
+                      </p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td align="center" style="padding:0 0 34px;">
+                            <a href="${safeSigningUrl}" style="display:inline-block;background:#3f0df6;color:#ffffff;font-size:16px;font-weight:700;line-height:1;text-decoration:none;border-radius:4px;padding:16px 26px;">
+                              Review and Sign
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                      <p style="margin:0 0 34px;text-align:center;">
+                        <a href="${safeSigningUrl}" style="color:#475467;font-size:16px;text-decoration:underline;">Document Details</a>
+                      </p>
+                      <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#101828;"><strong>Document Title:</strong></p>
+                      <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#344054;">Invoice - Mee Auto Parts</p>
+                      <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#101828;"><strong>Invoice Number:</strong></p>
+                      <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#344054;">${safeInvoiceNumber}</p>
+                      <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#101828;"><strong>Expiry Date:</strong></p>
+                      <p style="margin:0 0 34px;font-size:15px;line-height:1.5;color:#344054;">${safeExpiry}</p>
+                      <div style="height:1px;background:#e4e7ec;margin:0 0 28px;"></div>
+                      <p style="margin:0 0 22px;font-size:16px;line-height:1.5;color:#101828;"><strong>Signer(s):</strong></p>
+                      <p style="margin:0 0 34px;font-size:15px;line-height:1.5;color:#344054;">
+                        ${safeCustomerName}
+                        (<a href="mailto:${safeCustomerEmail}" style="color:#0645ff;text-decoration:underline;">${safeCustomerEmail}</a>)
+                      </p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td align="center" style="padding:0 0 28px;">
+                            <a href="${safeSigningUrl}" style="display:inline-block;background:#3f0df6;color:#ffffff;font-size:16px;font-weight:700;line-height:1;text-decoration:none;border-radius:4px;padding:16px 26px;">
+                              Review and Sign
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" style="background:#f8fafc;padding:18px 28px;color:#667085;font-size:12px;line-height:1.5;">
+                      Please do not share this email since it contains your unique link for signing the document.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+  }
+
+  private buildPublicAssetUrl(path: string): string {
+    const baseUrl = this.configService
+      .get<string>('APP_BASE_URL', 'https://crm.intraciatechnologies.com')
+      .replace(/\/$/, '');
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+    return `${baseUrl}${normalizedPath}`;
+  }
+
+  private formatSignatureRequestExpiry(value?: Date | null): string {
+    if (!value) {
+      return '30 days from request';
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'shortOffset',
+    }).format(value);
   }
 
   private buildSignedInvoicePdf(invoice: SignedMailInvoice): Promise<Buffer> {
