@@ -67,6 +67,14 @@ const defaultValues: CreateOrderFormValues = {
 };
 const DEFAULT_CREATE_ORDER_STATUS = 'CONFIRMED' as const;
 
+function getFirstFilledAmount(
+  ...values: Array<CreateOrderFormValues['salePrice'] | undefined>
+) {
+  return values.find(
+    (value) => value !== '' && value !== null && value !== undefined,
+  );
+}
+
 function buildCreateOrderFormValues(
   initialValues?: Partial<CreateOrderFormValues>,
 ): CreateOrderFormValues {
@@ -74,9 +82,16 @@ function buildCreateOrderFormValues(
     ...defaultValues,
     ...initialValues,
   };
+  const inferredTotal =
+    getFirstFilledAmount(values.total, values.salePrice, values.basePrice) ??
+    defaultValues.total;
 
   return {
     ...values,
+    salePrice: getFirstFilledAmount(values.salePrice, inferredTotal) ?? '',
+    total: getFirstFilledAmount(values.total, inferredTotal) ?? '',
+    partialPayment:
+      values.status === 'PARTIALLY_PAID' ? values.partialPayment : undefined,
     status: values.status ?? DEFAULT_CREATE_ORDER_STATUS,
   };
 }
@@ -374,6 +389,10 @@ export function CreateOrderForm({
       const payload = createOrderFormSchema.parse({
         ...values,
         status: values.status || DEFAULT_CREATE_ORDER_STATUS,
+        partialPayment:
+          (values.status || DEFAULT_CREATE_ORDER_STATUS) === 'PARTIALLY_PAID'
+            ? values.partialPayment
+            : undefined,
       });
       const createdOrder = await ordersApi.create(payload);
 

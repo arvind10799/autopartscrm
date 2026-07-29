@@ -59,7 +59,10 @@ function buildOrderInitialValues(lead: LeadSummary): Partial<CreateOrderFormValu
     vehicleModel: lead.vehicleModel ?? undefined,
     vehicleVariant: lead.vehicleVariant ?? undefined,
     basePrice: quoteValue,
+    salePrice: quoteValue,
     total: quoteValue,
+    status: 'CONFIRMED',
+    partialPayment: undefined,
     note: lead.comments ?? '',
   };
 }

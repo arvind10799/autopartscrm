@@ -278,11 +278,21 @@ export const createOrderSchema = z.object({
     .trim()
     .min(1, 'Advisor name is required.')
     .max(120, 'Advisor name must be 120 characters or fewer.'),
-  orderNumber: z
-    .string()
-    .trim()
-    .min(1, 'Order number is required.')
-    .max(50, 'Order number must be 50 characters or fewer.'),
+  orderNumber: z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : 'AUTO_GENERATED';
+    },
+    z
+      .string()
+      .trim()
+      .min(1, 'Order number is required.')
+      .max(50, 'Order number must be 50 characters or fewer.'),
+  ),
   orderDate: z
     .string()
     .trim()
@@ -435,11 +445,21 @@ export const createOrderFormSchema = z.object({
     .trim()
     .min(1, 'Advisor name is required.')
     .max(120, 'Advisor name must be 120 characters or fewer.'),
-  orderNumber: z
-    .string()
-    .trim()
-    .min(1, 'Order number is required.')
-    .max(50, 'Order number must be 50 characters or fewer.'),
+  orderNumber: z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : 'AUTO_GENERATED';
+    },
+    z
+      .string()
+      .trim()
+      .min(1, 'Order number is required.')
+      .max(50, 'Order number must be 50 characters or fewer.'),
+  ),
   orderDate: z
     .string()
     .trim()
