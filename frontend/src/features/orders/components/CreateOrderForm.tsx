@@ -65,13 +65,19 @@ const defaultValues: CreateOrderFormValues = {
   paymentMethod: undefined,
   note: '',
 };
+const DEFAULT_CREATE_ORDER_STATUS = 'CONFIRMED' as const;
 
 function buildCreateOrderFormValues(
   initialValues?: Partial<CreateOrderFormValues>,
 ): CreateOrderFormValues {
-  return {
+  const values = {
     ...defaultValues,
     ...initialValues,
+  };
+
+  return {
+    ...values,
+    status: values.status ?? DEFAULT_CREATE_ORDER_STATUS,
   };
 }
 
@@ -215,16 +221,19 @@ export function CreateOrderForm({
   });
 
   const requiresPaymentMethod =
-    status === 'PARTIALLY_PAID' || status === 'CONFIRMED';
-  const isPaidStatus = status === 'CONFIRMED';
-  const isPartiallyPaidStatus = status === 'PARTIALLY_PAID';
+    (status ?? DEFAULT_CREATE_ORDER_STATUS) === 'PARTIALLY_PAID' ||
+    (status ?? DEFAULT_CREATE_ORDER_STATUS) === 'CONFIRMED';
+  const effectiveStatus = status ?? DEFAULT_CREATE_ORDER_STATUS;
+  const isPaidStatus = effectiveStatus === 'CONFIRMED';
+  const isPartiallyPaidStatus = effectiveStatus === 'PARTIALLY_PAID';
   const totalValue = Number(total || 0);
   const partialPaymentValue = Number(partialPayment || 0);
   const paidNowValue = isPaidStatus ? totalValue : partialPaymentValue;
   const remainingBalance = isPaidStatus
     ? 0
     : Math.max(totalValue - partialPaymentValue, 0);
-  const displayStatus = status === 'CONFIRMED' ? 'CONFIRMED' : 'PARTIALLY_PAID';
+  const displayStatus =
+    effectiveStatus === 'PARTIALLY_PAID' ? 'PARTIALLY_PAID' : 'CONFIRMED';
 
   useEffect(() => {
     if (authUser?.name) {
@@ -234,6 +243,15 @@ export function CreateOrderForm({
       });
     }
   }, [authUser?.name, form]);
+
+  useEffect(() => {
+    if (!status) {
+      form.setValue('status', DEFAULT_CREATE_ORDER_STATUS, {
+        shouldDirty: false,
+        shouldValidate: true,
+      });
+    }
+  }, [form, status]);
 
   useEffect(() => {
     let isActive = true;
@@ -758,6 +776,7 @@ export function CreateOrderForm({
                 <Select
                   id="status"
                   className="h-11 rounded-xl"
+                  defaultValue={DEFAULT_CREATE_ORDER_STATUS}
                   {...form.register('status')}
                 >
                   {CREATE_ORDER_STATUSES.map((nextStatus) => (
