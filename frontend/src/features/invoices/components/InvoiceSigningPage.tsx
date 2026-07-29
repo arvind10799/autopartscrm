@@ -1,9 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { PointerEvent, ReactNode } from 'react';
+import type { ChangeEvent, DragEvent, PointerEvent, ReactNode } from 'react';
 import Image from 'next/image';
-import { CheckCircle2, LoaderCircle, PenLine, RotateCcw } from 'lucide-react';
+import {
+  CheckCircle2,
+  FileUp,
+  LoaderCircle,
+  PenLine,
+  RotateCcw,
+  UploadCloud,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { invoicesApi } from '@/features/invoices/api/invoices-api';
@@ -12,14 +20,28 @@ import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
 import { createInvoicePdfBlob, InvoiceDocument } from './InvoiceActions';
 
+type SignatureMode = 'TYPE' | 'DRAW' | 'UPLOAD';
+
+const TYPED_SIGNATURE_STYLES = [
+  { label: 'Classic Script', font: '"Brush Script MT", "Segoe Script", cursive' },
+  { label: 'Elegant Script', font: '"Lucida Handwriting", "Segoe Script", cursive' },
+  { label: 'Modern Script', font: '"Segoe Script", "Brush Script MT", cursive' },
+  { label: 'Bold Script', font: '"Monotype Corsiva", "Brush Script MT", cursive' },
+];
+
 export function InvoiceSigningPage({ token }: { token: string }) {
   const [invoice, setInvoice] = useState<PublicInvoiceRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [signatureName, setSignatureName] = useState('');
+  const [signatureImage, setSignatureImage] = useState('');
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [signatureMode, setSignatureMode] = useState<SignatureMode>('TYPE');
+  const [selectedTypedStyle, setSelectedTypedStyle] = useState(0);
+  const [uploadedSignatureImage, setUploadedSignatureImage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasDrawing, setHasDrawing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawCanvasRef = useRef<HTMLCanvasElement>(null);
   const invoiceDocumentRef = useRef<HTMLDivElement>(null);
   const isDrawingRef = useRef(false);
 
@@ -35,6 +57,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
 
         setInvoice(loadedInvoice);
         setSignatureName(loadedInvoice.customerSignature ?? loadedInvoice.customerName);
+        setSignatureImage(loadedInvoice.customerSignatureImage ?? '');
       })
       .catch((caughtError) => {
         if (!isMounted) {
@@ -59,29 +82,22 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   }, [token]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || invoice?.canSign === false) {
+    const canvas = drawCanvasRef.current;
+    if (
+      !canvas ||
+      invoice?.canSign === false ||
+      !isSignatureModalOpen ||
+      signatureMode !== 'DRAW'
+    ) {
       return;
     }
 
-    const context = canvas.getContext('2d');
-    if (!context) {
-      return;
-    }
-
-    const rect = canvas.getBoundingClientRect();
-    const ratio = window.devicePixelRatio || 1;
-    canvas.width = rect.width * ratio;
-    canvas.height = rect.height * ratio;
-    context.scale(ratio, ratio);
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
-    context.lineWidth = 2.4;
-    context.strokeStyle = '#172334';
-  }, [invoice?.canSign]);
+    prepareSignatureCanvas(canvas);
+    setHasDrawing(false);
+  }, [invoice?.canSign, isSignatureModalOpen, signatureMode]);
 
   const startDrawing = (event: PointerEvent<HTMLCanvasElement>) => {
-    const context = canvasRef.current?.getContext('2d');
+    const context = drawCanvasRef.current?.getContext('2d');
     if (!context) {
       return;
     }
@@ -97,7 +113,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
       return;
     }
 
-    const context = canvasRef.current?.getContext('2d');
+    const context = drawCanvasRef.current?.getContext('2d');
     if (!context) {
       return;
     }
@@ -113,7 +129,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   };
 
   const clearSignature = () => {
-    const canvas = canvasRef.current;
+    const canvas = drawCanvasRef.current;
     const context = canvas?.getContext('2d');
 
     if (!canvas || !context) {
@@ -124,8 +140,78 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     setHasDrawing(false);
   };
 
+  const openSignatureModal = () => {
+    setSignatureMode(signatureImage ? 'DRAW' : 'TYPE');
+    setIsSignatureModalOpen(true);
+  };
+
+  const handleSignatureFile = async (file: File | undefined) => {
+    if (!file) {
+      return;
+    }
+
+    if (!['image/png', 'image/jpeg', 'image/bmp'].includes(file.type)) {
+      toast.error('Unsupported file', 'Upload a PNG, JPG, or BMP signature image.');
+      return;
+    }
+
+    try {
+      const image = await fileToCompressedSignatureDataUrl(file);
+      setUploadedSignatureImage(image);
+    } catch (caughtError) {
+      toast.error(
+        'Unable to upload signature',
+        caughtError instanceof Error ? caughtError.message : 'Please try another image.',
+      );
+    }
+  };
+
+  const handleUploadInput = (event: ChangeEvent<HTMLInputElement>) => {
+    void handleSignatureFile(event.target.files?.[0]);
+    event.target.value = '';
+  };
+
+  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    void handleSignatureFile(event.dataTransfer.files?.[0]);
+  };
+
+  const saveSignatureFromModal = () => {
+    const trimmedName = signatureName.trim();
+
+    if (!trimmedName) {
+      toast.error('Signature name required', 'Enter your name before saving signature.');
+      return;
+    }
+
+    if (signatureMode === 'TYPE') {
+      setSignatureImage(createTypedSignatureImage(trimmedName, selectedTypedStyle));
+      setIsSignatureModalOpen(false);
+      return;
+    }
+
+    if (signatureMode === 'DRAW') {
+      if (!drawCanvasRef.current || !hasDrawing) {
+        toast.error('Signature required', 'Draw your signature before saving.');
+        return;
+      }
+
+      setSignatureImage(drawCanvasRef.current.toDataURL('image/png'));
+      setIsSignatureModalOpen(false);
+      return;
+    }
+
+    if (!uploadedSignatureImage) {
+      toast.error('Signature required', 'Upload your signature before saving.');
+      return;
+    }
+
+    setSignatureImage(uploadedSignatureImage);
+    setIsSignatureModalOpen(false);
+  };
+
   const submitSignature = async () => {
-    if (!invoice || !canvasRef.current) {
+    if (!invoice) {
       return;
     }
 
@@ -134,15 +220,14 @@ export function InvoiceSigningPage({ token }: { token: string }) {
       return;
     }
 
-    if (!hasDrawing) {
-      toast.error('Signature required', 'Please draw your signature before submitting.');
+    if (!signatureImage) {
+      toast.error('Signature required', 'Add your signature before submitting.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const signatureImage = canvasRef.current.toDataURL('image/png');
       const signedAt = new Date().toISOString();
       const signedPreview = {
         ...invoice,
@@ -247,26 +332,54 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                     />
                   </label>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-foreground">Draw Signature</p>
-                      <Button type="button" variant="ghost" size="sm" onClick={clearSignature}>
-                        <RotateCcw className="h-4 w-4" />
-                        Clear
-                      </Button>
-                    </div>
-                    <canvas
-                      ref={canvasRef}
-                      onPointerDown={startDrawing}
-                      onPointerMove={drawSignature}
-                      onPointerUp={stopDrawing}
-                      onPointerLeave={stopDrawing}
-                      className={cn(
-                        'h-44 w-full touch-none rounded-2xl border border-dashed border-slate-300 bg-white shadow-inner',
-                        hasDrawing ? 'border-primary/60' : null,
-                      )}
-                    />
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4">
+                    {signatureImage ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-foreground">
+                            Saved signature
+                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={openSignatureModal}
+                          >
+                            Change
+                          </Button>
+                        </div>
+                        <div className="flex h-32 items-center justify-center rounded-xl bg-white shadow-inner">
+                          <img
+                            src={signatureImage}
+                            alt="Saved customer signature"
+                            className="max-h-24 max-w-full object-contain"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 text-center">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                          <PenLine className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">
+                            Add your signature
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                            Type, draw, or upload your legally accepted signature.
+                          </p>
+                        </div>
+                        <Button type="button" variant="outline" onClick={openSignatureModal}>
+                          <PenLine className="h-4 w-4" />
+                          Add Signature
+                        </Button>
+                      </div>
+                    )}
                   </div>
+
+                  <p className="rounded-2xl bg-slate-50 px-4 py-3 text-center text-xs font-medium text-slate-700">
+                    I understand that this is a legal representation of my signature.
+                  </p>
 
                   <Button
                     type="button"
@@ -286,6 +399,187 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                       </>
                     )}
                   </Button>
+
+                  {isSignatureModalOpen ? (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm">
+                      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.35rem] bg-white shadow-2xl ring-1 ring-slate-900/10">
+                        <div className="flex items-center justify-between px-6 py-5">
+                          <h2 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950">
+                            Signature
+                          </h2>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 w-9 rounded-full p-0 text-slate-500"
+                            onClick={() => setIsSignatureModalOpen(false)}
+                            aria-label="Close signature modal"
+                          >
+                            <X className="h-5 w-5" />
+                          </Button>
+                        </div>
+
+                        <div className="space-y-5 overflow-auto px-6 pb-5">
+                          <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-slate-300">
+                            {(['TYPE', 'DRAW', 'UPLOAD'] as SignatureMode[]).map((mode) => (
+                              <button
+                                key={mode}
+                                type="button"
+                                className={cn(
+                                  'h-11 border-r border-slate-300 text-sm font-semibold transition last:border-r-0',
+                                  signatureMode === mode
+                                    ? 'border-primary bg-primary/10 text-primary ring-1 ring-inset ring-primary'
+                                    : 'bg-white text-slate-900 hover:bg-slate-50',
+                                )}
+                                onClick={() => setSignatureMode(mode)}
+                              >
+                                {mode.charAt(0) + mode.slice(1).toLowerCase()}
+                              </button>
+                            ))}
+                          </div>
+
+                          {signatureMode === 'TYPE' ? (
+                            <div className="space-y-4">
+                              <label className="flex items-center gap-3 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">
+                                <span className="shrink-0">Your name</span>
+                                <input
+                                  value={signatureName}
+                                  onChange={(event) => setSignatureName(event.target.value)}
+                                  className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-950 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                                />
+                              </label>
+                              <div className="grid gap-4 sm:grid-cols-2">
+                                {TYPED_SIGNATURE_STYLES.map((style, index) => (
+                                  <button
+                                    key={style.label}
+                                    type="button"
+                                    className={cn(
+                                      'relative flex h-28 items-center justify-center rounded-xl border bg-white px-5 text-left transition hover:border-primary/50',
+                                      selectedTypedStyle === index
+                                        ? 'border-primary ring-2 ring-primary/20'
+                                        : 'border-slate-200',
+                                    )}
+                                    onClick={() => setSelectedTypedStyle(index)}
+                                  >
+                                    <span
+                                      className="truncate text-5xl text-slate-950"
+                                      style={{ fontFamily: style.font }}
+                                    >
+                                      {signatureName || 'Your name'}
+                                    </span>
+                                    <span className="absolute left-3 top-3 h-4 w-4 rounded-full border border-slate-300 bg-white">
+                                      {selectedTypedStyle === index ? (
+                                        <span className="m-1 block h-2 w-2 rounded-full bg-primary" />
+                                      ) : null}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {signatureMode === 'DRAW' ? (
+                            <div className="space-y-3">
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={clearSignature}
+                                  className="text-primary"
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                  Clear
+                                </Button>
+                              </div>
+                              <canvas
+                                ref={drawCanvasRef}
+                                onPointerDown={startDrawing}
+                                onPointerMove={drawSignature}
+                                onPointerUp={stopDrawing}
+                                onPointerLeave={stopDrawing}
+                                className={cn(
+                                  'h-52 w-full touch-none rounded-sm border border-slate-300 bg-slate-50 shadow-inner',
+                                  hasDrawing ? 'border-primary/70 bg-white' : null,
+                                )}
+                              />
+                            </div>
+                          ) : null}
+
+                          {signatureMode === 'UPLOAD' ? (
+                            <div className="space-y-4">
+                              <label
+                                onDragOver={(event) => event.preventDefault()}
+                                onDrop={handleDrop}
+                                className="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-sm border border-slate-300 bg-slate-50 px-6 py-8 text-center transition hover:border-primary/50 hover:bg-primary/5"
+                              >
+                                {uploadedSignatureImage ? (
+                                  <img
+                                    src={uploadedSignatureImage}
+                                    alt="Uploaded signature preview"
+                                    className="max-h-28 max-w-full object-contain"
+                                  />
+                                ) : (
+                                  <>
+                                    <UploadCloud className="h-8 w-8 text-slate-400" />
+                                    <p className="mt-3 text-base text-slate-400">
+                                      Drop signature files here...
+                                    </p>
+                                    <span className="mt-3 rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary">
+                                      Browse
+                                    </span>
+                                    <p className="mt-3 text-sm text-slate-600">
+                                      Supported formats: PNG, JPG, BMP
+                                    </p>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/bmp"
+                                  className="hidden"
+                                  onChange={handleUploadInput}
+                                />
+                              </label>
+                              {uploadedSignatureImage ? (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setUploadedSignatureImage('')}
+                                >
+                                  <FileUp className="h-4 w-4" />
+                                  Choose another file
+                                </Button>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className="border-t border-slate-200 bg-slate-50/80">
+                          <p className="px-6 py-2 text-center text-xs font-medium text-slate-900">
+                            I understand that this is a legal representation of my signature
+                          </p>
+                          <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="min-w-28"
+                              onClick={() => setIsSignatureModalOpen(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              className="min-w-36 bg-[#3f0df6] hover:bg-[#3210bd]"
+                              onClick={saveSignatureFromModal}
+                            >
+                              Save & use
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </>
               )}
             </CardContent>
@@ -323,6 +617,94 @@ function getCanvasPoint(event: PointerEvent<HTMLCanvasElement>) {
     x: event.clientX - rect.left,
     y: event.clientY - rect.top,
   };
+}
+
+function prepareSignatureCanvas(canvas: HTMLCanvasElement) {
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  context.scale(ratio, ratio);
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.lineWidth = 2.6;
+  context.strokeStyle = '#0f172a';
+}
+
+function createTypedSignatureImage(name: string, styleIndex: number) {
+  const canvas = document.createElement('canvas');
+  const width = 720;
+  const height = 220;
+  const context = canvas.getContext('2d');
+  const style = TYPED_SIGNATURE_STYLES[styleIndex] ?? TYPED_SIGNATURE_STYLES[0];
+
+  canvas.width = width;
+  canvas.height = height;
+
+  if (!context) {
+    return '';
+  }
+
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = '#020617';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.font = `96px ${style.font}`;
+  context.fillText(name, width / 2, height / 2 + 5, width - 80);
+
+  return canvas.toDataURL('image/png');
+}
+
+function fileToCompressedSignatureDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        reject(new Error('Unable to read signature image.'));
+        return;
+      }
+
+      const image = new window.Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxWidth = 720;
+        const maxHeight = 220;
+        const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+
+        canvas.width = maxWidth;
+        canvas.height = maxHeight;
+
+        if (!context) {
+          reject(new Error('Unable to prepare signature image.'));
+          return;
+        }
+
+        context.clearRect(0, 0, maxWidth, maxHeight);
+        context.drawImage(
+          image,
+          (maxWidth - width) / 2,
+          (maxHeight - height) / 2,
+          width,
+          height,
+        );
+        resolve(canvas.toDataURL('image/png'));
+      };
+      image.onerror = () => reject(new Error('Signature image could not be opened.'));
+      image.src = result;
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read signature file.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 function waitForRenderFrame() {
