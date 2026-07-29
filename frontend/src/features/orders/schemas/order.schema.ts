@@ -144,7 +144,16 @@ const orderBackendSummarySchema = z.object({
   price: numericAmountSchema,
   quantity: z.number(),
   totalSaleAmount: numericAmountSchema,
-  status: orderStatusSchema,
+  status: z.preprocess(
+    (value) => {
+      if (value === '' || value === null || value === undefined) {
+        return 'CONFIRMED';
+      }
+
+      return value;
+    },
+    orderStatusSchema,
+  ),
   paymentMethod: orderPaymentMethodSchema.nullable(),
   intakeDetails: orderIntakeDetailsSchema
     .pick({ partialPayment: true })

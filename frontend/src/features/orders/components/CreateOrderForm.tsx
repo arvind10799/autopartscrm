@@ -371,7 +371,10 @@ export function CreateOrderForm({
     setFormError(null);
 
     try {
-      const payload = createOrderFormSchema.parse(values);
+      const payload = createOrderFormSchema.parse({
+        ...values,
+        status: values.status || DEFAULT_CREATE_ORDER_STATUS,
+      });
       const createdOrder = await ordersApi.create(payload);
 
       onCreated(createdOrder);
