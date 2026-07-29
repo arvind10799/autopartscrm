@@ -379,12 +379,13 @@ export class InvoicesService {
   }
 
   private buildTokenExpiryDate(): Date {
-    const ttlDays = this.configService.get<number>(
-      'INVOICE_SIGNING_TOKEN_TTL_DAYS',
-      30,
+    const ttlDays = Number(
+      this.configService.get<string>('INVOICE_SIGNING_TOKEN_TTL_DAYS') ?? 30,
     );
     const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + ttlDays);
+    expiryDate.setDate(
+      expiryDate.getDate() + (Number.isFinite(ttlDays) ? ttlDays : 30),
+    );
 
     return expiryDate;
   }
