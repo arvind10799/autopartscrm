@@ -426,7 +426,6 @@ function InvoiceFormModal({
 
             <InvoiceFormSection title="Product Information">
               <InvoiceInput label="Item Description" value={draft.itemDescription} onChange={(value) => updateField('itemDescription', value)} />
-              <InvoiceInput label="Vehicle / Part Description" value={draft.vehiclePartDescription} onChange={(value) => updateField('vehiclePartDescription', value)} />
               <InvoiceInput label="Quantity" type="number" min="1" value={draft.quantity} onChange={(value) => updateField('quantity', value)} />
               <InvoiceInput label="Sale Amount" type="number" step="0.01" value={draft.saleAmount} onChange={(value) => updateField('saleAmount', value)} />
             </InvoiceFormSection>
@@ -896,7 +895,7 @@ function draftToPayload(draft: InvoiceDraft): CreateInvoiceInput {
     shippingVendor: draft.shippingVendor,
     deliveryTimeline: draft.deliveryTimeline,
     itemDescription: draft.itemDescription,
-    vehiclePartDescription: draft.vehiclePartDescription,
+    vehiclePartDescription: '',
     warrantyPartsOnly: draft.warrantyPartsOnly,
     quantity: Number(draft.quantity),
     saleAmount: toAmount(draft.saleAmount),
@@ -920,7 +919,7 @@ function draftToInvoicePreview(orderId: string, draft: InvoiceDraft): InvoiceRec
     contactNumber: draft.contactNumber || null,
     billingAddress: draft.billingAddress || null,
     shippingAddress: draft.shippingAddress || null,
-    vehiclePartDescription: draft.vehiclePartDescription || null,
+    vehiclePartDescription: null,
     warrantyPartsOnly: draft.warrantyPartsOnly || DEFAULT_WARRANTY_PARTS_ONLY,
     paymentStatus: draft.paymentStatus || null,
     paymentDate: draft.paymentDate || null,
