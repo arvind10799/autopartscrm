@@ -124,6 +124,38 @@ function formatAmountInput(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+function buildGeneratedPartDescription({
+  vehicleYear,
+  vehicleMake,
+  vehicleModel,
+  vehicleVariant,
+  fallback,
+}: {
+  vehicleYear?: unknown;
+  vehicleMake?: unknown;
+  vehicleModel?: unknown;
+  vehicleVariant?: unknown;
+  fallback?: unknown;
+}) {
+  const vehicleDescription = [
+    vehicleYear,
+    vehicleMake,
+    vehicleModel,
+    vehicleVariant,
+  ]
+    .map((value) => (typeof value === 'string' ? value.trim() : ''))
+    .filter(Boolean)
+    .join(' ');
+
+  const description =
+    vehicleDescription ||
+    (typeof fallback === 'string' && fallback.trim()
+      ? fallback.trim()
+      : 'Auto part');
+
+  return description.slice(0, 255);
+}
+
 function FormSection({
   title,
   description,
@@ -222,6 +254,10 @@ export function CreateOrderForm({
     salesTax,
     shippingCharges,
     profit,
+    vehicleYear,
+    vehicleMake,
+    vehicleModel,
+    vehicleVariant,
   ] = useWatch({
     control: form.control,
     name: [
@@ -232,6 +268,10 @@ export function CreateOrderForm({
       'salesTax',
       'shippingCharges',
       'profit',
+      'vehicleYear',
+      'vehicleMake',
+      'vehicleModel',
+      'vehicleVariant',
     ],
   });
 
@@ -341,6 +381,30 @@ export function CreateOrderForm({
   }, [form, isPaidStatus]);
 
   useEffect(() => {
+    form.setValue(
+      'partDescription',
+      buildGeneratedPartDescription({
+        vehicleYear,
+        vehicleMake,
+        vehicleModel,
+        vehicleVariant,
+        fallback: resolvedInitialValues.partDescription,
+      }),
+      {
+        shouldDirty: false,
+        shouldValidate: true,
+      },
+    );
+  }, [
+    form,
+    resolvedInitialValues.partDescription,
+    vehicleMake,
+    vehicleModel,
+    vehicleVariant,
+    vehicleYear,
+  ]);
+
+  useEffect(() => {
     form.reset(resolvedFormValues);
   }, [
     authUser?.name,
@@ -388,6 +452,13 @@ export function CreateOrderForm({
     try {
       const payload = createOrderFormSchema.parse({
         ...values,
+        partDescription: buildGeneratedPartDescription({
+          vehicleYear: values.vehicleYear,
+          vehicleMake: values.vehicleMake,
+          vehicleModel: values.vehicleModel,
+          vehicleVariant: values.vehicleVariant,
+          fallback: values.partDescription,
+        }),
         status: values.status || DEFAULT_CREATE_ORDER_STATUS,
         partialPayment:
           (values.status || DEFAULT_CREATE_ORDER_STATUS) === 'PARTIALLY_PAID'
@@ -416,6 +487,7 @@ export function CreateOrderForm({
       <input type="hidden" {...form.register('leadId')} />
       <input type="hidden" {...form.register('quantity')} />
       <input type="hidden" {...form.register('salePrice')} />
+      <input type="hidden" {...form.register('partDescription')} />
 
       <div className="rounded-[1.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(59,130,246,0.10),rgba(255,255,255,0.92))] p-4 shadow-sm md:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -545,19 +617,6 @@ export function CreateOrderForm({
                 />
               </Field>
 
-              <Field
-                id="partDescription"
-                label="Part description"
-                error={form.formState.errors.partDescription?.message?.toString()}
-                className="xl:col-span-4"
-              >
-                <Input
-                  id="partDescription"
-                  placeholder="Front brake pads, ceramic set"
-                  className="h-11 rounded-xl"
-                  {...form.register('partDescription')}
-                />
-              </Field>
             </div>
           </FormSection>
 
@@ -566,6 +625,18 @@ export function CreateOrderForm({
             description="Keep the fitment picture tight without stretching the popup."
           >
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <Field
+                id="vehicleYear"
+                label="Year"
+                error={form.formState.errors.vehicleYear?.message?.toString()}
+              >
+                <Input
+                  id="vehicleYear"
+                  className="h-11 rounded-xl"
+                  {...form.register('vehicleYear')}
+                />
+              </Field>
+
               <Field
                 id="vehicleMake"
                 label="Make"
@@ -587,18 +658,6 @@ export function CreateOrderForm({
                   id="vehicleModel"
                   className="h-11 rounded-xl"
                   {...form.register('vehicleModel')}
-                />
-              </Field>
-
-              <Field
-                id="vehicleYear"
-                label="Year"
-                error={form.formState.errors.vehicleYear?.message?.toString()}
-              >
-                <Input
-                  id="vehicleYear"
-                  className="h-11 rounded-xl"
-                  {...form.register('vehicleYear')}
                 />
               </Field>
 
@@ -628,23 +687,10 @@ export function CreateOrderForm({
               </Field>
 
               <Field
-                id="vehicleConfiguration"
-                label="Configuration"
-                error={form.formState.errors.vehicleConfiguration?.message?.toString()}
-                className="xl:col-span-2"
-              >
-                <Input
-                  id="vehicleConfiguration"
-                  className="h-11 rounded-xl"
-                  {...form.register('vehicleConfiguration')}
-                />
-              </Field>
-
-              <Field
                 id="vehicleNotes"
                 label="Vehicle notes"
                 error={form.formState.errors.vehicleNotes?.message?.toString()}
-                className="xl:col-span-4"
+                className="xl:col-span-2"
               >
                 <Textarea
                   id="vehicleNotes"
