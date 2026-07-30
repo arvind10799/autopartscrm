@@ -22,6 +22,13 @@ import {
 
 const SIGNED_INVOICE_STATUS = 'SIGNED';
 const SIGNATURE_REQUESTED_STATUS = 'SIGNATURE_REQUESTED';
+const DEFAULT_WARRANTY_PARTS_ONLY = [
+  'Standard: 90 days for non-performance engines and transmissions.',
+  "No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accesories sent isn't charged or covered.",
+  'Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accesories.',
+  'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
+  'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
+].join('\n');
 
 @Injectable()
 export class InvoicesService {
@@ -55,6 +62,7 @@ export class InvoicesService {
       deliveryTimeline: '7-8 Business Days',
       itemDescription: order.partDescription,
       vehiclePartDescription: this.buildVehiclePartDescription(order),
+      warrantyPartsOnly: DEFAULT_WARRANTY_PARTS_ONLY,
       quantity: order.quantity,
       saleAmount: Number(order.totalSaleAmount),
       paymentStatus: '',
@@ -114,6 +122,9 @@ export class InvoicesService {
       vehiclePartDescription: this.optionalText(
         createInvoiceDto.vehiclePartDescription,
       ),
+      warrantyPartsOnly:
+        this.optionalText(createInvoiceDto.warrantyPartsOnly) ??
+        DEFAULT_WARRANTY_PARTS_ONLY,
       quantity: createInvoiceDto.quantity,
       saleAmount: new Prisma.Decimal(createInvoiceDto.saleAmount),
       paymentStatus: this.optionalText(createInvoiceDto.paymentStatus),
@@ -183,6 +194,9 @@ export class InvoicesService {
       vehiclePartDescription: this.optionalText(
         createInvoiceDto.vehiclePartDescription,
       ),
+      warrantyPartsOnly:
+        this.optionalText(createInvoiceDto.warrantyPartsOnly) ??
+        DEFAULT_WARRANTY_PARTS_ONLY,
       quantity: createInvoiceDto.quantity,
       saleAmount: new Prisma.Decimal(createInvoiceDto.saleAmount),
       paymentStatus: this.optionalText(createInvoiceDto.paymentStatus),
@@ -273,6 +287,8 @@ export class InvoicesService {
           deliveryTimeline: signedInvoice.deliveryTimeline,
           itemDescription: signedInvoice.itemDescription,
           vehiclePartDescription: signedInvoice.vehiclePartDescription,
+          warrantyPartsOnly:
+            signedInvoice.warrantyPartsOnly ?? DEFAULT_WARRANTY_PARTS_ONLY,
           quantity: signedInvoice.quantity,
           saleAmount: Number(signedInvoice.saleAmount),
           paymentStatus: signedInvoice.paymentStatus,

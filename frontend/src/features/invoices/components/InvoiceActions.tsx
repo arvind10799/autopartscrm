@@ -25,6 +25,7 @@ type InvoiceDraft = {
   deliveryTimeline: string;
   itemDescription: string;
   vehiclePartDescription: string;
+  warrantyPartsOnly: string;
   quantity: string;
   saleAmount: string;
   paymentStatus: string;
@@ -37,6 +38,14 @@ type InvoiceDraft = {
   customerSignatureImage: string;
   signatureDate: string;
 };
+
+const DEFAULT_WARRANTY_PARTS_ONLY = [
+  'Standard: 90 days for non-performance engines and transmissions.',
+  "No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accesories sent isn't charged or covered.",
+  'Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accesories.',
+  'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
+  'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
+].join('\n');
 
 export function InvoiceActions({
   order,
@@ -422,6 +431,14 @@ function InvoiceFormModal({
               <InvoiceInput label="Sale Amount" type="number" step="0.01" value={draft.saleAmount} onChange={(value) => updateField('saleAmount', value)} />
             </InvoiceFormSection>
 
+            <InvoiceFormSection title="Warranty Terms">
+              <InvoiceTextarea
+                label="Warranty ( parts only )"
+                value={draft.warrantyPartsOnly}
+                onChange={(value) => updateField('warrantyPartsOnly', value)}
+              />
+            </InvoiceFormSection>
+
             <InvoiceFormSection title="Payment Information">
               <InvoiceInput label="Payment Status" value={draft.paymentStatus} onChange={(value) => updateField('paymentStatus', value)} />
               <InvoiceInput label="Payment Date" type="date" value={draft.paymentDate} onChange={(value) => updateField('paymentDate', value)} />
@@ -608,7 +625,7 @@ function InvoiceDocument({ invoice }, ref) {
 
     <div className="invoice-page">
       <InvoiceHeader title="WARRANTY - TERMS & CONDITION" invoice={invoice} />
-      <WarrantyTerms />
+      <WarrantyTerms warrantyPartsOnly={invoice.warrantyPartsOnly} />
       <InvoiceSignature invoice={invoice} />
       <InvoiceFooter />
     </div>
@@ -708,18 +725,22 @@ function InvoiceFooter() {
   );
 }
 
-function WarrantyTerms() {
+function WarrantyTerms({
+  warrantyPartsOnly,
+}: {
+  warrantyPartsOnly?: string | null;
+}) {
+  const warrantyLines = parseWarrantyLines(warrantyPartsOnly);
+
   return (
     <section className="invoice-warranty">
       <h2>Warranty | Returns | Cancellation</h2>
 
       <h3>Warranty ( parts only )</h3>
       <ul>
-        <li>Standard: 90 days for non-performance engines and transmissions.</li>
-        <li>No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accesories sent isn&apos;t charged or covered.</li>
-        <li>Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accesories.</li>
-        <li>Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.</li>
-        <li>Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.</li>
+        {warrantyLines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
       </ul>
 
       <h3>Installation & Returns</h3>
@@ -826,6 +847,7 @@ function InvoiceTextarea({
 function defaultsToDraft(defaults: InvoiceDefaults): InvoiceDraft {
   return {
     ...defaults,
+    warrantyPartsOnly: defaults.warrantyPartsOnly || DEFAULT_WARRANTY_PARTS_ONLY,
     quantity: String(defaults.quantity),
     saleAmount: formatNumberInput(defaults.saleAmount),
     shippingCost: formatNumberInput(defaults.shippingCost),
@@ -847,6 +869,7 @@ function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
     deliveryTimeline: invoice.deliveryTimeline,
     itemDescription: invoice.itemDescription,
     vehiclePartDescription: invoice.vehiclePartDescription ?? '',
+    warrantyPartsOnly: invoice.warrantyPartsOnly ?? DEFAULT_WARRANTY_PARTS_ONLY,
     quantity: String(invoice.quantity),
     saleAmount: formatNumberInput(invoice.saleAmount),
     paymentStatus: invoice.paymentStatus ?? '',
@@ -874,6 +897,7 @@ function draftToPayload(draft: InvoiceDraft): CreateInvoiceInput {
     deliveryTimeline: draft.deliveryTimeline,
     itemDescription: draft.itemDescription,
     vehiclePartDescription: draft.vehiclePartDescription,
+    warrantyPartsOnly: draft.warrantyPartsOnly,
     quantity: Number(draft.quantity),
     saleAmount: toAmount(draft.saleAmount),
     paymentStatus: draft.paymentStatus,
@@ -897,6 +921,7 @@ function draftToInvoicePreview(orderId: string, draft: InvoiceDraft): InvoiceRec
     billingAddress: draft.billingAddress || null,
     shippingAddress: draft.shippingAddress || null,
     vehiclePartDescription: draft.vehiclePartDescription || null,
+    warrantyPartsOnly: draft.warrantyPartsOnly || DEFAULT_WARRANTY_PARTS_ONLY,
     paymentStatus: draft.paymentStatus || null,
     paymentDate: draft.paymentDate || null,
     paymentSource: draft.paymentSource || null,
@@ -946,6 +971,15 @@ function formatDateInputValue(value: string | null): string {
   }
 
   return date.toISOString().slice(0, 10);
+}
+
+function parseWarrantyLines(value?: string | null): string[] {
+  const source = value?.trim() ? value : DEFAULT_WARRANTY_PARTS_ONLY;
+
+  return source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function formatMoney(value: number): string {

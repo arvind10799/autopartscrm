@@ -47,6 +47,7 @@ export const invoiceRecordSchema = z.object({
   deliveryTimeline: z.string(),
   itemDescription: z.string(),
   vehiclePartDescription: z.string().nullable(),
+  warrantyPartsOnly: z.string().nullable(),
   quantity: z.number(),
   saleAmount: z.coerce.number(),
   paymentStatus: z.string().nullable(),
@@ -82,6 +83,7 @@ export const invoiceDefaultsSchema = z.object({
   deliveryTimeline: z.string(),
   itemDescription: z.string(),
   vehiclePartDescription: z.string(),
+  warrantyPartsOnly: z.string(),
   quantity: z.number(),
   saleAmount: z.coerce.number(),
   paymentStatus: z.string(),
@@ -164,6 +166,10 @@ export const createInvoiceSchema = z
     vehiclePartDescription: optionalInvoiceTextSchema(
       255,
       'Vehicle / part description must be 255 characters or fewer.',
+    ),
+    warrantyPartsOnly: optionalInvoiceTextSchema(
+      3000,
+      'Warranty terms must be 3000 characters or fewer.',
     ),
     quantity: z.coerce
       .number()

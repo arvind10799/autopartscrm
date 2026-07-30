@@ -23,6 +23,7 @@ type SignedMailInvoice = MailInvoice & {
   deliveryTimeline: string;
   itemDescription: string;
   vehiclePartDescription?: string | null;
+  warrantyPartsOnly?: string | null;
   quantity: number;
   saleAmount: number;
   paymentStatus?: string | null;
@@ -37,6 +38,14 @@ type SignedMailInvoice = MailInvoice & {
   signatureDate?: Date | null;
   signedInvoicePdfBase64?: string;
 };
+
+const DEFAULT_WARRANTY_PARTS_ONLY = [
+  'Standard: 90 days for non-performance engines and transmissions.',
+  "No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accesories sent isn't charged or covered.",
+  'Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accesories.',
+  'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
+  'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
+].join('\n');
 
 @Injectable()
 export class InvoiceMailService {
@@ -443,13 +452,13 @@ export class InvoiceMailService {
       .text('Warranty | Returns | Cancellation', x, y);
 
     y += 44;
-    y = this.drawWarrantySection(document, x, y, 'Warranty ( parts only )', [
-      'Standard: 90 days for non-performance engines and transmissions.',
-      'No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accesories sent isn’t charged or covered.',
-      'Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accesories.',
-      'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
-      'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
-    ]);
+    y = this.drawWarrantySection(
+      document,
+      x,
+      y,
+      'Warranty ( parts only )',
+      this.parseWarrantyLines(invoice.warrantyPartsOnly),
+    );
     y = this.drawWarrantySection(document, x, y + 12, 'Installation & Returns', [
       'Installation: Engines and transmissions must be installed within 15 days from the day of delivery by a licensed professional at a licensed repair facility, following manufacturer guidelines.',
       'All parts must be installed within 15 days of delivery. Failure to complete the installation within this timeframe will void any warranty claims.',
@@ -659,6 +668,15 @@ export class InvoiceMailService {
     }
 
     return nextY;
+  }
+
+  private parseWarrantyLines(value?: string | null): string[] {
+    const source = value?.trim() ? value : DEFAULT_WARRANTY_PARTS_ONLY;
+
+    return source
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
   }
 
   private parseDataUrlImage(value?: string | null): { buffer: Buffer } | null {

@@ -12,6 +12,7 @@ export interface InvoiceRecord {
   deliveryTimeline: string;
   itemDescription: string;
   vehiclePartDescription: string | null;
+  warrantyPartsOnly: string | null;
   quantity: number;
   saleAmount: number;
   paymentStatus: string | null;
@@ -67,6 +68,7 @@ export type InvoiceDefaults = Omit<
   billingAddress: string;
   shippingAddress: string;
   vehiclePartDescription: string;
+  warrantyPartsOnly: string;
   paymentStatus: string;
   paymentDate: string;
   paymentSource: string;
@@ -87,6 +89,7 @@ export interface CreateInvoiceInput {
   deliveryTimeline: string;
   itemDescription: string;
   vehiclePartDescription?: string;
+  warrantyPartsOnly?: string;
   quantity: number;
   saleAmount: number;
   paymentStatus?: string;
