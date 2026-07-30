@@ -681,6 +681,7 @@ export function CreateOrderForm({
               >
                 <Input
                   id="vehicleVin"
+                  maxLength={17}
                   className="h-11 rounded-xl"
                   {...form.register('vehicleVin')}
                 />

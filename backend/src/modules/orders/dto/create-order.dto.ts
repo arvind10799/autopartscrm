@@ -52,52 +52,52 @@ export class CreateOrderDto {
   partDescription: string;
 
   @Transform(({ value }) => trimToLowerCaseEmail(value))
-  @IsOptional()
+  @IsNotEmpty()
   @IsEmail()
   @MaxLength(160)
-  customerEmail?: string;
+  customerEmail: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(30)
-  customerPhone?: string;
+  customerPhone: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(120)
-  vehicleMake?: string;
+  vehicleMake: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(120)
-  vehicleModel?: string;
+  vehicleModel: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(20)
-  vehicleYear?: string;
+  vehicleYear: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(120)
-  vehicleVariant?: string;
+  vehicleVariant: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
-  @MaxLength(60)
-  vehicleVin?: string;
+  @IsNotEmpty()
+  @MaxLength(17)
+  vehicleVin: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(1000)
-  vehicleNotes?: string;
+  vehicleNotes: string;
 
   @Transform(({ value }) => trimToUndefined(value))
   @IsOptional()
@@ -105,59 +105,58 @@ export class CreateOrderDto {
   @MaxLength(255)
   vehicleConfiguration?: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(500)
-  billingAddress?: string;
+  billingAddress: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(160)
-  billingPerson?: string;
+  billingPerson: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(30)
-  billingPhone?: string;
+  billingPhone: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(500)
-  shippingAddress?: string;
+  shippingAddress: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(160)
-  shippingPerson?: string;
+  shippingPerson: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(30)
-  shippingPhone?: string;
+  shippingPhone: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(40)
-  shippingAt?: string;
+  shippingAt: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(160)
-  companyName?: string;
+  companyName: string;
 
   @Type(() => Number)
-  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  milesOffered?: number;
+  milesOffered: number;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -165,28 +164,24 @@ export class CreateOrderDto {
   price: number;
 
   @Type(() => Number)
-  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  basePrice?: number;
+  basePrice: number;
 
   @Type(() => Number)
-  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  salesTax?: number;
+  salesTax: number;
 
   @Type(() => Number)
-  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  shippingCharges?: number;
+  shippingCharges: number;
 
   @Type(() => Number)
-  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  profit?: number;
+  profit: number;
 
   @Type(() => Number)
   @IsInt()
@@ -212,11 +207,11 @@ export class CreateOrderDto {
   @IsEnum(OrderPaymentMethod)
   paymentMethod?: OrderPaymentMethod;
 
-  @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(1000)
-  note?: string;
+  note: string;
 
   @IsOptional()
   @IsUUID()

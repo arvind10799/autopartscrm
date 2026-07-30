@@ -55,6 +55,72 @@ function createOptionalTextSchema(maxLength: number, message: string) {
   );
 }
 
+function createRequiredTextSchema(
+  maxLength: number,
+  requiredMessage: string,
+  maxMessage: string,
+) {
+  return z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      return value.trim();
+    },
+    z
+      .string({
+        required_error: requiredMessage,
+        invalid_type_error: requiredMessage,
+      })
+      .min(1, requiredMessage)
+      .max(maxLength, maxMessage),
+  );
+}
+
+function createRequiredNumericSchema(
+  requiredMessage: string,
+  maxDecimalMessage: string,
+) {
+  return z.preprocess(
+    (value) => {
+      if (value === '' || value === null || value === undefined) {
+        return undefined;
+      }
+
+      return value;
+    },
+    z.coerce
+      .number({
+        required_error: requiredMessage,
+        invalid_type_error: requiredMessage,
+      })
+      .min(0, requiredMessage)
+      .refine(
+        (value) => Number.isInteger(value * 100),
+        maxDecimalMessage,
+      ),
+  );
+}
+
+const requiredEmailSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+
+    return value.trim().toLowerCase();
+  },
+  z
+    .string({
+      required_error: 'Customer email is required.',
+      invalid_type_error: 'Customer email is required.',
+    })
+    .min(1, 'Customer email is required.')
+    .email('Enter a valid email address.')
+    .max(160, 'Customer email must be 160 characters or fewer.'),
+);
+
 const optionalNumericValueSchema = z.preprocess(
   (value) => {
     if (value === '' || value === null || value === undefined) {
@@ -308,69 +374,90 @@ export const createOrderSchema = z.object({
     .trim()
     .min(1, 'Part description is required.')
     .max(255, 'Part description must be 255 characters or fewer.'),
-  customerEmail: optionalEmailSchema,
-  customerPhone: optionalPhoneSchema,
-  vehicleMake: createOptionalTextSchema(
+  customerEmail: requiredEmailSchema,
+  customerPhone: createRequiredTextSchema(
+    30,
+    'Customer phone is required.',
+    'Customer phone must be 30 characters or fewer.',
+  ),
+  vehicleMake: createRequiredTextSchema(
     120,
+    'Make is required.',
     'Make must be 120 characters or fewer.',
   ),
-  vehicleModel: createOptionalTextSchema(
+  vehicleModel: createRequiredTextSchema(
     120,
+    'Model is required.',
     'Model must be 120 characters or fewer.',
   ),
-  vehicleYear: createOptionalTextSchema(
+  vehicleYear: createRequiredTextSchema(
     20,
+    'Year is required.',
     'Year must be 20 characters or fewer.',
   ),
-  vehicleVariant: createOptionalTextSchema(
+  vehicleVariant: createRequiredTextSchema(
     120,
+    'Variant is required.',
     'Variant must be 120 characters or fewer.',
   ),
-  vehicleVin: createOptionalTextSchema(
-    60,
-    'VIN must be 60 characters or fewer.',
+  vehicleVin: createRequiredTextSchema(
+    17,
+    'VIN is required.',
+    'VIN must be 17 characters or fewer.',
   ),
-  vehicleNotes: createOptionalTextSchema(
+  vehicleNotes: createRequiredTextSchema(
     1000,
+    'Vehicle notes are required.',
     'Notes must be 1000 characters or fewer.',
   ),
   vehicleConfiguration: createOptionalTextSchema(
     255,
     'Configuration must be 255 characters or fewer.',
   ),
-  billingAddress: createOptionalTextSchema(
+  billingAddress: createRequiredTextSchema(
     500,
+    'Billing address is required.',
     'Billing address must be 500 characters or fewer.',
   ),
-  billingPerson: createOptionalTextSchema(
+  billingPerson: createRequiredTextSchema(
     160,
+    'Billing person is required.',
     'Billing person must be 160 characters or fewer.',
   ),
-  billingPhone: createOptionalTextSchema(
+  billingPhone: createRequiredTextSchema(
     30,
+    'Billing phone is required.',
     'Billing phone must be 30 characters or fewer.',
   ),
-  shippingAddress: createOptionalTextSchema(
+  shippingAddress: createRequiredTextSchema(
     500,
+    'Shipping address is required.',
     'Shipping address must be 500 characters or fewer.',
   ),
-  shippingPerson: createOptionalTextSchema(
+  shippingPerson: createRequiredTextSchema(
     160,
+    'Shipping person is required.',
     'Shipping person must be 160 characters or fewer.',
   ),
-  shippingPhone: createOptionalTextSchema(
+  shippingPhone: createRequiredTextSchema(
     30,
+    'Shipping phone is required.',
     'Shipping phone must be 30 characters or fewer.',
   ),
-  shippingAt: createOptionalTextSchema(
+  shippingAt: createRequiredTextSchema(
     40,
+    'Shipping date is required.',
     'Shipping at must be 40 characters or fewer.',
   ),
-  companyName: createOptionalTextSchema(
+  companyName: createRequiredTextSchema(
     160,
+    'Company name is required.',
     'Company name must be 160 characters or fewer.',
   ),
-  milesOffered: optionalNumericValueSchema,
+  milesOffered: createRequiredNumericSchema(
+    'Miles offered is required.',
+    'Miles offered can include at most 2 decimal places.',
+  ),
   salePrice: z.coerce
     .number()
     .positive('Sale price must be greater than 0.')
@@ -378,10 +465,22 @@ export const createOrderSchema = z.object({
       (value) => Number.isInteger(value * 100),
       'Sale price can include at most 2 decimal places.',
     ),
-  basePrice: optionalNumericValueSchema,
-  salesTax: optionalNumericValueSchema,
-  shippingCharges: optionalNumericValueSchema,
-  profit: optionalNumericValueSchema,
+  basePrice: createRequiredNumericSchema(
+    'Base price is required.',
+    'Base price can include at most 2 decimal places.',
+  ),
+  salesTax: createRequiredNumericSchema(
+    'Sales tax is required.',
+    'Sales tax can include at most 2 decimal places.',
+  ),
+  shippingCharges: createRequiredNumericSchema(
+    'Shipping charges are required.',
+    'Shipping charges can include at most 2 decimal places.',
+  ),
+  profit: createRequiredNumericSchema(
+    'Profit is required.',
+    'Profit can include at most 2 decimal places.',
+  ),
   quantity: z.coerce
     .number()
     .int('Quantity must be a whole number.')
@@ -408,8 +507,8 @@ export const createOrderSchema = z.object({
   note: z
     .string()
     .trim()
-    .max(1000, 'Notes must be 1000 characters or fewer.')
-    .optional(),
+    .min(1, 'Order note is required.')
+    .max(1000, 'Notes must be 1000 characters or fewer.'),
 }).superRefine((value, context) => {
   if (requiresPaymentMethod(value.status) && !value.paymentMethod) {
     context.addIssue({
@@ -475,84 +574,89 @@ export const createOrderFormSchema = z.object({
     .trim()
     .min(1, 'Part description is required.')
     .max(255, 'Part description must be 255 characters or fewer.'),
-  customerEmail: z
-    .string()
-    .max(160, 'Customer email must be 160 characters or fewer.')
-    .optional(),
-  customerPhone: z
-    .string()
-    .max(30, 'Customer phone must be 30 characters or fewer.')
-    .optional(),
-  vehicleMake: z
-    .string()
-    .max(120, 'Make must be 120 characters or fewer.')
-    .optional(),
-  vehicleModel: z
-    .string()
-    .max(120, 'Model must be 120 characters or fewer.')
-    .optional(),
-  vehicleYear: z
-    .string()
-    .max(20, 'Year must be 20 characters or fewer.')
-    .optional(),
-  vehicleVariant: z
-    .string()
-    .max(120, 'Variant must be 120 characters or fewer.')
-    .optional(),
-  vehicleVin: z
-    .string()
-    .max(60, 'VIN must be 60 characters or fewer.')
-    .optional(),
-  vehicleNotes: z
-    .string()
-    .max(1000, 'Notes must be 1000 characters or fewer.')
-    .optional(),
+  customerEmail: requiredEmailSchema,
+  customerPhone: createRequiredTextSchema(
+    30,
+    'Customer phone is required.',
+    'Customer phone must be 30 characters or fewer.',
+  ),
+  vehicleMake: createRequiredTextSchema(
+    120,
+    'Make is required.',
+    'Make must be 120 characters or fewer.',
+  ),
+  vehicleModel: createRequiredTextSchema(
+    120,
+    'Model is required.',
+    'Model must be 120 characters or fewer.',
+  ),
+  vehicleYear: createRequiredTextSchema(
+    20,
+    'Year is required.',
+    'Year must be 20 characters or fewer.',
+  ),
+  vehicleVariant: createRequiredTextSchema(
+    120,
+    'Variant is required.',
+    'Variant must be 120 characters or fewer.',
+  ),
+  vehicleVin: createRequiredTextSchema(
+    17,
+    'VIN is required.',
+    'VIN must be 17 characters or fewer.',
+  ),
+  vehicleNotes: createRequiredTextSchema(
+    1000,
+    'Vehicle notes are required.',
+    'Notes must be 1000 characters or fewer.',
+  ),
   vehicleConfiguration: z
     .string()
     .max(255, 'Configuration must be 255 characters or fewer.')
     .optional(),
-  billingAddress: z
-    .string()
-    .max(500, 'Billing address must be 500 characters or fewer.')
-    .optional(),
-  billingPerson: z
-    .string()
-    .max(160, 'Billing person must be 160 characters or fewer.')
-    .optional(),
-  billingPhone: z
-    .string()
-    .max(30, 'Billing phone must be 30 characters or fewer.')
-    .optional(),
-  shippingAddress: z
-    .string()
-    .max(500, 'Shipping address must be 500 characters or fewer.')
-    .optional(),
-  shippingPerson: z
-    .string()
-    .max(160, 'Shipping person must be 160 characters or fewer.')
-    .optional(),
-  shippingPhone: z
-    .string()
-    .max(30, 'Shipping phone must be 30 characters or fewer.')
-    .optional(),
-  shippingAt: z
-    .string()
-    .max(40, 'Shipping at must be 40 characters or fewer.')
-    .optional(),
-  companyName: z
-    .string()
-    .max(160, 'Company name must be 160 characters or fewer.')
-    .optional(),
-  milesOffered: z.preprocess(
-    (value) => (value === '' ? undefined : value),
-    z.coerce
-      .number()
-      .min(0, 'Miles offered must be 0 or greater.')
-      .refine(
-        (value) => Number.isInteger(value * 100),
-        'Miles offered can include at most 2 decimal places.',
-      )
-      .optional(),
+  billingAddress: createRequiredTextSchema(
+    500,
+    'Billing address is required.',
+    'Billing address must be 500 characters or fewer.',
+  ),
+  billingPerson: createRequiredTextSchema(
+    160,
+    'Billing person is required.',
+    'Billing person must be 160 characters or fewer.',
+  ),
+  billingPhone: createRequiredTextSchema(
+    30,
+    'Billing phone is required.',
+    'Billing phone must be 30 characters or fewer.',
+  ),
+  shippingAddress: createRequiredTextSchema(
+    500,
+    'Shipping address is required.',
+    'Shipping address must be 500 characters or fewer.',
+  ),
+  shippingPerson: createRequiredTextSchema(
+    160,
+    'Shipping person is required.',
+    'Shipping person must be 160 characters or fewer.',
+  ),
+  shippingPhone: createRequiredTextSchema(
+    30,
+    'Shipping phone is required.',
+    'Shipping phone must be 30 characters or fewer.',
+  ),
+  shippingAt: createRequiredTextSchema(
+    40,
+    'Shipping date is required.',
+    'Shipping at must be 40 characters or fewer.',
+  ),
+  companyName: createRequiredTextSchema(
+    160,
+    'Company name is required.',
+    'Company name must be 160 characters or fewer.',
+  ),
+  milesOffered: createRequiredNumericSchema(
+    'Miles offered is required.',
+    'Miles offered can include at most 2 decimal places.',
   ),
   salePrice: z.preprocess(
     (val) => (typeof val === 'number' ? String(val) : val),
@@ -563,49 +667,21 @@ export const createOrderFormSchema = z.object({
       .regex(/^\d+(\.\d{1,2})?$/, 'Enter a valid amount with up to 2 decimals.')
       .transform((value) => Number(value)),
   ),
-  basePrice: z.preprocess(
-    (value) => (value === '' ? undefined : value),
-    z.coerce
-      .number()
-      .min(0, 'Base price must be 0 or greater.')
-      .refine(
-        (value) => Number.isInteger(value * 100),
-        'Base price can include at most 2 decimal places.',
-      )
-      .optional(),
+  basePrice: createRequiredNumericSchema(
+    'Base price is required.',
+    'Base price can include at most 2 decimal places.',
   ),
-  salesTax: z.preprocess(
-    (value) => (value === '' ? undefined : value),
-    z.coerce
-      .number()
-      .min(0, 'Sales tax must be 0 or greater.')
-      .refine(
-        (value) => Number.isInteger(value * 100),
-        'Sales tax can include at most 2 decimal places.',
-      )
-      .optional(),
+  salesTax: createRequiredNumericSchema(
+    'Sales tax is required.',
+    'Sales tax can include at most 2 decimal places.',
   ),
-  shippingCharges: z.preprocess(
-    (value) => (value === '' ? undefined : value),
-    z.coerce
-      .number()
-      .min(0, 'Shipping charges must be 0 or greater.')
-      .refine(
-        (value) => Number.isInteger(value * 100),
-        'Shipping charges can include at most 2 decimal places.',
-      )
-      .optional(),
+  shippingCharges: createRequiredNumericSchema(
+    'Shipping charges are required.',
+    'Shipping charges can include at most 2 decimal places.',
   ),
-  profit: z.preprocess(
-    (value) => (value === '' ? undefined : value),
-    z.coerce
-      .number()
-      .min(0, 'Profit must be 0 or greater.')
-      .refine(
-        (value) => Number.isInteger(value * 100),
-        'Profit can include at most 2 decimal places.',
-      )
-      .optional(),
+  profit: createRequiredNumericSchema(
+    'Profit is required.',
+    'Profit can include at most 2 decimal places.',
   ),
   quantity: z.preprocess(
     (val) => (typeof val === 'number' ? String(val) : val),
@@ -665,8 +741,9 @@ export const createOrderFormSchema = z.object({
   ),
   note: z
     .string()
-    .max(1000, 'Notes must be 1000 characters or fewer.')
-    .optional(),
+    .trim()
+    .min(1, 'Order note is required.')
+    .max(1000, 'Notes must be 1000 characters or fewer.'),
 }).superRefine((value, context) => {
   if (requiresPaymentMethod(value.status) && !value.paymentMethod) {
     context.addIssue({
