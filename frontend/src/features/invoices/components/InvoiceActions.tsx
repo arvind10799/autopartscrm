@@ -2,7 +2,7 @@
 
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
-import { CheckCircle2, Download, Eye, FileText, Link2, LoaderCircle, Send, X } from 'lucide-react';
+import { CheckCircle2, Download, Eye, FileText, Link2, LoaderCircle, Pencil, Send, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,6 +47,7 @@ export function InvoiceActions({
 }) {
   const [invoice, setInvoice] = useState<InvoiceRecord | null>(order.invoice);
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
+  const [isEditingInvoice, setIsEditingInvoice] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [draft, setDraft] = useState<InvoiceDraft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export function InvoiceActions({
 
     setIsLoadingDefaults(true);
     setFormError(null);
+    setIsEditingInvoice(false);
 
     try {
       const defaults = await invoicesApi.getDefaults(order.id);
@@ -101,7 +103,23 @@ export function InvoiceActions({
     }
   };
 
-  const handleCreateInvoice = async () => {
+  const openEditModal = () => {
+    if (!invoice) {
+      return;
+    }
+
+    if (invoice.status === 'SIGNED') {
+      toast.error('Invoice is locked', 'Signed invoices cannot be edited.');
+      return;
+    }
+
+    setDraft(invoiceToDraft(invoice));
+    setFormError(null);
+    setIsEditingInvoice(true);
+    setIsGenerateOpen(true);
+  };
+
+  const handleSaveInvoice = async () => {
     if (!draft) {
       return;
     }
@@ -110,22 +128,34 @@ export function InvoiceActions({
     setFormError(null);
 
     try {
-      const createdInvoice = await invoicesApi.create(order.id, draftToPayload(draft));
-      setInvoice(createdInvoice);
+      const savedInvoice = isEditingInvoice
+        ? await invoicesApi.update(order.id, draftToPayload(draft))
+        : await invoicesApi.create(order.id, draftToPayload(draft));
+      setInvoice(savedInvoice);
       setIsGenerateOpen(false);
+      setIsEditingInvoice(false);
       setIsViewOpen(true);
       onInvoiceCreated();
-      toast.success(
-        'Invoice generated',
-        createdInvoice.status === 'SIGNATURE_REQUESTED'
-          ? 'The customer signature request has been emailed.'
-          : 'The invoice is now linked to this order.',
-      );
+      if (isEditingInvoice) {
+        toast.success(
+          'Invoice updated',
+          'The sent signing link now shows the corrected invoice.',
+        );
+      } else {
+        toast.success(
+          'Invoice generated',
+          savedInvoice.status === 'SIGNATURE_REQUESTED'
+            ? 'The customer signature request has been emailed.'
+            : 'The invoice is now linked to this order.',
+        );
+      }
     } catch (caughtError) {
       setFormError(
         caughtError instanceof Error
           ? caughtError.message
-          : 'Unable to generate this invoice.',
+          : isEditingInvoice
+            ? 'Unable to update this invoice.'
+            : 'Unable to generate this invoice.',
       );
     } finally {
       setIsSaving(false);
@@ -228,6 +258,15 @@ export function InvoiceActions({
                     type="button"
                     size="sm"
                     variant="outline"
+                    onClick={openEditModal}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit Invoice
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
                     disabled={isSignatureActionRunning}
                     onClick={() => void handleSignatureAction('resend')}
                   >
@@ -269,10 +308,14 @@ export function InvoiceActions({
           draft={draft}
           error={formError}
           isSaving={isSaving}
+          mode={isEditingInvoice ? 'edit' : 'create'}
           totalAmount={totalAmount}
           onChange={setDraft}
-          onClose={() => setIsGenerateOpen(false)}
-          onSubmit={handleCreateInvoice}
+          onClose={() => {
+            setIsGenerateOpen(false);
+            setIsEditingInvoice(false);
+          }}
+          onSubmit={handleSaveInvoice}
         />
       ) : null}
 
@@ -298,6 +341,7 @@ function InvoiceFormModal({
   draft,
   error,
   isSaving,
+  mode,
   totalAmount,
   onChange,
   onClose,
@@ -306,6 +350,7 @@ function InvoiceFormModal({
   draft: InvoiceDraft;
   error: string | null;
   isSaving: boolean;
+  mode: 'create' | 'edit';
   totalAmount: number;
   onChange: (nextDraft: InvoiceDraft) => void;
   onClose: () => void;
@@ -330,10 +375,12 @@ function InvoiceFormModal({
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 pb-4">
           <div>
             <h2 className="font-[var(--font-heading)] text-2xl font-semibold text-foreground">
-              Generate Invoice
+              {mode === 'edit' ? 'Edit Invoice' : 'Generate Invoice'}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Prefilled from the order. All values can be edited before saving.
+              {mode === 'edit'
+                ? 'Update the saved invoice before the customer signs it.'
+                : 'Prefilled from the order. All values can be edited before saving.'}
             </p>
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
@@ -406,10 +453,10 @@ function InvoiceFormModal({
                 {isSaving ? (
                   <>
                     <LoaderCircle className="h-4 w-4 animate-spin" />
-                    Generating...
+                    {mode === 'edit' ? 'Saving...' : 'Generating...'}
                   </>
                 ) : (
-                  'Generate Invoice'
+                  mode === 'edit' ? 'Save Changes' : 'Generate Invoice'
                 )}
               </Button>
               <Button type="button" variant="outline" onClick={onClose}>
@@ -787,6 +834,33 @@ function defaultsToDraft(defaults: InvoiceDefaults): InvoiceDraft {
   };
 }
 
+function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
+  return {
+    invoiceNumber: invoice.invoiceNumber,
+    invoiceDate: formatDateInputValue(invoice.invoiceDate),
+    salesAssistant: invoice.salesAssistant ?? '',
+    customerName: invoice.customerName,
+    contactNumber: invoice.contactNumber ?? '',
+    billingAddress: invoice.billingAddress ?? '',
+    shippingAddress: invoice.shippingAddress ?? '',
+    shippingVendor: invoice.shippingVendor,
+    deliveryTimeline: invoice.deliveryTimeline,
+    itemDescription: invoice.itemDescription,
+    vehiclePartDescription: invoice.vehiclePartDescription ?? '',
+    quantity: String(invoice.quantity),
+    saleAmount: formatNumberInput(invoice.saleAmount),
+    paymentStatus: invoice.paymentStatus ?? '',
+    paymentDate: formatDateInputValue(invoice.paymentDate),
+    paymentSource: invoice.paymentSource ?? '',
+    shippingCost: formatNumberInput(invoice.shippingCost),
+    salesTaxes: formatNumberInput(invoice.salesTaxes),
+    coreCharge: formatNumberInput(invoice.coreCharge),
+    customerSignature: invoice.customerSignature ?? '',
+    customerSignatureImage: invoice.customerSignatureImage ?? '',
+    signatureDate: formatDateInputValue(invoice.signatureDate),
+  };
+}
+
 function draftToPayload(draft: InvoiceDraft): CreateInvoiceInput {
   return {
     invoiceNumber: draft.invoiceNumber,
@@ -859,6 +933,19 @@ function toAmount(value: string): number {
 
 function formatNumberInput(value: number): string {
   return value.toFixed(2);
+}
+
+function formatDateInputValue(value: string | null): string {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value.slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
 }
 
 function formatMoney(value: number): string {

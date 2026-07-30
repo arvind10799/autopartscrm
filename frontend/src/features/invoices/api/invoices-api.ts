@@ -65,6 +65,24 @@ export const invoicesApi = {
     });
   },
 
+  async update(
+    orderId: string,
+    payload: CreateInvoiceInput,
+  ): Promise<InvoiceRecord> {
+    this.assertOrderId(orderId);
+    const requestPayload = createInvoiceSchema.parse(payload);
+
+    const response = await axiosBrowser.patch<ApiEnvelope<unknown>>(
+      `/api/orders/${orderId}/invoice`,
+      requestPayload,
+    );
+
+    return parseApiData(response, invoiceRecordSchema, {
+      emptyMessage: response.data.message || 'Update invoice response was empty.',
+      invalidMessage: 'Update invoice payload was invalid.',
+    });
+  },
+
   async resendSignatureRequest(orderId: string): Promise<InvoiceRecord> {
     this.assertOrderId(orderId);
 

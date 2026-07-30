@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidParamDto } from '../../common/dto/uuid-param.dto';
@@ -39,6 +47,16 @@ export class InvoicesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.invoicesService.create(params.id, createInvoiceDto, user);
+  }
+
+  @Roles(Role.ADMIN, Role.SALES)
+  @Patch()
+  update(
+    @Param() params: UuidParamDto,
+    @Body() createInvoiceDto: CreateInvoiceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.invoicesService.update(params.id, createInvoiceDto, user);
   }
 
   @Roles(Role.ADMIN, Role.SALES)

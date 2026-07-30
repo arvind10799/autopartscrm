@@ -150,6 +150,64 @@ export class InvoicesService {
     return this.serializeInvoice(invoice);
   }
 
+  async update(
+    orderId: string,
+    createInvoiceDto: CreateInvoiceDto,
+    user: AuthenticatedUser,
+  ) {
+    const existingInvoice = await this.invoicesRepository.findByOrderId(
+      orderId,
+      user,
+    );
+
+    if (!existingInvoice) {
+      throw new NotFoundException('Invoice was not found.');
+    }
+
+    if (existingInvoice.status === SIGNED_INVOICE_STATUS) {
+      throw new ConflictException('Signed invoices are read-only.');
+    }
+
+    const totalAmount = this.calculateTotalAmount(createInvoiceDto);
+    const invoice = await this.invoicesRepository.update(existingInvoice.id, {
+      invoiceNumber: createInvoiceDto.invoiceNumber.trim(),
+      invoiceDate: this.parseDate(createInvoiceDto.invoiceDate),
+      salesAssistant: this.optionalText(createInvoiceDto.salesAssistant),
+      customerName: createInvoiceDto.customerName.trim(),
+      contactNumber: this.optionalText(createInvoiceDto.contactNumber),
+      billingAddress: this.optionalText(createInvoiceDto.billingAddress),
+      shippingAddress: this.optionalText(createInvoiceDto.shippingAddress),
+      shippingVendor: createInvoiceDto.shippingVendor.trim(),
+      deliveryTimeline: createInvoiceDto.deliveryTimeline.trim(),
+      itemDescription: createInvoiceDto.itemDescription.trim(),
+      vehiclePartDescription: this.optionalText(
+        createInvoiceDto.vehiclePartDescription,
+      ),
+      quantity: createInvoiceDto.quantity,
+      saleAmount: new Prisma.Decimal(createInvoiceDto.saleAmount),
+      paymentStatus: this.optionalText(createInvoiceDto.paymentStatus),
+      paymentDate: createInvoiceDto.paymentDate
+        ? this.parseDate(createInvoiceDto.paymentDate)
+        : null,
+      paymentSource: this.optionalText(createInvoiceDto.paymentSource),
+      shippingCost: new Prisma.Decimal(createInvoiceDto.shippingCost),
+      salesTaxes: new Prisma.Decimal(createInvoiceDto.salesTaxes),
+      coreCharge: new Prisma.Decimal(createInvoiceDto.coreCharge),
+      totalAmount: new Prisma.Decimal(totalAmount),
+    });
+
+    await this.notesService.create(
+      {
+        content: `Invoice updated: ${invoice.invoiceNumber}`,
+        entityType: NoteEntityType.ORDER,
+        entityId: orderId,
+      },
+      user,
+    );
+
+    return this.serializeInvoice(invoice);
+  }
+
   async resendSignatureRequest(orderId: string, user: AuthenticatedUser) {
     const invoice = await this.findByOrderId(orderId, user);
 
@@ -322,8 +380,9 @@ export class InvoicesService {
       order?: unknown;
     },
   >(invoice: T) {
-    const { signatureTokenHash: _signatureTokenHash, order: _order, ...safeInvoice } =
-      invoice;
+    const safeInvoice = { ...invoice };
+    delete safeInvoice.signatureTokenHash;
+    delete safeInvoice.order;
 
     return safeInvoice;
   }
