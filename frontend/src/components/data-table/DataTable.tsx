@@ -52,9 +52,9 @@ export function DataTable<TData>({
       ? 'px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground'
       : 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground';
   const bodyCellClassName =
-    density === 'compact' ? 'px-3 py-2 align-top text-sm' : 'px-4 py-3.5 align-top text-sm';
+    density === 'compact' ? 'px-3 py-1.5 align-top text-sm' : 'px-4 py-3.5 align-top text-sm';
   const skeletonCellClassName =
-    density === 'compact' ? 'px-3 py-2 align-top' : 'px-4 py-3.5 align-top';
+    density === 'compact' ? 'px-3 py-1.5 align-top' : 'px-4 py-3.5 align-top';
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-sm">

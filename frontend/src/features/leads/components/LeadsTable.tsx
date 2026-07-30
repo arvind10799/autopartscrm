@@ -17,6 +17,10 @@ import { formatDate, formatLeadCurrency } from '../lib/lead-formatters';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
 import type { LeadSummary, PaginationMeta } from '../types/lead.types';
 
+function getFirstName(name: string) {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
 function buildColumns(
   onConvert: (lead: LeadSummary) => void,
   onEdit: (lead: LeadSummary) => void,
@@ -107,12 +111,9 @@ function buildColumns(
       accessorKey: 'adviserName',
       header: 'Adviser',
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <p className="font-medium text-foreground">{row.original.adviserName}</p>
-          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-            {row.original.cmpt}
-          </p>
-        </div>
+        <p className="font-medium text-foreground">
+          {getFirstName(row.original.adviserName)}
+        </p>
       ),
     });
   }
