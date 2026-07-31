@@ -24,6 +24,9 @@ import { RingCentralSmsService } from './ringcentral-sms.service';
 
 const SIGNED_INVOICE_STATUS = 'SIGNED';
 const SIGNATURE_REQUESTED_STATUS = 'SIGNATURE_REQUESTED';
+const SIGNATURE_SMS_SENT = 'SENT';
+const SIGNATURE_SMS_SKIPPED = 'SKIPPED';
+const SIGNATURE_SMS_FAILED = 'FAILED';
 const DEFAULT_WARRANTY_PARTS_ONLY = [
   'Standard: 90 days for non-performance engines and transmissions.',
   "No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accesories sent isn't charged or covered.",
@@ -383,7 +386,7 @@ export class InvoicesService {
       this.buildSigningUrl(signatureToken.token),
     );
 
-    await this.sendSignatureRequestSms(
+    const signatureSmsResult = await this.sendSignatureRequestSms(
       {
         invoiceNumber: invoice.invoiceNumber,
         customerName: invoice.customerName,
@@ -402,7 +405,11 @@ export class InvoicesService {
       user,
     );
 
-    return this.serializeInvoice(invoice);
+    return {
+      ...this.serializeInvoice(invoice),
+      signatureSmsStatus: signatureSmsResult.status,
+      signatureSmsMessage: signatureSmsResult.message,
+    };
   }
 
   private async sendSignatureRequestSms(
@@ -413,11 +420,21 @@ export class InvoicesService {
       orderCustomerPhone: string | null;
     },
     signingUrl: string,
-  ) {
+  ): Promise<{ status: string; message: string }> {
     const phoneNumber = invoice.contactNumber ?? invoice.orderCustomerPhone;
 
-    if (!phoneNumber || !this.ringCentralSmsService.isConfigured()) {
-      return;
+    if (!phoneNumber) {
+      return {
+        status: SIGNATURE_SMS_SKIPPED,
+        message: 'no phone number',
+      };
+    }
+
+    if (!this.ringCentralSmsService.isConfigured()) {
+      return {
+        status: SIGNATURE_SMS_SKIPPED,
+        message: 'SMS is not configured',
+      };
     }
 
     try {
@@ -427,12 +444,22 @@ export class InvoicesService {
         invoiceNumber: invoice.invoiceNumber,
         signingUrl,
       });
+
+      return {
+        status: SIGNATURE_SMS_SENT,
+        message: 'SMS sent',
+      };
     } catch (error) {
       this.logger.warn(
         `Invoice signature SMS failed for ${invoice.invoiceNumber}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       );
+
+      return {
+        status: SIGNATURE_SMS_FAILED,
+        message: 'check logs/RingCentral',
+      };
     }
   }
 

@@ -5,6 +5,7 @@ import {
   createInvoiceSchema,
   invoiceDefaultsSchema,
   invoiceRecordSchema,
+  invoiceSignatureRequestResultSchema,
   publicInvoiceRecordSchema,
   signInvoiceSchema,
 } from '@/features/invoices/schemas/invoice.schema';
@@ -12,6 +13,7 @@ import type {
   CreateInvoiceInput,
   InvoiceDefaults,
   InvoiceRecord,
+  InvoiceSignatureRequestResult,
   PublicInvoiceRecord,
   SignInvoiceInput,
 } from '@/features/invoices/types/invoice.types';
@@ -50,7 +52,7 @@ export const invoicesApi = {
   async create(
     orderId: string,
     payload: CreateInvoiceInput,
-  ): Promise<InvoiceRecord> {
+  ): Promise<InvoiceSignatureRequestResult> {
     this.assertOrderId(orderId);
     const requestPayload = createInvoiceSchema.parse(payload);
 
@@ -59,7 +61,7 @@ export const invoicesApi = {
       requestPayload,
     );
 
-    return parseApiData(response, invoiceRecordSchema, {
+    return parseApiData(response, invoiceSignatureRequestResultSchema, {
       emptyMessage: response.data.message || 'Create invoice response was empty.',
       invalidMessage: 'Create invoice payload was invalid.',
     });
@@ -83,27 +85,31 @@ export const invoicesApi = {
     });
   },
 
-  async resendSignatureRequest(orderId: string): Promise<InvoiceRecord> {
+  async resendSignatureRequest(
+    orderId: string,
+  ): Promise<InvoiceSignatureRequestResult> {
     this.assertOrderId(orderId);
 
     const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
       `/api/orders/${orderId}/invoice/signature-request`,
     );
 
-    return parseApiData(response, invoiceRecordSchema, {
+    return parseApiData(response, invoiceSignatureRequestResultSchema, {
       emptyMessage: response.data.message || 'Signature request response was empty.',
       invalidMessage: 'Signature request payload was invalid.',
     });
   },
 
-  async generateNewSigningLink(orderId: string): Promise<InvoiceRecord> {
+  async generateNewSigningLink(
+    orderId: string,
+  ): Promise<InvoiceSignatureRequestResult> {
     this.assertOrderId(orderId);
 
     const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
       `/api/orders/${orderId}/invoice/signing-link`,
     );
 
-    return parseApiData(response, invoiceRecordSchema, {
+    return parseApiData(response, invoiceSignatureRequestResultSchema, {
       emptyMessage: response.data.message || 'Signing link response was empty.',
       invalidMessage: 'Signing link payload was invalid.',
     });

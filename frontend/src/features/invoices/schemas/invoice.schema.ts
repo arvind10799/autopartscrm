@@ -102,6 +102,11 @@ export const publicInvoiceRecordSchema = invoiceRecordSchema.extend({
   canSign: z.boolean(),
 });
 
+export const invoiceSignatureRequestResultSchema = invoiceRecordSchema.extend({
+  signatureSmsStatus: z.enum(['SENT', 'SKIPPED', 'FAILED']).optional(),
+  signatureSmsMessage: z.string().nullable().optional(),
+});
+
 export const signInvoiceSchema = z.object({
   customerSignature: z
     .string()

@@ -31,7 +31,7 @@ export class RingCentralSmsService {
   }) {
     if (!this.isConfigured()) {
       this.logger.warn('RingCentral is not configured. Invoice SMS was not sent.');
-      return;
+      throw new Error('RingCentral SMS is not configured.');
     }
 
     const to = this.normalizePhoneNumber(options.to);
@@ -40,10 +40,7 @@ export class RingCentralSmsService {
     );
 
     if (!to || !from) {
-      this.logger.warn(
-        `Invoice SMS skipped for ${options.invoiceNumber}; phone number is invalid.`,
-      );
-      return;
+      throw new Error('RingCentral SMS phone number is invalid.');
     }
 
     const message = [

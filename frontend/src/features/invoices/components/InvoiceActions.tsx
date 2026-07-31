@@ -8,7 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { invoicesApi } from '@/features/invoices/api/invoices-api';
-import type { CreateInvoiceInput, InvoiceDefaults, InvoiceRecord } from '@/features/invoices/types/invoice.types';
+import type {
+  CreateInvoiceInput,
+  InvoiceDefaults,
+  InvoiceRecord,
+  InvoiceSignatureRequestResult,
+} from '@/features/invoices/types/invoice.types';
 import type { OrderDetail } from '@/features/orders/types/order.types';
 import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
@@ -154,7 +159,7 @@ export function InvoiceActions({
         toast.success(
           'Invoice generated',
           savedInvoice.status === 'SIGNATURE_REQUESTED'
-            ? 'The customer signature request has been emailed.'
+            ? getSignatureRequestToastMessage(savedInvoice)
             : 'The invoice is now linked to this order.',
         );
       }
@@ -187,7 +192,7 @@ export function InvoiceActions({
         action === 'resend'
           ? 'Signature request sent'
           : 'New signing link sent',
-        'The customer has been emailed a secure signing link.',
+        getSignatureRequestToastMessage(updatedInvoice),
       );
     } catch (caughtError) {
       toast.error(
@@ -853,6 +858,26 @@ function defaultsToDraft(defaults: InvoiceDefaults): InvoiceDraft {
     salesTaxes: formatNumberInput(defaults.salesTaxes),
     coreCharge: formatNumberInput(defaults.coreCharge),
   };
+}
+
+function getSignatureRequestToastMessage(
+  invoice: InvoiceSignatureRequestResult,
+): string {
+  if (invoice.signatureSmsStatus === 'SENT') {
+    return 'Email sent and SMS sent';
+  }
+
+  if (invoice.signatureSmsStatus === 'SKIPPED') {
+    return `Email sent, SMS skipped: ${
+      invoice.signatureSmsMessage || 'no phone number'
+    }`;
+  }
+
+  if (invoice.signatureSmsStatus === 'FAILED') {
+    return 'Email sent, SMS failed: check logs/RingCentral';
+  }
+
+  return 'Email sent';
 }
 
 function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
