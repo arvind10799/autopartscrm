@@ -6,10 +6,16 @@ import { InvoiceSigningController } from './invoice-signing.controller';
 import { InvoicesController } from './invoices.controller';
 import { InvoicesRepository } from './invoices.repository';
 import { InvoicesService } from './invoices.service';
+import { RingCentralSmsService } from './ringcentral-sms.service';
 
 @Module({
   imports: [AuthModule, NotesModule],
   controllers: [InvoicesController, InvoiceSigningController],
-  providers: [InvoicesService, InvoicesRepository, InvoiceMailService],
+  providers: [
+    InvoicesService,
+    InvoicesRepository,
+    InvoiceMailService,
+    RingCentralSmsService,
+  ],
 })
 export class InvoicesModule {}

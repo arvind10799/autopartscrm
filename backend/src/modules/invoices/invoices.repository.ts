@@ -78,6 +78,7 @@ export class InvoicesRepository {
           select: {
             id: true,
             customerEmail: true,
+            customerPhone: true,
             orderNumber: true,
           },
         },
@@ -105,6 +106,7 @@ export class InvoicesRepository {
           select: {
             id: true,
             customerEmail: true,
+            customerPhone: true,
             orderNumber: true,
           },
         },
@@ -122,6 +124,7 @@ export class InvoicesRepository {
             select: {
               id: true,
               customerEmail: true,
+              customerPhone: true,
               orderNumber: true,
             },
           },

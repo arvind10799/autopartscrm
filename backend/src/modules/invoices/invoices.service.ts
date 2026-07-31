@@ -3,6 +3,7 @@ import {
   ConflictException,
   GoneException,
   Injectable,
+  Logger,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -19,6 +20,7 @@ import {
   InvoiceOrder,
   InvoicesRepository,
 } from './invoices.repository';
+import { RingCentralSmsService } from './ringcentral-sms.service';
 
 const SIGNED_INVOICE_STATUS = 'SIGNED';
 const SIGNATURE_REQUESTED_STATUS = 'SIGNATURE_REQUESTED';
@@ -32,10 +34,13 @@ const DEFAULT_WARRANTY_PARTS_ONLY = [
 
 @Injectable()
 export class InvoicesService {
+  private readonly logger = new Logger(InvoicesService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly invoicesRepository: InvoicesRepository,
     private readonly invoiceMailService: InvoiceMailService,
+    private readonly ringCentralSmsService: RingCentralSmsService,
     private readonly notesService: NotesService,
   ) {}
 
@@ -378,6 +383,16 @@ export class InvoicesService {
       this.buildSigningUrl(signatureToken.token),
     );
 
+    await this.sendSignatureRequestSms(
+      {
+        invoiceNumber: invoice.invoiceNumber,
+        customerName: invoice.customerName,
+        contactNumber: invoice.contactNumber,
+        orderCustomerPhone: invoice.order.customerPhone,
+      },
+      this.buildSigningUrl(signatureToken.token),
+    );
+
     await this.notesService.create(
       {
         content: options.noteMessage,
@@ -388,6 +403,37 @@ export class InvoicesService {
     );
 
     return this.serializeInvoice(invoice);
+  }
+
+  private async sendSignatureRequestSms(
+    invoice: {
+      invoiceNumber: string;
+      customerName: string;
+      contactNumber: string | null;
+      orderCustomerPhone: string | null;
+    },
+    signingUrl: string,
+  ) {
+    const phoneNumber = invoice.contactNumber ?? invoice.orderCustomerPhone;
+
+    if (!phoneNumber || !this.ringCentralSmsService.isConfigured()) {
+      return;
+    }
+
+    try {
+      await this.ringCentralSmsService.sendInvoiceSignatureLink({
+        to: phoneNumber,
+        customerName: invoice.customerName,
+        invoiceNumber: invoice.invoiceNumber,
+        signingUrl,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Invoice signature SMS failed for ${invoice.invoiceNumber}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+    }
   }
 
   private serializeInvoice<
