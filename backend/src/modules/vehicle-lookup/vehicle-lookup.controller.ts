@@ -24,10 +24,13 @@ export class VehicleLookupController {
   @Get('models')
   getModels(
     @Query('make') make = '',
-    @Query('year') year?: string,
     @Query('search') search?: string,
   ) {
-    return this.vehicleLookupService.getModels(make, year, search);
+    return this.vehicleLookupService.getModels(make, search);
+  }
+
+  @Get('parts')
+  getParts(@Query('search') search?: string) {
+    return this.vehicleLookupService.getParts(search);
   }
 }
-

@@ -349,8 +349,10 @@ export function CreateOrderForm({
   const [yearOptions, setYearOptions] = useState<VehicleLookupOption[]>([]);
   const [makeOptions, setMakeOptions] = useState<VehicleLookupOption[]>([]);
   const [modelOptions, setModelOptions] = useState<VehicleLookupOption[]>([]);
+  const [partOptions, setPartOptions] = useState<VehicleLookupOption[]>([]);
   const [isLoadingMakes, setIsLoadingMakes] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [isLoadingParts, setIsLoadingParts] = useState(false);
   const [vehicleLookupNotice, setVehicleLookupNotice] = useState<string | null>(null);
   const resolvedInitialValues = buildCreateOrderFormValues(initialValues);
   const resolvedFormValues = {
@@ -407,6 +409,8 @@ export function CreateOrderForm({
   const selectedVehicleYear = typeof vehicleYear === 'string' ? vehicleYear : '';
   const selectedVehicleMake = typeof vehicleMake === 'string' ? vehicleMake : '';
   const selectedVehicleModel = typeof vehicleModel === 'string' ? vehicleModel : '';
+  const selectedVehicleVariant =
+    typeof vehicleVariant === 'string' ? vehicleVariant : '';
 
   useEffect(() => {
     if (authUser?.name) {
@@ -462,6 +466,36 @@ export function CreateOrderForm({
       .finally(() => {
         if (isActive) {
           setIsLoadingMakes(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    setIsLoadingParts(true);
+    vehicleLookupApi
+      .getParts()
+      .then((response) => {
+        if (isActive) {
+          setPartOptions(response.items);
+          setVehicleLookupNotice(null);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setVehicleLookupNotice(
+            'Vehicle part options are unavailable. You can still type manually.',
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingParts(false);
         }
       });
 
@@ -924,11 +958,18 @@ export function CreateOrderForm({
                 label="Variant"
                 error={form.formState.errors.vehicleVariant?.message?.toString()}
               >
-                <Input
+                <VehicleCombobox
                   id="vehicleVariant"
-                  placeholder="Type trim / variant"
-                  className="h-11 rounded-xl"
-                  {...form.register('vehicleVariant')}
+                  value={selectedVehicleVariant}
+                  options={partOptions}
+                  disabled={isLoadingParts && partOptions.length === 0}
+                  placeholder={isLoadingParts ? 'Loading parts...' : 'Select or type part'}
+                  onChange={(nextValue) =>
+                    form.setValue('vehicleVariant', nextValue, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
                 />
               </Field>
 

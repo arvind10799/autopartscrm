@@ -53,5 +53,18 @@ export const vehicleLookupApi = {
       invalidMessage: 'Vehicle models payload was invalid.',
     });
   },
-};
 
+  async getParts(search?: string): Promise<VehicleLookupResponse> {
+    const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
+      '/api/vehicle-lookup/parts',
+      {
+        params: search ? { search } : undefined,
+      },
+    );
+
+    return parseApiData(response, vehicleLookupResponseSchema, {
+      emptyMessage: response.data.message || 'Vehicle parts response was empty.',
+      invalidMessage: 'Vehicle parts payload was invalid.',
+    });
+  },
+};
