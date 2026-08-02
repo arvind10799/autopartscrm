@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/features/auth/store/auth.store';
+import { vehicleLookupApi } from '@/features/vehicle-lookup/api/vehicle-lookup-api';
+import type { VehicleLookupOption } from '@/features/vehicle-lookup/types/vehicle-lookup.types';
 import { cn } from '@/lib/utils/cn';
 import { getErrorMessage } from '@/lib/utils/error';
 import { ordersApi } from '../api/orders-api';
@@ -209,6 +211,22 @@ function Field({
   );
 }
 
+function LookupDatalist({
+  id,
+  options,
+}: {
+  id: string;
+  options: VehicleLookupOption[];
+}) {
+  return (
+    <datalist id={id}>
+      {options.map((option) => (
+        <option key={`${option.id}-${option.name}`} value={option.name} />
+      ))}
+    </datalist>
+  );
+}
+
 function MetricCard({
   label,
   value,
@@ -237,6 +255,12 @@ export function CreateOrderForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [orderNumberError, setOrderNumberError] = useState<string | null>(null);
   const [isLoadingOrderNumber, setIsLoadingOrderNumber] = useState(true);
+  const [yearOptions, setYearOptions] = useState<VehicleLookupOption[]>([]);
+  const [makeOptions, setMakeOptions] = useState<VehicleLookupOption[]>([]);
+  const [modelOptions, setModelOptions] = useState<VehicleLookupOption[]>([]);
+  const [isLoadingMakes, setIsLoadingMakes] = useState(false);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [vehicleLookupNotice, setVehicleLookupNotice] = useState<string | null>(null);
   const resolvedInitialValues = buildCreateOrderFormValues(initialValues);
   const resolvedFormValues = {
     ...resolvedInitialValues,
@@ -298,6 +322,118 @@ export function CreateOrderForm({
       });
     }
   }, [authUser?.name, form]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    vehicleLookupApi
+      .getYears()
+      .then((response) => {
+        if (isActive) {
+          setYearOptions(response.items);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setVehicleLookupNotice(
+            'Vehicle year options are unavailable. You can still type manually.',
+          );
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+    const search =
+      typeof vehicleMake === 'string' && vehicleMake.trim().length > 0
+        ? vehicleMake.trim()
+        : undefined;
+
+    setIsLoadingMakes(true);
+    const timeoutId = window.setTimeout(() => {
+      vehicleLookupApi
+        .getMakes(search)
+        .then((response) => {
+          if (isActive) {
+            setMakeOptions(response.items);
+            setVehicleLookupNotice(null);
+          }
+        })
+        .catch(() => {
+          if (isActive) {
+            setVehicleLookupNotice(
+              'Vehicle make options are unavailable. You can still type manually.',
+            );
+          }
+        })
+        .finally(() => {
+          if (isActive) {
+            setIsLoadingMakes(false);
+          }
+        });
+    }, search ? 250 : 0);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [vehicleMake]);
+
+  useEffect(() => {
+    let isActive = true;
+    const make =
+      typeof vehicleMake === 'string' && vehicleMake.trim().length > 0
+        ? vehicleMake.trim()
+        : '';
+    const year =
+      typeof vehicleYear === 'string' && vehicleYear.trim().length > 0
+        ? vehicleYear.trim()
+        : undefined;
+    const search =
+      typeof vehicleModel === 'string' && vehicleModel.trim().length > 0
+        ? vehicleModel.trim()
+        : undefined;
+
+    if (!make) {
+      setModelOptions([]);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setIsLoadingModels(true);
+    const timeoutId = window.setTimeout(() => {
+      vehicleLookupApi
+        .getModels({ make, year, search })
+        .then((response) => {
+          if (isActive) {
+            setModelOptions(response.items);
+            setVehicleLookupNotice(null);
+          }
+        })
+        .catch(() => {
+          if (isActive) {
+            setVehicleLookupNotice(
+              'Vehicle model options are unavailable. You can still type manually.',
+            );
+          }
+        })
+        .finally(() => {
+          if (isActive) {
+            setIsLoadingModels(false);
+          }
+        });
+    }, search ? 250 : 0);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [vehicleMake, vehicleModel, vehicleYear]);
 
   useEffect(() => {
     if (!status) {
@@ -488,6 +624,9 @@ export function CreateOrderForm({
       <input type="hidden" {...form.register('quantity')} />
       <input type="hidden" {...form.register('salePrice')} />
       <input type="hidden" {...form.register('partDescription')} />
+      <LookupDatalist id="vehicleYearOptions" options={yearOptions} />
+      <LookupDatalist id="vehicleMakeOptions" options={makeOptions} />
+      <LookupDatalist id="vehicleModelOptions" options={modelOptions} />
 
       <div className="rounded-[1.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(59,130,246,0.10),rgba(255,255,255,0.92))] p-4 shadow-sm md:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -624,6 +763,11 @@ export function CreateOrderForm({
             title="Vehicle and fitment"
             description="Keep the fitment picture tight without stretching the popup."
           >
+            {vehicleLookupNotice ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                {vehicleLookupNotice}
+              </div>
+            ) : null}
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <Field
                 id="vehicleYear"
@@ -632,6 +776,8 @@ export function CreateOrderForm({
               >
                 <Input
                   id="vehicleYear"
+                  list="vehicleYearOptions"
+                  placeholder="Select or type year"
                   className="h-11 rounded-xl"
                   {...form.register('vehicleYear')}
                 />
@@ -644,6 +790,8 @@ export function CreateOrderForm({
               >
                 <Input
                   id="vehicleMake"
+                  list="vehicleMakeOptions"
+                  placeholder={isLoadingMakes ? 'Loading makes...' : 'Select or type make'}
                   className="h-11 rounded-xl"
                   {...form.register('vehicleMake')}
                 />
@@ -656,6 +804,14 @@ export function CreateOrderForm({
               >
                 <Input
                   id="vehicleModel"
+                  list="vehicleModelOptions"
+                  placeholder={
+                    isLoadingModels
+                      ? 'Loading models...'
+                      : vehicleMake
+                        ? 'Select or type model'
+                        : 'Enter make first'
+                  }
                   className="h-11 rounded-xl"
                   {...form.register('vehicleModel')}
                 />
@@ -668,6 +824,7 @@ export function CreateOrderForm({
               >
                 <Input
                   id="vehicleVariant"
+                  placeholder="Type trim / variant"
                   className="h-11 rounded-xl"
                   {...form.register('vehicleVariant')}
                 />

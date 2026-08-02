@@ -21,6 +21,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { OrdersModule } from './modules/orders/orders.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
+import { VehicleLookupModule } from './modules/vehicle-lookup/vehicle-lookup.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { TrackingModule } from './modules/tracking/tracking.module';
     TrackingModule,
     NotesModule,
     NotificationsModule,
+    VehicleLookupModule,
   ],
   controllers: [AppController],
   providers: [
