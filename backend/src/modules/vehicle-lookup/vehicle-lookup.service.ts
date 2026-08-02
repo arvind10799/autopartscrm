@@ -247,6 +247,17 @@ export class VehicleLookupService {
 
     const normalizedYear = this.normalizeYear(year);
     const normalizedSearch = this.normalizeSearch(search);
+    const curatedFallbackModels = this.getFallbackModelsForMake(normalizedMake);
+
+    if (curatedFallbackModels.length > 0) {
+      return {
+        items: this.filterOptions(
+          this.appendOtherOption(curatedFallbackModels),
+          normalizedSearch,
+        ),
+      };
+    }
+
     const cacheKey = `${VEHICLE_LOOKUP_CACHE_NAMESPACE}:models:${normalizedMake.toLowerCase()}:${normalizedYear ?? 'all'}`;
     const models = await this.redisCacheService.remember(
       cacheKey,
