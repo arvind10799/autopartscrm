@@ -27,7 +27,7 @@ type NhtsaModel = {
 const NHTSA_BASE_URL = 'https://vpic.nhtsa.dot.gov/api/vehicles';
 const VEHICLE_LOOKUP_CACHE_NAMESPACE = 'vehicle-lookup';
 const DEFAULT_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
-const MAX_LOOKUP_RESULTS = 80;
+const MAX_FILTERED_LOOKUP_RESULTS = 80;
 
 @Injectable()
 export class VehicleLookupService {
@@ -45,7 +45,7 @@ export class VehicleLookupService {
     const currentYear = new Date().getFullYear();
     const latestModelYear = currentYear + 1;
     const items = Array.from(
-      { length: latestModelYear - 1995 + 1 },
+      { length: latestModelYear - 1900 + 1 },
       (_, index) => String(latestModelYear - index),
     ).map((year) => ({
       id: year,
@@ -161,7 +161,7 @@ export class VehicleLookupService {
         )
       : options;
 
-    return filteredOptions.slice(0, MAX_LOOKUP_RESULTS);
+    return search ? filteredOptions.slice(0, MAX_FILTERED_LOOKUP_RESULTS) : filteredOptions;
   }
 
   private dedupeOptions(options: VehicleLookupOption[]): VehicleLookupOption[] {
@@ -211,4 +211,3 @@ export class VehicleLookupService {
       : DEFAULT_CACHE_TTL_SECONDS;
   }
 }
-

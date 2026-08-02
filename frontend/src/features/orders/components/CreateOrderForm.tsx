@@ -211,22 +211,6 @@ function Field({
   );
 }
 
-function LookupDatalist({
-  id,
-  options,
-}: {
-  id: string;
-  options: VehicleLookupOption[];
-}) {
-  return (
-    <datalist id={id}>
-      {options.map((option) => (
-        <option key={`${option.id}-${option.name}`} value={option.name} />
-      ))}
-    </datalist>
-  );
-}
-
 function MetricCard({
   label,
   value,
@@ -261,6 +245,7 @@ export function CreateOrderForm({
   const [isLoadingMakes, setIsLoadingMakes] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [vehicleLookupNotice, setVehicleLookupNotice] = useState<string | null>(null);
+  const [isVehicleLookupFallback, setIsVehicleLookupFallback] = useState(false);
   const resolvedInitialValues = buildCreateOrderFormValues(initialValues);
   const resolvedFormValues = {
     ...resolvedInitialValues,
@@ -313,6 +298,9 @@ export function CreateOrderForm({
     : Math.max(totalValue - partialPaymentValue, 0);
   const displayStatus =
     effectiveStatus === 'PARTIALLY_PAID' ? 'PARTIALLY_PAID' : 'CONFIRMED';
+  const selectedVehicleYear = typeof vehicleYear === 'string' ? vehicleYear : '';
+  const selectedVehicleMake = typeof vehicleMake === 'string' ? vehicleMake : '';
+  const selectedVehicleModel = typeof vehicleModel === 'string' ? vehicleModel : '';
 
   useEffect(() => {
     if (authUser?.name) {
@@ -335,6 +323,7 @@ export function CreateOrderForm({
       })
       .catch(() => {
         if (isActive) {
+          setIsVehicleLookupFallback(true);
           setVehicleLookupNotice(
             'Vehicle year options are unavailable. You can still type manually.',
           );
@@ -348,40 +337,34 @@ export function CreateOrderForm({
 
   useEffect(() => {
     let isActive = true;
-    const search =
-      typeof vehicleMake === 'string' && vehicleMake.trim().length > 0
-        ? vehicleMake.trim()
-        : undefined;
 
     setIsLoadingMakes(true);
-    const timeoutId = window.setTimeout(() => {
-      vehicleLookupApi
-        .getMakes(search)
-        .then((response) => {
-          if (isActive) {
-            setMakeOptions(response.items);
-            setVehicleLookupNotice(null);
-          }
-        })
-        .catch(() => {
-          if (isActive) {
-            setVehicleLookupNotice(
-              'Vehicle make options are unavailable. You can still type manually.',
-            );
-          }
-        })
-        .finally(() => {
-          if (isActive) {
-            setIsLoadingMakes(false);
-          }
-        });
-    }, search ? 250 : 0);
+    vehicleLookupApi
+      .getMakes()
+      .then((response) => {
+        if (isActive) {
+          setMakeOptions(response.items);
+          setVehicleLookupNotice(null);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setIsVehicleLookupFallback(true);
+          setVehicleLookupNotice(
+            'Vehicle make options are unavailable. You can still type manually.',
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingMakes(false);
+        }
+      });
 
     return () => {
       isActive = false;
-      window.clearTimeout(timeoutId);
     };
-  }, [vehicleMake]);
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -393,10 +376,6 @@ export function CreateOrderForm({
       typeof vehicleYear === 'string' && vehicleYear.trim().length > 0
         ? vehicleYear.trim()
         : undefined;
-    const search =
-      typeof vehicleModel === 'string' && vehicleModel.trim().length > 0
-        ? vehicleModel.trim()
-        : undefined;
 
     if (!make) {
       setModelOptions([]);
@@ -406,34 +385,32 @@ export function CreateOrderForm({
     }
 
     setIsLoadingModels(true);
-    const timeoutId = window.setTimeout(() => {
-      vehicleLookupApi
-        .getModels({ make, year, search })
-        .then((response) => {
-          if (isActive) {
-            setModelOptions(response.items);
-            setVehicleLookupNotice(null);
-          }
-        })
-        .catch(() => {
-          if (isActive) {
-            setVehicleLookupNotice(
-              'Vehicle model options are unavailable. You can still type manually.',
-            );
-          }
-        })
-        .finally(() => {
-          if (isActive) {
-            setIsLoadingModels(false);
-          }
-        });
-    }, search ? 250 : 0);
+    vehicleLookupApi
+      .getModels({ make, year })
+      .then((response) => {
+        if (isActive) {
+          setModelOptions(response.items);
+          setVehicleLookupNotice(null);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setIsVehicleLookupFallback(true);
+          setVehicleLookupNotice(
+            'Vehicle model options are unavailable. You can still type manually.',
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingModels(false);
+        }
+      });
 
     return () => {
       isActive = false;
-      window.clearTimeout(timeoutId);
     };
-  }, [vehicleMake, vehicleModel, vehicleYear]);
+  }, [vehicleMake, vehicleYear]);
 
   useEffect(() => {
     if (!status) {
@@ -624,9 +601,6 @@ export function CreateOrderForm({
       <input type="hidden" {...form.register('quantity')} />
       <input type="hidden" {...form.register('salePrice')} />
       <input type="hidden" {...form.register('partDescription')} />
-      <LookupDatalist id="vehicleYearOptions" options={yearOptions} />
-      <LookupDatalist id="vehicleMakeOptions" options={makeOptions} />
-      <LookupDatalist id="vehicleModelOptions" options={modelOptions} />
 
       <div className="rounded-[1.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(59,130,246,0.10),rgba(255,255,255,0.92))] p-4 shadow-sm md:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -774,13 +748,37 @@ export function CreateOrderForm({
                 label="Year"
                 error={form.formState.errors.vehicleYear?.message?.toString()}
               >
-                <Input
-                  id="vehicleYear"
-                  list="vehicleYearOptions"
-                  placeholder="Select or type year"
-                  className="h-11 rounded-xl"
-                  {...form.register('vehicleYear')}
-                />
+                {isVehicleLookupFallback ? (
+                  <Input
+                    id="vehicleYear"
+                    placeholder="Type year"
+                    className="h-11 rounded-xl"
+                    {...form.register('vehicleYear')}
+                  />
+                ) : (
+                  <Select
+                    id="vehicleYear"
+                    className="h-11 rounded-xl"
+                    value={selectedVehicleYear}
+                    onChange={(event) => {
+                      form.setValue('vehicleYear', event.target.value, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                      form.setValue('vehicleModel', '', {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                    }}
+                  >
+                    <option value="">Select year</option>
+                    {yearOptions.map((option) => (
+                      <option key={option.id} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
               </Field>
 
               <Field
@@ -788,13 +786,40 @@ export function CreateOrderForm({
                 label="Make"
                 error={form.formState.errors.vehicleMake?.message?.toString()}
               >
-                <Input
-                  id="vehicleMake"
-                  list="vehicleMakeOptions"
-                  placeholder={isLoadingMakes ? 'Loading makes...' : 'Select or type make'}
-                  className="h-11 rounded-xl"
-                  {...form.register('vehicleMake')}
-                />
+                {isVehicleLookupFallback ? (
+                  <Input
+                    id="vehicleMake"
+                    placeholder="Type make"
+                    className="h-11 rounded-xl"
+                    {...form.register('vehicleMake')}
+                  />
+                ) : (
+                  <Select
+                    id="vehicleMake"
+                    className="h-11 rounded-xl"
+                    disabled={isLoadingMakes && makeOptions.length === 0}
+                    value={selectedVehicleMake}
+                    onChange={(event) => {
+                      form.setValue('vehicleMake', event.target.value, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                      form.setValue('vehicleModel', '', {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                    }}
+                  >
+                    <option value="">
+                      {isLoadingMakes ? 'Loading makes...' : 'Select make'}
+                    </option>
+                    {makeOptions.map((option) => (
+                      <option key={option.id} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
               </Field>
 
               <Field
@@ -802,19 +827,40 @@ export function CreateOrderForm({
                 label="Model"
                 error={form.formState.errors.vehicleModel?.message?.toString()}
               >
-                <Input
-                  id="vehicleModel"
-                  list="vehicleModelOptions"
-                  placeholder={
-                    isLoadingModels
-                      ? 'Loading models...'
-                      : vehicleMake
-                        ? 'Select or type model'
-                        : 'Enter make first'
-                  }
-                  className="h-11 rounded-xl"
-                  {...form.register('vehicleModel')}
-                />
+                {isVehicleLookupFallback ? (
+                  <Input
+                    id="vehicleModel"
+                    placeholder="Type model"
+                    className="h-11 rounded-xl"
+                    {...form.register('vehicleModel')}
+                  />
+                ) : (
+                  <Select
+                    id="vehicleModel"
+                    className="h-11 rounded-xl"
+                    disabled={!selectedVehicleMake || (isLoadingModels && modelOptions.length === 0)}
+                    value={selectedVehicleModel}
+                    onChange={(event) =>
+                      form.setValue('vehicleModel', event.target.value, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    <option value="">
+                      {isLoadingModels
+                        ? 'Loading models...'
+                        : selectedVehicleMake
+                          ? 'Select model'
+                          : 'Select make first'}
+                    </option>
+                    {modelOptions.map((option) => (
+                      <option key={option.id} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
               </Field>
 
               <Field
