@@ -85,6 +85,120 @@ const CURATED_VEHICLE_MAKES = [
   'Volkswagen',
   'Volvo',
 ] as const;
+const FALLBACK_MODELS_BY_MAKE: Record<string, string[]> = {
+  amc: [
+    'Ambassador',
+    'AMX',
+    'Concord',
+    'Eagle',
+    'Gremlin',
+    'Hornet',
+    'Javelin',
+    'Matador',
+    'Pacer',
+    'Rambler',
+    'Rebel',
+    'Spirit',
+  ],
+  daewoo: ['Lanos', 'Leganza', 'Nubira'],
+  daihatsu: ['Charade', 'Rocky'],
+  eagle: ['Medallion', 'Premier', 'Summit', 'Talon', 'Vision'],
+  geo: ['Metro', 'Prizm', 'Spectrum', 'Storm', 'Tracker'],
+  hummer: ['H1', 'H2', 'H3'],
+  isuzu: [
+    'Amigo',
+    'Ascender',
+    'Axiom',
+    'Hombre',
+    'I-Mark',
+    'Impulse',
+    'Oasis',
+    'Pickup',
+    'Rodeo',
+    'Trooper',
+    'VehiCROSS',
+  ],
+  mercury: [
+    'Capri',
+    'Cougar',
+    'Grand Marquis',
+    'Marauder',
+    'Mariner',
+    'Milan',
+    'Montego',
+    'Monterey',
+    'Mountaineer',
+    'Mystique',
+    'Sable',
+    'Tracer',
+    'Villager',
+  ],
+  oldsmobile: [
+    '88',
+    '98',
+    'Achieva',
+    'Alero',
+    'Aurora',
+    'Bravada',
+    'Cutlass',
+    'Intrigue',
+    'Silhouette',
+    'Toronado',
+  ],
+  plymouth: [
+    'Acclaim',
+    'Breeze',
+    'Colt',
+    'Grand Voyager',
+    'Horizon',
+    'Neon',
+    'Prowler',
+    'Sundance',
+    'Voyager',
+  ],
+  pontiac: [
+    'Aztek',
+    'Bonneville',
+    'Catalina',
+    'Fiero',
+    'Firebird',
+    'G3',
+    'G5',
+    'G6',
+    'G8',
+    'Grand Am',
+    'Grand Prix',
+    'GTO',
+    'Montana',
+    'Solstice',
+    'Sunfire',
+    'Torrent',
+    'Trans Sport',
+    'Vibe',
+  ],
+  saab: ['9-2X', '9-3', '9-4X', '9-5', '9-7X', '900', '9000'],
+  saturn: ['Astra', 'Aura', 'Ion', 'L-Series', 'Outlook', 'Relay', 'S-Series', 'Sky', 'Vue'],
+  scion: ['FR-S', 'iA', 'iM', 'iQ', 'tC', 'xA', 'xB', 'xD'],
+  smart: ['Fortwo'],
+  suzuki: [
+    'Aerio',
+    'Equator',
+    'Esteem',
+    'Forenza',
+    'Grand Vitara',
+    'Kizashi',
+    'Reno',
+    'Samurai',
+    'Sidekick',
+    'Swift',
+    'SX4',
+    'Verona',
+    'Vitara',
+    'X-90',
+    'XL-7',
+  ],
+};
+const OTHER_MODEL_OPTION = 'Other';
 
 @Injectable()
 export class VehicleLookupService {
@@ -147,9 +261,16 @@ export class VehicleLookupService {
             () => this.fetchModels(normalizedMake),
           )
         : models;
+    const resilientModels =
+      fallbackModels.length > 0
+        ? fallbackModels
+        : this.getFallbackModelsForMake(normalizedMake);
 
     return {
-      items: this.filterOptions(fallbackModels, normalizedSearch),
+      items: this.filterOptions(
+        this.appendOtherOption(resilientModels),
+        normalizedSearch,
+      ),
     };
   }
 
@@ -214,6 +335,37 @@ export class VehicleLookupService {
       id: make.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       name: make,
     }));
+  }
+
+  private getFallbackModelsForMake(make: string): VehicleLookupOption[] {
+    const fallbackModels =
+      FALLBACK_MODELS_BY_MAKE[make.toLowerCase().replace(/[^a-z0-9]+/g, '')] ??
+      [];
+
+    return fallbackModels.map((model) => ({
+      id: model.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      name: model,
+    }));
+  }
+
+  private appendOtherOption(
+    options: VehicleLookupOption[],
+  ): VehicleLookupOption[] {
+    if (
+      options.some(
+        (option) => option.name.toLowerCase() === OTHER_MODEL_OPTION.toLowerCase(),
+      )
+    ) {
+      return options;
+    }
+
+    return [
+      ...options,
+      {
+        id: 'other',
+        name: OTHER_MODEL_OPTION,
+      },
+    ];
   }
 
   private dedupeOptions(options: VehicleLookupOption[]): VehicleLookupOption[] {
