@@ -42,6 +42,7 @@ type InvoiceDraft = {
   customerSignature: string;
   customerSignatureImage: string;
   signatureDate: string;
+  photoIdRequired: boolean;
 };
 
 const DEFAULT_WARRANTY_PARTS_ONLY = [
@@ -63,6 +64,7 @@ export function InvoiceActions({
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [isEditingInvoice, setIsEditingInvoice] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isPhotoIdOpen, setIsPhotoIdOpen] = useState(false);
   const [draft, setDraft] = useState<InvoiceDraft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(false);
@@ -266,6 +268,28 @@ export function InvoiceActions({
                     ? 'Download Signed Invoice'
                     : 'Download Invoice (PDF)'}
               </Button>
+              {invoice.photoIdDocument ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsPhotoIdOpen(true)}
+                  >
+                    <Eye className="h-4 w-4" />
+                    View Photo ID
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => downloadPhotoIdDocument(invoice)}
+                  >
+                    <Download className="h-4 w-4" />
+                    Download Photo ID
+                  </Button>
+                </>
+              ) : null}
               {invoice.status !== 'SIGNED' && canManageSignatureRequest ? (
                 <>
                   <Button
@@ -342,6 +366,13 @@ export function InvoiceActions({
         />
       ) : null}
 
+      {isPhotoIdOpen && invoice?.photoIdDocument ? (
+        <PhotoIdViewModal
+          invoice={invoice}
+          onClose={() => setIsPhotoIdOpen(false)}
+        />
+      ) : null}
+
       {printableInvoice ? (
         <div className="pointer-events-none fixed -left-[9999px] top-0">
           <InvoiceDocument ref={printableInvoiceRef} invoice={printableInvoice} />
@@ -371,6 +402,13 @@ function InvoiceFormModal({
   onSubmit: () => void;
 }) {
   const updateField = (field: keyof InvoiceDraft, value: string) => {
+    onChange({
+      ...draft,
+      [field]: value,
+    });
+  };
+
+  const updateBooleanField = (field: 'photoIdRequired', value: boolean) => {
     onChange({
       ...draft,
       [field]: value,
@@ -415,6 +453,15 @@ function InvoiceFormModal({
               <InvoiceInput label="Invoice Number" value={draft.invoiceNumber} onChange={(value) => updateField('invoiceNumber', value)} />
               <InvoiceInput label="Invoice Date" type="date" value={draft.invoiceDate} onChange={(value) => updateField('invoiceDate', value)} />
               <InvoiceInput label="Sales Assistant" value={draft.salesAssistant} onChange={(value) => updateField('salesAssistant', value)} />
+              <InvoiceSelect
+                label="Photo ID"
+                value={draft.photoIdRequired ? 'required' : 'not-required'}
+                options={[
+                  { label: 'Required', value: 'required' },
+                  { label: 'Not required', value: 'not-required' },
+                ]}
+                onChange={(value) => updateBooleanField('photoIdRequired', value === 'required')}
+              />
             </InvoiceFormSection>
 
             <InvoiceFormSection title="Customer Information">
@@ -552,6 +599,69 @@ function InvoiceViewModal({
           <div className="mx-auto w-full max-w-[794px]">
             <InvoiceDocument invoice={invoice} />
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PhotoIdViewModal({
+  invoice,
+  onClose,
+}: {
+  invoice: InvoiceRecord;
+  onClose: () => void;
+}) {
+  const document = invoice.photoIdDocument;
+  const mimeType = invoice.photoIdMimeType ?? '';
+
+  if (!document) {
+    return null;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-8"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-4xl rounded-[2rem] border border-white/70 bg-white p-5 shadow-2xl shadow-slate-950/20"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-border/70 pb-4">
+          <div>
+            <h2 className="font-[var(--font-heading)] text-2xl font-semibold text-foreground">
+              Photo ID
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {invoice.photoIdFileName || `${invoice.invoiceNumber}-photo-id`}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => downloadPhotoIdDocument(invoice)}>
+              <Download className="h-4 w-4" />
+              Download Photo ID
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              <X className="h-4 w-4" />
+              Close
+            </Button>
+          </div>
+        </div>
+        <div className="max-h-[78vh] overflow-auto rounded-2xl bg-slate-100 p-4">
+          {mimeType === 'application/pdf' || document.startsWith('data:application/pdf') ? (
+            <iframe
+              src={document}
+              title="Uploaded photo ID"
+              className="h-[72vh] w-full rounded-xl border border-border bg-white"
+            />
+          ) : (
+            <img
+              src={document}
+              alt="Uploaded photo ID"
+              className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-white object-contain shadow-sm"
+            />
+          )}
         </div>
       </div>
     </div>
@@ -826,6 +936,35 @@ function InvoiceInput({
   );
 }
 
+function InvoiceSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: Array<{ label: string; value: string }>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="space-y-1.5 text-sm font-medium text-foreground">
+      <span>{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-input bg-white px-4 py-2.5 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function InvoiceTextarea({
   label,
   value,
@@ -905,6 +1044,7 @@ function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
     customerSignature: invoice.customerSignature ?? '',
     customerSignatureImage: invoice.customerSignatureImage ?? '',
     signatureDate: formatDateInputValue(invoice.signatureDate),
+    photoIdRequired: invoice.photoIdRequired,
   };
 }
 
@@ -932,6 +1072,7 @@ function draftToPayload(draft: InvoiceDraft): CreateInvoiceInput {
     coreCharge: toAmount(draft.coreCharge),
     customerSignature: draft.customerSignature,
     signatureDate: draft.signatureDate,
+    photoIdRequired: draft.photoIdRequired,
   };
 }
 
@@ -952,6 +1093,11 @@ function draftToInvoicePreview(orderId: string, draft: InvoiceDraft): InvoiceRec
     customerSignature: draft.customerSignature || null,
     customerSignatureImage: draft.customerSignatureImage || null,
     signatureDate: draft.signatureDate || null,
+    photoIdRequired: draft.photoIdRequired,
+    photoIdDocument: null,
+    photoIdFileName: null,
+    photoIdMimeType: null,
+    photoIdUploadedAt: null,
     signedAt: null,
     signatureIpAddress: null,
     signatureTokenExpiresAt: null,
@@ -1115,6 +1261,21 @@ async function downloadInvoicePdf(invoiceElement: HTMLElement, filename: string)
   link.click();
   link.remove();
   URL.revokeObjectURL(objectUrl);
+}
+
+function downloadPhotoIdDocument(invoice: InvoiceRecord) {
+  if (!invoice.photoIdDocument) {
+    toast.error('Photo ID unavailable', 'No uploaded photo ID was found.');
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.href = invoice.photoIdDocument;
+  link.download =
+    invoice.photoIdFileName || `${sanitizePdfFilename(invoice.invoiceNumber)}-photo-id`;
+  document.body.append(link);
+  link.click();
+  link.remove();
 }
 
 async function waitForInvoiceAssets(invoiceElement: HTMLElement) {

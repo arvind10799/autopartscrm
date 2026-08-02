@@ -25,6 +25,11 @@ export interface InvoiceRecord {
   customerSignature: string | null;
   customerSignatureImage: string | null;
   signatureDate: string | null;
+  photoIdRequired: boolean;
+  photoIdDocument: string | null;
+  photoIdFileName: string | null;
+  photoIdMimeType: string | null;
+  photoIdUploadedAt: string | null;
   signedAt: string | null;
   signatureIpAddress: string | null;
   signatureTokenExpiresAt: string | null;
@@ -56,6 +61,10 @@ export type InvoiceDefaults = Omit<
   | 'customerSignature'
   | 'customerSignatureImage'
   | 'signatureDate'
+  | 'photoIdDocument'
+  | 'photoIdFileName'
+  | 'photoIdMimeType'
+  | 'photoIdUploadedAt'
   | 'signedAt'
   | 'signatureIpAddress'
   | 'signatureTokenExpiresAt'
@@ -100,6 +109,7 @@ export interface CreateInvoiceInput {
   coreCharge: number;
   customerSignature?: string;
   signatureDate?: string;
+  photoIdRequired: boolean;
 }
 
 export interface PublicInvoiceRecord extends InvoiceRecord {
@@ -117,4 +127,7 @@ export interface SignInvoiceInput {
   customerSignature: string;
   customerSignatureImage: string;
   signedInvoicePdfBase64?: string;
+  photoIdDocument?: string;
+  photoIdFileName?: string;
+  photoIdMimeType?: string;
 }

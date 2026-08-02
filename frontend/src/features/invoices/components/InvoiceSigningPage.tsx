@@ -38,6 +38,9 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const [signatureMode, setSignatureMode] = useState<SignatureMode>('TYPE');
   const [selectedTypedStyle, setSelectedTypedStyle] = useState(0);
   const [uploadedSignatureImage, setUploadedSignatureImage] = useState('');
+  const [photoIdDocument, setPhotoIdDocument] = useState('');
+  const [photoIdFileName, setPhotoIdFileName] = useState('');
+  const [photoIdMimeType, setPhotoIdMimeType] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasDrawing, setHasDrawing] = useState(false);
@@ -58,6 +61,9 @@ export function InvoiceSigningPage({ token }: { token: string }) {
         setInvoice(loadedInvoice);
         setSignatureName(loadedInvoice.customerSignature ?? loadedInvoice.customerName);
         setSignatureImage(loadedInvoice.customerSignatureImage ?? '');
+        setPhotoIdDocument(loadedInvoice.photoIdDocument ?? '');
+        setPhotoIdFileName(loadedInvoice.photoIdFileName ?? '');
+        setPhotoIdMimeType(loadedInvoice.photoIdMimeType ?? '');
       })
       .catch((caughtError) => {
         if (!isMounted) {
@@ -176,6 +182,52 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     void handleSignatureFile(event.dataTransfer.files?.[0]);
   };
 
+  const handlePhotoIdFile = async (file: File | undefined) => {
+    if (!file) {
+      return;
+    }
+
+    const supportedTypes = [
+      'image/png',
+      'image/jpeg',
+      'image/bmp',
+      'image/webp',
+      'application/pdf',
+    ];
+
+    if (!supportedTypes.includes(file.type)) {
+      toast.error('Unsupported photo ID', 'Upload a PNG, JPG, BMP, WEBP, or PDF file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Photo ID too large', 'Upload a photo ID file smaller than 5 MB.');
+      return;
+    }
+
+    try {
+      const document = await fileToDataUrl(file);
+      setPhotoIdDocument(document);
+      setPhotoIdFileName(file.name);
+      setPhotoIdMimeType(file.type);
+    } catch (caughtError) {
+      toast.error(
+        'Unable to upload photo ID',
+        caughtError instanceof Error ? caughtError.message : 'Please try another file.',
+      );
+    }
+  };
+
+  const handlePhotoIdInput = (event: ChangeEvent<HTMLInputElement>) => {
+    void handlePhotoIdFile(event.target.files?.[0]);
+    event.target.value = '';
+  };
+
+  const handlePhotoIdDrop = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    void handlePhotoIdFile(event.dataTransfer.files?.[0]);
+  };
+
   const saveSignatureFromModal = () => {
     const trimmedName = signatureName.trim();
 
@@ -225,6 +277,11 @@ export function InvoiceSigningPage({ token }: { token: string }) {
       return;
     }
 
+    if (invoice.photoIdRequired && !photoIdDocument) {
+      toast.error('Photo ID required', 'Upload your photo ID before signing.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -233,6 +290,10 @@ export function InvoiceSigningPage({ token }: { token: string }) {
         ...invoice,
         customerSignature: signatureName.trim(),
         customerSignatureImage: signatureImage,
+        photoIdDocument: photoIdDocument || null,
+        photoIdFileName: photoIdFileName || null,
+        photoIdMimeType: photoIdMimeType || null,
+        photoIdUploadedAt: photoIdDocument ? signedAt : null,
         signatureDate: signedAt,
         signedAt,
         status: 'SIGNED',
@@ -250,6 +311,9 @@ export function InvoiceSigningPage({ token }: { token: string }) {
         customerSignature: signatureName.trim(),
         customerSignatureImage: signatureImage,
         signedInvoicePdfBase64,
+        photoIdDocument: photoIdDocument || undefined,
+        photoIdFileName: photoIdFileName || undefined,
+        photoIdMimeType: photoIdMimeType || undefined,
       });
       setInvoice(signedInvoice);
       toast.success('Invoice signed', 'Your signed invoice has been received.');
@@ -376,6 +440,68 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                       </div>
                     )}
                   </div>
+
+                  {invoice.photoIdRequired ? (
+                    <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4">
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">
+                            Photo ID required
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                            Upload a driver license, passport, or other valid photo ID.
+                          </p>
+                        </div>
+                        {photoIdDocument ? (
+                          <BadgePill>Uploaded</BadgePill>
+                        ) : null}
+                      </div>
+                      {photoIdDocument ? (
+                        <div className="space-y-3">
+                          <div className="rounded-xl border border-border bg-white p-3 text-sm text-foreground">
+                            <p className="truncate font-medium">
+                              {photoIdFileName || 'Photo ID document'}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {photoIdMimeType || 'Uploaded document'}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setPhotoIdDocument('');
+                              setPhotoIdFileName('');
+                              setPhotoIdMimeType('');
+                            }}
+                          >
+                            Choose another file
+                          </Button>
+                        </div>
+                      ) : (
+                        <label
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={handlePhotoIdDrop}
+                          className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-6 text-center transition hover:border-primary/50 hover:bg-primary/5"
+                        >
+                          <UploadCloud className="h-7 w-7 text-primary" />
+                          <p className="mt-2 text-sm font-semibold text-foreground">
+                            Drop photo ID here or browse
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            PNG, JPG, BMP, WEBP, or PDF. Max 5 MB.
+                          </p>
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/bmp,image/webp,application/pdf"
+                            className="hidden"
+                            onChange={handlePhotoIdInput}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  ) : null}
 
                   <p className="rounded-2xl bg-slate-50 px-4 py-3 text-center text-xs font-medium text-slate-700">
                     I understand that this is a legal representation of my signature.
@@ -610,6 +736,14 @@ function SigningShell({ children }: { children: ReactNode }) {
   );
 }
 
+function BadgePill({ children }: { children: ReactNode }) {
+  return (
+    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+      {children}
+    </span>
+  );
+}
+
 function getCanvasPoint(event: PointerEvent<HTMLCanvasElement>) {
   const rect = event.currentTarget.getBoundingClientRect();
 
@@ -703,6 +837,24 @@ function fileToCompressedSignatureDataUrl(file: File) {
       image.src = result;
     };
     reader.onerror = () => reject(reader.error ?? new Error('Unable to read signature file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        reject(new Error('Unable to read this file.'));
+        return;
+      }
+
+      resolve(result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read this file.'));
     reader.readAsDataURL(file);
   });
 }

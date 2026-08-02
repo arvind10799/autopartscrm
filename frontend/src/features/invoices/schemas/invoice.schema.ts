@@ -60,6 +60,11 @@ export const invoiceRecordSchema = z.object({
   customerSignature: z.string().nullable(),
   customerSignatureImage: z.string().nullable(),
   signatureDate: z.string().nullable(),
+  photoIdRequired: z.boolean(),
+  photoIdDocument: z.string().nullable(),
+  photoIdFileName: z.string().nullable(),
+  photoIdMimeType: z.string().nullable(),
+  photoIdUploadedAt: z.string().nullable(),
   signedAt: z.string().nullable(),
   signatureIpAddress: z.string().nullable(),
   signatureTokenExpiresAt: z.string().nullable(),
@@ -96,6 +101,7 @@ export const invoiceDefaultsSchema = z.object({
   customerSignature: z.string(),
   customerSignatureImage: z.string(),
   signatureDate: z.string(),
+  photoIdRequired: z.boolean(),
 });
 
 export const publicInvoiceRecordSchema = invoiceRecordSchema.extend({
@@ -122,6 +128,16 @@ export const signInvoiceSchema = z.object({
     .startsWith('data:application/pdf;base64,', 'Signed invoice PDF is invalid.')
     .max(8_000_000, 'Signed invoice PDF is too large.')
     .optional(),
+  photoIdDocument: z
+    .string()
+    .regex(
+      /^data:(image\/(png|jpeg|jpg|bmp|webp)|application\/pdf);base64,/,
+      'Photo ID document is invalid.',
+    )
+    .max(8_000_000, 'Photo ID document is too large.')
+    .optional(),
+  photoIdFileName: z.string().trim().max(255).optional(),
+  photoIdMimeType: z.string().trim().max(80).optional(),
 });
 
 export const createInvoiceSchema = z
@@ -198,6 +214,7 @@ export const createInvoiceSchema = z
       'Customer signature must be 160 characters or fewer.',
     ),
     signatureDate: optionalDateSchema,
+    photoIdRequired: z.boolean(),
   })
   .superRefine((value, context) => {
     const total =

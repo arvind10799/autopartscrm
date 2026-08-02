@@ -18,4 +18,22 @@ export class SignInvoiceDto {
   })
   @MaxLength(8000000)
   signedInvoicePdfBase64?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^data:(image\/(png|jpeg|jpg|bmp|webp)|application\/pdf);base64,/, {
+    message: 'Photo ID document is invalid.',
+  })
+  @MaxLength(8000000)
+  photoIdDocument?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  photoIdFileName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  photoIdMimeType?: string;
 }

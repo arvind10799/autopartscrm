@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsDateString,
   IsInt,
   IsNumber,
@@ -106,4 +107,7 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsDateString()
   signatureDate?: string;
+
+  @IsBoolean()
+  photoIdRequired!: boolean;
 }

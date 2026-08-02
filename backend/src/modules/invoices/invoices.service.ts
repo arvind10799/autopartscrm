@@ -83,6 +83,7 @@ export class InvoicesService {
       customerSignature: '',
       customerSignatureImage: '',
       signatureDate: '',
+      photoIdRequired: false,
     };
   }
 
@@ -148,6 +149,7 @@ export class InvoicesService {
       signatureDate: createInvoiceDto.signatureDate
         ? this.parseDate(createInvoiceDto.signatureDate)
         : null,
+      photoIdRequired: createInvoiceDto.photoIdRequired,
       status: 'CREATED',
     });
 
@@ -216,6 +218,7 @@ export class InvoicesService {
       salesTaxes: new Prisma.Decimal(createInvoiceDto.salesTaxes),
       coreCharge: new Prisma.Decimal(createInvoiceDto.coreCharge),
       totalAmount: new Prisma.Decimal(totalAmount),
+      photoIdRequired: createInvoiceDto.photoIdRequired,
     });
 
     await this.notesService.create(
@@ -269,11 +272,19 @@ export class InvoicesService {
 
     this.assertTokenIsActive(invoice);
 
+    if (invoice.photoIdRequired && !signInvoiceDto.photoIdDocument) {
+      throw new BadRequestException('Photo ID is required before signing.');
+    }
+
     const signedAt = new Date();
     const signedInvoice = await this.invoicesRepository.update(invoice.id, {
       customerSignature: signInvoiceDto.customerSignature.trim(),
       customerSignatureImage: signInvoiceDto.customerSignatureImage,
       signatureDate: signedAt,
+      photoIdDocument: signInvoiceDto.photoIdDocument ?? null,
+      photoIdFileName: this.optionalText(signInvoiceDto.photoIdFileName),
+      photoIdMimeType: this.optionalText(signInvoiceDto.photoIdMimeType),
+      photoIdUploadedAt: signInvoiceDto.photoIdDocument ? signedAt : null,
       signedAt,
       signatureIpAddress: ipAddress,
       status: SIGNED_INVOICE_STATUS,

@@ -156,6 +156,11 @@ model Invoice {
   customerSignature      String?   @db.Text
   customerSignatureImage String?   @db.Text
   signatureDate          DateTime?
+  photoIdRequired        Boolean   @default(false)
+  photoIdDocument        String?   @db.Text
+  photoIdFileName        String?   @db.VarChar(255)
+  photoIdMimeType        String?   @db.VarChar(80)
+  photoIdUploadedAt      DateTime?
   signedAt               DateTime?
   signatureIpAddress     String?   @db.VarChar(64)
   signatureTokenHash     String?   @unique @db.VarChar(128)
