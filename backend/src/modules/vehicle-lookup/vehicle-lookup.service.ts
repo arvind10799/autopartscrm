@@ -139,9 +139,17 @@ export class VehicleLookupService {
       this.cacheTtlSeconds,
       () => this.fetchModels(normalizedMake, normalizedYear),
     );
+    const fallbackModels =
+      models.length === 0 && normalizedYear
+        ? await this.redisCacheService.remember(
+            `${VEHICLE_LOOKUP_CACHE_NAMESPACE}:models:${normalizedMake.toLowerCase()}:all`,
+            this.cacheTtlSeconds,
+            () => this.fetchModels(normalizedMake),
+          )
+        : models;
 
     return {
-      items: this.filterOptions(models, normalizedSearch),
+      items: this.filterOptions(fallbackModels, normalizedSearch),
     };
   }
 

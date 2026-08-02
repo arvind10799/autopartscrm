@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, ReceiptText } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -211,6 +211,113 @@ function Field({
   );
 }
 
+function VehicleCombobox({
+  id,
+  value,
+  options,
+  placeholder,
+  disabled = false,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  options: VehicleLookupOption[];
+  placeholder: string;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const normalizedValue = value.trim().toLowerCase();
+  const filteredOptions = useMemo(() => {
+    if (!normalizedValue) {
+      return options;
+    }
+
+    const startsWithMatches = options.filter((option) =>
+      option.name.toLowerCase().startsWith(normalizedValue),
+    );
+    const containsMatches = options.filter((option) => {
+      const optionName = option.name.toLowerCase();
+
+      return (
+        !optionName.startsWith(normalizedValue) &&
+        optionName.includes(normalizedValue)
+      );
+    });
+
+    return [...startsWithMatches, ...containsMatches];
+  }, [normalizedValue, options]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div className="relative">
+        <Input
+          id={id}
+          value={value}
+          disabled={disabled}
+          placeholder={placeholder}
+          autoComplete="off"
+          className="h-11 rounded-xl pr-10"
+          onFocus={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)}
+          onChange={(event) => {
+            onChange(event.target.value);
+            setIsOpen(true);
+          }}
+        />
+        <button
+          type="button"
+          disabled={disabled}
+          className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-xl text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => setIsOpen((currentValue) => !currentValue)}
+          aria-label={`Toggle ${id} options`}
+        >
+          <span className="text-xs">▼</span>
+        </button>
+      </div>
+
+      {isOpen && !disabled ? (
+        <div className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-border bg-white py-1 text-sm shadow-xl">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <button
+                key={`${option.id}-${option.name}`}
+                type="button"
+                className="block w-full px-3 py-2 text-left text-foreground transition hover:bg-secondary"
+                onClick={() => {
+                  onChange(option.name);
+                  setIsOpen(false);
+                }}
+              >
+                {option.name}
+              </button>
+            ))
+          ) : (
+            <div className="px-3 py-2 text-muted-foreground">
+              No matching options. Manual input is allowed.
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function MetricCard({
   label,
   value,
@@ -245,7 +352,6 @@ export function CreateOrderForm({
   const [isLoadingMakes, setIsLoadingMakes] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [vehicleLookupNotice, setVehicleLookupNotice] = useState<string | null>(null);
-  const [isVehicleLookupFallback, setIsVehicleLookupFallback] = useState(false);
   const resolvedInitialValues = buildCreateOrderFormValues(initialValues);
   const resolvedFormValues = {
     ...resolvedInitialValues,
@@ -323,7 +429,6 @@ export function CreateOrderForm({
       })
       .catch(() => {
         if (isActive) {
-          setIsVehicleLookupFallback(true);
           setVehicleLookupNotice(
             'Vehicle year options are unavailable. You can still type manually.',
           );
@@ -349,8 +454,7 @@ export function CreateOrderForm({
       })
       .catch(() => {
         if (isActive) {
-          setIsVehicleLookupFallback(true);
-          setVehicleLookupNotice(
+            setVehicleLookupNotice(
             'Vehicle make options are unavailable. You can still type manually.',
           );
         }
@@ -395,8 +499,7 @@ export function CreateOrderForm({
       })
       .catch(() => {
         if (isActive) {
-          setIsVehicleLookupFallback(true);
-          setVehicleLookupNotice(
+            setVehicleLookupNotice(
             'Vehicle model options are unavailable. You can still type manually.',
           );
         }
@@ -748,37 +851,22 @@ export function CreateOrderForm({
                 label="Year"
                 error={form.formState.errors.vehicleYear?.message?.toString()}
               >
-                {isVehicleLookupFallback ? (
-                  <Input
-                    id="vehicleYear"
-                    placeholder="Type year"
-                    className="h-11 rounded-xl"
-                    {...form.register('vehicleYear')}
-                  />
-                ) : (
-                  <Select
-                    id="vehicleYear"
-                    className="h-11 rounded-xl"
-                    value={selectedVehicleYear}
-                    onChange={(event) => {
-                      form.setValue('vehicleYear', event.target.value, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                      form.setValue('vehicleModel', '', {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                    }}
-                  >
-                    <option value="">Select year</option>
-                    {yearOptions.map((option) => (
-                      <option key={option.id} value={option.name}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
+                <VehicleCombobox
+                  id="vehicleYear"
+                  value={selectedVehicleYear}
+                  options={yearOptions}
+                  placeholder="Select or type year"
+                  onChange={(nextValue) => {
+                    form.setValue('vehicleYear', nextValue, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                    form.setValue('vehicleModel', '', {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  }}
+                />
               </Field>
 
               <Field
@@ -786,40 +874,23 @@ export function CreateOrderForm({
                 label="Make"
                 error={form.formState.errors.vehicleMake?.message?.toString()}
               >
-                {isVehicleLookupFallback ? (
-                  <Input
-                    id="vehicleMake"
-                    placeholder="Type make"
-                    className="h-11 rounded-xl"
-                    {...form.register('vehicleMake')}
-                  />
-                ) : (
-                  <Select
-                    id="vehicleMake"
-                    className="h-11 rounded-xl"
-                    disabled={isLoadingMakes && makeOptions.length === 0}
-                    value={selectedVehicleMake}
-                    onChange={(event) => {
-                      form.setValue('vehicleMake', event.target.value, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                      form.setValue('vehicleModel', '', {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                    }}
-                  >
-                    <option value="">
-                      {isLoadingMakes ? 'Loading makes...' : 'Select make'}
-                    </option>
-                    {makeOptions.map((option) => (
-                      <option key={option.id} value={option.name}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
+                <VehicleCombobox
+                  id="vehicleMake"
+                  value={selectedVehicleMake}
+                  options={makeOptions}
+                  disabled={isLoadingMakes && makeOptions.length === 0}
+                  placeholder={isLoadingMakes ? 'Loading makes...' : 'Select or type make'}
+                  onChange={(nextValue) => {
+                    form.setValue('vehicleMake', nextValue, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                    form.setValue('vehicleModel', '', {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  }}
+                />
               </Field>
 
               <Field
@@ -827,40 +898,25 @@ export function CreateOrderForm({
                 label="Model"
                 error={form.formState.errors.vehicleModel?.message?.toString()}
               >
-                {isVehicleLookupFallback ? (
-                  <Input
-                    id="vehicleModel"
-                    placeholder="Type model"
-                    className="h-11 rounded-xl"
-                    {...form.register('vehicleModel')}
-                  />
-                ) : (
-                  <Select
-                    id="vehicleModel"
-                    className="h-11 rounded-xl"
-                    disabled={!selectedVehicleMake || (isLoadingModels && modelOptions.length === 0)}
-                    value={selectedVehicleModel}
-                    onChange={(event) =>
-                      form.setValue('vehicleModel', event.target.value, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      })
-                    }
-                  >
-                    <option value="">
-                      {isLoadingModels
-                        ? 'Loading models...'
-                        : selectedVehicleMake
-                          ? 'Select model'
-                          : 'Select make first'}
-                    </option>
-                    {modelOptions.map((option) => (
-                      <option key={option.id} value={option.name}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
+                <VehicleCombobox
+                  id="vehicleModel"
+                  value={selectedVehicleModel}
+                  options={modelOptions}
+                  disabled={!selectedVehicleMake || (isLoadingModels && modelOptions.length === 0)}
+                  placeholder={
+                    isLoadingModels
+                      ? 'Loading models...'
+                      : selectedVehicleMake
+                        ? 'Select or type model'
+                        : 'Select make first'
+                  }
+                  onChange={(nextValue) =>
+                    form.setValue('vehicleModel', nextValue, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                />
               </Field>
 
               <Field
