@@ -612,10 +612,23 @@ function PhotoIdViewModal({
   invoice: InvoiceRecord;
   onClose: () => void;
 }) {
-  const document = invoice.photoIdDocument;
+  const photoIdDocument = invoice.photoIdDocument;
   const mimeType = invoice.photoIdMimeType ?? '';
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  if (!document) {
+  useEffect(() => {
+    if (!photoIdDocument) {
+      return;
+    }
+
+    const blob = dataUrlToBlob(photoIdDocument);
+    const objectUrl = URL.createObjectURL(blob);
+    setPreviewUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [photoIdDocument]);
+
+  if (!photoIdDocument) {
     return null;
   }
 
@@ -649,15 +662,15 @@ function PhotoIdViewModal({
           </div>
         </div>
         <div className="max-h-[78vh] overflow-auto rounded-2xl bg-slate-100 p-4">
-          {mimeType === 'application/pdf' || document.startsWith('data:application/pdf') ? (
+          {mimeType === 'application/pdf' || photoIdDocument.startsWith('data:application/pdf') ? (
             <iframe
-              src={document}
+              src={previewUrl ?? photoIdDocument}
               title="Uploaded photo ID"
               className="h-[72vh] w-full rounded-xl border border-border bg-white"
             />
           ) : (
             <img
-              src={document}
+              src={previewUrl ?? photoIdDocument}
               alt="Uploaded photo ID"
               className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-white object-contain shadow-sm"
             />
@@ -1269,13 +1282,39 @@ function downloadPhotoIdDocument(invoice: InvoiceRecord) {
     return;
   }
 
+  const blob = dataUrlToBlob(invoice.photoIdDocument);
+  const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = invoice.photoIdDocument;
+  link.href = objectUrl;
   link.download =
-    invoice.photoIdFileName || `${sanitizePdfFilename(invoice.invoiceNumber)}-photo-id`;
+    invoice.photoIdFileName || buildPhotoIdFilename(invoice);
   document.body.append(link);
   link.click();
   link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [metadata = '', base64Data = ''] = dataUrl.split(',');
+  const mimeTypeMatch = metadata.match(/^data:([^;]+);base64$/);
+  const mimeType = mimeTypeMatch?.[1] ?? 'application/octet-stream';
+  const binaryString = window.atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+
+  for (let index = 0; index < binaryString.length; index += 1) {
+    bytes[index] = binaryString.charCodeAt(index);
+  }
+
+  return new Blob([bytes], { type: mimeType });
+}
+
+function buildPhotoIdFilename(invoice: InvoiceRecord): string {
+  const extension =
+    invoice.photoIdMimeType === 'application/pdf'
+      ? 'pdf'
+      : invoice.photoIdMimeType?.split('/')[1] || 'file';
+
+  return `${sanitizePdfFilename(invoice.invoiceNumber)}-photo-id.${extension}`;
 }
 
 async function waitForInvoiceAssets(invoiceElement: HTMLElement) {

@@ -194,8 +194,10 @@ export function InvoiceSigningPage({ token }: { token: string }) {
       'image/webp',
       'application/pdf',
     ];
+    const normalizedMimeType =
+      file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : '');
 
-    if (!supportedTypes.includes(file.type)) {
+    if (!supportedTypes.includes(normalizedMimeType)) {
       toast.error('Unsupported photo ID', 'Upload a PNG, JPG, BMP, WEBP, or PDF file.');
       return;
     }
@@ -209,7 +211,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
       const document = await fileToDataUrl(file);
       setPhotoIdDocument(document);
       setPhotoIdFileName(file.name);
-      setPhotoIdMimeType(file.type);
+      setPhotoIdMimeType(normalizedMimeType);
     } catch (caughtError) {
       toast.error(
         'Unable to upload photo ID',
