@@ -12,13 +12,6 @@ type NhtsaResponse<T> = {
   Results?: T[];
 };
 
-type NhtsaMake = {
-  Make_ID?: number;
-  MakeId?: number;
-  Make_Name?: string;
-  MakeName?: string;
-};
-
 type NhtsaModel = {
   Model_ID?: number;
   Model_Name?: string;
@@ -28,6 +21,70 @@ const NHTSA_BASE_URL = 'https://vpic.nhtsa.dot.gov/api/vehicles';
 const VEHICLE_LOOKUP_CACHE_NAMESPACE = 'vehicle-lookup';
 const DEFAULT_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const MAX_FILTERED_LOOKUP_RESULTS = 80;
+const CURATED_VEHICLE_MAKES = [
+  'Acura',
+  'Alfa Romeo',
+  'AMC',
+  'Aston Martin',
+  'Audi',
+  'Bentley',
+  'BMW',
+  'Buick',
+  'Cadillac',
+  'Chevrolet',
+  'Chrysler',
+  'Daewoo',
+  'Daihatsu',
+  'Dodge',
+  'Eagle',
+  'Ferrari',
+  'Fiat',
+  'Fisker',
+  'Ford',
+  'Genesis',
+  'Geo',
+  'GMC',
+  'Honda',
+  'Hummer',
+  'Hyundai',
+  'Infiniti',
+  'Isuzu',
+  'Jaguar',
+  'Jeep',
+  'Kia',
+  'Lamborghini',
+  'Land Rover',
+  'Lexus',
+  'Lincoln',
+  'Lotus',
+  'Maserati',
+  'Maybach',
+  'Mazda',
+  'McLaren',
+  'Mercedes-Benz',
+  'Mercury',
+  'Mini',
+  'Mitsubishi',
+  'Nissan',
+  'Oldsmobile',
+  'Plymouth',
+  'Polestar',
+  'Pontiac',
+  'Porsche',
+  'Ram',
+  'Rivian',
+  'Rolls-Royce',
+  'Saab',
+  'Saturn',
+  'Scion',
+  'Smart',
+  'Subaru',
+  'Suzuki',
+  'Tesla',
+  'Toyota',
+  'Volkswagen',
+  'Volvo',
+] as const;
 
 @Injectable()
 export class VehicleLookupService {
@@ -57,14 +114,9 @@ export class VehicleLookupService {
 
   async getMakes(search?: string): Promise<VehicleLookupResponse> {
     const normalizedSearch = this.normalizeSearch(search);
-    const makes = await this.redisCacheService.remember(
-      `${VEHICLE_LOOKUP_CACHE_NAMESPACE}:makes:all`,
-      this.cacheTtlSeconds,
-      () => this.fetchMakes(),
-    );
 
     return {
-      items: this.filterOptions(makes, normalizedSearch),
+      items: this.filterOptions(this.getCuratedMakes(), normalizedSearch),
     };
   }
 
@@ -91,21 +143,6 @@ export class VehicleLookupService {
     return {
       items: this.filterOptions(models, normalizedSearch),
     };
-  }
-
-  private async fetchMakes(): Promise<VehicleLookupOption[]> {
-    const payload = await this.fetchNhtsa<NhtsaMake>(
-      `${NHTSA_BASE_URL}/GetAllMakes?format=json`,
-    );
-
-    return this.dedupeOptions(
-      (payload.Results ?? [])
-        .map((make) => ({
-          id: String(make.Make_ID ?? make.MakeId ?? make.Make_Name ?? make.MakeName ?? ''),
-          name: make.Make_Name ?? make.MakeName ?? '',
-        }))
-        .filter((make) => make.name.trim().length > 0),
-    );
   }
 
   private async fetchModels(
@@ -162,6 +199,13 @@ export class VehicleLookupService {
       : options;
 
     return search ? filteredOptions.slice(0, MAX_FILTERED_LOOKUP_RESULTS) : filteredOptions;
+  }
+
+  private getCuratedMakes(): VehicleLookupOption[] {
+    return CURATED_VEHICLE_MAKES.map((make) => ({
+      id: make.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      name: make,
+    }));
   }
 
   private dedupeOptions(options: VehicleLookupOption[]): VehicleLookupOption[] {
