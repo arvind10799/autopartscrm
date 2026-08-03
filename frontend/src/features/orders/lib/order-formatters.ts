@@ -1,13 +1,24 @@
-import type {
-  OrderPaymentMethod,
-  OrderStatus,
-} from '../types/order.types';
+import type { OrderPaymentMethod, OrderStatus } from '../types/order.types';
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 2,
-});
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
+
+function getCurrencyFormatter(currency: string) {
+  const normalizedCurrency = currency.trim().toUpperCase() || 'USD';
+  const cachedFormatter = currencyFormatterCache.get(normalizedCurrency);
+
+  if (cachedFormatter) {
+    return cachedFormatter;
+  }
+
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: normalizedCurrency,
+    maximumFractionDigits: 2,
+  });
+
+  currencyFormatterCache.set(normalizedCurrency, formatter);
+  return formatter;
+}
 
 const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
@@ -35,8 +46,8 @@ const ORDER_PAYMENT_METHOD_LABELS: Record<OrderPaymentMethod, string> = {
   OTHER: 'Other',
 };
 
-export function formatCurrency(value: number): string {
-  return currencyFormatter.format(value);
+export function formatCurrency(value: number, currency = 'USD'): string {
+  return getCurrencyFormatter(currency).format(value);
 }
 
 export function formatOrderStatus(status: OrderStatus): string {

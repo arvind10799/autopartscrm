@@ -86,7 +86,7 @@ export function ShipmentEligibleOrdersTable({
       header: 'Total sale',
       cell: ({ row }) => (
         <span className="font-semibold text-foreground">
-          {formatCurrency(row.original.totalSaleAmount)}
+          {formatCurrency(row.original.totalSaleAmount, row.original.currency)}
         </span>
       ),
     },

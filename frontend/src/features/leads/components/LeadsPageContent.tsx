@@ -61,6 +61,7 @@ function buildOrderInitialValues(lead: LeadSummary): Partial<CreateOrderFormValu
     basePrice: quoteValue,
     salePrice: quoteValue,
     total: quoteValue,
+    currency: lead.quoteCurrency,
     status: 'CONFIRMED',
     partialPayment: undefined,
     note: lead.comments ?? '',

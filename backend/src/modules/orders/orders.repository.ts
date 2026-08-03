@@ -34,6 +34,7 @@ const orderListSelect = {
   price: true,
   quantity: true,
   totalSaleAmount: true,
+  currency: true,
   status: true,
   paymentMethod: true,
   intakeDetails: true,
@@ -135,6 +136,7 @@ const orderEditableSelect = {
   price: true,
   quantity: true,
   totalSaleAmount: true,
+  currency: true,
   status: true,
   paymentMethod: true,
   intakeDetails: true,
@@ -196,6 +198,7 @@ export class OrdersRepository {
 
           quantity: createOrderDto.quantity,
           totalSaleAmount: createOrderDto.totalSaleAmount,
+          currency: createOrderDto.currency ?? 'USD',
           status: createOrderDto.status ?? PrismaOrderStatus.DRAFT,
           paymentMethod: createOrderDto.paymentMethod,
           createdBy: {
@@ -398,6 +401,10 @@ export class OrdersRepository {
 
     if (updateOrderDto.total !== undefined) {
       data.totalSaleAmount = new Prisma.Decimal(updateOrderDto.total);
+    }
+
+    if (updateOrderDto.currency !== undefined) {
+      data.currency = updateOrderDto.currency;
     }
 
     if (updateOrderDto.status !== undefined) {

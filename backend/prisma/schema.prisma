@@ -113,6 +113,7 @@ model Order {
   price           Decimal     @db.Decimal(12, 2)
   quantity        Int
   totalSaleAmount Decimal     @db.Decimal(12, 2)
+  currency        String      @default("USD") @db.VarChar(3)
   status          OrderStatus @default(DRAFT)
   paymentMethod   OrderPaymentMethod?
   createdById     String      @db.Uuid

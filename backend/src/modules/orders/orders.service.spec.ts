@@ -124,6 +124,7 @@ describe('OrdersService', () => {
       price: 100,
       quantity: 2,
       totalSaleAmount: 200,
+      currency: 'USD',
       status: OrderStatus.DRAFT,
       paymentMethod: null,
       intakeDetails: {

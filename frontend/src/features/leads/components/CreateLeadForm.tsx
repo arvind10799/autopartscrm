@@ -495,31 +495,32 @@ export function CreateLeadForm({
             label="Quote"
             error={form.formState.errors.quote?.message?.toString()}
           >
-            <Input
-              id="quote"
-              inputMode="decimal"
-              placeholder="0.00"
-              className="h-11 rounded-xl"
-              {...form.register('quote')}
-            />
-          </Field>
-
-          <Field
-            id="quoteCurrency"
-            label="Currency"
-            error={form.formState.errors.quoteCurrency?.message?.toString()}
-          >
-            <Select
-              id="quoteCurrency"
-              className="h-11 rounded-xl"
-              {...form.register('quoteCurrency')}
-            >
-              {LEAD_QUOTE_CURRENCIES.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-            </Select>
+            <div className="flex h-11 overflow-hidden rounded-xl border border-input bg-white shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+              <Select
+                id="quoteCurrency"
+                aria-label="Quote currency"
+                className="h-full w-24 rounded-none border-0 bg-secondary/50 px-3 text-sm font-semibold shadow-none focus-visible:ring-0"
+                {...form.register('quoteCurrency')}
+              >
+                {LEAD_QUOTE_CURRENCIES.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                id="quote"
+                inputMode="decimal"
+                placeholder="0.00"
+                className="h-full flex-1 rounded-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                {...form.register('quote')}
+              />
+            </div>
+            {form.formState.errors.quoteCurrency ? (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.quoteCurrency.message?.toString()}
+              </p>
+            ) : null}
           </Field>
 
           <Field

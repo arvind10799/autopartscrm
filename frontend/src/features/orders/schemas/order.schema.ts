@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { invoiceRecordSchema } from '@/features/invoices/schemas/invoice.schema';
 import {
   ORDER_PAYMENT_METHODS,
+  ORDER_CURRENCIES,
   ORDER_SHIPMENT_STATUSES,
   ORDER_STATUSES,
 } from '../types/order.types';
@@ -9,6 +10,7 @@ import {
 const userRoleSchema = z.enum(['ADMIN', 'SALES', 'SHIPPING']);
 const orderStatusSchema = z.enum(ORDER_STATUSES);
 const orderPaymentMethodSchema = z.enum(ORDER_PAYMENT_METHODS);
+const orderCurrencySchema = z.enum(ORDER_CURRENCIES);
 const orderShipmentStatusSchema = z.enum(ORDER_SHIPMENT_STATUSES);
 const numericAmountSchema = z.coerce.number().finite();
 const optionalEmailSchema = z.preprocess(
@@ -210,6 +212,7 @@ const orderBackendSummarySchema = z.object({
   price: numericAmountSchema,
   quantity: z.number(),
   totalSaleAmount: numericAmountSchema,
+  currency: orderCurrencySchema.optional().default('USD'),
   status: orderStatusSchema,
   paymentMethod: orderPaymentMethodSchema.nullable(),
   intakeDetails: orderIntakeDetailsSchema
@@ -251,6 +254,7 @@ function normalizeOrderSummary(order: z.infer<typeof orderBackendSummarySchema>)
     salePrice: order.price,
     quantity: order.quantity,
     totalSaleAmount: order.totalSaleAmount,
+    currency: order.currency,
     status: order.status,
     paymentMethod: order.paymentMethod,
     intakeDetails: order.intakeDetails
@@ -492,6 +496,7 @@ export const createOrderSchema = z.object({
       (value) => Number.isInteger(value * 100),
       'Total can include at most 2 decimal places.',
     ),
+  currency: orderCurrencySchema.optional().default('USD'),
   partialPayment: optionalNumericValueSchema,
   status: z.preprocess(
     (value) => {
@@ -707,6 +712,7 @@ export const createOrderFormSchema = z.object({
       .regex(/^\d+(\.\d{1,2})?$/, 'Enter a valid amount with up to 2 decimals.')
       .transform((value) => Number(value)),
   ),
+  currency: orderCurrencySchema.default('USD'),
   partialPayment: z.preprocess(
     (value) => (value === '' ? undefined : value),
     z.coerce
@@ -803,6 +809,7 @@ export const updateOrderSchema = z.object({
     .optional(),
   price: optionalNumericValueSchema,
   total: optionalNumericValueSchema,
+  currency: orderCurrencySchema.optional(),
   status: orderStatusSchema.optional(),
   paymentMethod: orderPaymentMethodSchema.nullable().optional(),
   advisorName: createOptionalTextSchema(
@@ -851,6 +858,7 @@ export const updateOrderFormSchema = z.object({
     .optional(),
   price: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().positive().optional()),
   total: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().positive().optional()),
+  currency: orderCurrencySchema.optional(),
   status: orderStatusSchema.optional(),
   paymentMethod: z.preprocess(
     (value) => (value === '' ? null : value),

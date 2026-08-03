@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsIn,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -59,6 +60,10 @@ export class UpdateOrderDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   total?: number;
+
+  @IsOptional()
+  @IsIn(['USD', 'CAD'])
+  currency?: string;
 
   @IsOptional()
   @IsEnum(OrderStatus)

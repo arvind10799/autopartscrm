@@ -270,6 +270,7 @@ export class OrdersService {
       price: Prisma.Decimal | number;
       quantity: number;
       totalSaleAmount: Prisma.Decimal | number;
+      currency: string;
       status: string;
       paymentMethod: string | null;
       intakeDetails: Prisma.JsonValue;
@@ -327,6 +328,12 @@ export class OrdersService {
       'Total',
       String(existingOrder.totalSaleAmount),
       String(updateOrderDto.total ?? existingOrder.totalSaleAmount),
+    );
+    this.pushChangeLine(
+      changeLines,
+      'Currency',
+      existingOrder.currency,
+      updateOrderDto.currency ?? existingOrder.currency,
     );
     this.pushChangeLine(
       changeLines,

@@ -338,7 +338,10 @@ function ShipmentOrderDetailsPanel({
 
             <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[25rem]">
               <MetricCard label="Status" value={formatOrderStatus(order.status)} />
-              <MetricCard label="Sale value" value={formatCurrency(order.totalSaleAmount)} />
+              <MetricCard
+                label="Sale value"
+                value={formatCurrency(order.totalSaleAmount, order.currency)}
+              />
               <MetricCard label="Notes" value={String(order.notes.length)} />
             </div>
           </div>
@@ -432,12 +435,12 @@ function ShipmentOrderDetailsPanel({
           <DetailGrid>
             <DetailBlock
               label="Price offered"
-              value={formatCurrency(order.salePrice)}
+              value={formatCurrency(order.salePrice, order.currency)}
             />
             <DetailBlock label="Quantity" value={String(order.quantity)} />
             <DetailBlock
               label="Total sale"
-              value={formatCurrency(order.totalSaleAmount)}
+              value={formatCurrency(order.totalSaleAmount, order.currency)}
             />
             <DetailBlock
               label="Miles offered"
@@ -445,19 +448,19 @@ function ShipmentOrderDetailsPanel({
             />
             <DetailBlock
               label="Base price"
-              value={formatNullableCurrency(intake.basePrice)}
+              value={formatNullableCurrency(intake.basePrice, order.currency)}
             />
             <DetailBlock
               label="Sales tax"
-              value={formatNullableCurrency(intake.salesTax)}
+              value={formatNullableCurrency(intake.salesTax, order.currency)}
             />
             <DetailBlock
               label="Shipping charges"
-              value={formatNullableCurrency(intake.shippingCharges)}
+              value={formatNullableCurrency(intake.shippingCharges, order.currency)}
             />
             <DetailBlock
               label="Profit"
-              value={formatNullableCurrency(intake.profit)}
+              value={formatNullableCurrency(intake.profit, order.currency)}
             />
             <DetailBlock
               label="Paid"
@@ -587,8 +590,8 @@ function MetricCard({
   );
 }
 
-function formatNullableCurrency(value: number | null): string {
-  return value === null ? 'Not provided' : formatCurrency(value);
+function formatNullableCurrency(value: number | null, currency = 'USD'): string {
+  return value === null ? 'Not provided' : formatCurrency(value, currency);
 }
 
 function formatNullableNumber(value: number | null): string {
@@ -597,10 +600,10 @@ function formatNullableNumber(value: number | null): string {
 
 function formatPaidAmount(order: OrderDetail): string {
   if (order.status === 'CONFIRMED') {
-    return formatCurrency(order.totalSaleAmount);
+    return formatCurrency(order.totalSaleAmount, order.currency);
   }
 
-  return formatNullableCurrency(order.intakeDetails.partialPayment);
+  return formatNullableCurrency(order.intakeDetails.partialPayment, order.currency);
 }
 
 function isHistoryNote(note: OrderNote): boolean {

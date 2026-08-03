@@ -164,7 +164,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 Total amount
               </p>
               <p className="mt-2 font-[var(--font-heading)] text-2xl font-semibold tabular-nums text-foreground sm:text-[1.75rem]">
-                {formatCurrency(order.totalSaleAmount)}
+                {formatCurrency(order.totalSaleAmount, order.currency)}
               </p>
             </div>
           </div>
@@ -282,32 +282,35 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 />
                 <DetailBlock
                   label="Price Offered"
-                  value={formatCurrency(order.salePrice)}
+                  value={formatCurrency(order.salePrice, order.currency)}
                 />
                 <DetailBlock
                   label="Base Price"
-                  value={formatNullableCurrency(intake.basePrice)}
+                  value={formatNullableCurrency(intake.basePrice, order.currency)}
                 />
                 <DetailBlock
                   label="Sales Tax"
-                  value={formatNullableCurrency(intake.salesTax)}
+                  value={formatNullableCurrency(intake.salesTax, order.currency)}
                 />
                 <DetailBlock
                   label="Shipping Charges"
-                  value={formatNullableCurrency(intake.shippingCharges)}
+                  value={formatNullableCurrency(intake.shippingCharges, order.currency)}
                 />
                 <DetailBlock
                   label="Profit"
-                  value={formatNullableCurrency(intake.profit)}
+                  value={formatNullableCurrency(intake.profit, order.currency)}
                 />
-                <DetailBlock label="Total" value={formatCurrency(order.totalSaleAmount)} />
+                <DetailBlock
+                  label="Total"
+                  value={formatCurrency(order.totalSaleAmount, order.currency)}
+                />
                 <DetailBlock
                   label="Paid"
-                  value={formatCurrency(paidNowAmount)}
+                  value={formatCurrency(paidNowAmount, order.currency)}
                 />
                 <DetailBlock
                   label="Balance"
-                  value={formatCurrency(balanceAmount)}
+                  value={formatCurrency(balanceAmount, order.currency)}
                 />
                 <DetailBlock
                   label="Payment method"
@@ -525,8 +528,8 @@ function formatHistoryBody(content: string): string {
   return content.replace(/^Order updated:\s*/i, '').trim();
 }
 
-function formatNullableCurrency(value: number | null): string {
-  return value === null ? 'Not provided' : formatCurrency(value);
+function formatNullableCurrency(value: number | null, currency = 'USD'): string {
+  return value === null ? 'Not provided' : formatCurrency(value, currency);
 }
 
 function formatNullableNumber(value: number | null): string {

@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, ReceiptText } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -26,9 +26,10 @@ import {
 } from '../schemas/order.schema';
 import {
   CREATE_ORDER_STATUSES,
+  ORDER_CURRENCIES,
   ORDER_PAYMENT_METHODS,
-  type OrderSummary,
 } from '../types/order.types';
+import type { OrderSummary } from '../types/order.types';
 
 const defaultValues: CreateOrderFormValues = {
   leadId: undefined,
@@ -61,6 +62,7 @@ const defaultValues: CreateOrderFormValues = {
   shippingCharges: 0,
   profit: 0,
   total: '',
+  currency: 'USD',
   partialPayment: undefined,
   quantity: '1',
   status: 'CONFIRMED',
@@ -370,6 +372,7 @@ export function CreateOrderForm({
     status,
     total,
     partialPayment,
+    currency,
     basePrice,
     salesTax,
     shippingCharges,
@@ -384,6 +387,7 @@ export function CreateOrderForm({
       'status',
       'total',
       'partialPayment',
+      'currency',
       'basePrice',
       'salesTax',
       'shippingCharges',
@@ -407,8 +411,7 @@ export function CreateOrderForm({
   const remainingBalance = isPaidStatus
     ? 0
     : Math.max(totalValue - partialPaymentValue, 0);
-  const displayStatus =
-    effectiveStatus === 'PARTIALLY_PAID' ? 'PARTIALLY_PAID' : 'CONFIRMED';
+  const selectedOrderCurrency = currency ?? 'USD';
   const selectedVehicleYear = typeof vehicleYear === 'string' ? vehicleYear : '';
   const selectedVehicleMake = typeof vehicleMake === 'string' ? vehicleMake : '';
   const selectedVehicleModel = typeof vehicleModel === 'string' ? vehicleModel : '';
@@ -745,40 +748,6 @@ export function CreateOrderForm({
       <input type="hidden" {...form.register('profit')} />
       <input type="hidden" {...form.register('total')} />
       <input type="hidden" {...form.register('partDescription')} />
-
-      <div className="rounded-[1.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(59,130,246,0.10),rgba(255,255,255,0.92))] p-4 shadow-sm md:p-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="rounded-2xl bg-primary/10 p-2.5 text-primary">
-              <ReceiptText className="h-5 w-5" />
-            </div>
-            <div className="space-y-1">
-              <p className="font-[var(--font-heading)] text-lg font-semibold tracking-[-0.03em] text-foreground">
-                Sales intake workspace
-              </p>
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                Keep the essential customer, part, and payment details visible in
-                one pass while you build the order.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[25rem]">
-            <MetricCard
-              label="Status"
-              value={formatCreateOrderStatusLabel(displayStatus)}
-            />
-            <MetricCard
-              label="Paid now"
-              value={formatCurrency(paidNowValue || 0)}
-            />
-            <MetricCard
-              label="Remaining due"
-              value={formatCurrency(remainingBalance)}
-            />
-          </div>
-        </div>
-      </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.95fr)]">
         <div className="space-y-4">
@@ -1216,13 +1185,27 @@ export function CreateOrderForm({
                 label="Order amount"
                 error={form.formState.errors.basePrice?.message?.toString()}
               >
-                <Input
-                  id="basePrice"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className="h-11 rounded-xl"
-                  {...form.register('basePrice')}
-                />
+                <div className="flex h-11 overflow-hidden rounded-xl border border-input bg-white shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                  <Select
+                    id="currency"
+                    aria-label="Order amount currency"
+                    className="h-full w-24 rounded-none border-0 bg-secondary/50 px-3 text-sm font-semibold shadow-none focus-visible:ring-0"
+                    {...form.register('currency')}
+                  >
+                    {ORDER_CURRENCIES.map((currencyOption) => (
+                      <option key={currencyOption} value={currencyOption}>
+                        {currencyOption}
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    id="basePrice"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className="h-full flex-1 rounded-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                    {...form.register('basePrice')}
+                  />
+                </div>
               </Field>
 
               {isPartiallyPaidStatus ? (
@@ -1249,15 +1232,15 @@ export function CreateOrderForm({
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
                 <MetricCard
                   label="Total"
-                  value={formatCurrency(totalValue || 0)}
+                  value={formatCurrency(totalValue || 0, selectedOrderCurrency)}
                 />
                 <MetricCard
                   label="Paid now"
-                  value={formatCurrency(paidNowValue || 0)}
+                  value={formatCurrency(paidNowValue || 0, selectedOrderCurrency)}
                 />
                 <MetricCard
                   label="Balance"
-                  value={formatCurrency(remainingBalance)}
+                  value={formatCurrency(remainingBalance, selectedOrderCurrency)}
                 />
               </div>
             </div>
@@ -1298,7 +1281,7 @@ export function CreateOrderForm({
                   Order total
                 </p>
                 <p className="text-sm font-semibold text-foreground">
-                  {formatCurrency(totalValue || 0)}
+                  {formatCurrency(totalValue || 0, selectedOrderCurrency)}
                 </p>
               </div>
             </div>

@@ -36,6 +36,10 @@ export const ORDER_PAYMENT_METHODS = [
 
 export type OrderPaymentMethod = (typeof ORDER_PAYMENT_METHODS)[number];
 
+export const ORDER_CURRENCIES = ['USD', 'CAD'] as const;
+
+export type OrderCurrency = (typeof ORDER_CURRENCIES)[number];
+
 export interface OrderUser {
   id: string;
   name: string;
@@ -77,6 +81,7 @@ export interface OrderSummary {
   salePrice: number;
   quantity: number;
   totalSaleAmount: number;
+  currency: OrderCurrency;
   status: OrderStatus;
   paymentMethod: OrderPaymentMethod | null;
   intakeDetails: Pick<OrderIntakeDetails, 'partialPayment'> | null;
@@ -175,6 +180,7 @@ export interface CreateOrderInput {
   shippingCharges?: number;
   profit?: number;
   total: number;
+  currency?: OrderCurrency;
   partialPayment?: number;
   quantity: number;
   status: OrderStatus;
@@ -194,6 +200,7 @@ export interface UpdateOrderInput {
   quantity?: number;
   price?: number;
   total?: number;
+  currency?: OrderCurrency;
   status?: OrderStatus;
   paymentMethod?: OrderPaymentMethod | null;
   advisorName?: string;

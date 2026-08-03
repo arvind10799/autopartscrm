@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -192,6 +193,10 @@ export class CreateOrderDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   total: number;
+
+  @IsOptional()
+  @IsIn(['USD', 'CAD'])
+  currency?: string;
 
   @Type(() => Number)
   @IsOptional()
