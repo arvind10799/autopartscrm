@@ -14,6 +14,10 @@ import {
 import type { PaginationMeta, OrderSummary } from '../types/order.types';
 import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
 
+function getFirstName(name: string) {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
 function buildColumns(
   onEdit: (orderId: string) => void,
   role: UserRole | null | undefined,
@@ -50,7 +54,9 @@ function buildColumns(
       accessorKey: 'createdBy',
       header: 'Advisor Name',
       cell: ({ row }) => (
-        <p className="font-medium text-foreground">{row.original.createdBy.name}</p>
+        <p className="font-medium text-foreground">
+          {getFirstName(row.original.createdBy.name)}
+        </p>
       ),
     });
   }

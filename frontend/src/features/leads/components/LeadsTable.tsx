@@ -21,6 +21,13 @@ function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
 }
 
+function formatVehicleSummary(lead: LeadSummary) {
+  return [lead.vehicleYear, lead.vehicleMake, lead.vehicleModel]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join(' ') || '--';
+}
+
 function buildColumns(
   onConvert: (lead: LeadSummary) => void,
   onEdit: (lead: LeadSummary) => void,
@@ -54,7 +61,9 @@ function buildColumns(
       accessorKey: 'partDescription',
       header: 'Vehicle',
       cell: ({ row }) => (
-        <p className="max-w-xs text-sm text-foreground">{row.original.partDescription}</p>
+        <p className="max-w-xs text-sm text-foreground">
+          {formatVehicleSummary(row.original)}
+        </p>
       ),
     },
     {
