@@ -3,12 +3,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { vehicleLookupApi } from '@/features/vehicle-lookup/api/vehicle-lookup-api';
+import { VehicleCombobox } from '@/features/vehicle-lookup/components/VehicleCombobox';
+import type { VehicleLookupOption } from '@/features/vehicle-lookup/types/vehicle-lookup.types';
 import { cn } from '@/lib/utils/cn';
 import { getErrorMessage } from '@/lib/utils/error';
 import { leadsApi } from '../api/leads-api';
@@ -99,14 +102,159 @@ export function CreateLeadForm({
   onSaved: (lead: LeadSummary) => void;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
+  const [yearOptions, setYearOptions] = useState<VehicleLookupOption[]>([]);
+  const [makeOptions, setMakeOptions] = useState<VehicleLookupOption[]>([]);
+  const [modelOptions, setModelOptions] = useState<VehicleLookupOption[]>([]);
+  const [partOptions, setPartOptions] = useState<VehicleLookupOption[]>([]);
+  const [isLoadingMakes, setIsLoadingMakes] = useState(false);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [isLoadingParts, setIsLoadingParts] = useState(false);
+  const [vehicleLookupNotice, setVehicleLookupNotice] = useState<string | null>(null);
   const form = useForm<CreateLeadFormValues>({
     resolver: zodResolver(createLeadFormSchema),
     defaultValues: buildDefaultValues(initialLead),
   });
+  const [vehicleYear, vehicleMake, vehicleModel, vehicleVariant] = useWatch({
+    control: form.control,
+    name: ['vehicleYear', 'vehicleMake', 'vehicleModel', 'vehicleVariant'],
+  });
+  const selectedVehicleYear = typeof vehicleYear === 'string' ? vehicleYear : '';
+  const selectedVehicleMake = typeof vehicleMake === 'string' ? vehicleMake : '';
+  const selectedVehicleModel = typeof vehicleModel === 'string' ? vehicleModel : '';
+  const selectedVehicleVariant =
+    typeof vehicleVariant === 'string' ? vehicleVariant : '';
 
   useEffect(() => {
     form.reset(buildDefaultValues(initialLead));
   }, [form, initialLead]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    vehicleLookupApi
+      .getYears()
+      .then((response) => {
+        if (isActive) {
+          setYearOptions(response.items);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setVehicleLookupNotice(
+            'Vehicle year options are unavailable. You can still type manually.',
+          );
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    setIsLoadingMakes(true);
+    vehicleLookupApi
+      .getMakes()
+      .then((response) => {
+        if (isActive) {
+          setMakeOptions(response.items);
+          setVehicleLookupNotice(null);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setVehicleLookupNotice(
+            'Vehicle make options are unavailable. You can still type manually.',
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingMakes(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+    const make =
+      typeof vehicleMake === 'string' && vehicleMake.trim().length > 0
+        ? vehicleMake.trim()
+        : '';
+    const year =
+      typeof vehicleYear === 'string' && vehicleYear.trim().length > 0
+        ? vehicleYear.trim()
+        : undefined;
+
+    if (!make) {
+      setModelOptions([]);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setIsLoadingModels(true);
+    vehicleLookupApi
+      .getModels({ make, year })
+      .then((response) => {
+        if (isActive) {
+          setModelOptions(response.items);
+          setVehicleLookupNotice(null);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setVehicleLookupNotice(
+            'Vehicle model options are unavailable. You can still type manually.',
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingModels(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [vehicleMake, vehicleYear]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    setIsLoadingParts(true);
+    vehicleLookupApi
+      .getParts()
+      .then((response) => {
+        if (isActive) {
+          setPartOptions(response.items);
+          setVehicleLookupNotice(null);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setVehicleLookupNotice(
+            'Vehicle part options are unavailable. You can still type manually.',
+          );
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingParts(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
@@ -153,6 +301,12 @@ export function CreateLeadForm({
             Keep the sales adviser visible and capture the essentials the team needs.
           </p>
         </div>
+
+        {vehicleLookupNotice ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+            {vehicleLookupNotice}
+          </div>
+        ) : null}
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Field
@@ -248,11 +402,21 @@ export function CreateLeadForm({
             label="Year"
             error={form.formState.errors.vehicleYear?.message?.toString()}
           >
-            <Input
+            <VehicleCombobox
               id="vehicleYear"
-              placeholder="2020"
-              className="h-11 rounded-xl"
-              {...form.register('vehicleYear')}
+              value={selectedVehicleYear}
+              options={yearOptions}
+              placeholder="Select or type year"
+              onChange={(nextValue) => {
+                form.setValue('vehicleYear', nextValue, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+                form.setValue('vehicleModel', '', {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
             />
           </Field>
 
@@ -261,11 +425,22 @@ export function CreateLeadForm({
             label="Make"
             error={form.formState.errors.vehicleMake?.message?.toString()}
           >
-            <Input
+            <VehicleCombobox
               id="vehicleMake"
-              placeholder="Honda"
-              className="h-11 rounded-xl"
-              {...form.register('vehicleMake')}
+              value={selectedVehicleMake}
+              options={makeOptions}
+              disabled={isLoadingMakes && makeOptions.length === 0}
+              placeholder={isLoadingMakes ? 'Loading makes...' : 'Select or type make'}
+              onChange={(nextValue) => {
+                form.setValue('vehicleMake', nextValue, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+                form.setValue('vehicleModel', '', {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
             />
           </Field>
 
@@ -274,11 +449,24 @@ export function CreateLeadForm({
             label="Model"
             error={form.formState.errors.vehicleModel?.message?.toString()}
           >
-            <Input
+            <VehicleCombobox
               id="vehicleModel"
-              placeholder="Civic"
-              className="h-11 rounded-xl"
-              {...form.register('vehicleModel')}
+              value={selectedVehicleModel}
+              options={modelOptions}
+              disabled={!selectedVehicleMake || (isLoadingModels && modelOptions.length === 0)}
+              placeholder={
+                isLoadingModels
+                  ? 'Loading models...'
+                  : selectedVehicleMake
+                    ? 'Select or type model'
+                    : 'Select make first'
+              }
+              onChange={(nextValue) =>
+                form.setValue('vehicleModel', nextValue, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
             />
           </Field>
 
@@ -287,11 +475,18 @@ export function CreateLeadForm({
             label="Variant"
             error={form.formState.errors.vehicleVariant?.message?.toString()}
           >
-            <Input
+            <VehicleCombobox
               id="vehicleVariant"
-              placeholder="LX"
-              className="h-11 rounded-xl"
-              {...form.register('vehicleVariant')}
+              value={selectedVehicleVariant}
+              options={partOptions}
+              disabled={isLoadingParts && partOptions.length === 0}
+              placeholder={isLoadingParts ? 'Loading parts...' : 'Select or type part'}
+              onChange={(nextValue) =>
+                form.setValue('vehicleVariant', nextValue, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
             />
           </Field>
 
