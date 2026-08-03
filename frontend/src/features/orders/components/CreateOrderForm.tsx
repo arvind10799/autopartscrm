@@ -1024,7 +1024,7 @@ export function CreateOrderForm({
                 <div className="grid gap-3">
                   <Field
                     id="billingAddress"
-                    label="Billing address"
+                    label="Address"
                     error={form.formState.errors.billingAddress?.message?.toString()}
                   >
                     <Textarea
@@ -1038,7 +1038,7 @@ export function CreateOrderForm({
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
                       id="billingPerson"
-                      label="Billing person"
+                      label="Person"
                       error={form.formState.errors.billingPerson?.message?.toString()}
                     >
                       <Input
@@ -1050,7 +1050,7 @@ export function CreateOrderForm({
 
                     <Field
                       id="billingPhone"
-                      label="Billing phone"
+                      label="Phone"
                       error={form.formState.errors.billingPhone?.message?.toString()}
                     >
                       <Input
@@ -1072,7 +1072,7 @@ export function CreateOrderForm({
                 <div className="grid gap-3">
                   <Field
                     id="shippingAddress"
-                    label="Shipping address"
+                    label="Address"
                     error={form.formState.errors.shippingAddress?.message?.toString()}
                   >
                     <Textarea
@@ -1086,7 +1086,7 @@ export function CreateOrderForm({
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
                       id="shippingPerson"
-                      label="Shipping person"
+                      label="Person"
                       error={form.formState.errors.shippingPerson?.message?.toString()}
                     >
                       <Input
@@ -1098,7 +1098,7 @@ export function CreateOrderForm({
 
                     <Field
                       id="shippingPhone"
-                      label="Shipping phone"
+                      label="Phone"
                       error={form.formState.errors.shippingPhone?.message?.toString()}
                     >
                       <Input
@@ -1114,7 +1114,7 @@ export function CreateOrderForm({
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
                       id="shippingAt"
-                      label="Shipping date"
+                      label="Date"
                       error={form.formState.errors.shippingAt?.message?.toString()}
                     >
                       <Input
