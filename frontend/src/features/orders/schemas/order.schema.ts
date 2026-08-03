@@ -376,9 +376,9 @@ export const createOrderSchema = z.object({
     .max(255, 'Part description must be 255 characters or fewer.'),
   customerEmail: requiredEmailSchema,
   customerPhone: createRequiredTextSchema(
-    30,
+    14,
     'Customer phone is required.',
-    'Customer phone must be 30 characters or fewer.',
+    'Mobile must be 14 characters or fewer.',
   ),
   vehicleMake: createRequiredTextSchema(
     120,
@@ -425,9 +425,9 @@ export const createOrderSchema = z.object({
     'Billing person must be 160 characters or fewer.',
   ),
   billingPhone: createRequiredTextSchema(
-    30,
+    14,
     'Billing phone is required.',
-    'Billing phone must be 30 characters or fewer.',
+    'Billing phone must be 14 characters or fewer.',
   ),
   shippingAddress: createRequiredTextSchema(
     500,
@@ -440,9 +440,9 @@ export const createOrderSchema = z.object({
     'Shipping person must be 160 characters or fewer.',
   ),
   shippingPhone: createRequiredTextSchema(
-    30,
+    14,
     'Shipping phone is required.',
-    'Shipping phone must be 30 characters or fewer.',
+    'Shipping phone must be 14 characters or fewer.',
   ),
   shippingAt: createRequiredTextSchema(
     40,
@@ -466,8 +466,8 @@ export const createOrderSchema = z.object({
       'Sale price can include at most 2 decimal places.',
     ),
   basePrice: createRequiredNumericSchema(
-    'Base price is required.',
-    'Base price can include at most 2 decimal places.',
+    'Order amount is required.',
+    'Order amount can include at most 2 decimal places.',
   ),
   salesTax: createRequiredNumericSchema(
     'Sales tax is required.',
@@ -576,9 +576,9 @@ export const createOrderFormSchema = z.object({
     .max(255, 'Part description must be 255 characters or fewer.'),
   customerEmail: requiredEmailSchema,
   customerPhone: createRequiredTextSchema(
-    30,
+    14,
     'Customer phone is required.',
-    'Customer phone must be 30 characters or fewer.',
+    'Mobile must be 14 characters or fewer.',
   ),
   vehicleMake: createRequiredTextSchema(
     120,
@@ -625,9 +625,9 @@ export const createOrderFormSchema = z.object({
     'Billing person must be 160 characters or fewer.',
   ),
   billingPhone: createRequiredTextSchema(
-    30,
+    14,
     'Billing phone is required.',
-    'Billing phone must be 30 characters or fewer.',
+    'Billing phone must be 14 characters or fewer.',
   ),
   shippingAddress: createRequiredTextSchema(
     500,
@@ -640,9 +640,9 @@ export const createOrderFormSchema = z.object({
     'Shipping person must be 160 characters or fewer.',
   ),
   shippingPhone: createRequiredTextSchema(
-    30,
+    14,
     'Shipping phone is required.',
-    'Shipping phone must be 30 characters or fewer.',
+    'Shipping phone must be 14 characters or fewer.',
   ),
   shippingAt: createRequiredTextSchema(
     40,
@@ -668,8 +668,8 @@ export const createOrderFormSchema = z.object({
       .transform((value) => Number(value)),
   ),
   basePrice: createRequiredNumericSchema(
-    'Base price is required.',
-    'Base price can include at most 2 decimal places.',
+    'Order amount is required.',
+    'Order amount can include at most 2 decimal places.',
   ),
   salesTax: createRequiredNumericSchema(
     'Sales tax is required.',

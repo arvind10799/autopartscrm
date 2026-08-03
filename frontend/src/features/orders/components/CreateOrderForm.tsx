@@ -57,9 +57,9 @@ const defaultValues: CreateOrderFormValues = {
   milesOffered: undefined,
   salePrice: '',
   basePrice: undefined,
-  salesTax: undefined,
-  shippingCharges: undefined,
-  profit: undefined,
+  salesTax: 0,
+  shippingCharges: 0,
+  profit: 0,
   total: '',
   partialPayment: undefined,
   quantity: '1',
@@ -83,6 +83,9 @@ function buildCreateOrderFormValues(
   const values = {
     ...defaultValues,
     ...initialValues,
+    salesTax: 0,
+    shippingCharges: 0,
+    profit: 0,
   };
   const inferredTotal =
     getFirstFilledAmount(values.total, values.salePrice, values.basePrice) ??
@@ -737,6 +740,10 @@ export function CreateOrderForm({
       <input type="hidden" {...form.register('leadId')} />
       <input type="hidden" {...form.register('quantity')} />
       <input type="hidden" {...form.register('salePrice')} />
+      <input type="hidden" {...form.register('salesTax')} />
+      <input type="hidden" {...form.register('shippingCharges')} />
+      <input type="hidden" {...form.register('profit')} />
+      <input type="hidden" {...form.register('total')} />
       <input type="hidden" {...form.register('partDescription')} />
 
       <div className="rounded-[1.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(59,130,246,0.10),rgba(255,255,255,0.92))] p-4 shadow-sm md:p-5">
@@ -847,7 +854,8 @@ export function CreateOrderForm({
                 <Input
                   id="customerPhone"
                   type="tel"
-                  placeholder="+1 (555) 123-4567"
+                  maxLength={14}
+                  placeholder="+15551234567"
                   className="h-11 rounded-xl"
                   {...form.register('customerPhone')}
                 />
@@ -1047,6 +1055,8 @@ export function CreateOrderForm({
                     >
                       <Input
                         id="billingPhone"
+                        type="tel"
+                        maxLength={14}
                         className="h-11 rounded-xl"
                         {...form.register('billingPhone')}
                       />
@@ -1093,6 +1103,8 @@ export function CreateOrderForm({
                     >
                       <Input
                         id="shippingPhone"
+                        type="tel"
+                        maxLength={14}
                         className="h-11 rounded-xl"
                         {...form.register('shippingPhone')}
                       />
@@ -1201,7 +1213,7 @@ export function CreateOrderForm({
 
               <Field
                 id="basePrice"
-                label="Base price"
+                label="Order amount"
                 error={form.formState.errors.basePrice?.message?.toString()}
               >
                 <Input
@@ -1210,63 +1222,6 @@ export function CreateOrderForm({
                   placeholder="0.00"
                   className="h-11 rounded-xl"
                   {...form.register('basePrice')}
-                />
-              </Field>
-
-              <Field
-                id="salesTax"
-                label="Sales tax"
-                error={form.formState.errors.salesTax?.message?.toString()}
-              >
-                <Input
-                  id="salesTax"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className="h-11 rounded-xl"
-                  {...form.register('salesTax')}
-                />
-              </Field>
-
-              <Field
-                id="shippingCharges"
-                label="Shipping charges"
-                error={form.formState.errors.shippingCharges?.message?.toString()}
-              >
-                <Input
-                  id="shippingCharges"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className="h-11 rounded-xl"
-                  {...form.register('shippingCharges')}
-                />
-              </Field>
-
-              <Field
-                id="profit"
-                label="Profit"
-                error={form.formState.errors.profit?.message?.toString()}
-              >
-                <Input
-                  id="profit"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className="h-11 rounded-xl"
-                  {...form.register('profit')}
-                />
-              </Field>
-
-              <Field
-                id="total"
-                label="Total"
-                error={form.formState.errors.total?.message?.toString()}
-              >
-                <Input
-                  id="total"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className="h-11 rounded-xl"
-                  readOnly
-                  {...form.register('total')}
                 />
               </Field>
 
