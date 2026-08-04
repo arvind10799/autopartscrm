@@ -529,9 +529,9 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                   </Button>
 
                   {isSignatureModalOpen ? (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm">
-                      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.35rem] bg-white shadow-2xl ring-1 ring-slate-900/10">
-                        <div className="flex items-center justify-between px-6 py-5">
+                    <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-md">
+                      <div className="relative z-[10000] isolate flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.35rem] bg-white shadow-2xl ring-1 ring-slate-900/10">
+                        <div className="flex items-center justify-between bg-white px-6 py-5">
                           <h2 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950">
                             Signature
                           </h2>
@@ -547,7 +547,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                           </Button>
                         </div>
 
-                        <div className="space-y-5 overflow-auto px-6 pb-5">
+                        <div className="space-y-5 overflow-auto bg-white px-6 pb-5">
                           <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-slate-300">
                             {(['TYPE', 'DRAW', 'UPLOAD'] as SignatureMode[]).map((mode) => (
                               <button
@@ -683,7 +683,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                           ) : null}
                         </div>
 
-                        <div className="border-t border-slate-200 bg-slate-50/80">
+                        <div className="border-t border-slate-200 bg-slate-50">
                           <p className="px-6 py-2 text-center text-xs font-medium text-slate-900">
                             I understand that this is a legal representation of my signature
                           </p>
