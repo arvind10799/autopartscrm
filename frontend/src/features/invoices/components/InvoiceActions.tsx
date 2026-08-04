@@ -1833,12 +1833,12 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-header {
     position: absolute;
-    left: 48px;
-    top: 22px;
+    left: 26px;
+    top: 18px;
     z-index: 2;
     display: grid;
-    grid-template-columns: 420px 284px;
-    width: 704px;
+    grid-template-columns: 430px 306px;
+    width: 742px;
     min-height: 126px;
     align-items: start;
   }
@@ -1850,7 +1850,7 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-logo {
-    width: 345px;
+    width: 355px;
     height: auto;
     mix-blend-mode: multiply;
   }
@@ -1889,7 +1889,7 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-meta {
     display: grid;
-    grid-template-columns: 142px 1fr;
+    grid-template-columns: 146px 1fr;
     min-height: 74px;
     margin-left: auto;
     background: rgba(244, 243, 237, 0.62);
@@ -1915,12 +1915,12 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-address-panel {
     position: absolute;
-    left: 48px;
-    top: 160px;
+    left: 26px;
+    top: 158px;
     z-index: 2;
     display: grid;
     grid-template-columns: 1fr 2px 1fr;
-    width: 704px;
+    width: 742px;
     min-height: 112px;
     border-top: 4px solid #929293;
   }
@@ -1972,10 +1972,10 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-delivery-note {
     position: absolute;
-    left: 48px;
-    top: 280px;
+    left: 26px;
+    top: 278px;
     z-index: 2;
-    width: 704px;
+    width: 742px;
     margin: 0;
     padding-bottom: 8px;
     border-bottom: 4px solid #929293;
@@ -1989,9 +1989,9 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-item-box,
   .invoice-payment-box {
     position: absolute;
-    left: 48px;
+    left: 26px;
     z-index: 2;
-    width: 704px;
+    width: 742px;
     border: 2px solid #111;
     border-radius: 8px;
     background: rgba(252, 252, 250, 0.72);
@@ -2006,7 +2006,7 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-table-head,
   .invoice-table-row {
     display: grid;
-    grid-template-columns: 1fr 78px 142px;
+    grid-template-columns: 1fr 86px 154px;
     gap: 12px;
   }
 
@@ -2038,7 +2038,7 @@ const INVOICE_DOCUMENT_CSS = `
     top: 449px;
     height: 142px;
     display: grid;
-    grid-template-columns: 1fr 252px;
+    grid-template-columns: 1fr 276px;
     padding: 12px;
   }
 
@@ -2074,7 +2074,7 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-charge-summary p {
     display: grid;
-    grid-template-columns: 1fr 84px;
+    grid-template-columns: 1fr 96px;
     gap: 14px;
   }
 
@@ -2142,9 +2142,9 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-signature-area {
-    left: 574px;
+    left: 572px;
     top: 1013px;
-    width: 212px;
+    width: 214px;
     height: 94px;
   }
 
@@ -2159,14 +2159,14 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-signature-area::before {
     top: 0;
-    width: 206px;
+    width: 208px;
     height: 48px;
     border-bottom: 0;
   }
 
   .invoice-signature-area::after {
     top: 56px;
-    width: 206px;
+    width: 208px;
     height: 31px;
   }
 
@@ -2178,7 +2178,7 @@ const INVOICE_DOCUMENT_CSS = `
     left: 8px;
     top: 5px;
     display: flex;
-    width: 190px;
+    width: 192px;
     height: 44px;
     align-items: center;
     justify-content: center;
@@ -2191,7 +2191,7 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-signature-image img {
-    max-width: 190px;
+    max-width: 192px;
     max-height: 40px;
     object-fit: contain;
   }
@@ -2203,7 +2203,7 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-signature-date {
     left: 8px;
     top: 64px;
-    width: 188px;
+    width: 190px;
     height: 22px;
     color: #111;
     font-size: 9px;
@@ -2213,10 +2213,10 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-warranty {
     position: absolute;
-    left: 76px;
-    top: 176px;
+    left: 18px;
+    top: 174px;
     z-index: 2;
-    width: 640px;
+    width: 748px;
     min-height: 432px;
     padding: 18px 16px;
     border: 3px solid rgba(151, 160, 169, 0.72);
@@ -2258,10 +2258,10 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-acceptance-box {
     position: absolute;
-    left: 48px;
+    left: 26px;
     top: 750px;
     z-index: 2;
-    width: 694px;
+    width: 742px;
     min-height: 48px;
     padding: 11px 12px 8px;
     border: 2px solid #111;
@@ -2281,10 +2281,10 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-warranty-note {
     position: absolute;
-    left: 48px;
+    left: 26px;
     top: 836px;
     z-index: 2;
-    width: 660px;
+    width: 704px;
     margin: 0;
     color: #666973;
     font-size: 10.5px;
