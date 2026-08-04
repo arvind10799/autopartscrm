@@ -1977,12 +1977,12 @@ const INVOICE_DOCUMENT_CSS = `
     z-index: 2;
     width: 742px;
     margin: 0;
-    padding-bottom: 8px;
+    padding-bottom: 10px;
     border-bottom: 4px solid #929293;
     color: #62656b;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.3;
     text-align: left;
   }
 
@@ -1998,7 +1998,7 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-item-box {
-    top: 318px;
+    top: 322px;
     height: 122px;
     padding: 10px 10px;
   }
@@ -2035,7 +2035,7 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-payment-box {
-    top: 449px;
+    top: 453px;
     height: 142px;
     display: grid;
     grid-template-columns: 1fr 276px;
@@ -2153,21 +2153,21 @@ const INVOICE_DOCUMENT_CSS = `
     content: "";
     position: absolute;
     right: 0;
-    border: 2px solid #111;
-    background: rgba(255, 251, 217, 0.76);
   }
 
   .invoice-signature-area::before {
     top: 0;
     width: 208px;
-    height: 48px;
-    border-bottom: 0;
+    height: 87px;
+    border: 2px solid #111;
+    background: rgba(255, 251, 217, 0.76);
   }
 
   .invoice-signature-area::after {
     top: 56px;
     width: 208px;
-    height: 31px;
+    height: 0;
+    border-top: 2px solid #111;
   }
 
   .invoice-signature-label {
@@ -2197,18 +2197,24 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-signature-date-label {
-    display: none;
+    left: 10px;
+    top: 64px;
+    color: #111;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 18px;
   }
 
   .invoice-signature-date {
-    left: 8px;
-    top: 62px;
-    width: 190px;
-    height: 22px;
+    left: 44px;
+    top: 61px;
+    width: 154px;
+    height: 24px;
     color: #111;
     font-size: 9px;
     font-weight: 500;
-    line-height: 22px;
+    line-height: 24px;
+    text-align: center;
   }
 
   .invoice-warranty {
