@@ -78,6 +78,11 @@ try {
     SMTP_USER = Get-EnvironmentValueOrDefault "SMTP_USER" ""
     SMTP_PASS = Get-EnvironmentValueOrDefault "SMTP_PASS" ""
     MAIL_FROM = Get-EnvironmentValueOrDefault "MAIL_FROM" "MEE Auto Parts Billing <billing@meeautoparts.com>"
+    RINGCENTRAL_CLIENT_ID = Get-EnvironmentValueOrDefault "RINGCENTRAL_CLIENT_ID" ""
+    RINGCENTRAL_CLIENT_SECRET = Get-EnvironmentValueOrDefault "RINGCENTRAL_CLIENT_SECRET" ""
+    RINGCENTRAL_JWT = Get-EnvironmentValueOrDefault "RINGCENTRAL_JWT" ""
+    RINGCENTRAL_SERVER_URL = Get-EnvironmentValueOrDefault "RINGCENTRAL_SERVER_URL" "https://platform.ringcentral.com"
+    RINGCENTRAL_FROM_NUMBER = Get-EnvironmentValueOrDefault "RINGCENTRAL_FROM_NUMBER" ""
   }
 
   $envContent = foreach ($entry in $environment.GetEnumerator()) {
