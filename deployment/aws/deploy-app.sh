@@ -162,10 +162,31 @@ pm2 start "npm run start --prefix frontend" --name auto-parts-frontend
 pm2 save
 sudo env PATH="${PATH}" pm2 startup systemd -u "${USER}" --hp "${HOME}" >/dev/null
 
-sudo tee /etc/nginx/conf.d/auto-parts-crm.conf >/dev/null <<EOF
+APP_HOST="$(
+  APP_PUBLIC_URL="${APP_PUBLIC_URL}" node <<'NODE'
+try {
+  console.log(new URL(process.env.APP_PUBLIC_URL).hostname || '_');
+} catch {
+  console.log('_');
+}
+NODE
+)"
+
+if [[ -f "/etc/letsencrypt/live/${APP_HOST}/fullchain.pem" && -f "/etc/letsencrypt/live/${APP_HOST}/privkey.pem" ]]; then
+  sudo tee /etc/nginx/conf.d/auto-parts-crm.conf >/dev/null <<EOF
 server {
     listen 80;
-    server_name _;
+    server_name ${APP_HOST};
+
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${APP_HOST};
+
+    ssl_certificate /etc/letsencrypt/live/${APP_HOST}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${APP_HOST}/privkey.pem;
 
     location / {
         proxy_pass http://127.0.0.1:3001;
@@ -179,6 +200,25 @@ server {
     }
 }
 EOF
+else
+  sudo tee /etc/nginx/conf.d/auto-parts-crm.conf >/dev/null <<EOF
+server {
+    listen 80;
+    server_name ${APP_HOST};
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+EOF
+fi
 
 sudo nginx -t
 sudo systemctl reload nginx
