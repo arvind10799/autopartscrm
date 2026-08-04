@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent, PointerEvent, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import {
   CheckCircle2,
@@ -528,7 +529,8 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                     )}
                   </Button>
 
-                  {isSignatureModalOpen ? (
+                  {isSignatureModalOpen && typeof document !== 'undefined'
+                    ? createPortal(
                     <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-md">
                       <div className="relative z-[10000] isolate flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.35rem] bg-white shadow-2xl ring-1 ring-slate-900/10">
                         <div className="flex items-center justify-between bg-white px-6 py-5">
@@ -706,8 +708,10 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ) : null}
+                    </div>,
+                    document.body,
+                  )
+                    : null}
                 </>
               )}
             </CardContent>
