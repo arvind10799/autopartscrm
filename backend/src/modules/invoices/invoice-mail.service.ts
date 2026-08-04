@@ -498,8 +498,8 @@ export class InvoiceMailService {
     if (existsSync(watermarkPath)) {
       document
         .save()
-        .opacity(0.08)
-        .image(watermarkPath, 92, 190, { width: 412 })
+        .opacity(0.045)
+        .image(watermarkPath, 0, 0, { width: 595.28, height: 841.89 })
         .restore();
     }
 

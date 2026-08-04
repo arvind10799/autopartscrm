@@ -1820,13 +1820,13 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-watermark {
     position: absolute;
-    left: 118px;
-    top: 250px;
+    inset: 0;
     z-index: 0;
-    width: 560px;
-    height: auto;
-    opacity: 0.085;
-    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    opacity: 0.045;
+    object-fit: cover;
+    object-position: center center;
     pointer-events: none;
     user-select: none;
   }
@@ -1871,14 +1871,20 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-title-block h1 {
     margin: 0 0 8px;
     color: #8997a1;
-    font-family: "Arial Narrow", "Helvetica Neue Condensed", Helvetica, Arial, sans-serif;
+    font-family: Helvetica, Arial, sans-serif;
     font-size: 25px;
     font-weight: 900;
-    letter-spacing: -0.095em;
-    line-height: 1;
+    letter-spacing: -0.08em;
+    line-height: 1.05;
     text-align: right;
     text-transform: uppercase;
     white-space: nowrap;
+  }
+
+  .invoice-page--warranty .invoice-title-block h1 {
+    width: 330px;
+    margin-left: -68px;
+    font-size: 22px;
   }
 
   .invoice-meta {
@@ -1893,14 +1899,16 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-meta span {
     padding: 2px 8px;
     color: #59616a;
-    font-size: 9.8px;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 13px;
     font-weight: 800;
-    line-height: 1.5;
+    line-height: 15px;
   }
 
   .invoice-meta span {
     color: #28313b;
-    font-weight: 700;
+    font-weight: 500;
+    line-height: 19px;
     overflow-wrap: anywhere;
   }
 
@@ -1928,10 +1936,10 @@ const INVOICE_DOCUMENT_CSS = `
     gap: 8px;
     background: rgba(248, 248, 239, 0.58);
     color: #555b63;
-    font-family: "Arial Narrow", "Helvetica Neue Condensed", Helvetica, Arial, sans-serif;
-    font-size: 11.5px;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 13px;
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 15px;
   }
 
   .invoice-address-cell--customer {
@@ -1954,8 +1962,9 @@ const INVOICE_DOCUMENT_CSS = `
     margin-left: 8px;
     color: #303844;
     font-family: Helvetica, Arial, sans-serif;
-    font-size: 9px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 19px;
     overflow-wrap: anywhere;
   }
 
@@ -2001,11 +2010,11 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-table-head strong {
     color: #666b72;
-    font-family: "Arial Narrow", "Helvetica Neue Condensed", Helvetica, Arial, sans-serif;
+    font-family: Helvetica, Arial, sans-serif;
     font-size: 16px;
     font-weight: 900;
-    letter-spacing: -0.085em;
-    line-height: 1;
+    letter-spacing: -0.06em;
+    line-height: 18px;
   }
 
   .invoice-table-head strong:nth-child(2),
@@ -2018,9 +2027,9 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-table-row {
     margin-top: 13px;
     color: #1f2732;
-    font-size: 9.2px;
-    font-weight: 700;
-    line-height: 1.35;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 19px;
   }
 
   .invoice-payment-box {
@@ -2033,10 +2042,10 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-payment-summary {
     color: #555b63;
-    font-family: "Arial Narrow", "Helvetica Neue Condensed", Helvetica, Arial, sans-serif;
-    font-size: 11px;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 13px;
     font-weight: 700;
-    line-height: 1.45;
+    line-height: 15px;
   }
 
   .invoice-payment-summary p {
@@ -2046,17 +2055,19 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-payment-summary span {
     font-family: Helvetica, Arial, sans-serif;
-    font-size: 9px;
+    font-size: 13px;
+    line-height: 19px;
+    font-weight: 500;
     color: #252b34;
     overflow-wrap: anywhere;
   }
 
   .invoice-charge-summary {
     color: #62676e;
-    font-family: "Arial Narrow", "Helvetica Neue Condensed", Helvetica, Arial, sans-serif;
-    font-size: 13.5px;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 13px;
     font-weight: 500;
-    line-height: 1.32;
+    line-height: 19px;
   }
 
   .invoice-charge-summary p {
@@ -2068,7 +2079,8 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-charge-summary span:last-child {
     color: #2f3540;
     font-family: Helvetica, Arial, sans-serif;
-    font-size: 10px;
+    font-size: 13px;
+    line-height: 19px;
   }
 
   .invoice-total-line {
@@ -2078,7 +2090,7 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-total-line strong:first-child {
     color: #555960;
-    font-family: "Arial Narrow", "Helvetica Neue Condensed", Helvetica, Arial, sans-serif;
+    font-family: Helvetica, Arial, sans-serif;
     font-size: 17px;
     font-weight: 900;
   }
@@ -2086,8 +2098,9 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-total-line strong:last-child {
     color: #2f3540;
     font-family: Helvetica, Arial, sans-serif;
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 900;
+    line-height: 19px;
   }
 
   .invoice-additional-charges {
@@ -2127,9 +2140,9 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-signature-area {
-    left: 590px;
+    left: 584px;
     top: 1013px;
-    width: 196px;
+    width: 202px;
     height: 94px;
   }
 
@@ -2144,33 +2157,33 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-signature-area::before {
     top: 0;
-    width: 156px;
+    width: 196px;
     height: 48px;
     border-bottom: 0;
   }
 
   .invoice-signature-area::after {
     top: 56px;
-    width: 156px;
+    width: 196px;
     height: 31px;
   }
 
   .invoice-signature-label {
-    left: -38px;
+    left: 8px;
     top: 16px;
-    width: 104px;
+    width: 76px;
     color: #101827;
     font-size: 10px;
     font-weight: 900;
     line-height: 1;
-    text-align: right;
+    text-align: left;
   }
 
   .invoice-signature-image {
-    left: 42px;
+    left: 84px;
     top: 5px;
     display: flex;
-    width: 146px;
+    width: 108px;
     height: 44px;
     align-items: center;
     justify-content: center;
@@ -2183,13 +2196,13 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-signature-image img {
-    max-width: 158px;
+    max-width: 108px;
     max-height: 40px;
     object-fit: contain;
   }
 
   .invoice-signature-date-label {
-    left: 40px;
+    left: 8px;
     top: 64px;
     color: #111;
     font-size: 9px;
@@ -2197,9 +2210,9 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-signature-date {
-    left: 72px;
+    left: 48px;
     top: 64px;
-    width: 108px;
+    width: 132px;
     height: 22px;
     color: #111;
     font-size: 9px;
