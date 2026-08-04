@@ -1856,7 +1856,7 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-logo-block p {
-    margin: 7px 0 0;
+    margin: 2px 0 0;
     color: #5a6068;
     font-size: 8px;
     font-weight: 700;
@@ -1916,7 +1916,7 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-address-panel {
     position: absolute;
     left: 26px;
-    top: 158px;
+    top: 166px;
     z-index: 2;
     display: grid;
     grid-template-columns: 1fr 2px 1fr;
@@ -2202,13 +2202,13 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-signature-date {
     left: 8px;
-    top: 64px;
+    top: 62px;
     width: 190px;
     height: 22px;
     color: #111;
     font-size: 9px;
     font-weight: 500;
-    line-height: 1.2;
+    line-height: 22px;
   }
 
   .invoice-warranty {
@@ -2259,7 +2259,7 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-acceptance-box {
     position: absolute;
     left: 26px;
-    top: 750px;
+    top: 692px;
     z-index: 2;
     width: 742px;
     min-height: 48px;
@@ -2282,7 +2282,7 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-warranty-note {
     position: absolute;
     left: 26px;
-    top: 836px;
+    top: 784px;
     z-index: 2;
     width: 704px;
     margin: 0;
