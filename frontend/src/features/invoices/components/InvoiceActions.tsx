@@ -3,7 +3,7 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Download, Eye, FileText, Link2, LoaderCircle, Pencil, Send, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Copy, Download, Eye, FileText, Link2, LoaderCircle, Pencil, Send, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -180,7 +180,7 @@ export function InvoiceActions({
   };
 
   const handleSignatureAction = async (
-    action: 'resend' | 'new-link',
+    action: 'resend' | 'new-link' | 'clone',
   ) => {
     setIsSignatureActionRunning(true);
 
@@ -188,18 +188,22 @@ export function InvoiceActions({
       const updatedInvoice =
         action === 'resend'
           ? await invoicesApi.resendSignatureRequest(order.id)
-          : await invoicesApi.generateNewSigningLink(order.id);
+          : action === 'new-link'
+            ? await invoicesApi.generateNewSigningLink(order.id)
+            : await invoicesApi.cloneSignedInvoice(order.id);
       setInvoice(updatedInvoice);
       onInvoiceCreated();
       toast.success(
         action === 'resend'
           ? 'Signature request sent'
-          : 'New signing link sent',
+          : action === 'new-link'
+            ? 'New signing link sent'
+            : 'Invoice cloned',
         getSignatureRequestToastMessage(updatedInvoice),
       );
     } catch (caughtError) {
       toast.error(
-        'Unable to send signing link',
+        action === 'clone' ? 'Unable to clone invoice' : 'Unable to send signing link',
         caughtError instanceof Error
           ? caughtError.message
           : 'Please try again in a moment.',
@@ -302,6 +306,22 @@ export function InvoiceActions({
                     Download Photo ID
                   </Button>
                 </>
+              ) : null}
+              {invoice.status === 'SIGNED' && canManageSignatureRequest ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isSignatureActionRunning}
+                  onClick={() => void handleSignatureAction('clone')}
+                >
+                  {isSignatureActionRunning ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  Clone
+                </Button>
               ) : null}
               {invoice.status !== 'SIGNED' && canManageSignatureRequest ? (
                 <>

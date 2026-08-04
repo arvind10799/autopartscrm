@@ -115,6 +115,21 @@ export const invoicesApi = {
     });
   },
 
+  async cloneSignedInvoice(
+    orderId: string,
+  ): Promise<InvoiceSignatureRequestResult> {
+    this.assertOrderId(orderId);
+
+    const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
+      `/api/orders/${orderId}/invoice/clone`,
+    );
+
+    return parseApiData(response, invoiceSignatureRequestResultSchema, {
+      emptyMessage: response.data.message || 'Clone invoice response was empty.',
+      invalidMessage: 'Clone invoice payload was invalid.',
+    });
+  },
+
   async getBySigningToken(token: string): Promise<PublicInvoiceRecord> {
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
       `/api/invoice-signing/${token}`,

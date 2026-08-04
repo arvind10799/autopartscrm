@@ -76,4 +76,13 @@ export class InvoicesController {
   ) {
     return this.invoicesService.generateNewSigningLink(params.id, user);
   }
+
+  @Roles(Role.ADMIN, Role.SALES)
+  @Post('clone')
+  cloneSignedInvoice(
+    @Param() params: UuidParamDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.invoicesService.cloneSignedInvoice(params.id, user);
+  }
 }

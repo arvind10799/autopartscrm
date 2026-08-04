@@ -249,6 +249,36 @@ export class InvoicesService {
     });
   }
 
+  async cloneSignedInvoice(orderId: string, user: AuthenticatedUser) {
+    const invoice = await this.findByOrderId(orderId, user);
+
+    if (invoice.status !== SIGNED_INVOICE_STATUS) {
+      throw new ConflictException('Only signed invoices can be cloned.');
+    }
+
+    const resetInvoice = await this.invoicesRepository.update(invoice.id, {
+      customerSignature: null,
+      customerSignatureImage: null,
+      signatureDate: null,
+      photoIdDocument: null,
+      photoIdFileName: null,
+      photoIdMimeType: null,
+      photoIdUploadedAt: null,
+      signedAt: null,
+      signatureIpAddress: null,
+      signatureTokenHash: null,
+      signatureTokenExpiresAt: null,
+      signatureRequestedAt: null,
+      signatureLastSentAt: null,
+      status: 'CREATED',
+      pdfStorageKey: null,
+    });
+
+    return this.issueSignatureRequest(resetInvoice.id, user, {
+      noteMessage: `Signed invoice cloned and signature request sent: ${resetInvoice.invoiceNumber}`,
+    });
+  }
+
   async findBySigningToken(token: string) {
     const invoice = await this.findInvoiceForToken(token);
     this.assertTokenCanBeViewed(invoice);
