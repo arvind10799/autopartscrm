@@ -172,7 +172,7 @@ try {
 NODE
 )"
 
-if [[ -f "/etc/letsencrypt/live/${APP_HOST}/fullchain.pem" && -f "/etc/letsencrypt/live/${APP_HOST}/privkey.pem" ]]; then
+if sudo test -f "/etc/letsencrypt/live/${APP_HOST}/fullchain.pem" && sudo test -f "/etc/letsencrypt/live/${APP_HOST}/privkey.pem"; then
   sudo tee /etc/nginx/conf.d/auto-parts-crm.conf >/dev/null <<EOF
 server {
     listen 80;
