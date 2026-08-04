@@ -686,79 +686,99 @@ function InvoiceDocument({ invoice }, ref) {
   return (
   <div ref={ref} className="invoice-document">
     <style>{INVOICE_DOCUMENT_CSS}</style>
-    <div className="invoice-page">
-      <InvoiceHeader title="PURCHASE INVOICE" invoice={invoice} showMeta />
-
-      <section className="invoice-address-grid">
-        <div className="invoice-address-left">
-          <InvoiceLabelValue label="Shipping Address" value={invoice.shippingAddress} />
-          <InvoiceLabelValue label="Shipping Vendor" value={invoice.shippingVendor || 'LTL'} inline />
-        </div>
-        <div className="invoice-address-divider" />
-        <div className="invoice-address-right">
-          <InvoiceLabelValue label="Customer Name" value={invoice.customerName} />
-          <InvoiceLabelValue label="Billing Address" value={invoice.billingAddress} />
-          <InvoiceLabelValue label="Contact Number" value={invoice.contactNumber} />
-        </div>
-      </section>
-
-      <p className="invoice-delivery">
+    <div className="invoice-page invoice-page--purchase">
+      <img
+        className="invoice-template-image"
+        src="/images/invoice-template/mee-invoice-template-1.png"
+        alt=""
+      />
+      <InvoiceValue className="invoice-meta-values">
+        {invoice.invoiceNumber}
+        {'\n'}
+        {formatInvoiceDate(invoice.invoiceDate)}
+        {'\n'}
+        {invoice.salesAssistant || ''}
+      </InvoiceValue>
+      <InvoiceValue className="invoice-shipping-address">
+        {invoice.shippingAddress || ''}
+      </InvoiceValue>
+      <InvoiceValue className="invoice-shipping-vendor">
+        {invoice.shippingVendor || 'LTL'}
+      </InvoiceValue>
+      <InvoiceValue className="invoice-customer-details">
+        {invoice.customerName || ''}
+        {'\n'}
+        {invoice.billingAddress || ''}
+        {'\n\n'}
+        {invoice.contactNumber || ''}
+      </InvoiceValue>
+      <InvoiceValue className="invoice-delivery-value">
         Delivery timeline is {invoice.deliveryTimeline}, may vary due to distance and shipping vendor
-      </p>
-
-      <section className="invoice-items-box">
-        <div className="invoice-items-header">
-          <span>Item Descriptions</span>
-          <span>Qty</span>
-          <span>Amount</span>
-        </div>
-        <div className="invoice-items-row">
-          <div>
-            <p>{invoice.itemDescription}</p>
-            <p>{invoice.vehiclePartDescription || ''}</p>
-          </div>
-          <p>{invoice.quantity}</p>
-          <p>{formatMoney(invoice.saleAmount)}</p>
-        </div>
-      </section>
-
-      <section className="invoice-payment-box">
-        <div className="invoice-payment-info">
-          <InvoiceLabelValue label="Payment Status" value={invoice.paymentStatus} compact />
-          <InvoiceLabelValue label="Date" value={invoice.paymentDate ? formatInvoiceDate(invoice.paymentDate) : ''} compact />
-          <InvoiceLabelValue label="Payment Source" value={invoice.paymentSource} compact />
-          <div className="invoice-extra-notice">
-            <p>Additional charges will be applicable :</p>
-            <ul>
-              <li>If <span>unloading equipment</span> is unavailable at the time of delivery ( Freight&apos;s only)</li>
-              <li><span>Reschedule delivery</span> ( Missed or reattempt delivery )</li>
-            </ul>
-          </div>
-        </div>
-        <div className="invoice-charge-info">
-          <InvoiceChargeLine label="Shipping Cost" value={invoice.shippingCost} />
-          <InvoiceChargeLine label="Sales Taxes" value={invoice.salesTaxes} />
-          <InvoiceChargeLine label="Core Charge" value={invoice.coreCharge} />
-          <div className="invoice-total">
-            <strong>TOTAL</strong>
-            <strong>{formatMoney(invoice.totalAmount)}</strong>
-          </div>
-        </div>
-      </section>
-
+      </InvoiceValue>
+      <InvoiceValue className="invoice-item-description">
+        {invoice.itemDescription}
+      </InvoiceValue>
+      <InvoiceValue className="invoice-item-qty">{invoice.quantity}</InvoiceValue>
+      <InvoiceValue className="invoice-item-amount">
+        {formatMoney(invoice.saleAmount)}
+      </InvoiceValue>
+      <InvoiceValue className="invoice-payment-values">
+        {invoice.paymentStatus || ''}
+        {'\n'}
+        {invoice.paymentDate ? formatInvoiceDate(invoice.paymentDate) : ''}
+        {'\n'}
+        {invoice.paymentSource || ''}
+      </InvoiceValue>
+      <InvoiceValue className="invoice-charge-values">
+        {formatMoney(invoice.shippingCost)}
+        {'\n'}
+        {formatMoney(invoice.salesTaxes)}
+        {'\n'}
+        {formatMoney(invoice.coreCharge)}
+      </InvoiceValue>
+      <InvoiceValue className="invoice-total-value">
+        {formatMoney(invoice.totalAmount)}
+      </InvoiceValue>
       <InvoiceSignature invoice={invoice} />
-      <InvoiceFooter />
     </div>
 
-    <div className="invoice-page">
-      <InvoiceHeader title="WARRANTY - TERMS & CONDITION" invoice={invoice} />
+    <div className="invoice-page invoice-page--warranty">
+      <img
+        className="invoice-template-image"
+        src="/images/invoice-template/mee-invoice-template-2.png"
+        alt=""
+      />
       <WarrantyTerms warrantyPartsOnly={invoice.warrantyPartsOnly} />
+      <div className="invoice-acceptance-box">
+        <strong>Acceptance:</strong>
+        <span>
+          I have read, understood, and agree to these terms. Signing confirms
+          proper installation and maintenance compliance.
+        </span>
+      </div>
+      <p className="invoice-warranty-note">
+        <strong>Note :</strong> MEE AUTO PARTS is not responsible for improper
+        installation or usage, labor charges, loss of income, wages, salary, or
+        car rental
+      </p>
+      {invoice.photoIdRequired ? (
+        <div className="invoice-photo-id-pill">📎 Photo ID - Front copy - Attachment</div>
+      ) : null}
       <InvoiceSignature invoice={invoice} />
-      <InvoiceFooter />
     </div>
   </div>
   );
 });
+
+function InvoiceValue({
+  className,
+  children,
+}: {
+  className: string;
+  children: React.ReactNode;
+}) {
+  return <div className={cn('invoice-field-value', className)}>{children}</div>;
+}
 
 function InvoiceHeader({
   title,
@@ -823,19 +843,17 @@ function InvoiceChargeLine({ label, value }: { label: string; value: number }) {
 function InvoiceSignature({ invoice }: { invoice: InvoiceRecord }) {
   return (
     <section className="invoice-signature-area">
-      <strong>Customer Signature :</strong>
-      <div className="invoice-signature-box">
-        <div className="invoice-signature-line">
+      <div className="invoice-signature-image">
           {invoice.customerSignatureImage ? (
             <img src={invoice.customerSignatureImage} alt="Customer signature" />
           ) : (
             invoice.customerSignature || ''
           )}
-        </div>
-        <div className="invoice-signature-date">
-          {invoice.signatureDate ? formatSignatureDate(invoice.signatureDate) : ''}
-        </div>
       </div>
+      <span className="invoice-signature-date-label">Date:</span>
+      <span className="invoice-signature-date">
+        {invoice.signatureDate ? formatSignatureDate(invoice.signatureDate) : ''}
+      </span>
     </section>
   );
 }
@@ -1728,8 +1746,8 @@ const LEGACY_INVOICE_DOCUMENT_CSS = `
 const INVOICE_DOCUMENT_CSS = `
   .invoice-document {
     width: 794px;
-    color: #5f6067;
-    font-family: Arial, Helvetica, sans-serif;
+    color: #55575d;
+    font-family: Helvetica, Arial, sans-serif;
     background: transparent;
   }
 
@@ -1739,8 +1757,7 @@ const INVOICE_DOCUMENT_CSS = `
     height: 1123px;
     margin: 0 0 18px;
     overflow: hidden;
-    background: #e5e1e1;
-    border-top: 6px solid #9d9d9d;
+    background: #e4dfdf;
     page-break-after: always;
   }
 
@@ -1748,348 +1765,276 @@ const INVOICE_DOCUMENT_CSS = `
     margin-bottom: 0;
   }
 
-  .invoice-header {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    column-gap: 26px;
-    margin: 18px 24px 0;
-    padding-bottom: 10px;
-    border-bottom: 3px solid #9c9c9c;
-  }
-
-  .invoice-logo-block {
-    padding-top: 4px;
-    text-align: center;
-  }
-
-  .invoice-logo {
+  .invoice-template-image {
+    position: absolute;
+    inset: 0;
     display: block;
-    width: 345px;
-    height: auto;
-    margin: 0 auto 12px;
+    width: 794px;
+    height: 1123px;
+    object-fit: fill;
+    pointer-events: none;
+    user-select: none;
   }
 
-  .invoice-logo-block p {
-    margin: 0;
-    color: #67686e;
-    font-size: 8.8px;
+  .invoice-field-value {
+    position: absolute;
+    z-index: 2;
+    overflow: hidden;
+    color: #2f3541;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0;
-  }
-
-  .invoice-title-block h1 {
-    margin: 0 0 18px;
-    color: rgba(255, 255, 255, 0.46);
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 25px;
-    font-weight: 900;
-    letter-spacing: -0.055em;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .invoice-meta {
-    display: grid;
-    grid-template-columns: 116px 1fr;
-    row-gap: 14px;
-    color: #5f6067;
-    font-size: 10.5px;
-    line-height: 1;
-  }
-
-  .invoice-meta strong,
-  .invoice-label-value strong,
-  .invoice-items-header,
-  .invoice-total strong:first-child {
-    color: #5b5c62;
-    font-weight: 900;
-  }
-
-  .invoice-meta span,
-  .invoice-label-value span,
-  .invoice-items-row,
-  .invoice-charge-line span:last-child,
-  .invoice-total strong:last-child {
-    color: #111827;
-    font-weight: 500;
-  }
-
-  .invoice-address-grid {
-    display: grid;
-    grid-template-columns: 1fr 2px 1fr;
-    gap: 18px;
-    min-height: 136px;
-    margin: 10px 24px 0;
-  }
-
-  .invoice-address-left,
-  .invoice-address-right {
-    display: grid;
-    align-content: start;
-    gap: 52px;
-    padding: 0 6px;
-  }
-
-  .invoice-address-right {
-    gap: 12px;
-  }
-
-  .invoice-address-divider {
-    width: 2px;
-    height: 114px;
-    margin-top: 18px;
-    background: #9c9c9c;
-  }
-
-  .invoice-label-value {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    column-gap: 8px;
-    align-items: start;
-    min-width: 0;
-    color: #5b5c62;
-    font-size: 10.5px;
-    line-height: 1.24;
-  }
-
-  .invoice-label-value--inline {
-    grid-template-columns: 1fr max-content;
-  }
-
-  .invoice-label-value--compact {
-    grid-template-columns: 98px 1fr;
-    column-gap: 4px;
-    font-size: 9px;
-    line-height: 1.18;
-  }
-
-  .invoice-label-value span {
-    min-width: 0;
+    line-height: 1.28;
+    white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
 
-  .invoice-delivery {
-    margin: 0 24px;
-    padding-bottom: 10px;
-    border-bottom: 3px solid #9c9c9c;
-    color: #67686d;
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    line-height: 1;
+  .invoice-meta-values {
+    left: 607px;
+    top: 49px;
+    width: 150px;
+    height: 66px;
+    color: #3f444d;
+    font-size: 10px;
+    line-height: 1.62;
   }
 
-  .invoice-items-box,
-  .invoice-payment-box {
-    margin: 10px 24px 0;
-    border: 2px solid #232323;
-    border-radius: 10px;
-    background: #f9f9f9;
+  .invoice-shipping-address {
+    left: 174px;
+    top: 184px;
+    width: 198px;
+    height: 78px;
   }
 
-  .invoice-items-box {
-    height: 135px;
-  }
-
-  .invoice-items-header,
-  .invoice-items-row {
-    display: grid;
-    grid-template-columns: 1fr 78px 170px;
-    column-gap: 10px;
-    padding: 8px 16px 0;
-  }
-
-  .invoice-items-header {
-    color: #606168;
-    font-size: 17px;
-    font-weight: 900;
-    letter-spacing: -0.035em;
-    line-height: 1;
-  }
-
-  .invoice-items-header span:nth-child(2),
-  .invoice-items-header span:nth-child(3),
-  .invoice-items-row > p:nth-child(2),
-  .invoice-items-row > p:nth-child(3) {
+  .invoice-shipping-vendor {
+    left: 338px;
+    top: 287px;
+    width: 52px;
+    height: 18px;
     text-align: center;
   }
 
-  .invoice-items-row {
-    padding-top: 20px;
-    color: #111827;
-    font-size: 10px;
-    font-weight: 500;
-    line-height: 1.1;
+  .invoice-customer-details {
+    left: 520px;
+    top: 184px;
+    width: 232px;
+    height: 105px;
+    line-height: 1.34;
   }
 
-  .invoice-items-row p {
-    margin: 0 0 14px;
-  }
-
-  .invoice-payment-box {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    min-height: 135px;
-    padding: 8px 16px 10px;
-  }
-
-  .invoice-payment-info {
-    min-width: 0;
-  }
-
-  .invoice-charge-info {
-    padding-left: 20px;
-    color: #66676d;
+  .invoice-delivery-value {
+    left: 28px;
+    top: 314px;
+    width: 732px;
+    height: 18px;
+    color: #5f6067;
     font-size: 13px;
     font-weight: 500;
+    text-align: center;
   }
 
-  .invoice-charge-line {
-    display: grid;
-    grid-template-columns: 1fr 76px;
-    margin: 0 0 6px;
-    line-height: 1;
+  .invoice-item-description {
+    left: 33px;
+    top: 375px;
+    width: 390px;
+    height: 88px;
+    font-size: 9.5px;
   }
 
-  .invoice-extra-notice {
-    margin-top: 18px;
-    color: #55575d;
-    font-size: 8.5px;
-    line-height: 1.3;
+  .invoice-item-qty {
+    left: 458px;
+    top: 377px;
+    width: 54px;
+    height: 22px;
+    text-align: center;
   }
 
-  .invoice-extra-notice p {
-    margin: 0 0 8px;
-    color: #ff1f28;
-    font-size: 10.5px;
-    text-decoration: underline;
+  .invoice-item-amount {
+    left: 614px;
+    top: 378px;
+    width: 74px;
+    height: 22px;
+    text-align: center;
   }
 
-  .invoice-extra-notice ul {
-    margin: 0;
-    padding-left: 16px;
+  .invoice-payment-values {
+    left: 149px;
+    top: 499px;
+    width: 260px;
+    height: 60px;
+    font-size: 9px;
+    line-height: 1.55;
   }
 
-  .invoice-extra-notice li {
-    margin-bottom: 4px;
+  .invoice-charge-values {
+    left: 576px;
+    top: 499px;
+    width: 78px;
+    height: 60px;
+    color: #4d5561;
+    font-size: 10px;
+    line-height: 1.62;
   }
 
-  .invoice-extra-notice span {
-    color: #ff1f28;
+  .invoice-total-value {
+    left: 546px;
+    top: 563px;
+    width: 96px;
+    height: 24px;
+    color: #3f444d;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.1;
+    text-align: center;
   }
 
-  .invoice-total {
-    display: grid;
-    grid-template-columns: 1fr 86px;
-    margin-top: 40px;
-    color: #4f5056;
-    font-size: 11px;
-  }
-
-  .invoice-total strong:first-child {
-    font-size: 15px;
-    letter-spacing: -0.02em;
+  .invoice-signature-area,
+  .invoice-signature-image,
+  .invoice-signature-date-label,
+  .invoice-signature-date {
+    position: absolute;
+    z-index: 3;
   }
 
   .invoice-signature-area {
-    position: absolute;
-    right: 18px;
-    bottom: 22px;
-    display: grid;
-    grid-template-columns: 170px 185px;
-    align-items: start;
-    color: #17172f;
+    left: 600px;
+    top: 1026px;
+    width: 184px;
+    height: 84px;
   }
 
-  .invoice-signature-area > strong {
-    padding-top: 13px;
-    text-align: right;
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: -0.01em;
-  }
-
-  .invoice-signature-box {
-    height: 82px;
-    border-left: 3px solid #111;
-    border-right: 3px solid #111;
-  }
-
-  .invoice-signature-line {
-    height: 50px;
-    border-top: 3px solid #111;
+  .invoice-signature-image {
+    left: 8px;
+    top: 4px;
+    display: flex;
+    width: 168px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
     color: #111;
     font-family: "Brush Script MT", cursive;
     font-size: 24px;
-    line-height: 50px;
+    font-weight: 500;
+    line-height: 1;
     text-align: center;
   }
 
-  .invoice-signature-line img {
-    max-width: 154px;
-    max-height: 44px;
+  .invoice-signature-image img {
+    max-width: 158px;
+    max-height: 38px;
     object-fit: contain;
-    vertical-align: middle;
+  }
+
+  .invoice-signature-date-label {
+    left: 0;
+    top: 55px;
+    color: #111;
+    font-size: 9px;
+    font-weight: 700;
   }
 
   .invoice-signature-date {
-    height: 30px;
-    border-bottom: 3px solid #111;
+    left: 38px;
+    top: 55px;
+    width: 136px;
+    height: 22px;
     color: #111;
-    font-size: 12px;
-    line-height: 30px;
-    text-align: center;
-  }
-
-  .invoice-footer {
-    position: absolute;
-    left: 16px;
-    bottom: 12px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    color: #62666f;
-    font-size: 16px;
+    font-size: 9px;
     font-weight: 500;
-    letter-spacing: -0.01em;
+    line-height: 1.2;
   }
 
   .invoice-warranty {
-    margin: 48px 42px 0;
-    color: #5b5c61;
-    font-size: 12.6px;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    line-height: 1.36;
+    position: absolute;
+    left: 46px;
+    top: 204px;
+    z-index: 2;
+    width: 704px;
+    min-height: 350px;
+    padding: 16px 14px;
+    border: 3px solid rgba(151, 160, 169, 0.72);
+    border-radius: 8px;
+    background: rgba(232, 229, 229, 0.88);
+    color: #5d6068;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.23;
   }
 
   .invoice-warranty h2 {
-    margin: 0 0 30px;
-    color: #55565b;
-    font-size: 14px;
+    margin: 0 0 16px;
+    color: #5f626a;
+    font-size: 11px;
     font-weight: 900;
-    letter-spacing: -0.015em;
   }
 
   .invoice-warranty h3 {
-    margin: 18px 0 3px;
-    color: #55565b;
-    font-size: 12.8px;
+    margin: 12px 0 2px;
+    color: #5a5d65;
+    font-size: 11px;
     font-weight: 900;
-    letter-spacing: -0.01em;
   }
 
   .invoice-warranty ul {
     margin: 0;
-    padding-left: 16px;
+    padding-left: 11px;
   }
 
   .invoice-warranty li {
-    margin: 2px 0;
+    margin: 1px 0;
   }
 
   .invoice-warranty p {
-    margin: 28px 0 0;
+    display: none;
+  }
+
+  .invoice-acceptance-box {
+    position: absolute;
+    left: 48px;
+    top: 755px;
+    z-index: 2;
+    width: 694px;
+    min-height: 50px;
+    padding: 12px 12px 8px;
+    border: 2px solid #111;
+    border-radius: 8px;
+    background: rgba(249, 249, 249, 0.92);
+    color: #101827;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .invoice-acceptance-box strong {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 900;
+  }
+
+  .invoice-warranty-note {
+    position: absolute;
+    left: 48px;
+    top: 832px;
+    z-index: 2;
+    width: 660px;
+    margin: 0;
+    color: #666973;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1.28;
+  }
+
+  .invoice-photo-id-pill {
+    position: absolute;
+    left: 14px;
+    bottom: 20px;
+    z-index: 4;
+    border-radius: 4px;
+    background: rgba(255, 250, 216, 0.96);
+    padding: 4px 7px;
+    color: #111;
+    font-size: 10px;
+    font-weight: 800;
   }
 
   @media print {

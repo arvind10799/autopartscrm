@@ -316,6 +316,77 @@ export class InvoiceMailService {
     document: PDFKit.PDFDocument,
     invoice: SignedMailInvoice,
   ) {
+    this.startTemplateInvoicePage(document, 1);
+    this.drawField(document, invoice.invoiceNumber, 455, 37, 112, 12);
+    this.drawField(document, this.formatDate(new Date()), 455, 54, 112, 12);
+    this.drawField(document, invoice.salesAssistant ?? '', 455, 72, 112, 12);
+    this.drawField(document, invoice.shippingAddress ?? '', 130, 138, 150, 60);
+    this.drawField(document, invoice.shippingVendor || 'LTL', 253, 215, 40, 14, {
+      align: 'center',
+    });
+    this.drawField(
+      document,
+      [
+        invoice.customerName || '',
+        invoice.billingAddress || '',
+        '',
+        invoice.contactNumber || '',
+      ].join('\n'),
+      390,
+      138,
+      174,
+      80,
+    );
+    this.drawField(
+      document,
+      `Delivery timeline is ${invoice.deliveryTimeline}, may vary due to distance and shipping vendor`,
+      21,
+      236,
+      550,
+      16,
+      { align: 'center', font: 'Helvetica', fontSize: 9.5 },
+    );
+    this.drawField(document, invoice.itemDescription, 25, 281, 292, 66);
+    this.drawField(document, String(invoice.quantity), 344, 283, 40, 16, {
+      align: 'center',
+    });
+    this.drawField(document, this.formatMoney(invoice.saleAmount), 461, 284, 56, 16, {
+      align: 'center',
+    });
+    this.drawField(
+      document,
+      [
+        invoice.paymentStatus || '',
+        invoice.paymentDate ? this.formatDate(invoice.paymentDate) : '',
+        invoice.paymentSource || '',
+      ].join('\n'),
+      112,
+      374,
+      195,
+      45,
+      { fontSize: 7.5, lineGap: 3 },
+    );
+    this.drawField(
+      document,
+      [
+        this.formatMoney(invoice.shippingCost),
+        this.formatMoney(invoice.salesTaxes),
+        this.formatMoney(invoice.coreCharge),
+      ].join('\n'),
+      432,
+      374,
+      58,
+      45,
+      { fontSize: 8, lineGap: 4 },
+    );
+    this.drawField(document, this.formatMoney(invoice.totalAmount), 410, 422, 72, 18, {
+      align: 'center',
+      font: 'Helvetica-Bold',
+      fontSize: 10,
+    });
+    this.drawSignature(document, invoice);
+    return;
+
     this.startInvoicePage(document, 'PURCHASE INVOICE', invoice, true);
 
     const left = 30;
@@ -441,6 +512,67 @@ export class InvoiceMailService {
     document: PDFKit.PDFDocument,
     invoice: SignedMailInvoice,
   ) {
+    this.startTemplateInvoicePage(document, 2);
+
+    document
+      .roundedRect(34, 153, 528, 262, 6)
+      .fillOpacity(0.88)
+      .fillAndStroke('#e8e5e5', '#9aa2ab')
+      .fillOpacity(1);
+
+    let templateY = 165;
+    document
+      .font('Helvetica-Bold')
+      .fontSize(8.3)
+      .fillColor('#5f626a')
+      .text('Warranty | Returns | Cancellation', 46, templateY);
+
+    templateY += 28;
+    templateY = this.drawWarrantySection(
+      document,
+      46,
+      templateY,
+      'Warranty ( parts only )',
+      this.parseWarrantyLines(invoice.warrantyPartsOnly),
+    );
+    templateY = this.drawWarrantySection(document, 46, templateY + 8, 'Installation & Returns', [
+      'Installation: Engines and transmissions must be installed within 15 days from the day of delivery by a licensed professional at a licensed repair facility, following manufacturer guidelines.',
+      'All parts must be installed within 15 days of delivery. Failure to complete the installation within this timeframe will void any warranty claims.',
+      'Defective Parts: MEE Auto Parts will exchange defective parts or issue a refund only if the part is out of stock.',
+      'Returns: Parts must be returned in their original condition.',
+    ]);
+    this.drawWarrantySection(document, 46, templateY + 8, 'Cancellation', [
+      'Cancellation request after payment confirmation will have standard 25% restocking fee remainder will be refunded to the source payment method except wire payments, also additional shipping charges will apply for any requests post 24 hrs from payment confirmation.',
+    ]);
+
+    document
+      .roundedRect(36, 566, 520, 38, 6)
+      .fillAndStroke('#f9f9f9', '#111111')
+      .font('Helvetica-Bold')
+      .fontSize(7.5)
+      .fillColor('#101827')
+      .text('Acceptance:', 46, 577)
+      .text(
+        'I have read, understood, and agree to these terms. Signing confirms proper installation and maintenance compliance.',
+        46,
+        592,
+        { width: 500 },
+      );
+
+    document
+      .font('Helvetica-Bold')
+      .fontSize(8)
+      .fillColor('#666973')
+      .text(
+        'Note : MEE AUTO PARTS is not responsible for improper installation or usage, labor charges, loss of income, wages, salary, or car rental',
+        36,
+        624,
+        { width: 500 },
+      );
+
+    this.drawSignature(document, invoice);
+    return;
+
     this.startInvoicePage(document, 'WARRANTY - TERMS & CONDITION', invoice, false);
 
     const x = 40;
@@ -528,6 +660,51 @@ export class InvoiceMailService {
     }
   }
 
+  private startTemplateInvoicePage(
+    document: PDFKit.PDFDocument,
+    pageNumber: 1 | 2,
+  ) {
+    document.addPage({ margin: 0, size: 'A4' });
+    const templatePath = this.findInvoiceTemplatePath(pageNumber);
+
+    if (existsSync(templatePath)) {
+      document.image(templatePath, 0, 0, {
+        width: 595.28,
+        height: 841.89,
+      });
+      return;
+    }
+
+    document.rect(0, 0, 595.28, 841.89).fill('#e4dfdf');
+    document.rect(0, 0, 595.28, 5).fill('#9d9d9d');
+  }
+
+  private drawField(
+    document: PDFKit.PDFDocument,
+    value: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    options: {
+      align?: 'left' | 'center' | 'right';
+      font?: 'Helvetica' | 'Helvetica-Bold';
+      fontSize?: number;
+      lineGap?: number;
+    } = {},
+  ) {
+    document
+      .font(options.font ?? 'Helvetica-Bold')
+      .fontSize(options.fontSize ?? 7.5)
+      .fillColor('#2f3541')
+      .text(value, x, y, {
+        align: options.align ?? 'left',
+        height,
+        lineGap: options.lineGap ?? 1.5,
+        width,
+      });
+  }
+
   private drawMetaLine(
     document: PDFKit.PDFDocument,
     label: string,
@@ -594,48 +771,33 @@ export class InvoiceMailService {
   }
 
   private drawSignature(document: PDFKit.PDFDocument, invoice: SignedMailInvoice) {
-    const x = 395;
-    const y = 756;
-    document
-      .font('Helvetica-Bold')
-      .fontSize(11)
-      .fillColor('#17172f')
-      .text('Customer Signature :', x - 140, y + 15, { width: 135, align: 'right' })
-      .moveTo(x, y)
-      .lineTo(x + 180, y)
-      .moveTo(x, y)
-      .lineTo(x, y + 82)
-      .moveTo(x + 180, y)
-      .lineTo(x + 180, y + 82)
-      .moveTo(x, y + 82)
-      .lineTo(x + 180, y + 82)
-      .lineWidth(2)
-      .strokeColor('#111111')
-      .stroke();
+    const x = 450;
+    const y = 769;
 
     const signatureImage = this.parseDataUrlImage(invoice.customerSignatureImage);
     if (signatureImage) {
-      document.image(signatureImage.buffer, x + 18, y + 10, {
-        fit: [142, 38],
+      document.image(signatureImage.buffer, x + 8, y + 4, {
+        fit: [126, 30],
       });
     } else if (invoice.customerSignature) {
       document
         .font('Helvetica-Oblique')
         .fontSize(18)
         .fillColor('#111111')
-        .text(invoice.customerSignature, x + 10, y + 18, {
-          width: 160,
+        .text(invoice.customerSignature, x + 6, y + 8, {
+          width: 126,
           align: 'center',
         });
     }
 
     document
-      .font('Helvetica')
-      .fontSize(9)
+      .font('Helvetica-Bold')
+      .fontSize(7)
       .fillColor('#111111')
-      .text(invoice.signatureDate ? this.formatShortDate(invoice.signatureDate) : '', x, y + 56, {
-        width: 180,
-        align: 'center',
+      .text('Date:', x, y + 41)
+      .font('Helvetica')
+      .text(invoice.signatureDate ? this.formatShortDate(invoice.signatureDate) : '', x + 28, y + 41, {
+        width: 100,
       });
   }
 
@@ -654,6 +816,21 @@ export class InvoiceMailService {
     title: string,
     items: string[],
   ) {
+    document
+      .font('Helvetica-Bold')
+      .fontSize(7.8)
+      .fillColor('#55565b')
+      .text(title, x, y);
+
+    let templateNextY = y + 12;
+    document.font('Helvetica').fontSize(7.2).fillColor('#55565b');
+    for (const item of items) {
+      document.text(`- ${item}`, x + 8, templateNextY, { width: 500 });
+      templateNextY = document.y + 1.5;
+    }
+
+    return templateNextY;
+
     document
       .font('Helvetica-Bold')
       .fontSize(10)
@@ -712,7 +889,11 @@ export class InvoiceMailService {
     }).format(value);
   }
 
-  private formatDate(value: Date): string {
+  private formatDate(value: Date | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+
     return value
       .toLocaleDateString('en-US', {
         day: '2-digit',
@@ -731,6 +912,17 @@ export class InvoiceMailService {
     const candidatePaths = [
       join(cwd, 'frontend', 'public', 'images', 'invoice-logo.png'),
       join(cwd, '..', 'frontend', 'public', 'images', 'invoice-logo.png'),
+    ];
+
+    return candidatePaths.find((candidatePath) => existsSync(candidatePath)) ?? candidatePaths[0];
+  }
+
+  private findInvoiceTemplatePath(pageNumber: 1 | 2): string {
+    const cwd = process.cwd();
+    const fileName = `mee-invoice-template-${pageNumber}.png`;
+    const candidatePaths = [
+      join(cwd, 'frontend', 'public', 'images', 'invoice-template', fileName),
+      join(cwd, '..', 'frontend', 'public', 'images', 'invoice-template', fileName),
     ];
 
     return candidatePaths.find((candidatePath) => existsSync(candidatePath)) ?? candidatePaths[0];
