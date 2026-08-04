@@ -1833,12 +1833,12 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-header {
     position: absolute;
-    left: 58px;
+    left: 48px;
     top: 22px;
     z-index: 2;
     display: grid;
-    grid-template-columns: 430px 262px;
-    width: 692px;
+    grid-template-columns: 420px 284px;
+    width: 704px;
     min-height: 126px;
     align-items: start;
   }
@@ -1889,7 +1889,7 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-meta {
     display: grid;
-    grid-template-columns: 118px 1fr;
+    grid-template-columns: 142px 1fr;
     min-height: 74px;
     margin-left: auto;
     background: rgba(244, 243, 237, 0.62);
@@ -1903,6 +1903,7 @@ const INVOICE_DOCUMENT_CSS = `
     font-size: 13px;
     font-weight: 800;
     line-height: 15px;
+    white-space: nowrap;
   }
 
   .invoice-meta span {
@@ -1914,12 +1915,12 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-address-panel {
     position: absolute;
-    left: 58px;
+    left: 48px;
     top: 160px;
     z-index: 2;
     display: grid;
     grid-template-columns: 1fr 2px 1fr;
-    width: 692px;
+    width: 704px;
     min-height: 112px;
     border-top: 4px solid #929293;
   }
@@ -1956,6 +1957,7 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-payment-summary strong {
     color: #555b63;
     font-weight: 900;
+    white-space: nowrap;
   }
 
   .invoice-address-cell span {
@@ -1970,10 +1972,10 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-delivery-note {
     position: absolute;
-    left: 58px;
+    left: 48px;
     top: 280px;
     z-index: 2;
-    width: 692px;
+    width: 704px;
     margin: 0;
     padding-bottom: 8px;
     border-bottom: 4px solid #929293;
@@ -1987,9 +1989,9 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-item-box,
   .invoice-payment-box {
     position: absolute;
-    left: 58px;
+    left: 48px;
     z-index: 2;
-    width: 692px;
+    width: 704px;
     border: 2px solid #111;
     border-radius: 8px;
     background: rgba(252, 252, 250, 0.72);
@@ -2036,7 +2038,7 @@ const INVOICE_DOCUMENT_CSS = `
     top: 449px;
     height: 142px;
     display: grid;
-    grid-template-columns: 1fr 246px;
+    grid-template-columns: 1fr 252px;
     padding: 12px;
   }
 
@@ -2050,7 +2052,7 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-payment-summary p {
     display: grid;
-    grid-template-columns: 102px 1fr;
+    grid-template-columns: 132px 1fr;
   }
 
   .invoice-payment-summary span {
@@ -2140,9 +2142,9 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-signature-area {
-    left: 584px;
+    left: 574px;
     top: 1013px;
-    width: 202px;
+    width: 212px;
     height: 94px;
   }
 
@@ -2157,33 +2159,26 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-signature-area::before {
     top: 0;
-    width: 196px;
+    width: 206px;
     height: 48px;
     border-bottom: 0;
   }
 
   .invoice-signature-area::after {
     top: 56px;
-    width: 196px;
+    width: 206px;
     height: 31px;
   }
 
   .invoice-signature-label {
-    left: 8px;
-    top: 16px;
-    width: 76px;
-    color: #101827;
-    font-size: 10px;
-    font-weight: 900;
-    line-height: 1;
-    text-align: left;
+    display: none;
   }
 
   .invoice-signature-image {
-    left: 84px;
+    left: 8px;
     top: 5px;
     display: flex;
-    width: 108px;
+    width: 190px;
     height: 44px;
     align-items: center;
     justify-content: center;
@@ -2196,23 +2191,19 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-signature-image img {
-    max-width: 108px;
+    max-width: 190px;
     max-height: 40px;
     object-fit: contain;
   }
 
   .invoice-signature-date-label {
-    left: 8px;
-    top: 64px;
-    color: #111;
-    font-size: 9px;
-    font-weight: 700;
+    display: none;
   }
 
   .invoice-signature-date {
-    left: 48px;
+    left: 8px;
     top: 64px;
-    width: 132px;
+    width: 188px;
     height: 22px;
     color: #111;
     font-size: 9px;
