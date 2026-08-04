@@ -494,6 +494,15 @@ export class InvoiceMailService {
     document.rect(0, 0, 595.28, 841.89).fill('#e5e1e1');
     document.rect(0, 0, 595.28, 5).fill('#9d9d9d');
 
+    const watermarkPath = this.findInvoiceWatermarkPath();
+    if (existsSync(watermarkPath)) {
+      document
+        .save()
+        .opacity(0.08)
+        .image(watermarkPath, 92, 190, { width: 412 })
+        .restore();
+    }
+
     const logoPath = this.findInvoiceLogoPath();
     if (existsSync(logoPath)) {
       document.image(logoPath, 70, 28, { width: 260 });
@@ -735,6 +744,31 @@ export class InvoiceMailService {
     const candidatePaths = [
       join(cwd, 'frontend', 'public', 'images', 'invoice-logo.png'),
       join(cwd, '..', 'frontend', 'public', 'images', 'invoice-logo.png'),
+    ];
+
+    return candidatePaths.find((candidatePath) => existsSync(candidatePath)) ?? candidatePaths[0];
+  }
+
+  private findInvoiceWatermarkPath(): string {
+    const cwd = process.cwd();
+    const candidatePaths = [
+      join(
+        cwd,
+        'frontend',
+        'public',
+        'images',
+        'invoice-template',
+        'mee-auto-parts-watermark.png',
+      ),
+      join(
+        cwd,
+        '..',
+        'frontend',
+        'public',
+        'images',
+        'invoice-template',
+        'mee-auto-parts-watermark.png',
+      ),
     ];
 
     return candidatePaths.find((candidatePath) => existsSync(candidatePath)) ?? candidatePaths[0];
