@@ -2,9 +2,10 @@
 
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
-import { CheckCircle2, Download, Eye, FileText, Link2, LoaderCircle, Pencil, Send, X } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, CheckCircle2, Download, Eye, FileText, Link2, LoaderCircle, Pencil, Send, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { invoicesApi } from '@/features/invoices/api/invoices-api';
@@ -236,16 +237,28 @@ export function InvoiceActions({
   return (
     <>
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <FileText className="h-5 w-5 text-primary" />
-            Invoice Management
-          </CardTitle>
-          <CardDescription>
-            Generate, view, and download the purchase invoice for this order.
-          </CardDescription>
+        <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1.5">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="h-4 w-4 text-primary" />
+              Invoice Management
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Generate, view, and download the purchase invoice.
+            </CardDescription>
+          </div>
+          <Link
+            href="/orders"
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'sm' }),
+              'h-8 shrink-0 rounded-full px-3 text-xs',
+            )}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to orders
+          </Link>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-1">
           {invoice ? (
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="success" className="gap-1">

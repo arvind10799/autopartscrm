@@ -39,7 +39,6 @@ import type {
   OrderNote,
   OrderShipment,
   OrderShipmentStatus,
-  OrderStatus,
 } from '../types/order.types';
 
 type TimelineEntry = {
@@ -136,41 +135,6 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
   return (
     <section className="space-y-6">
-      <Card>
-        <CardHeader className="space-y-4">
-          <Link
-            href="/orders"
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-fit px-0')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to orders
-          </Link>
-
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0 space-y-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <CardTitle className="break-words text-3xl sm:text-[2rem]">
-                  {order.orderNumber}
-                </CardTitle>
-                <OrderStatusBadge status={order.status} />
-              </div>
-              <CardDescription>
-                {order.customerName} ordered {order.partDescription}.
-              </CardDescription>
-            </div>
-
-            <div className="rounded-2xl border border-border/70 bg-primary/5 px-5 py-4 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Total amount
-              </p>
-              <p className="mt-2 font-[var(--font-heading)] text-2xl font-semibold tabular-nums text-foreground sm:text-[1.75rem]">
-                {formatCurrency(order.totalSaleAmount, order.currency)}
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
       <InvoiceActions
         order={order}
         onInvoiceCreated={() => setRefreshKey((currentValue) => currentValue + 1)}
@@ -534,27 +498,6 @@ function formatNullableCurrency(value: number | null, currency = 'USD'): string 
 
 function formatNullableNumber(value: number | null): string {
   return value === null ? 'Not provided' : String(value);
-}
-
-function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const variantByStatus: Record<
-    OrderStatus,
-    'default' | 'secondary' | 'outline' | 'neutral' | 'success' | 'warning' | 'danger' | 'info'
-  > = {
-    DRAFT: 'outline',
-    PARTIALLY_PAID: 'warning',
-    CONFIRMED: 'success',
-    PROCESSING: 'info',
-    SHIPPED: 'default',
-    DELIVERED: 'neutral',
-    CANCELLED: 'danger',
-  };
-
-  return (
-    <Badge variant={variantByStatus[status]} className="text-xs">
-      {formatOrderStatus(status)}
-    </Badge>
-  );
 }
 
 function ShippingStatusValue({
