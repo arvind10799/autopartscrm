@@ -184,6 +184,7 @@ server {
 server {
     listen 443 ssl http2;
     server_name ${APP_HOST};
+    client_max_body_size 25M;
 
     ssl_certificate /etc/letsencrypt/live/${APP_HOST}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${APP_HOST}/privkey.pem;
@@ -205,6 +206,7 @@ else
 server {
     listen 80;
     server_name ${APP_HOST};
+    client_max_body_size 25M;
 
     location / {
         proxy_pass http://127.0.0.1:3001;
