@@ -174,10 +174,31 @@ model Invoice {
   updatedAt              DateTime  @updatedAt
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  auditEvents InvoiceAuditEvent[]
 
   @@index([invoiceNumber])
   @@index([createdAt])
   @@index([signatureTokenExpiresAt])
+}
+
+model InvoiceAuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  invoiceId   String   @db.Uuid
+  eventType   String   @db.VarChar(40)
+  title       String   @db.VarChar(80)
+  description String   @db.Text
+  actorName   String?  @db.VarChar(160)
+  actorEmail  String?  @db.VarChar(160)
+  actorPhone  String?  @db.VarChar(40)
+  ipAddress   String?  @db.VarChar(64)
+  metadata    Json?
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, occurredAt])
+  @@index([eventType])
 }
 
 model Shipment {

@@ -5,8 +5,10 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidParamDto } from '../../common/dto/uuid-param.dto';
@@ -45,8 +47,14 @@ export class InvoicesController {
     @Param() params: UuidParamDto,
     @Body() createInvoiceDto: CreateInvoiceDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
-    return this.invoicesService.create(params.id, createInvoiceDto, user);
+    return this.invoicesService.create(
+      params.id,
+      createInvoiceDto,
+      user,
+      this.resolveIpAddress(request),
+    );
   }
 
   @Roles(Role.ADMIN, Role.SALES)
@@ -55,8 +63,14 @@ export class InvoicesController {
     @Param() params: UuidParamDto,
     @Body() createInvoiceDto: CreateInvoiceDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
-    return this.invoicesService.update(params.id, createInvoiceDto, user);
+    return this.invoicesService.update(
+      params.id,
+      createInvoiceDto,
+      user,
+      this.resolveIpAddress(request),
+    );
   }
 
   @Roles(Role.ADMIN, Role.SALES)
@@ -64,8 +78,13 @@ export class InvoicesController {
   resendSignatureRequest(
     @Param() params: UuidParamDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
-    return this.invoicesService.resendSignatureRequest(params.id, user);
+    return this.invoicesService.resendSignatureRequest(
+      params.id,
+      user,
+      this.resolveIpAddress(request),
+    );
   }
 
   @Roles(Role.ADMIN, Role.SALES)
@@ -73,8 +92,13 @@ export class InvoicesController {
   generateNewSigningLink(
     @Param() params: UuidParamDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
-    return this.invoicesService.generateNewSigningLink(params.id, user);
+    return this.invoicesService.generateNewSigningLink(
+      params.id,
+      user,
+      this.resolveIpAddress(request),
+    );
   }
 
   @Roles(Role.ADMIN, Role.SALES)
@@ -82,7 +106,22 @@ export class InvoicesController {
   cloneSignedInvoice(
     @Param() params: UuidParamDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
-    return this.invoicesService.cloneSignedInvoice(params.id, user);
+    return this.invoicesService.cloneSignedInvoice(
+      params.id,
+      user,
+      this.resolveIpAddress(request),
+    );
+  }
+
+  private resolveIpAddress(request: Request): string | undefined {
+    const forwardedFor = request.headers['x-forwarded-for'];
+
+    if (typeof forwardedFor === 'string') {
+      return forwardedFor.split(',')[0]?.trim();
+    }
+
+    return request.ip;
   }
 }

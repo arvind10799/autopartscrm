@@ -33,6 +33,38 @@ const optionalDateSchema = z.preprocess(
   z.string().optional(),
 );
 
+const invoiceAuditTrailSchema = z.object({
+  timestamps: z.array(
+    z.object({
+      label: z.string(),
+      occurredAt: z.string(),
+    }),
+  ),
+  attachmentDetails: z
+    .object({
+      documentTitle: z.string(),
+      fileName: z.string().nullable(),
+      mimeType: z.string().nullable(),
+      uploadedAt: z.string().nullable(),
+      hash: z.string(),
+    })
+    .nullable(),
+  events: z.array(
+    z.object({
+      id: z.string(),
+      eventType: z.string(),
+      title: z.string(),
+      description: z.string(),
+      actorName: z.string().nullable(),
+      actorEmail: z.string().nullable(),
+      actorPhone: z.string().nullable(),
+      ipAddress: z.string().nullable(),
+      occurredAt: z.string(),
+      createdAt: z.string(),
+    }),
+  ),
+});
+
 export const invoiceRecordSchema = z.object({
   id: z.string(),
   orderId: z.string(),
@@ -72,6 +104,7 @@ export const invoiceRecordSchema = z.object({
   signatureLastSentAt: z.string().nullable(),
   status: z.string(),
   pdfStorageKey: z.string().nullable(),
+  auditTrail: invoiceAuditTrailSchema.nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

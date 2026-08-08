@@ -3,7 +3,7 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Copy, Download, Eye, FileText, Link2, LoaderCircle, Pencil, Send, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock3, Copy, Download, Eye, FileText, Fingerprint, Link2, LoaderCircle, Paperclip, Pencil, Send, ShieldCheck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -262,105 +262,108 @@ export function InvoiceActions({
             Back to orders
           </Link>
         </CardHeader>
-        <CardContent className="pt-1">
+        <CardContent className="space-y-3 pt-1">
           {invoice ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="success" className="gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                {invoice.status === 'SIGNED' ? 'Signed' : 'Invoiced'}
-              </Badge>
-              <Button type="button" size="sm" variant="outline" onClick={() => setIsViewOpen(true)}>
-                <Eye className="h-4 w-4" />
-                {invoice.status === 'SIGNED' ? 'View Signed Invoice' : 'View Invoice'}
-              </Button>
-              <Button type="button" size="sm" disabled={isDownloading} onClick={() => void handleDownloadInvoice()}>
-                {isDownloading ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                {isDownloading
-                  ? 'Downloading...'
-                  : invoice.status === 'SIGNED'
-                    ? 'Download Signed Invoice'
-                    : 'Download Invoice (PDF)'}
-              </Button>
-              {invoice.photoIdDocument ? (
-                <>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsPhotoIdOpen(true)}
-                  >
-                    <Eye className="h-4 w-4" />
-                    View Photo ID
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => downloadPhotoIdDocument(invoice)}
-                  >
-                    <Download className="h-4 w-4" />
-                    Download Photo ID
-                  </Button>
-                </>
-              ) : null}
-              {invoice.status === 'SIGNED' && canManageSignatureRequest ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={isSignatureActionRunning}
-                  onClick={() => void handleSignatureAction('clone')}
-                >
-                  {isSignatureActionRunning ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="success" className="gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {invoice.status === 'SIGNED' ? 'Signed' : 'Invoiced'}
+                </Badge>
+                <Button type="button" size="sm" variant="outline" onClick={() => setIsViewOpen(true)}>
+                  <Eye className="h-4 w-4" />
+                  {invoice.status === 'SIGNED' ? 'View Signed Invoice' : 'View Invoice'}
+                </Button>
+                <Button type="button" size="sm" disabled={isDownloading} onClick={() => void handleDownloadInvoice()}>
+                  {isDownloading ? (
                     <LoaderCircle className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <Download className="h-4 w-4" />
                   )}
-                  Clone
+                  {isDownloading
+                    ? 'Downloading...'
+                    : invoice.status === 'SIGNED'
+                      ? 'Download Signed Invoice'
+                      : 'Download Invoice (PDF)'}
                 </Button>
-              ) : null}
-              {invoice.status !== 'SIGNED' && canManageSignatureRequest ? (
-                <>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={openEditModal}
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit Invoice
-                  </Button>
+                {invoice.photoIdDocument ? (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsPhotoIdOpen(true)}
+                    >
+                      <Eye className="h-4 w-4" />
+                      View Photo ID
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => downloadPhotoIdDocument(invoice)}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download Photo ID
+                    </Button>
+                  </>
+                ) : null}
+                {invoice.status === 'SIGNED' && canManageSignatureRequest ? (
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     disabled={isSignatureActionRunning}
-                    onClick={() => void handleSignatureAction('resend')}
+                    onClick={() => void handleSignatureAction('clone')}
                   >
                     {isSignatureActionRunning ? (
                       <LoaderCircle className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Send className="h-4 w-4" />
+                      <Copy className="h-4 w-4" />
                     )}
-                    Resend Signature Request
+                    Clone
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={isSignatureActionRunning}
-                    onClick={() => void handleSignatureAction('new-link')}
-                  >
-                    <Link2 className="h-4 w-4" />
-                    Generate New Signing Link
-                  </Button>
-                </>
-              ) : null}
-            </div>
+                ) : null}
+                {invoice.status !== 'SIGNED' && canManageSignatureRequest ? (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={openEditModal}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit Invoice
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={isSignatureActionRunning}
+                      onClick={() => void handleSignatureAction('resend')}
+                    >
+                      {isSignatureActionRunning ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                      Resend Signature Request
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={isSignatureActionRunning}
+                      onClick={() => void handleSignatureAction('new-link')}
+                    >
+                      <Link2 className="h-4 w-4" />
+                      Generate New Signing Link
+                    </Button>
+                  </>
+                ) : null}
+              </div>
+              <InvoiceAuditTrailPanel invoice={invoice} />
+            </>
           ) : (
             <Button type="button" size="sm" onClick={openGenerateModal} disabled={isLoadingDefaults}>
               {isLoadingDefaults ? (
@@ -412,6 +415,131 @@ export function InvoiceActions({
         </div>
       ) : null}
     </>
+  );
+}
+
+function InvoiceAuditTrailPanel({ invoice }: { invoice: InvoiceRecord }) {
+  const auditTrail = invoice.auditTrail;
+  const timestamps = auditTrail?.timestamps ?? [];
+  const attachmentDetails = auditTrail?.attachmentDetails;
+  const events = auditTrail?.events ?? [];
+
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            Audit Trail
+          </h3>
+          <p className="text-xs text-slate-500">
+            Legal activity log shown in PDT timezone.
+          </p>
+        </div>
+        <Badge variant="secondary" className="rounded-full text-[11px]">
+          {events.length} events
+        </Badge>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="space-y-3">
+          <div className="rounded-xl border border-white bg-white/85 p-3 shadow-sm">
+            <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <Clock3 className="h-3.5 w-3.5" />
+              Timestamps
+            </h4>
+            {timestamps.length > 0 ? (
+              <div className="space-y-1.5 text-sm text-slate-700">
+                {timestamps.map((timestamp) => (
+                  <div key={`${timestamp.label}-${timestamp.occurredAt}`}>
+                    {formatPdtDateTime(timestamp.occurredAt)} - {timestamp.label}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No sent, viewed, or signed timestamp yet.</p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-white bg-white/85 p-3 shadow-sm">
+            <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <Paperclip className="h-3.5 w-3.5" />
+              Attachment Details
+            </h4>
+            {attachmentDetails ? (
+              <div className="space-y-2 text-sm text-slate-700">
+                <AuditDetail label="Document Title" value={attachmentDetails.documentTitle} />
+                <AuditDetail
+                  label="File"
+                  value={attachmentDetails.fileName ?? 'Uploaded document'}
+                />
+                <AuditDetail
+                  label="Uploaded"
+                  value={
+                    attachmentDetails.uploadedAt
+                      ? formatPdtDateTime(attachmentDetails.uploadedAt)
+                      : 'Pending'
+                  }
+                />
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                    <Fingerprint className="h-3.5 w-3.5" />
+                    Hash
+                  </div>
+                  <p className="break-all rounded-lg bg-slate-100 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-slate-700">
+                    {attachmentDetails.hash}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No Photo ID attachment uploaded yet.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          {events.length > 0 ? (
+            <div className="divide-y divide-slate-200">
+              {events.map((event) => (
+                <div
+                  key={event.id}
+                  className="grid gap-0 sm:grid-cols-[150px_1fr]"
+                >
+                  <div className="bg-slate-50 px-3 py-2">
+                    <div className="text-sm font-semibold text-slate-800">
+                      {event.title}:
+                    </div>
+                    <div className="mt-1 text-[11px] text-slate-500">
+                      {formatPdtDateTime(event.occurredAt)}
+                    </div>
+                  </div>
+                  <div className="px-3 py-2">
+                    <p className="text-sm text-slate-700">{event.description}</p>
+                    <div className="mt-2 grid gap-1 border-t border-slate-100 pt-2 text-[11px] text-slate-500 sm:grid-cols-2">
+                      <span>{formatAuditActor(event)}</span>
+                      <span>{event.ipAddress ? `IP: ${event.ipAddress}` : 'IP: Not captured'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 text-sm text-slate-500">
+              Audit events will appear after the invoice is sent, viewed, edited, signed, or completed.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AuditDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-xs font-semibold text-slate-500">{label}</div>
+      <div className="text-sm text-slate-800">{value}</div>
+    </div>
   );
 }
 
@@ -1317,6 +1445,36 @@ function formatDisplayDate(value: string): string {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+function formatPdtDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return `${new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(date)} PDT`;
+}
+
+function formatAuditActor(
+  event: NonNullable<InvoiceRecord['auditTrail']>['events'][number],
+): string {
+  const identity = [event.actorEmail, event.actorPhone].filter(Boolean).join(' / ');
+
+  if (event.actorName && identity) {
+    return `${event.actorName} (${identity})`;
+  }
+
+  return event.actorName ?? (identity || 'System');
 }
 
 export async function createInvoicePdfBlob(invoiceElement: HTMLElement) {

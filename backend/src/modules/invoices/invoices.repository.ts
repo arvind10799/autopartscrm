@@ -27,6 +27,12 @@ const invoiceOrderSelect = {
   },
 } satisfies Prisma.OrderSelect;
 
+const invoiceAuditEventsInclude = {
+  orderBy: {
+    occurredAt: 'desc',
+  },
+} satisfies Prisma.InvoiceAuditEventFindManyArgs;
+
 export type InvoiceOrder = Prisma.OrderGetPayload<{
   select: typeof invoiceOrderSelect;
 }>;
@@ -62,8 +68,11 @@ export class InvoicesRepository {
           select: {
             id: true,
             orderNumber: true,
+            customerEmail: true,
+            customerPhone: true,
           },
         },
+        auditEvents: invoiceAuditEventsInclude,
       },
     });
   }
@@ -82,6 +91,7 @@ export class InvoicesRepository {
             orderNumber: true,
           },
         },
+        auditEvents: invoiceAuditEventsInclude,
       },
     });
   }
@@ -90,6 +100,17 @@ export class InvoicesRepository {
     try {
       return await this.prismaService.invoice.create({
         data,
+        include: {
+          order: {
+            select: {
+              id: true,
+              customerEmail: true,
+              customerPhone: true,
+              orderNumber: true,
+            },
+          },
+          auditEvents: invoiceAuditEventsInclude,
+        },
       });
     } catch (error) {
       handlePrismaError(error, 'Invoice');
@@ -110,7 +131,14 @@ export class InvoicesRepository {
             orderNumber: true,
           },
         },
+        auditEvents: invoiceAuditEventsInclude,
       },
+    });
+  }
+
+  async createAuditEvent(data: Prisma.InvoiceAuditEventUncheckedCreateInput) {
+    return this.prismaService.invoiceAuditEvent.create({
+      data,
     });
   }
 
@@ -128,6 +156,7 @@ export class InvoicesRepository {
               orderNumber: true,
             },
           },
+          auditEvents: invoiceAuditEventsInclude,
         },
       });
     } catch (error) {

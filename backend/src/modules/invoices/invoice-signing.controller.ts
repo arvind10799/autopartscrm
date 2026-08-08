@@ -8,8 +8,11 @@ export class InvoiceSigningController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Get(':token')
-  findByToken(@Param('token') token: string) {
-    return this.invoicesService.findBySigningToken(token);
+  findByToken(@Param('token') token: string, @Req() request: Request) {
+    return this.invoicesService.findBySigningToken(
+      token,
+      this.resolveIpAddress(request),
+    );
   }
 
   @Post(':token/sign')

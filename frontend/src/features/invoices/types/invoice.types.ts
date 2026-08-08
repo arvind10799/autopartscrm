@@ -1,3 +1,35 @@
+export interface InvoiceAuditTimestamp {
+  label: string;
+  occurredAt: string;
+}
+
+export interface InvoiceAuditAttachmentDetails {
+  documentTitle: string;
+  fileName: string | null;
+  mimeType: string | null;
+  uploadedAt: string | null;
+  hash: string;
+}
+
+export interface InvoiceAuditEvent {
+  id: string;
+  eventType: string;
+  title: string;
+  description: string;
+  actorName: string | null;
+  actorEmail: string | null;
+  actorPhone: string | null;
+  ipAddress: string | null;
+  occurredAt: string;
+  createdAt: string;
+}
+
+export interface InvoiceAuditTrail {
+  timestamps: InvoiceAuditTimestamp[];
+  attachmentDetails: InvoiceAuditAttachmentDetails | null;
+  events: InvoiceAuditEvent[];
+}
+
 export interface InvoiceRecord {
   id: string;
   orderId: string;
@@ -37,6 +69,7 @@ export interface InvoiceRecord {
   signatureLastSentAt: string | null;
   status: string;
   pdfStorageKey: string | null;
+  auditTrail?: InvoiceAuditTrail | null;
   createdAt: string;
   updatedAt: string;
 }

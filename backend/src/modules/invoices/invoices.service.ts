@@ -27,6 +27,7 @@ const SIGNATURE_REQUESTED_STATUS = 'SIGNATURE_REQUESTED';
 const SIGNATURE_SMS_SENT = 'SENT';
 const SIGNATURE_SMS_SKIPPED = 'SKIPPED';
 const SIGNATURE_SMS_FAILED = 'FAILED';
+const AUDIT_DOCUMENT_TITLE = 'Photo ID - Front copy';
 const DEFAULT_WARRANTY_PARTS_ONLY = [
   'Standard: 90 days for non-performance engines and transmissions.',
   "No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accesories sent isn't charged or covered.",
@@ -34,6 +35,35 @@ const DEFAULT_WARRANTY_PARTS_ONLY = [
   'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
   'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
 ].join('\n');
+
+type InvoiceAuditActor = {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+};
+
+type InvoiceAuditSource = {
+  customerName?: string | null;
+  contactNumber?: string | null;
+  order?: {
+    customerEmail?: string | null;
+    customerPhone?: string | null;
+  } | null;
+};
+
+type InvoiceAuditEventRecord = {
+  id: string;
+  eventType: string;
+  title: string;
+  description: string;
+  actorName: string | null;
+  actorEmail: string | null;
+  actorPhone: string | null;
+  ipAddress: string | null;
+  metadata: Prisma.JsonValue | null;
+  occurredAt: Date;
+  createdAt: Date;
+};
 
 @Injectable()
 export class InvoicesService {
@@ -101,6 +131,7 @@ export class InvoicesService {
     orderId: string,
     createInvoiceDto: CreateInvoiceDto,
     user: AuthenticatedUser,
+    ipAddress?: string,
   ) {
     const order = await this.invoicesRepository.findAccessibleOrder(orderId, user);
     this.assertOrderCanGenerateInvoice(order);
@@ -153,6 +184,15 @@ export class InvoicesService {
       status: 'CREATED',
     });
 
+    await this.createAuditEvent(invoice.id, 'CREATED', {
+      actor: this.userToAuditActor(user),
+      description: `${user.name} generated invoice ${invoice.invoiceNumber}.`,
+      ipAddress,
+      metadata: {
+        invoiceNumber: invoice.invoiceNumber,
+      },
+    });
+
     await this.notesService.create(
       {
         content: `Invoice generated: ${invoice.invoiceNumber}`,
@@ -165,16 +205,18 @@ export class InvoicesService {
     if (order.customerEmail && this.invoiceMailService.isConfigured()) {
       return this.issueSignatureRequest(invoice.id, user, {
         noteMessage: `Invoice signature request sent: ${invoice.invoiceNumber}`,
+        ipAddress,
       });
     }
 
-    return this.serializeInvoice(invoice);
+    return this.findByOrderId(orderId, user);
   }
 
   async update(
     orderId: string,
     createInvoiceDto: CreateInvoiceDto,
     user: AuthenticatedUser,
+    ipAddress?: string,
   ) {
     const existingInvoice = await this.invoicesRepository.findByOrderId(
       orderId,
@@ -230,26 +272,46 @@ export class InvoicesService {
       user,
     );
 
-    return this.serializeInvoice(invoice);
+    await this.createAuditEvent(invoice.id, 'EDITED', {
+      actor: this.userToAuditActor(user),
+      description: `${user.name} (${user.email}) made edits to the document.`,
+      ipAddress,
+    });
+
+    return this.findByOrderId(orderId, user);
   }
 
-  async resendSignatureRequest(orderId: string, user: AuthenticatedUser) {
+  async resendSignatureRequest(
+    orderId: string,
+    user: AuthenticatedUser,
+    ipAddress?: string,
+  ) {
     const invoice = await this.findByOrderId(orderId, user);
 
     return this.issueSignatureRequest(invoice.id, user, {
       noteMessage: `Invoice signature request resent: ${invoice.invoiceNumber}`,
+      ipAddress,
     });
   }
 
-  async generateNewSigningLink(orderId: string, user: AuthenticatedUser) {
+  async generateNewSigningLink(
+    orderId: string,
+    user: AuthenticatedUser,
+    ipAddress?: string,
+  ) {
     const invoice = await this.findByOrderId(orderId, user);
 
     return this.issueSignatureRequest(invoice.id, user, {
       noteMessage: `New invoice signing link generated: ${invoice.invoiceNumber}`,
+      ipAddress,
     });
   }
 
-  async cloneSignedInvoice(orderId: string, user: AuthenticatedUser) {
+  async cloneSignedInvoice(
+    orderId: string,
+    user: AuthenticatedUser,
+    ipAddress?: string,
+  ) {
     const invoice = await this.findByOrderId(orderId, user);
 
     if (invoice.status !== SIGNED_INVOICE_STATUS) {
@@ -274,14 +336,27 @@ export class InvoicesService {
       pdfStorageKey: null,
     });
 
+    await this.createAuditEvent(resetInvoice.id, 'CLONED', {
+      actor: this.userToAuditActor(user),
+      description: `${user.name} cloned the signed invoice and reinitiated the signing process.`,
+      ipAddress,
+    });
+
     return this.issueSignatureRequest(resetInvoice.id, user, {
       noteMessage: `Signed invoice cloned and signature request sent: ${resetInvoice.invoiceNumber}`,
+      ipAddress,
     });
   }
 
-  async findBySigningToken(token: string) {
+  async findBySigningToken(token: string, ipAddress?: string) {
     const invoice = await this.findInvoiceForToken(token);
     this.assertTokenCanBeViewed(invoice);
+
+    await this.createAuditEvent(invoice.id, 'VIEWED', {
+      actor: this.customerToAuditActor(invoice),
+      description: `${this.describeCustomer(invoice)} viewed the document.`,
+      ipAddress,
+    });
 
     return {
       ...this.serializeInvoice(invoice),
@@ -320,6 +395,31 @@ export class InvoicesService {
       status: SIGNED_INVOICE_STATUS,
     });
 
+    if (signInvoiceDto.photoIdDocument) {
+      await this.createAuditEvent(signedInvoice.id, 'ATTACHED', {
+        actor: this.customerToAuditActor(signedInvoice),
+        description: `${this.describeCustomer(signedInvoice)} attached ${AUDIT_DOCUMENT_TITLE}.`,
+        ipAddress,
+        metadata: {
+          documentTitle: AUDIT_DOCUMENT_TITLE,
+          fileName: signedInvoice.photoIdFileName,
+          mimeType: signedInvoice.photoIdMimeType,
+          hash: this.hashDocument(signInvoiceDto.photoIdDocument),
+        },
+      });
+    }
+
+    await this.createAuditEvent(signedInvoice.id, 'SIGNED', {
+      actor: this.customerToAuditActor(signedInvoice),
+      description: `${this.describeCustomer(signedInvoice)} signed the document.`,
+      ipAddress,
+    });
+
+    await this.createAuditEvent(signedInvoice.id, 'COMPLETED', {
+      description: 'Document has been completed.',
+      ipAddress,
+    });
+
     const customerEmail = signedInvoice.order.customerEmail;
     if (customerEmail && this.invoiceMailService.isConfigured()) {
       await this.invoiceMailService.sendSignedConfirmation(
@@ -355,8 +455,12 @@ export class InvoicesService {
       );
     }
 
+    const refreshedInvoice =
+      (await this.invoicesRepository.findById(signedInvoice.id)) ??
+      signedInvoice;
+
     return {
-      ...this.serializeInvoice(signedInvoice),
+      ...this.serializeInvoice(refreshedInvoice),
       canSign: false,
     };
   }
@@ -386,7 +490,7 @@ export class InvoicesService {
   private async issueSignatureRequest(
     invoiceId: string,
     user: AuthenticatedUser,
-    options: { noteMessage: string },
+    options: { noteMessage: string; ipAddress?: string },
   ) {
     const existingInvoice = await this.invoicesRepository.findById(invoiceId);
 
@@ -437,6 +541,19 @@ export class InvoicesService {
       this.buildSigningUrl(signatureToken.token),
     );
 
+    await this.createAuditEvent(invoice.id, 'SENT', {
+      actor: this.userToAuditActor(user),
+      description: `MEEHIKAA AUTO PARTS INC sent the document to ${this.describeCustomer(invoice)}.`,
+      ipAddress: options.ipAddress,
+      metadata: {
+        invoiceNumber: invoice.invoiceNumber,
+        recipientEmail: customerEmail,
+        recipientPhone: invoice.contactNumber ?? invoice.order.customerPhone,
+        smsStatus: signatureSmsResult.status,
+        smsMessage: signatureSmsResult.message,
+      },
+    });
+
     await this.notesService.create(
       {
         content: options.noteMessage,
@@ -446,8 +563,11 @@ export class InvoicesService {
       user,
     );
 
+    const refreshedInvoice =
+      (await this.invoicesRepository.findById(invoice.id)) ?? invoice;
+
     return {
-      ...this.serializeInvoice(invoice),
+      ...this.serializeInvoice(refreshedInvoice),
       signatureSmsStatus: signatureSmsResult.status,
       signatureSmsMessage: signatureSmsResult.message,
     };
@@ -508,13 +628,227 @@ export class InvoicesService {
     T extends {
       signatureTokenHash?: string | null;
       order?: unknown;
+      auditEvents?: InvoiceAuditEventRecord[];
+      photoIdDocument?: string | null;
+      photoIdFileName?: string | null;
+      photoIdMimeType?: string | null;
+      photoIdUploadedAt?: Date | null;
+      signatureRequestedAt?: Date | null;
+      signatureLastSentAt?: Date | null;
+      signedAt?: Date | null;
+      signatureIpAddress?: string | null;
+      createdAt?: Date;
+      updatedAt?: Date;
     },
   >(invoice: T) {
     const safeInvoice = { ...invoice };
     delete safeInvoice.signatureTokenHash;
     delete safeInvoice.order;
+    delete safeInvoice.auditEvents;
 
-    return safeInvoice;
+    return {
+      ...safeInvoice,
+      auditTrail: this.buildAuditTrail(invoice),
+    };
+  }
+
+  private async createAuditEvent(
+    invoiceId: string,
+    eventType: string,
+    options: {
+      actor?: InvoiceAuditActor;
+      description: string;
+      ipAddress?: string;
+      metadata?: Prisma.JsonObject;
+      occurredAt?: Date;
+    },
+  ) {
+    await this.invoicesRepository.createAuditEvent({
+      invoiceId,
+      eventType,
+      title: this.auditTitle(eventType),
+      description: options.description,
+      actorName: options.actor?.name ?? null,
+      actorEmail: options.actor?.email ?? null,
+      actorPhone: options.actor?.phone ?? null,
+      ipAddress: options.ipAddress ?? null,
+      metadata: options.metadata ?? Prisma.JsonNull,
+      occurredAt: options.occurredAt ?? new Date(),
+    });
+  }
+
+  private buildAuditTrail<
+    T extends {
+      auditEvents?: InvoiceAuditEventRecord[];
+      photoIdDocument?: string | null;
+      photoIdFileName?: string | null;
+      photoIdMimeType?: string | null;
+      photoIdUploadedAt?: Date | null;
+      signatureRequestedAt?: Date | null;
+      signatureLastSentAt?: Date | null;
+      signedAt?: Date | null;
+      signatureIpAddress?: string | null;
+      createdAt?: Date;
+      updatedAt?: Date;
+    },
+  >(invoice: T) {
+    const storedEvents = invoice.auditEvents ?? [];
+    const storedEventTypes = new Set(storedEvents.map((event) => event.eventType));
+    const events = this.buildFallbackAuditEvents(invoice)
+      .filter((event) => !storedEventTypes.has(event.eventType))
+      .concat(storedEvents);
+    const uniqueEvents = new Map<string, InvoiceAuditEventRecord>();
+
+    for (const event of events) {
+      uniqueEvents.set(event.id, event);
+    }
+
+    const sortedEvents = Array.from(uniqueEvents.values()).sort(
+      (firstEvent, secondEvent) =>
+        secondEvent.occurredAt.getTime() - firstEvent.occurredAt.getTime(),
+    );
+
+    const timestamps = sortedEvents
+      .filter((event) => ['SIGNED', 'VIEWED', 'SENT'].includes(event.eventType))
+      .map((event) => ({
+        label: this.auditTitle(event.eventType),
+        occurredAt: event.occurredAt,
+      }));
+
+    return {
+      timestamps,
+      attachmentDetails: invoice.photoIdDocument
+        ? {
+            documentTitle: AUDIT_DOCUMENT_TITLE,
+            fileName: invoice.photoIdFileName,
+            mimeType: invoice.photoIdMimeType,
+            uploadedAt: invoice.photoIdUploadedAt,
+            hash: this.hashDocument(invoice.photoIdDocument),
+          }
+        : null,
+      events: sortedEvents,
+    };
+  }
+
+  private buildFallbackAuditEvents<
+    T extends {
+      photoIdDocument?: string | null;
+      photoIdUploadedAt?: Date | null;
+      signatureRequestedAt?: Date | null;
+      signatureLastSentAt?: Date | null;
+      signedAt?: Date | null;
+      signatureIpAddress?: string | null;
+      createdAt?: Date;
+    },
+  >(invoice: T): InvoiceAuditEventRecord[] {
+    const fallbackEvents: InvoiceAuditEventRecord[] = [];
+
+    if (invoice.createdAt) {
+      fallbackEvents.push(
+        this.buildFallbackAuditEvent('CREATED', invoice.createdAt, 'Invoice was generated.'),
+      );
+    }
+
+    const sentAt = invoice.signatureLastSentAt ?? invoice.signatureRequestedAt;
+    if (sentAt) {
+      fallbackEvents.push(
+        this.buildFallbackAuditEvent('SENT', sentAt, 'Signature request was sent.'),
+      );
+    }
+
+    if (invoice.photoIdDocument && invoice.photoIdUploadedAt) {
+      fallbackEvents.push(
+        this.buildFallbackAuditEvent(
+          'ATTACHED',
+          invoice.photoIdUploadedAt,
+          `${AUDIT_DOCUMENT_TITLE} was attached.`,
+          invoice.signatureIpAddress,
+        ),
+      );
+    }
+
+    if (invoice.signedAt) {
+      fallbackEvents.push(
+        this.buildFallbackAuditEvent(
+          'SIGNED',
+          invoice.signedAt,
+          'Document was signed.',
+          invoice.signatureIpAddress,
+        ),
+      );
+      fallbackEvents.push(
+        this.buildFallbackAuditEvent(
+          'COMPLETED',
+          invoice.signedAt,
+          'Document has been completed.',
+          invoice.signatureIpAddress,
+        ),
+      );
+    }
+
+    return fallbackEvents;
+  }
+
+  private buildFallbackAuditEvent(
+    eventType: string,
+    occurredAt: Date,
+    description: string,
+    ipAddress?: string | null,
+  ): InvoiceAuditEventRecord {
+    return {
+      id: `fallback-${eventType}-${occurredAt.toISOString()}`,
+      eventType,
+      title: this.auditTitle(eventType),
+      description,
+      actorName: null,
+      actorEmail: null,
+      actorPhone: null,
+      ipAddress: ipAddress ?? null,
+      metadata: null,
+      occurredAt,
+      createdAt: occurredAt,
+    };
+  }
+
+  private auditTitle(eventType: string): string {
+    const titles: Record<string, string> = {
+      CREATED: 'Created',
+      SENT: 'Sent',
+      EDITED: 'Edited',
+      VIEWED: 'Viewed',
+      ATTACHED: 'Attached',
+      SIGNED: 'Signed',
+      COMPLETED: 'Completed',
+      CLONED: 'Cloned',
+    };
+
+    return titles[eventType] ?? eventType;
+  }
+
+  private userToAuditActor(user: AuthenticatedUser): InvoiceAuditActor {
+    return {
+      name: user.name,
+      email: user.email,
+    };
+  }
+
+  private customerToAuditActor(invoice: InvoiceAuditSource): InvoiceAuditActor {
+    return {
+      name: invoice.customerName,
+      email: invoice.order?.customerEmail,
+      phone: invoice.contactNumber ?? invoice.order?.customerPhone,
+    };
+  }
+
+  private describeCustomer(invoice: InvoiceAuditSource): string {
+    const actor = this.customerToAuditActor(invoice);
+    const channels = [actor.email, actor.phone].filter(Boolean).join(' / ');
+
+    return channels ? `${actor.name ?? 'Customer'} (${channels})` : actor.name ?? 'Customer';
+  }
+
+  private hashDocument(documentData: string): string {
+    return createHash('sha256').update(documentData).digest('hex');
   }
 
   private buildSignatureTokenUpdate(): {
