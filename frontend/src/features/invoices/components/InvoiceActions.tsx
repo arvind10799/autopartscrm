@@ -81,6 +81,31 @@ export function InvoiceActions({
     setInvoice(order.invoice);
   }, [order.invoice]);
 
+  useEffect(() => {
+    if (!order.invoice) {
+      return;
+    }
+
+    let isCurrent = true;
+
+    invoicesApi
+      .getByOrderId(order.id)
+      .then((hydratedInvoice) => {
+        if (isCurrent) {
+          setInvoice(hydratedInvoice);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setInvoice(order.invoice);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [order.id, order.invoice]);
+
   const printableInvoice = invoice ?? (draft ? draftToInvoicePreview(order.id, draft) : null);
 
   const totalAmount = useMemo(() => {
