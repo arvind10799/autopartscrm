@@ -193,7 +193,6 @@ export function OrdersPageContent() {
       {isCreateModalOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-6"
-          onClick={() => setIsCreateModalOpen(false)}
         >
           <div
             className="w-full max-w-6xl rounded-[1.75rem] border border-border/70 bg-white shadow-2xl"

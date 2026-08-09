@@ -1,4 +1,5 @@
 import { buildApiEnvelope } from '@/lib/api/api-envelope';
+import { createInvoiceSchema } from '@/features/invoices/schemas/invoice.schema';
 import { isValidOrderId } from '@/features/orders/lib/orders.helpers';
 import {
   buildNoStoreJsonResponse,
@@ -6,7 +7,7 @@ import {
 } from '@/lib/api/server-proxy';
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -19,7 +20,20 @@ export async function POST(
     );
   }
 
+  const requestBody = await request.json().catch(() => null);
+  const parsedPayload = createInvoiceSchema.safeParse(requestBody);
+
+  if (!parsedPayload.success) {
+    return buildNoStoreJsonResponse(
+      buildApiEnvelope(
+        parsedPayload.error.issues[0]?.message ?? 'Invalid invoice payload.',
+      ),
+      400,
+    );
+  }
+
   return proxyBackendWithSession(`/orders/${normalizedId}/invoice/clone`, {
     method: 'POST',
+    body: parsedPayload.data,
   });
 }

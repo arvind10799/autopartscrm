@@ -67,15 +67,6 @@ export function CreateShipmentWorkspace() {
     refreshKey,
   });
 
-  const totalEligibleRevenue = useMemo(
-    () =>
-      ordersResponse.items.reduce(
-        (sum, order) => sum + order.totalSaleAmount,
-        0,
-      ),
-    [ordersResponse.items],
-  );
-
   useEffect(() => {
     if (isLoading) {
       return;
@@ -131,57 +122,22 @@ export function CreateShipmentWorkspace() {
   return (
     <>
       <section className="grid gap-6">
-        <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Orders awaiting shipment</CardDescription>
-              <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-                {ordersResponse.meta.total}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Orders without shipment records are available for the shipping team.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Visible sales value</CardDescription>
-              <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-                {formatCurrency(totalEligibleRevenue)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Revenue represented by the currently visible eligible orders.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Workflow</CardDescription>
-              <CardTitle className="text-2xl sm:text-[1.75rem]">Pick and ship</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Open a focused shipment workspace directly from any eligible order.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
         <Card>
           <CardHeader className="space-y-4">
-            <div className="space-y-2">
-              <CardTitle className="text-2xl sm:text-[1.75rem]">Eligible orders</CardTitle>
-              <CardDescription>
-                Click an order to open a shipment workspace with full order context.
-              </CardDescription>
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div className="space-y-2">
+                <CardTitle className="text-2xl sm:text-[1.75rem]">Eligible orders</CardTitle>
+                <CardDescription>
+                  Click an order to open a shipment workspace with full order context.
+                </CardDescription>
+              </div>
+              <div className="w-full xl:max-w-xl">
+                <DateRangeFilter
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  variant="inline"
+                />
+              </div>
             </div>
 
             <div className="relative">
@@ -220,7 +176,6 @@ export function CreateShipmentWorkspace() {
       {selectedOrder ? (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/50 px-4 py-4 backdrop-blur-sm sm:py-6"
-          onClick={() => setSelectedOrder(null)}
         >
           <div
             className="w-full max-w-7xl rounded-[1.9rem] border border-border/70 bg-white shadow-2xl"

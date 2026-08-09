@@ -117,11 +117,14 @@ export const invoicesApi = {
 
   async cloneSignedInvoice(
     orderId: string,
+    payload: CreateInvoiceInput,
   ): Promise<InvoiceSignatureRequestResult> {
     this.assertOrderId(orderId);
+    const requestPayload = createInvoiceSchema.parse(payload);
 
     const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
       `/api/orders/${orderId}/invoice/clone`,
+      requestPayload,
     );
 
     return parseApiData(response, invoiceSignatureRequestResultSchema, {

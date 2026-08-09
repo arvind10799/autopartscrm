@@ -3,7 +3,7 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Clock3, Copy, Download, Eye, FileText, Fingerprint, Link2, LoaderCircle, Paperclip, Pencil, Send, ShieldCheck, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronDown, Clock3, Copy, Download, Eye, FileText, Fingerprint, LoaderCircle, Paperclip, Pencil, Send, ShieldCheck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,6 +64,7 @@ export function InvoiceActions({
   const [invoice, setInvoice] = useState<InvoiceRecord | null>(order.invoice);
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [isEditingInvoice, setIsEditingInvoice] = useState(false);
+  const [isCloningInvoice, setIsCloningInvoice] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isPhotoIdOpen, setIsPhotoIdOpen] = useState(false);
   const [draft, setDraft] = useState<InvoiceDraft | null>(null);
@@ -128,6 +129,7 @@ export function InvoiceActions({
     setIsLoadingDefaults(true);
     setFormError(null);
     setIsEditingInvoice(false);
+    setIsCloningInvoice(false);
 
     try {
       const defaults = await invoicesApi.getDefaults(order.id);
@@ -158,6 +160,24 @@ export function InvoiceActions({
     setDraft(invoiceToDraft(invoice));
     setFormError(null);
     setIsEditingInvoice(true);
+    setIsCloningInvoice(false);
+    setIsGenerateOpen(true);
+  };
+
+  const openCloneModal = () => {
+    if (!invoice) {
+      return;
+    }
+
+    if (invoice.status !== 'SIGNED') {
+      toast.error('Invoice is not signed', 'Only signed invoices can be cloned.');
+      return;
+    }
+
+    setDraft(invoiceToCloneDraft(invoice));
+    setFormError(null);
+    setIsEditingInvoice(false);
+    setIsCloningInvoice(true);
     setIsGenerateOpen(true);
   };
 
@@ -170,15 +190,24 @@ export function InvoiceActions({
     setFormError(null);
 
     try {
-      const savedInvoice = isEditingInvoice
-        ? await invoicesApi.update(order.id, draftToPayload(draft))
-        : await invoicesApi.create(order.id, draftToPayload(draft));
+      const payload = draftToPayload(draft);
+      const savedInvoice = isCloningInvoice
+        ? await invoicesApi.cloneSignedInvoice(order.id, payload)
+        : isEditingInvoice
+          ? await invoicesApi.update(order.id, payload)
+          : await invoicesApi.create(order.id, payload);
       setInvoice(savedInvoice);
       setIsGenerateOpen(false);
       setIsEditingInvoice(false);
+      setIsCloningInvoice(false);
       setIsViewOpen(true);
       onInvoiceCreated();
-      if (isEditingInvoice) {
+      if (isCloningInvoice) {
+        toast.success(
+          'Invoice cloned',
+          getSignatureRequestToastMessage(savedInvoice),
+        );
+      } else if (isEditingInvoice) {
         toast.success(
           'Invoice updated',
           'The sent signing link now shows the corrected invoice.',
@@ -197,6 +226,8 @@ export function InvoiceActions({
           ? caughtError.message
           : isEditingInvoice
             ? 'Unable to update this invoice.'
+            : isCloningInvoice
+              ? 'Unable to clone this invoice.'
             : 'Unable to generate this invoice.',
       );
     } finally {
@@ -204,31 +235,20 @@ export function InvoiceActions({
     }
   };
 
-  const handleSignatureAction = async (
-    action: 'resend' | 'new-link' | 'clone',
-  ) => {
+  const handleSignatureAction = async () => {
     setIsSignatureActionRunning(true);
 
     try {
-      const updatedInvoice =
-        action === 'resend'
-          ? await invoicesApi.resendSignatureRequest(order.id)
-          : action === 'new-link'
-            ? await invoicesApi.generateNewSigningLink(order.id)
-            : await invoicesApi.cloneSignedInvoice(order.id);
+      const updatedInvoice = await invoicesApi.resendSignatureRequest(order.id);
       setInvoice(updatedInvoice);
       onInvoiceCreated();
       toast.success(
-        action === 'resend'
-          ? 'Signature request sent'
-          : action === 'new-link'
-            ? 'New signing link sent'
-            : 'Invoice cloned',
+        'Signature request sent',
         getSignatureRequestToastMessage(updatedInvoice),
       );
     } catch (caughtError) {
       toast.error(
-        action === 'clone' ? 'Unable to clone invoice' : 'Unable to send signing link',
+        'Unable to send signing link',
         caughtError instanceof Error
           ? caughtError.message
           : 'Please try again in a moment.',
@@ -337,17 +357,12 @@ export function InvoiceActions({
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
-                    disabled={isSignatureActionRunning}
-                    onClick={() => void handleSignatureAction('clone')}
-                  >
-                    {isSignatureActionRunning ? (
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                    Clone
-                  </Button>
+                  variant="outline"
+                  onClick={openCloneModal}
+                >
+                  <Copy className="h-4 w-4" />
+                  Clone Invoice
+                </Button>
                 ) : null}
                 {invoice.status !== 'SIGNED' && canManageSignatureRequest ? (
                   <>
@@ -365,27 +380,17 @@ export function InvoiceActions({
                       size="sm"
                       variant="outline"
                       disabled={isSignatureActionRunning}
-                      onClick={() => void handleSignatureAction('resend')}
+                      onClick={() => void handleSignatureAction()}
                     >
                       {isSignatureActionRunning ? (
                         <LoaderCircle className="h-4 w-4 animate-spin" />
                       ) : (
                         <Send className="h-4 w-4" />
-                      )}
-                      Resend Signature Request
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={isSignatureActionRunning}
-                      onClick={() => void handleSignatureAction('new-link')}
-                    >
-                      <Link2 className="h-4 w-4" />
-                      Generate New Signing Link
-                    </Button>
-                  </>
-                ) : null}
+                    )}
+                    Resend Signature Request
+                  </Button>
+                </>
+              ) : null}
               </div>
               <InvoiceAuditTrailPanel invoice={invoice} />
             </>
@@ -407,12 +412,13 @@ export function InvoiceActions({
           draft={draft}
           error={formError}
           isSaving={isSaving}
-          mode={isEditingInvoice ? 'edit' : 'create'}
+          mode={isCloningInvoice ? 'clone' : isEditingInvoice ? 'edit' : 'create'}
           totalAmount={totalAmount}
           onChange={setDraft}
           onClose={() => {
             setIsGenerateOpen(false);
             setIsEditingInvoice(false);
+            setIsCloningInvoice(false);
           }}
           onSubmit={handleSaveInvoice}
         />
@@ -444,29 +450,83 @@ export function InvoiceActions({
 }
 
 function InvoiceAuditTrailPanel({ invoice }: { invoice: InvoiceRecord }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isAuditDownloading, setIsAuditDownloading] = useState(false);
   const auditTrail = invoice.auditTrail;
   const timestamps = auditTrail?.timestamps ?? [];
   const attachmentDetails = auditTrail?.attachmentDetails;
   const events = auditTrail?.events ?? [];
+  const latestEvent = events[0];
+
+  const handleDownloadAuditTrail = async () => {
+    setIsAuditDownloading(true);
+
+    try {
+      await downloadAuditTrailPdf(invoice);
+    } catch (caughtError) {
+      toast.error(
+        'Unable to download audit trail',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    } finally {
+      setIsAuditDownloading(false);
+    }
+  };
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
+    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left outline-none transition hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-primary/30"
+          onClick={() => setIsOpen((currentValue) => !currentValue)}
+          aria-expanded={isOpen}
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <ShieldCheck className="h-4 w-4" />
+          </span>
+          <span className="min-w-0">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <ShieldCheck className="h-4 w-4 text-primary" />
             Audit Trail
           </h3>
-          <p className="text-xs text-slate-500">
-            Legal activity log shown in PDT timezone.
-          </p>
+            <p className="truncate text-xs text-slate-500">
+              {latestEvent
+                ? `Latest: ${latestEvent.title} - ${formatPdtDateTime(latestEvent.occurredAt)}`
+                : 'Legal activity log shown in PDT timezone.'}
+            </p>
+          </span>
+          <ChevronDown
+            className={cn(
+              'ml-auto h-4 w-4 shrink-0 text-slate-500 transition-transform',
+              isOpen ? 'rotate-180' : '',
+            )}
+          />
+        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge variant="secondary" className="rounded-full text-[11px]">
+            {events.length} events
+          </Badge>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isAuditDownloading}
+            onClick={() => void handleDownloadAuditTrail()}
+          >
+            {isAuditDownloading ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Audit PDF
+          </Button>
         </div>
-        <Badge variant="secondary" className="rounded-full text-[11px]">
-          {events.length} events
-        </Badge>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
+      {isOpen ? (
+      <div className="grid gap-3 border-t border-slate-200/80 p-3 pt-4 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-3">
           <div className="rounded-xl border border-white bg-white/85 p-3 shadow-sm">
             <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -555,6 +615,7 @@ function InvoiceAuditTrailPanel({ invoice }: { invoice: InvoiceRecord }) {
           )}
         </div>
       </div>
+      ) : null}
     </div>
   );
 }
@@ -581,7 +642,7 @@ function InvoiceFormModal({
   draft: InvoiceDraft;
   error: string | null;
   isSaving: boolean;
-  mode: 'create' | 'edit';
+  mode: 'create' | 'edit' | 'clone';
   totalAmount: number;
   onChange: (nextDraft: InvoiceDraft) => void;
   onClose: () => void;
@@ -613,11 +674,17 @@ function InvoiceFormModal({
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 pb-4">
           <div>
             <h2 className="font-[var(--font-heading)] text-2xl font-semibold text-foreground">
-              {mode === 'edit' ? 'Edit Invoice' : 'Generate Invoice'}
+              {mode === 'edit'
+                ? 'Edit Invoice'
+                : mode === 'clone'
+                  ? 'Clone Invoice'
+                  : 'Generate Invoice'}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {mode === 'edit'
                 ? 'Update the saved invoice before the customer signs it.'
+                : mode === 'clone'
+                  ? 'Previous invoice details are copied. Review, edit, and generate a new signing request.'
                 : 'Prefilled from the order. All values can be edited before saving.'}
             </p>
           </div>
@@ -663,7 +730,7 @@ function InvoiceFormModal({
             </InvoiceFormSection>
 
             <InvoiceFormSection title="Product Information">
-              <InvoiceInput label="Item Description" value={draft.itemDescription} onChange={(value) => updateField('itemDescription', value)} />
+              <InvoiceTextarea label="Item Description" value={draft.itemDescription} onChange={(value) => updateField('itemDescription', value)} />
               <InvoiceInput label="Quantity" type="number" min="1" value={draft.quantity} onChange={(value) => updateField('quantity', value)} />
               <InvoiceInput label="Sale Amount" type="number" step="0.01" value={draft.saleAmount} onChange={(value) => updateField('saleAmount', value)} />
             </InvoiceFormSection>
@@ -1316,6 +1383,15 @@ function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
   };
 }
 
+function invoiceToCloneDraft(invoice: InvoiceRecord): InvoiceDraft {
+  return {
+    ...invoiceToDraft(invoice),
+    customerSignature: '',
+    customerSignatureImage: '',
+    signatureDate: '',
+  };
+}
+
 function draftToPayload(draft: InvoiceDraft): CreateInvoiceInput {
   return {
     invoiceNumber: draft.invoiceNumber,
@@ -1500,6 +1576,152 @@ function formatAuditActor(
   }
 
   return event.actorName ?? (identity || 'System');
+}
+
+async function downloadAuditTrailPdf(invoice: InvoiceRecord) {
+  const auditTrail = invoice.auditTrail;
+  const timestamps = auditTrail?.timestamps ?? [];
+  const attachmentDetails = auditTrail?.attachmentDetails;
+  const events = auditTrail?.events ?? [];
+  const { jsPDF } = await import('jspdf');
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: 'a4',
+    compress: true,
+  });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 42;
+  const contentWidth = pageWidth - margin * 2;
+  let y = margin;
+
+  const ensurePageSpace = (height: number) => {
+    if (y + height <= pageHeight - margin) {
+      return;
+    }
+
+    pdf.addPage();
+    y = margin;
+  };
+
+  const drawSectionTitle = (title: string) => {
+    ensurePageSpace(30);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(30, 41, 59);
+    pdf.text(title, margin, y);
+    y += 18;
+    pdf.setDrawColor(226, 232, 240);
+    pdf.line(margin, y, pageWidth - margin, y);
+    y += 14;
+  };
+
+  const drawText = (
+    text: string,
+    options: { size?: number; style?: 'normal' | 'bold'; color?: [number, number, number]; indent?: number } = {},
+  ) => {
+    const indent = options.indent ?? 0;
+    const lines = pdf.splitTextToSize(text || '-', contentWidth - indent);
+    ensurePageSpace(lines.length * 14 + 4);
+    pdf.setFont('helvetica', options.style ?? 'normal');
+    pdf.setFontSize(options.size ?? 10);
+    pdf.setTextColor(...(options.color ?? [51, 65, 85]));
+    pdf.text(lines, margin + indent, y);
+    y += lines.length * 14 + 4;
+  };
+
+  pdf.setFillColor(248, 250, 252);
+  pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(20);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text('Invoice Audit Trail', margin, y);
+  y += 24;
+  drawText(`Invoice Number: ${invoice.invoiceNumber}`, { style: 'bold' });
+  drawText(`Customer: ${invoice.customerName}`);
+  drawText(`Generated: ${formatPdtDateTime(invoice.createdAt)}`);
+  y += 8;
+
+  drawSectionTitle('Timestamps');
+  if (timestamps.length > 0) {
+    timestamps.forEach((timestamp) => {
+      drawText(`${formatPdtDateTime(timestamp.occurredAt)} - ${timestamp.label}`);
+    });
+  } else {
+    drawText('No sent, viewed, or signed timestamp captured yet.', {
+      color: [100, 116, 139],
+    });
+  }
+  y += 8;
+
+  drawSectionTitle('Attachment Details');
+  if (attachmentDetails) {
+    drawText('Document Title', { style: 'bold' });
+    drawText(attachmentDetails.documentTitle, { indent: 14 });
+    drawText('File', { style: 'bold' });
+    drawText(attachmentDetails.fileName ?? 'Uploaded document', { indent: 14 });
+    drawText('Uploaded', { style: 'bold' });
+    drawText(
+      attachmentDetails.uploadedAt
+        ? formatPdtDateTime(attachmentDetails.uploadedAt)
+        : 'Pending',
+      { indent: 14 },
+    );
+    drawText('Hash', { style: 'bold' });
+    drawText(attachmentDetails.hash, {
+      indent: 14,
+      size: 8,
+      color: [71, 85, 105],
+    });
+  } else {
+    drawText('No Photo ID attachment uploaded yet.', {
+      color: [100, 116, 139],
+    });
+  }
+  y += 8;
+
+  drawSectionTitle('Audit Trail');
+  if (events.length > 0) {
+    events.forEach((event) => {
+      ensurePageSpace(74);
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(226, 232, 240);
+      pdf.roundedRect(margin, y, contentWidth, 62, 6, 6, 'FD');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(30, 41, 59);
+      pdf.text(`${event.title}:`, margin + 12, y + 17);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(formatPdtDateTime(event.occurredAt), margin + 12, y + 31);
+      pdf.setFontSize(9);
+      pdf.text(formatAuditActor(event), margin + 12, y + 45);
+      pdf.text(event.ipAddress ? `IP: ${event.ipAddress}` : 'IP: Not captured', margin + 12, y + 57);
+
+      const descriptionLines = pdf.splitTextToSize(event.description, contentWidth - 190);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(51, 65, 85);
+      pdf.text(descriptionLines.slice(0, 3), margin + 170, y + 19);
+      y += 74;
+    });
+  } else {
+    drawText('No audit events captured yet.', {
+      color: [100, 116, 139],
+    });
+  }
+
+  const objectUrl = URL.createObjectURL(pdf.output('blob'));
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = `${sanitizePdfFilename(invoice.invoiceNumber)}-audit-trail.pdf`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 export async function createInvoicePdfBlob(invoiceElement: HTMLElement) {

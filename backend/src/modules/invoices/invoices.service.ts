@@ -309,6 +309,7 @@ export class InvoicesService {
 
   async cloneSignedInvoice(
     orderId: string,
+    createInvoiceDto: CreateInvoiceDto,
     user: AuthenticatedUser,
     ipAddress?: string,
   ) {
@@ -318,10 +319,39 @@ export class InvoicesService {
       throw new ConflictException('Only signed invoices can be cloned.');
     }
 
+    const totalAmount = this.calculateTotalAmount(createInvoiceDto);
     const resetInvoice = await this.invoicesRepository.update(invoice.id, {
+      invoiceNumber: createInvoiceDto.invoiceNumber.trim(),
+      invoiceDate: this.parseDate(createInvoiceDto.invoiceDate),
+      salesAssistant: this.optionalText(createInvoiceDto.salesAssistant),
+      customerName: createInvoiceDto.customerName.trim(),
+      contactNumber: this.optionalText(createInvoiceDto.contactNumber),
+      billingAddress: this.optionalText(createInvoiceDto.billingAddress),
+      shippingAddress: this.optionalText(createInvoiceDto.shippingAddress),
+      shippingVendor: createInvoiceDto.shippingVendor.trim(),
+      deliveryTimeline: createInvoiceDto.deliveryTimeline.trim(),
+      itemDescription: createInvoiceDto.itemDescription.trim(),
+      vehiclePartDescription: this.optionalText(
+        createInvoiceDto.vehiclePartDescription,
+      ),
+      warrantyPartsOnly:
+        this.optionalText(createInvoiceDto.warrantyPartsOnly) ??
+        DEFAULT_WARRANTY_PARTS_ONLY,
+      quantity: createInvoiceDto.quantity,
+      saleAmount: new Prisma.Decimal(createInvoiceDto.saleAmount),
+      paymentStatus: this.optionalText(createInvoiceDto.paymentStatus),
+      paymentDate: createInvoiceDto.paymentDate
+        ? this.parseDate(createInvoiceDto.paymentDate)
+        : null,
+      paymentSource: this.optionalText(createInvoiceDto.paymentSource),
+      shippingCost: new Prisma.Decimal(createInvoiceDto.shippingCost),
+      salesTaxes: new Prisma.Decimal(createInvoiceDto.salesTaxes),
+      coreCharge: new Prisma.Decimal(createInvoiceDto.coreCharge),
+      totalAmount: new Prisma.Decimal(totalAmount),
       customerSignature: null,
       customerSignatureImage: null,
       signatureDate: null,
+      photoIdRequired: createInvoiceDto.photoIdRequired,
       photoIdDocument: null,
       photoIdFileName: null,
       photoIdMimeType: null,
@@ -338,7 +368,7 @@ export class InvoicesService {
 
     await this.createAuditEvent(resetInvoice.id, 'CLONED', {
       actor: this.userToAuditActor(user),
-      description: `${user.name} cloned the signed invoice and reinitiated the signing process.`,
+      description: `${user.name} cloned the signed invoice, reviewed copied details, and reinitiated the signing process.`,
       ipAddress,
     });
 

@@ -105,11 +105,13 @@ export class InvoicesController {
   @Post('clone')
   cloneSignedInvoice(
     @Param() params: UuidParamDto,
+    @Body() createInvoiceDto: CreateInvoiceDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
   ) {
     return this.invoicesService.cloneSignedInvoice(
       params.id,
+      createInvoiceDto,
       user,
       this.resolveIpAddress(request),
     );
