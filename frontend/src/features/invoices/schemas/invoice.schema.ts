@@ -261,18 +261,6 @@ export const createInvoiceSchema = z
     ),
     signatureDate: optionalDateSchema,
     photoIdRequired: z.boolean(),
-  })
-  .superRefine((value, context) => {
-    const total =
-      value.saleAmount - value.shippingCost - value.salesTaxes - value.coreCharge;
-
-    if (total < 0) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Total amount cannot be negative.',
-        path: ['coreCharge'],
-      });
-    }
   });
 
 export type CreateInvoiceFormValues = z.input<typeof createInvoiceSchema>;

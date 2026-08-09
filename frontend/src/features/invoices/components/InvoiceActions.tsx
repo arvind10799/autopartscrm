@@ -1464,13 +1464,7 @@ function draftToInvoicePreview(orderId: string, draft: InvoiceDraft): InvoiceRec
 }
 
 function calculateInvoiceTotal(draft: InvoiceDraft): number {
-  return Math.max(
-    toAmount(draft.saleAmount) -
-      toAmount(draft.shippingCost) -
-      toAmount(draft.salesTaxes) -
-      toAmount(draft.coreCharge),
-    0,
-  );
+  return toAmount(draft.saleAmount);
 }
 
 function toAmount(value: string): number {

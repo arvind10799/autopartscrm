@@ -71,6 +71,8 @@ const defaultValues: CreateOrderFormValues = {
   note: '',
 };
 const DEFAULT_CREATE_ORDER_STATUS = 'CONFIRMED' as const;
+const DEFAULT_SHIPPING_ADDRESS_TEMPLATE = `Business name
+Business address`;
 
 function getFirstFilledAmount(
   ...values: Array<CreateOrderFormValues['salePrice'] | undefined>
@@ -103,6 +105,10 @@ function buildCreateOrderFormValues(
     customerPhone: formatUsPhoneNumber(getStringValue(values.customerPhone)),
     vehicleVin: getStringValue(values.vehicleVin).toUpperCase().slice(0, 17),
     billingPhone: formatUsPhoneNumber(getStringValue(values.billingPhone)),
+    shippingAddress:
+      getStringValue(values.shippingAddress).trim().length > 0
+        ? getStringValue(values.shippingAddress)
+        : DEFAULT_SHIPPING_ADDRESS_TEMPLATE,
     shippingPhone: formatUsPhoneNumber(getStringValue(values.shippingPhone)),
     salePrice: getFirstFilledAmount(values.salePrice, inferredTotal) ?? '',
     total: getFirstFilledAmount(values.total, inferredTotal) ?? '',
@@ -1074,14 +1080,12 @@ export function CreateOrderForm({
                 <div className="grid gap-3">
                   <Field
                     id="shippingAddress"
-                    label="Business address"
+                    label="Address"
                     error={form.formState.errors.shippingAddress?.message?.toString()}
                   >
                     <Textarea
                       id="shippingAddress"
                       rows={3}
-                      placeholder={`Business name
-Business address`}
                       className="min-h-[88px] rounded-xl"
                       {...form.register('shippingAddress')}
                     />

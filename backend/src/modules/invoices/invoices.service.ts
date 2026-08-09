@@ -496,19 +496,7 @@ export class InvoicesService {
   }
 
   private calculateTotalAmount(createInvoiceDto: CreateInvoiceDto): number {
-    const totalAmount =
-      createInvoiceDto.saleAmount -
-      createInvoiceDto.shippingCost -
-      createInvoiceDto.salesTaxes -
-      createInvoiceDto.coreCharge;
-
-    if (totalAmount < 0) {
-      throw new BadRequestException(
-        'Total amount cannot be negative after charges are applied.',
-      );
-    }
-
-    return Number(totalAmount.toFixed(2));
+    return Number(createInvoiceDto.saleAmount.toFixed(2));
   }
 
   private assertOrderCanGenerateInvoice(order: { status: string }) {
