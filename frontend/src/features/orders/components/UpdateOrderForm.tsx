@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, History, PencilLine, RotateCcw } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
 import { getErrorMessage } from '@/lib/utils/error';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { ordersApi } from '../api/orders-api';
@@ -88,6 +89,26 @@ export function UpdateOrderForm({
       note: '',
     },
   });
+  const customerPhoneInput = form.register('customerPhone');
+  const vehicleVinInput = form.register('vehicleVin');
+  const billingPhoneInput = form.register('billingPhone');
+  const shippingPhoneInput = form.register('shippingPhone');
+  const handleCustomerPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatUsPhoneNumber(event.target.value);
+    void customerPhoneInput.onChange(event);
+  };
+  const handleVehicleVinChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.target.value = event.target.value.toUpperCase().slice(0, 17);
+    void vehicleVinInput.onChange(event);
+  };
+  const handleBillingPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatUsPhoneNumber(event.target.value);
+    void billingPhoneInput.onChange(event);
+  };
+  const handleShippingPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatUsPhoneNumber(event.target.value);
+    void shippingPhoneInput.onChange(event);
+  };
 
   useEffect(() => {
     if (!order) {
@@ -96,7 +117,7 @@ export function UpdateOrderForm({
 
     form.reset({
       customerEmail: order.customerEmail ?? '',
-      customerPhone: order.customerPhone ?? '',
+      customerPhone: formatUsPhoneNumber(order.customerPhone ?? ''),
       customerName: order.customerName,
       partDescription: order.partDescription,
       price: String(order.salePrice),
@@ -109,15 +130,15 @@ export function UpdateOrderForm({
       vehicleModel: order.intakeDetails.vehicleModel ?? '',
       vehicleYear: order.intakeDetails.vehicleYear ?? '',
       vehicleVariant: order.intakeDetails.vehicleVariant ?? '',
-      vehicleVin: order.intakeDetails.vehicleVin ?? '',
+      vehicleVin: (order.intakeDetails.vehicleVin ?? '').toUpperCase().slice(0, 17),
       vehicleNotes: order.intakeDetails.vehicleNotes ?? '',
       vehicleConfiguration: order.intakeDetails.vehicleConfiguration ?? '',
       billingAddress: order.intakeDetails.billingAddress ?? '',
       billingPerson: order.intakeDetails.billingPerson ?? '',
-      billingPhone: order.intakeDetails.billingPhone ?? '',
+      billingPhone: formatUsPhoneNumber(order.intakeDetails.billingPhone ?? ''),
       shippingAddress: order.intakeDetails.shippingAddress ?? '',
       shippingPerson: order.intakeDetails.shippingPerson ?? '',
-      shippingPhone: order.intakeDetails.shippingPhone ?? '',
+      shippingPhone: formatUsPhoneNumber(order.intakeDetails.shippingPhone ?? ''),
       shippingAt: order.intakeDetails.shippingAt ?? '',
       companyName: order.intakeDetails.companyName ?? '',
       milesOffered: order.intakeDetails.milesOffered?.toString() ?? '',
@@ -149,7 +170,7 @@ export function UpdateOrderForm({
       form.reset({
         ...values,
         customerEmail: payload.customerEmail ?? '',
-        customerPhone: payload.customerPhone ?? '',
+        customerPhone: formatUsPhoneNumber(payload.customerPhone ?? ''),
         note: '',
       });
     } catch (submitError) {
@@ -281,13 +302,20 @@ export function UpdateOrderForm({
                 ['vehicleModel', 'Model'],
                 ['vehicleYear', 'Year'],
                 ['vehicleVariant', 'Variant'],
-                ['vehicleVin', 'VIN'],
                 ['vehicleConfiguration', 'Configuration'],
               ].map(([field, label]) => (
                 <EditorField key={field} label={label} id={field}>
                   <Input id={field} {...form.register(field as keyof UpdateOrderFormValues)} />
                 </EditorField>
               ))}
+              <EditorField label="VIN" id="vehicleVin">
+                <Input
+                  id="vehicleVin"
+                  maxLength={17}
+                  {...vehicleVinInput}
+                  onChange={handleVehicleVinChange}
+                />
+              </EditorField>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="vehicleNotes">Vehicle notes</Label>
                 <Textarea id="vehicleNotes" rows={3} {...form.register('vehicleNotes')} />
@@ -297,9 +325,7 @@ export function UpdateOrderForm({
             <EditorSection title="Billing and shipping">
               {[
                 ['billingPerson', 'Billing person'],
-                ['billingPhone', 'Billing phone'],
                 ['shippingPerson', 'Shipping person'],
-                ['shippingPhone', 'Shipping phone'],
                 ['shippingAt', 'Shipping date'],
                 ['companyName', 'Company name'],
               ].map(([field, label]) => (
@@ -307,6 +333,24 @@ export function UpdateOrderForm({
                   <Input id={field} {...form.register(field as keyof UpdateOrderFormValues)} />
                 </EditorField>
               ))}
+              <EditorField label="Billing phone" id="billingPhone">
+                <Input
+                  id="billingPhone"
+                  type="tel"
+                  maxLength={14}
+                  {...billingPhoneInput}
+                  onChange={handleBillingPhoneChange}
+                />
+              </EditorField>
+              <EditorField label="Shipping phone" id="shippingPhone">
+                <Input
+                  id="shippingPhone"
+                  type="tel"
+                  maxLength={14}
+                  {...shippingPhoneInput}
+                  onChange={handleShippingPhoneChange}
+                />
+              </EditorField>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="billingAddress">Billing address</Label>
                 <Textarea id="billingAddress" rows={2} {...form.register('billingAddress')} />
@@ -358,7 +402,9 @@ export function UpdateOrderForm({
             <Input
               id="customerPhone"
               type="tel"
-              {...form.register('customerPhone')}
+              maxLength={14}
+              {...customerPhoneInput}
+              onChange={handleCustomerPhoneChange}
             />
             {form.formState.errors.customerPhone ? (
               <p className="text-sm text-destructive">

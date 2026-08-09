@@ -10,6 +10,8 @@ import {
   IsPositive,
   IsString,
   IsUUID,
+  Length,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -19,6 +21,7 @@ import {
   trimString,
   trimToLowerCaseEmail,
   trimToUndefined,
+  trimToUpperCase,
 } from '../../../common/utils/transform.util';
 
 export class CreateOrderDto {
@@ -61,7 +64,7 @@ export class CreateOrderDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
-  @MaxLength(30)
+  @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
   customerPhone: string;
 
   @Transform(({ value }) => trimString(value))
@@ -88,10 +91,10 @@ export class CreateOrderDto {
   @MaxLength(120)
   vehicleVariant: string;
 
-  @Transform(({ value }) => trimString(value))
+  @Transform(({ value }) => trimToUpperCase(value))
   @IsString()
   @IsNotEmpty()
-  @MaxLength(17)
+  @Length(17, 17)
   vehicleVin: string;
 
   @Transform(({ value }) => trimString(value))
@@ -121,7 +124,7 @@ export class CreateOrderDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
-  @MaxLength(30)
+  @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
   billingPhone: string;
 
   @Transform(({ value }) => trimString(value))
@@ -139,7 +142,7 @@ export class CreateOrderDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
-  @MaxLength(30)
+  @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
   shippingPhone: string;
 
   @Transform(({ value }) => trimString(value))

@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, UserRound } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { vehicleLookupApi } from '@/features/vehicle-lookup/api/vehicle-lookup-api';
 import { VehicleCombobox } from '@/features/vehicle-lookup/components/VehicleCombobox';
 import type { VehicleLookupOption } from '@/features/vehicle-lookup/types/vehicle-lookup.types';
+import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
 import { cn } from '@/lib/utils/cn';
 import { getErrorMessage } from '@/lib/utils/error';
 import { leadsApi } from '../api/leads-api';
@@ -49,7 +50,7 @@ function buildDefaultValues(lead?: LeadSummary | null): CreateLeadFormValues {
   return {
     leadDate: lead.date,
     cmpt: lead.cmpt,
-    customerPhone: lead.customerPhone,
+    customerPhone: formatUsPhoneNumber(lead.customerPhone),
     customerName: lead.customerName,
     customerEmail: lead.customerEmail ?? '',
     state: lead.state ?? '',
@@ -93,11 +94,9 @@ function Field({
 }
 
 export function CreateLeadForm({
-  adviserName,
   initialLead,
   onSaved,
 }: {
-  adviserName: string;
   initialLead?: LeadSummary | null;
   onSaved: (lead: LeadSummary) => void;
 }) {
@@ -114,6 +113,11 @@ export function CreateLeadForm({
     resolver: zodResolver(createLeadFormSchema),
     defaultValues: buildDefaultValues(initialLead),
   });
+  const customerPhoneInput = form.register('customerPhone');
+  const handleCustomerPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatUsPhoneNumber(event.target.value);
+    void customerPhoneInput.onChange(event);
+  };
   const [vehicleYear, vehicleMake, vehicleModel, vehicleVariant] = useWatch({
     control: form.control,
     name: ['vehicleYear', 'vehicleMake', 'vehicleModel', 'vehicleVariant'],
@@ -298,7 +302,7 @@ export function CreateLeadForm({
             Lead details
           </h3>
           <p className="text-sm text-muted-foreground">
-            Keep the sales adviser visible and capture the essentials the team needs.
+            Capture the essentials the team needs for qualification and order conversion.
           </p>
         </div>
 
@@ -322,16 +326,6 @@ export function CreateLeadForm({
             />
           </Field>
 
-          <Field id="adviserName" label="Adviser">
-            <Input
-              id="adviserName"
-              value={adviserName}
-              readOnly
-              disabled
-              className="h-11 rounded-xl bg-secondary/30 text-foreground"
-            />
-          </Field>
-
           <Field
             id="cmpt"
             label="CMPT"
@@ -351,9 +345,12 @@ export function CreateLeadForm({
           >
             <Input
               id="customerPhone"
-              placeholder="+1 (555) 123-4567"
+              type="tel"
+              maxLength={14}
+              placeholder="(555) 555-1234"
               className="h-11 rounded-xl"
-              {...form.register('customerPhone')}
+              {...customerPhoneInput}
+              onChange={handleCustomerPhoneChange}
             />
           </Field>
 

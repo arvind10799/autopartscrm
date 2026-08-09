@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { invoiceRecordSchema } from '@/features/invoices/schemas/invoice.schema';
+import { formatUsPhoneNumber, hasCompleteUsPhoneNumber } from '@/lib/forms/phone-format';
 import {
   ORDER_PAYMENT_METHODS,
   ORDER_CURRENCIES,
@@ -35,13 +36,78 @@ const optionalPhoneSchema = z.preprocess(
     }
 
     const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : undefined;
+    return trimmed.length > 0 ? formatUsPhoneNumber(trimmed) : undefined;
   },
   z
     .string()
-    .max(30, 'Customer phone must be 30 characters or fewer.')
+    .refine(hasCompleteUsPhoneNumber, 'Phone number must be 10 digits.')
     .optional(),
 );
+
+function createRequiredPhoneSchema(requiredMessage: string) {
+  return z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      return formatUsPhoneNumber(value.trim());
+    },
+    z
+      .string({
+        required_error: requiredMessage,
+        invalid_type_error: requiredMessage,
+      })
+      .min(1, requiredMessage)
+      .refine(hasCompleteUsPhoneNumber, 'Phone number must be 10 digits.'),
+  );
+}
+
+function createOptionalPhoneSchema(message: string) {
+  return z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? formatUsPhoneNumber(trimmed) : undefined;
+    },
+    z.string().refine(hasCompleteUsPhoneNumber, message).optional(),
+  );
+}
+
+function createRequiredVinSchema() {
+  return z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      return value.trim().toUpperCase();
+    },
+    z
+      .string({
+        required_error: 'VIN is required.',
+        invalid_type_error: 'VIN is required.',
+      })
+      .length(17, 'VIN must be exactly 17 characters.'),
+  );
+}
+
+function createOptionalVinSchema() {
+  return z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      const trimmed = value.trim().toUpperCase();
+      return trimmed.length > 0 ? trimmed : undefined;
+    },
+    z.string().length(17, 'VIN must be exactly 17 characters.').optional(),
+  );
+}
 
 function createOptionalTextSchema(maxLength: number, message: string) {
   return z.preprocess(
@@ -379,11 +445,7 @@ export const createOrderSchema = z.object({
     .min(1, 'Part description is required.')
     .max(255, 'Part description must be 255 characters or fewer.'),
   customerEmail: requiredEmailSchema,
-  customerPhone: createRequiredTextSchema(
-    14,
-    'Customer phone is required.',
-    'Mobile must be 14 characters or fewer.',
-  ),
+  customerPhone: createRequiredPhoneSchema('Customer phone is required.'),
   vehicleMake: createRequiredTextSchema(
     120,
     'Make is required.',
@@ -404,11 +466,7 @@ export const createOrderSchema = z.object({
     'Variant is required.',
     'Variant must be 120 characters or fewer.',
   ),
-  vehicleVin: createRequiredTextSchema(
-    17,
-    'VIN is required.',
-    'VIN must be 17 characters or fewer.',
-  ),
+  vehicleVin: createRequiredVinSchema(),
   vehicleNotes: createRequiredTextSchema(
     1000,
     'Vehicle notes are required.',
@@ -428,11 +486,7 @@ export const createOrderSchema = z.object({
     'Billing person is required.',
     'Billing person must be 160 characters or fewer.',
   ),
-  billingPhone: createRequiredTextSchema(
-    14,
-    'Billing phone is required.',
-    'Billing phone must be 14 characters or fewer.',
-  ),
+  billingPhone: createRequiredPhoneSchema('Billing phone is required.'),
   shippingAddress: createRequiredTextSchema(
     500,
     'Shipping address is required.',
@@ -443,11 +497,7 @@ export const createOrderSchema = z.object({
     'Shipping person is required.',
     'Shipping person must be 160 characters or fewer.',
   ),
-  shippingPhone: createRequiredTextSchema(
-    14,
-    'Shipping phone is required.',
-    'Shipping phone must be 14 characters or fewer.',
-  ),
+  shippingPhone: createRequiredPhoneSchema('Shipping phone is required.'),
   shippingAt: createRequiredTextSchema(
     40,
     'Shipping date is required.',
@@ -580,11 +630,7 @@ export const createOrderFormSchema = z.object({
     .min(1, 'Part description is required.')
     .max(255, 'Part description must be 255 characters or fewer.'),
   customerEmail: requiredEmailSchema,
-  customerPhone: createRequiredTextSchema(
-    14,
-    'Customer phone is required.',
-    'Mobile must be 14 characters or fewer.',
-  ),
+  customerPhone: createRequiredPhoneSchema('Customer phone is required.'),
   vehicleMake: createRequiredTextSchema(
     120,
     'Make is required.',
@@ -605,11 +651,7 @@ export const createOrderFormSchema = z.object({
     'Variant is required.',
     'Variant must be 120 characters or fewer.',
   ),
-  vehicleVin: createRequiredTextSchema(
-    17,
-    'VIN is required.',
-    'VIN must be 17 characters or fewer.',
-  ),
+  vehicleVin: createRequiredVinSchema(),
   vehicleNotes: createRequiredTextSchema(
     1000,
     'Vehicle notes are required.',
@@ -629,11 +671,7 @@ export const createOrderFormSchema = z.object({
     'Billing person is required.',
     'Billing person must be 160 characters or fewer.',
   ),
-  billingPhone: createRequiredTextSchema(
-    14,
-    'Billing phone is required.',
-    'Billing phone must be 14 characters or fewer.',
-  ),
+  billingPhone: createRequiredPhoneSchema('Billing phone is required.'),
   shippingAddress: createRequiredTextSchema(
     500,
     'Shipping address is required.',
@@ -644,11 +682,7 @@ export const createOrderFormSchema = z.object({
     'Shipping person is required.',
     'Shipping person must be 160 characters or fewer.',
   ),
-  shippingPhone: createRequiredTextSchema(
-    14,
-    'Shipping phone is required.',
-    'Shipping phone must be 14 characters or fewer.',
-  ),
+  shippingPhone: createRequiredPhoneSchema('Shipping phone is required.'),
   shippingAt: createRequiredTextSchema(
     40,
     'Shipping date is required.',
@@ -821,15 +855,15 @@ export const updateOrderSchema = z.object({
   vehicleModel: createOptionalTextSchema(120, 'Model must be 120 characters or fewer.'),
   vehicleYear: createOptionalTextSchema(20, 'Year must be 20 characters or fewer.'),
   vehicleVariant: createOptionalTextSchema(120, 'Variant must be 120 characters or fewer.'),
-  vehicleVin: createOptionalTextSchema(60, 'VIN must be 60 characters or fewer.'),
+  vehicleVin: createOptionalVinSchema(),
   vehicleNotes: createOptionalTextSchema(1000, 'Vehicle notes must be 1000 characters or fewer.'),
   vehicleConfiguration: createOptionalTextSchema(255, 'Configuration must be 255 characters or fewer.'),
   billingAddress: createOptionalTextSchema(500, 'Billing address must be 500 characters or fewer.'),
   billingPerson: createOptionalTextSchema(160, 'Billing person must be 160 characters or fewer.'),
-  billingPhone: createOptionalTextSchema(30, 'Billing phone must be 30 characters or fewer.'),
+  billingPhone: createOptionalPhoneSchema('Billing phone must be 10 digits.'),
   shippingAddress: createOptionalTextSchema(500, 'Shipping address must be 500 characters or fewer.'),
   shippingPerson: createOptionalTextSchema(160, 'Shipping person must be 160 characters or fewer.'),
-  shippingPhone: createOptionalTextSchema(30, 'Shipping phone must be 30 characters or fewer.'),
+  shippingPhone: createOptionalPhoneSchema('Shipping phone must be 10 digits.'),
   shippingAt: createOptionalTextSchema(40, 'Shipping date must be 40 characters or fewer.'),
   companyName: createOptionalTextSchema(160, 'Company name must be 160 characters or fewer.'),
   milesOffered: optionalNumericValueSchema,
@@ -852,10 +886,7 @@ export const updateOrderFormSchema = z.object({
     .string()
     .max(160, 'Customer email must be 160 characters or fewer.')
     .optional(),
-  customerPhone: z
-    .string()
-    .max(30, 'Customer phone must be 30 characters or fewer.')
-    .optional(),
+  customerPhone: createOptionalPhoneSchema('Customer phone must be 10 digits.'),
   price: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().positive().optional()),
   total: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().positive().optional()),
   currency: orderCurrencySchema.optional(),
@@ -870,15 +901,15 @@ export const updateOrderFormSchema = z.object({
   vehicleModel: z.string().max(120).optional(),
   vehicleYear: z.string().max(20).optional(),
   vehicleVariant: z.string().max(120).optional(),
-  vehicleVin: z.string().max(60).optional(),
+  vehicleVin: createOptionalVinSchema(),
   vehicleNotes: z.string().max(1000).optional(),
   vehicleConfiguration: z.string().max(255).optional(),
   billingAddress: z.string().max(500).optional(),
   billingPerson: z.string().max(160).optional(),
-  billingPhone: z.string().max(30).optional(),
+  billingPhone: createOptionalPhoneSchema('Billing phone must be 10 digits.'),
   shippingAddress: z.string().max(500).optional(),
   shippingPerson: z.string().max(160).optional(),
-  shippingPhone: z.string().max(30).optional(),
+  shippingPhone: createOptionalPhoneSchema('Shipping phone must be 10 digits.'),
   shippingAt: z.string().max(40).optional(),
   companyName: z.string().max(160).optional(),
   milesOffered: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),

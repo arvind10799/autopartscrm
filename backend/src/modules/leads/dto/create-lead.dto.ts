@@ -8,6 +8,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -33,7 +34,7 @@ export class CreateLeadDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
-  @MaxLength(30)
+  @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
   customerPhone: string;
 
   @Transform(({ value }) => trimString(value))

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { formatUsPhoneNumber, hasCompleteUsPhoneNumber } from '@/lib/forms/phone-format';
 import { LEAD_QUOTE_CURRENCIES, LEAD_STATUSES } from '../types/lead.types';
 
 const userRoleSchema = z.enum(['ADMIN', 'SALES', 'SHIPPING']);
@@ -11,6 +12,22 @@ const cmptSchema = z.enum(['YES', 'NO'], {
 const cmptFormSchema = z
   .string()
   .refine((value) => value === 'YES' || value === 'NO', 'CMPT is required.');
+const requiredPhoneSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+
+    return formatUsPhoneNumber(value.trim());
+  },
+  z
+    .string({
+      required_error: 'Phone number is required.',
+      invalid_type_error: 'Phone number is required.',
+    })
+    .min(1, 'Phone number is required.')
+    .refine(hasCompleteUsPhoneNumber, 'Phone number must be 10 digits.'),
+);
 const paginationMetaSchema = z.object({
   page: z.number(),
   limit: z.number(),
@@ -126,11 +143,7 @@ export const createLeadSchema = z.object({
     .trim()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Lead date is required.'),
   cmpt: cmptSchema,
-  customerPhone: z
-    .string()
-    .trim()
-    .min(1, 'Phone number is required.')
-    .max(30, 'Phone number must be 30 characters or fewer.'),
+  customerPhone: requiredPhoneSchema,
   customerName: z
     .string()
     .trim()
@@ -190,9 +203,7 @@ export const createLeadFormSchema = z.object({
     .trim()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Lead date is required.'),
   cmpt: cmptFormSchema,
-  customerPhone: z
-    .string()
-    .max(30, 'Phone number must be 30 characters or fewer.'),
+  customerPhone: requiredPhoneSchema,
   customerName: z
     .string()
     .max(160, 'Customer name must be 160 characters or fewer.'),

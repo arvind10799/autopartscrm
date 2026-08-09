@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -29,7 +30,7 @@ export class CreateInvoiceDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(30)
+  @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
   contactNumber?: string;
 
   @IsOptional()

@@ -297,11 +297,6 @@ export function LeadsPageContent() {
 
             <div className="max-h-[calc(100vh-5.5rem)] overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
               <CreateLeadForm
-                adviserName={
-                  selectedEditLead?.adviserName ??
-                  authUser?.name ??
-                  'Loading adviser...'
-                }
                 initialLead={selectedEditLead}
                 onSaved={handleLeadSaved}
               />

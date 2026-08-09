@@ -8,6 +8,8 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Length,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -16,6 +18,7 @@ import { OrderStatus } from '../../../common/enums/order-status.enum';
 import {
   trimToLowerCaseEmail,
   trimToUndefined,
+  trimToUpperCase,
 } from '../../../common/utils/transform.util';
 
 export class UpdateOrderDto {
@@ -40,7 +43,7 @@ export class UpdateOrderDto {
   @Transform(({ value }) => trimToUndefined(value))
   @IsOptional()
   @IsString()
-  @MaxLength(30)
+  @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
   customerPhone?: string;
 
   @Type(() => Number)
@@ -109,10 +112,10 @@ export class UpdateOrderDto {
   @MaxLength(120)
   vehicleVariant?: string;
 
-  @Transform(({ value }) => trimToUndefined(value))
+  @Transform(({ value }) => trimToUpperCase(value))
   @IsOptional()
   @IsString()
-  @MaxLength(60)
+  @Length(17, 17)
   vehicleVin?: string;
 
   @Transform(({ value }) => trimToUndefined(value))
@@ -142,7 +145,7 @@ export class UpdateOrderDto {
   @Transform(({ value }) => trimToUndefined(value))
   @IsOptional()
   @IsString()
-  @MaxLength(30)
+  @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
   billingPhone?: string;
 
   @Transform(({ value }) => trimToUndefined(value))
@@ -160,7 +163,7 @@ export class UpdateOrderDto {
   @Transform(({ value }) => trimToUndefined(value))
   @IsOptional()
   @IsString()
-  @MaxLength(30)
+  @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
   shippingPhone?: string;
 
   @Transform(({ value }) => trimToUndefined(value))

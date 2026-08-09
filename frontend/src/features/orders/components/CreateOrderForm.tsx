@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { vehicleLookupApi } from '@/features/vehicle-lookup/api/vehicle-lookup-api';
 import type { VehicleLookupOption } from '@/features/vehicle-lookup/types/vehicle-lookup.types';
+import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
 import { cn } from '@/lib/utils/cn';
 import { getErrorMessage } from '@/lib/utils/error';
 import { ordersApi } from '../api/orders-api';
@@ -79,6 +80,10 @@ function getFirstFilledAmount(
   );
 }
 
+function getStringValue(value: unknown) {
+  return typeof value === 'string' ? value : '';
+}
+
 function buildCreateOrderFormValues(
   initialValues?: Partial<CreateOrderFormValues>,
 ): CreateOrderFormValues {
@@ -95,6 +100,10 @@ function buildCreateOrderFormValues(
 
   return {
     ...values,
+    customerPhone: formatUsPhoneNumber(getStringValue(values.customerPhone)),
+    vehicleVin: getStringValue(values.vehicleVin).toUpperCase().slice(0, 17),
+    billingPhone: formatUsPhoneNumber(getStringValue(values.billingPhone)),
+    shippingPhone: formatUsPhoneNumber(getStringValue(values.shippingPhone)),
     salePrice: getFirstFilledAmount(values.salePrice, inferredTotal) ?? '',
     total: getFirstFilledAmount(values.total, inferredTotal) ?? '',
     partialPayment:
@@ -368,6 +377,26 @@ export function CreateOrderForm({
     resolver: zodResolver(createOrderFormSchema),
     defaultValues: resolvedFormValues,
   });
+  const customerPhoneInput = form.register('customerPhone');
+  const vehicleVinInput = form.register('vehicleVin');
+  const billingPhoneInput = form.register('billingPhone');
+  const shippingPhoneInput = form.register('shippingPhone');
+  const handleCustomerPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatUsPhoneNumber(event.target.value);
+    void customerPhoneInput.onChange(event);
+  };
+  const handleVehicleVinChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.target.value = event.target.value.toUpperCase().slice(0, 17);
+    void vehicleVinInput.onChange(event);
+  };
+  const handleBillingPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatUsPhoneNumber(event.target.value);
+    void billingPhoneInput.onChange(event);
+  };
+  const handleShippingPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatUsPhoneNumber(event.target.value);
+    void shippingPhoneInput.onChange(event);
+  };
   const [
     status,
     total,
@@ -824,9 +853,10 @@ export function CreateOrderForm({
                   id="customerPhone"
                   type="tel"
                   maxLength={14}
-                  placeholder="+15551234567"
+                  placeholder="(555) 555-1234"
                   className="h-11 rounded-xl"
-                  {...form.register('customerPhone')}
+                  {...customerPhoneInput}
+                  onChange={handleCustomerPhoneChange}
                 />
               </Field>
 
@@ -960,7 +990,8 @@ export function CreateOrderForm({
                   id="vehicleVin"
                   maxLength={17}
                   className="h-11 rounded-xl"
-                  {...form.register('vehicleVin')}
+                  {...vehicleVinInput}
+                  onChange={handleVehicleVinChange}
                 />
               </Field>
 
@@ -1027,7 +1058,8 @@ export function CreateOrderForm({
                         type="tel"
                         maxLength={14}
                         className="h-11 rounded-xl"
-                        {...form.register('billingPhone')}
+                        {...billingPhoneInput}
+                        onChange={handleBillingPhoneChange}
                       />
                     </Field>
                   </div>
@@ -1075,7 +1107,8 @@ export function CreateOrderForm({
                         type="tel"
                         maxLength={14}
                         className="h-11 rounded-xl"
-                        {...form.register('shippingPhone')}
+                        {...shippingPhoneInput}
+                        onChange={handleShippingPhoneChange}
                       />
                     </Field>
                   </div>

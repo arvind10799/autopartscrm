@@ -16,6 +16,7 @@ import type {
   InvoiceSignatureRequestResult,
 } from '@/features/invoices/types/invoice.types';
 import type { OrderDetail } from '@/features/orders/types/order.types';
+import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
 import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
 
@@ -719,7 +720,13 @@ function InvoiceFormModal({
 
             <InvoiceFormSection title="Customer Information">
               <InvoiceInput label="Customer Name" value={draft.customerName} onChange={(value) => updateField('customerName', value)} />
-              <InvoiceInput label="Contact Number" value={draft.contactNumber} onChange={(value) => updateField('contactNumber', value)} />
+              <InvoiceInput
+                label="Contact Number"
+                type="tel"
+                maxLength={14}
+                value={draft.contactNumber}
+                onChange={(value) => updateField('contactNumber', formatUsPhoneNumber(value))}
+              />
               <InvoiceTextarea label="Billing Address" value={draft.billingAddress} onChange={(value) => updateField('billingAddress', value)} />
             </InvoiceFormSection>
 
@@ -1325,6 +1332,7 @@ function InvoiceTextarea({
 function defaultsToDraft(defaults: InvoiceDefaults): InvoiceDraft {
   return {
     ...defaults,
+    contactNumber: formatUsPhoneNumber(defaults.contactNumber),
     warrantyPartsOnly: defaults.warrantyPartsOnly || DEFAULT_WARRANTY_PARTS_ONLY,
     quantity: String(defaults.quantity),
     saleAmount: formatNumberInput(defaults.saleAmount),
@@ -1360,7 +1368,7 @@ function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
     invoiceDate: formatDateInputValue(invoice.invoiceDate),
     salesAssistant: invoice.salesAssistant ?? '',
     customerName: invoice.customerName,
-    contactNumber: invoice.contactNumber ?? '',
+    contactNumber: formatUsPhoneNumber(invoice.contactNumber ?? ''),
     billingAddress: invoice.billingAddress ?? '',
     shippingAddress: invoice.shippingAddress ?? '',
     shippingVendor: invoice.shippingVendor,

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { formatUsPhoneNumber, hasCompleteUsPhoneNumber } from '@/lib/forms/phone-format';
 
 const optionalInvoiceTextSchema = (maxLength: number, message: string) =>
   z.preprocess(
@@ -12,6 +13,21 @@ const optionalInvoiceTextSchema = (maxLength: number, message: string) =>
     },
     z.string().max(maxLength, message).optional(),
   );
+
+const optionalInvoicePhoneSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+
+    const trimmedValue = value.trim();
+    return trimmedValue.length > 0 ? formatUsPhoneNumber(trimmedValue) : undefined;
+  },
+  z
+    .string()
+    .refine(hasCompleteUsPhoneNumber, 'Contact number must be 10 digits.')
+    .optional(),
+);
 
 const invoiceAmountSchema = z.coerce
   .number()
@@ -190,10 +206,7 @@ export const createInvoiceSchema = z
       .trim()
       .min(1, 'Customer name is required.')
       .max(160, 'Customer name must be 160 characters or fewer.'),
-    contactNumber: optionalInvoiceTextSchema(
-      30,
-      'Contact number must be 30 characters or fewer.',
-    ),
+    contactNumber: optionalInvoicePhoneSchema,
     billingAddress: optionalInvoiceTextSchema(
       1000,
       'Billing address must be 1000 characters or fewer.',
