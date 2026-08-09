@@ -15,17 +15,16 @@ import { Select } from '@/components/ui/select';
 import {
   buildTimestampRangeQuery,
   createDefaultDateRangeFilterState,
+  type DateRangeFilterState,
 } from '@/lib/filters/date-range';
 import { useShipmentsList } from '../hooks/useShipmentsList';
 import {
   ALL_SHIPMENT_STATUS_FILTER,
   formatShipmentStatusOptionLabel,
-  getShipmentPageMetrics,
   parseShipmentStatusFilter,
   type ShipmentStatusFilter,
 } from '../lib/shipments.helpers';
 import { SHIPMENT_STATUSES } from '../types/shipment.types';
-import { ShipmentMetricsCards } from './ShipmentMetricsCards';
 import { ShipmentsTable } from './ShipmentsTable';
 
 export function ShipmentsPageContent() {
@@ -52,10 +51,6 @@ export function ShipmentsPageContent() {
     refreshKey,
   });
   const { totalPages } = shipmentsResponse.meta;
-  const { inTransitCount, delayedCount } = getShipmentPageMetrics(
-    shipmentsResponse.items,
-  );
-
   useEffect(() => {
     if (isLoading) {
       return;
@@ -81,20 +76,17 @@ export function ShipmentsPageContent() {
     startTransition(() => setPage(1));
   };
 
+  const handleDateFilterChange = (value: DateRangeFilterState) => {
+    setDateFilter(value);
+    startTransition(() => setPage(1));
+  };
+
   const handleRetry = () => {
     setRefreshKey((currentValue) => currentValue + 1);
   };
 
   return (
     <section className="grid gap-6">
-      <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-
-      <ShipmentMetricsCards
-        total={shipmentsResponse.meta.total}
-        inTransitCount={inTransitCount}
-        delayedCount={delayedCount}
-      />
-
       <div className="grid gap-6">
         <Card>
           <CardHeader className="space-y-4">
@@ -105,7 +97,7 @@ export function ShipmentsPageContent() {
               </CardDescription>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -129,6 +121,14 @@ export function ShipmentsPageContent() {
                   </option>
                 ))}
               </Select>
+
+              <div className="lg:col-span-2">
+                <DateRangeFilter
+                  value={dateFilter}
+                  onChange={handleDateFilterChange}
+                  variant="inline"
+                />
+              </div>
             </div>
           </CardHeader>
 

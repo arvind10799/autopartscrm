@@ -864,12 +864,13 @@ export function CreateOrderForm({
                 id="customerEmail"
                 label="Email"
                 error={form.formState.errors.customerEmail?.message?.toString()}
+                className="md:col-span-2 xl:col-span-2"
               >
                 <Input
                   id="customerEmail"
                   type="email"
                   placeholder="buyer@metroparts.com"
-                  className="h-11 rounded-xl"
+                  className="h-11 min-w-0 rounded-xl"
                   {...form.register('customerEmail')}
                 />
               </Field>
@@ -1073,12 +1074,14 @@ export function CreateOrderForm({
                 <div className="grid gap-3">
                   <Field
                     id="shippingAddress"
-                    label="Address"
+                    label="Business address"
                     error={form.formState.errors.shippingAddress?.message?.toString()}
                   >
                     <Textarea
                       id="shippingAddress"
                       rows={3}
+                      placeholder={`Business name
+Business address`}
                       className="min-h-[88px] rounded-xl"
                       {...form.register('shippingAddress')}
                     />
@@ -1113,7 +1116,7 @@ export function CreateOrderForm({
                     </Field>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3">
                     <Field
                       id="shippingAt"
                       label="Date"
@@ -1122,7 +1125,7 @@ export function CreateOrderForm({
                       <Input
                         id="shippingAt"
                         type="date"
-                        className="h-11 rounded-xl"
+                        className="h-11 w-full min-w-0 rounded-xl pr-3"
                         {...form.register('shippingAt')}
                       />
                     </Field>
@@ -1272,7 +1275,7 @@ export function CreateOrderForm({
                   value={formatCurrency(paidNowValue || 0, selectedOrderCurrency)}
                 />
                 <MetricCard
-                  label="Balance"
+                  label="Remaining amount"
                   value={formatCurrency(remainingBalance, selectedOrderCurrency)}
                 />
               </div>

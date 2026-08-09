@@ -273,7 +273,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                   value={formatCurrency(paidNowAmount, order.currency)}
                 />
                 <DetailBlock
-                  label="Balance"
+                  label="Remaining amount"
                   value={formatCurrency(balanceAmount, order.currency)}
                 />
                 <DetailBlock
