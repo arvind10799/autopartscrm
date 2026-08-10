@@ -30,6 +30,8 @@ export interface InvoiceAuditTrail {
   events: InvoiceAuditEvent[];
 }
 
+export type InvoiceCurrency = 'USD' | 'CAD';
+
 export interface InvoiceRecord {
   id: string;
   orderId: string;
@@ -47,6 +49,7 @@ export interface InvoiceRecord {
   warrantyPartsOnly: string | null;
   quantity: number;
   saleAmount: number;
+  currency: InvoiceCurrency;
   paymentStatus: string | null;
   paymentDate: string | null;
   paymentSource: string | null;

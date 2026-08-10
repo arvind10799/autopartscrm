@@ -26,6 +26,7 @@ type SignedMailInvoice = MailInvoice & {
   warrantyPartsOnly?: string | null;
   quantity: number;
   saleAmount: number;
+  currency?: string | null;
   paymentStatus?: string | null;
   paymentDate?: Date | null;
   paymentSource?: string | null;
@@ -392,7 +393,7 @@ export class InvoiceMailService {
       })
       .text(invoice.vehiclePartDescription ?? '', left + 12, 380, { width: 300 })
       .text(String(invoice.quantity), 405, 356, { width: 42, align: 'center' })
-      .text(this.formatMoney(invoice.saleAmount), 486, 356, {
+      .text(this.formatMoney(invoice.saleAmount, invoice.currency), 486, 356, {
         width: 56,
         align: 'center',
       });
@@ -430,9 +431,30 @@ export class InvoiceMailService {
       .fillColor('#56575c')
       .text(' ( Missed or reattempt delivery )');
 
-    this.drawChargeLine(document, 'Shipping Cost', invoice.shippingCost, 388, 436);
-    this.drawChargeLine(document, 'Sales Taxes', invoice.salesTaxes, 388, 452);
-    this.drawChargeLine(document, 'Core Charge', invoice.coreCharge, 388, 468);
+    this.drawChargeLine(
+      document,
+      'Shipping Cost',
+      invoice.shippingCost,
+      invoice.currency,
+      388,
+      436,
+    );
+    this.drawChargeLine(
+      document,
+      'Sales Taxes',
+      invoice.salesTaxes,
+      invoice.currency,
+      388,
+      452,
+    );
+    this.drawChargeLine(
+      document,
+      'Core Charge',
+      invoice.coreCharge,
+      invoice.currency,
+      388,
+      468,
+    );
     document
       .font('Helvetica-Bold')
       .fontSize(11)
@@ -440,7 +462,7 @@ export class InvoiceMailService {
       .text('TOTAL', 390, 504)
       .fontSize(8)
       .fillColor('#111827')
-      .text(this.formatMoney(invoice.totalAmount), 500, 506);
+      .text(this.formatMoney(invoice.totalAmount, invoice.currency), 500, 506);
 
     this.drawSignature(document, invoice);
     this.drawFooter(document);
@@ -599,6 +621,7 @@ export class InvoiceMailService {
     document: PDFKit.PDFDocument,
     label: string,
     value: number,
+    currency: string | null | undefined,
     x: number,
     y: number,
   ) {
@@ -608,7 +631,7 @@ export class InvoiceMailService {
       .fillColor('#66676d')
       .text(label, x, y)
       .fillColor('#111827')
-      .text(this.formatMoney(value), x + 132, y);
+      .text(this.formatMoney(value, currency), x + 132, y);
   }
 
   private drawSignature(document: PDFKit.PDFDocument, invoice: SignedMailInvoice) {
@@ -723,9 +746,9 @@ export class InvoiceMailService {
     return Buffer.from(match[1], 'base64');
   }
 
-  private formatMoney(value: number): string {
+  private formatMoney(value: number, currency?: string | null): string {
     return new Intl.NumberFormat('en-US', {
-      currency: 'USD',
+      currency: currency === 'CAD' ? 'CAD' : 'USD',
       style: 'currency',
     }).format(value);
   }

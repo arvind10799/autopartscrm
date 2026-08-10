@@ -37,6 +37,8 @@ const invoiceAmountSchema = z.coerce
     'Amount can include at most 2 decimal places.',
   );
 
+const invoiceCurrencySchema = z.enum(['USD', 'CAD']).catch('USD');
+
 const optionalDateSchema = z.preprocess(
   (value) => {
     if (typeof value !== 'string') {
@@ -98,6 +100,7 @@ export const invoiceRecordSchema = z.object({
   warrantyPartsOnly: z.string().nullable(),
   quantity: z.number(),
   saleAmount: z.coerce.number(),
+  currency: invoiceCurrencySchema,
   paymentStatus: z.string().nullable(),
   paymentDate: z.string().nullable(),
   paymentSource: z.string().nullable(),
@@ -140,6 +143,7 @@ export const invoiceDefaultsSchema = z.object({
   warrantyPartsOnly: z.string(),
   quantity: z.number(),
   saleAmount: z.coerce.number(),
+  currency: invoiceCurrencySchema,
   paymentStatus: z.string(),
   paymentDate: z.string(),
   paymentSource: z.string(),

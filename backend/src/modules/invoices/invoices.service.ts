@@ -48,6 +48,7 @@ type InvoiceAuditSource = {
   order?: {
     customerEmail?: string | null;
     customerPhone?: string | null;
+    currency?: string | null;
   } | null;
 };
 
@@ -106,6 +107,7 @@ export class InvoicesService {
       warrantyPartsOnly: DEFAULT_WARRANTY_PARTS_ONLY,
       quantity: order.quantity,
       saleAmount: Number(order.totalSaleAmount),
+      currency: this.normalizeCurrency(order.currency),
       paymentStatus: '',
       paymentDate: '',
       paymentSource: '',
@@ -473,6 +475,7 @@ export class InvoicesService {
             signedInvoice.warrantyPartsOnly ?? DEFAULT_WARRANTY_PARTS_ONLY,
           quantity: signedInvoice.quantity,
           saleAmount: Number(signedInvoice.saleAmount),
+          currency: this.normalizeCurrency(signedInvoice.order.currency),
           paymentStatus: signedInvoice.paymentStatus,
           paymentDate: signedInvoice.paymentDate,
           paymentSource: signedInvoice.paymentSource,
@@ -664,7 +667,9 @@ export class InvoicesService {
   private serializeInvoice<
     T extends {
       signatureTokenHash?: string | null;
-      order?: unknown;
+      order?: {
+        currency?: string | null;
+      } | null;
       auditEvents?: InvoiceAuditEventRecord[];
       photoIdDocument?: string | null;
       photoIdFileName?: string | null;
@@ -685,8 +690,13 @@ export class InvoicesService {
 
     return {
       ...safeInvoice,
+      currency: this.normalizeCurrency(invoice.order?.currency),
       auditTrail: this.buildAuditTrail(invoice),
     };
+  }
+
+  private normalizeCurrency(currency?: string | null): 'USD' | 'CAD' {
+    return currency === 'CAD' ? 'CAD' : 'USD';
   }
 
   private async createAuditEvent(

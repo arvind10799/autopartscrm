@@ -11,6 +11,7 @@ import { useAuthStore } from '@/features/auth/store/auth.store';
 import { invoicesApi } from '@/features/invoices/api/invoices-api';
 import type {
   CreateInvoiceInput,
+  InvoiceCurrency,
   InvoiceDefaults,
   InvoiceRecord,
   InvoiceSignatureRequestResult,
@@ -35,6 +36,7 @@ type InvoiceDraft = {
   warrantyPartsOnly: string;
   quantity: string;
   saleAmount: string;
+  currency: InvoiceCurrency;
   paymentStatus: string;
   paymentDate: string;
   paymentSource: string;
@@ -739,7 +741,7 @@ function InvoiceFormModal({
             <InvoiceFormSection title="Product Information">
               <InvoiceTextarea label="Item Description" value={draft.itemDescription} onChange={(value) => updateField('itemDescription', value)} />
               <InvoiceInput label="Quantity" type="number" min="1" value={draft.quantity} onChange={(value) => updateField('quantity', value)} />
-              <InvoiceInput label="Sale Amount" type="number" step="0.01" value={draft.saleAmount} onChange={(value) => updateField('saleAmount', value)} />
+              <InvoiceInput label={`Sale Amount (${draft.currency})`} type="number" step="0.01" value={draft.saleAmount} onChange={(value) => updateField('saleAmount', value)} />
             </InvoiceFormSection>
 
             <InvoiceFormSection title="Warranty Terms">
@@ -762,10 +764,10 @@ function InvoiceFormModal({
               <InvoiceInput label="Core Charge" type="number" step="0.01" value={draft.coreCharge} onChange={(value) => updateField('coreCharge', value)} />
               <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                  Total Amount
+                  Total Amount ({draft.currency})
                 </p>
                 <p className="mt-1 font-[var(--font-heading)] text-2xl font-semibold tabular-nums">
-                  {formatMoney(totalAmount)}
+                  {formatMoney(totalAmount, draft.currency)}
                 </p>
               </div>
             </InvoiceFormSection>
@@ -996,7 +998,7 @@ function InvoiceDocument({ invoice }, ref) {
         <div className="invoice-table-row">
           <span>{invoice.itemDescription}</span>
           <span>{invoice.quantity}</span>
-          <span>{formatMoney(invoice.saleAmount)}</span>
+          <span>{formatMoney(invoice.saleAmount, invoice.currency)}</span>
         </div>
       </section>
 
@@ -1018,19 +1020,19 @@ function InvoiceDocument({ invoice }, ref) {
         <div className="invoice-charge-summary">
           <p>
             <span>Shipping Cost</span>
-            <span>{formatMoney(invoice.shippingCost)}</span>
+            <span>{formatMoney(invoice.shippingCost, invoice.currency)}</span>
           </p>
           <p>
             <span>Sales Taxes</span>
-            <span>{formatMoney(invoice.salesTaxes)}</span>
+            <span>{formatMoney(invoice.salesTaxes, invoice.currency)}</span>
           </p>
           <p>
             <span>Core Charge</span>
-            <span>{formatMoney(invoice.coreCharge)}</span>
+            <span>{formatMoney(invoice.coreCharge, invoice.currency)}</span>
           </p>
           <p className="invoice-total-line">
             <strong>TOTAL</strong>
-            <strong>{formatMoney(invoice.totalAmount)}</strong>
+            <strong>{formatMoney(invoice.totalAmount, invoice.currency)}</strong>
           </p>
         </div>
         <div className="invoice-additional-charges">
@@ -1383,6 +1385,7 @@ function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
     warrantyPartsOnly: invoice.warrantyPartsOnly ?? DEFAULT_WARRANTY_PARTS_ONLY,
     quantity: String(invoice.quantity),
     saleAmount: formatNumberInput(invoice.saleAmount),
+    currency: invoice.currency,
     paymentStatus: invoice.paymentStatus ?? '',
     paymentDate: formatDateInputValue(invoice.paymentDate),
     paymentSource: invoice.paymentSource ?? '',
@@ -1461,6 +1464,7 @@ function draftToInvoicePreview(orderId: string, draft: InvoiceDraft): InvoiceRec
     signatureRequestedAt: null,
     signatureLastSentAt: null,
     totalAmount: calculateInvoiceTotal(draft),
+    currency: draft.currency,
     status: 'PREVIEW',
     pdfStorageKey: null,
     createdAt: new Date().toISOString(),
@@ -1530,10 +1534,10 @@ function splitShippingAddress(value?: string | null): {
   };
 }
 
-function formatMoney(value: number): string {
+function formatMoney(value: number, currency: InvoiceCurrency = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
   }).format(value);
 }
 
