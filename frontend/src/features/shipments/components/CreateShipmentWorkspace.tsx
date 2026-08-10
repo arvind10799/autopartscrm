@@ -364,7 +364,12 @@ function ShipmentOrderDetailsPanel({
             />
             <DetailBlock
               label="Shipping address"
-              value={intake.shippingAddress ?? 'Not provided'}
+              value={
+                <ShippingAddressValue
+                  businessName={intake.companyName}
+                  shippingAddress={intake.shippingAddress}
+                />
+              }
               className="2xl:col-span-2"
             />
             <DetailBlock
@@ -378,10 +383,6 @@ function ShipmentOrderDetailsPanel({
             <DetailBlock
               label="Shipping date"
               value={intake.shippingAt ? formatDate(intake.shippingAt) : 'Not provided'}
-            />
-            <DetailBlock
-              label="Company name"
-              value={intake.companyName ?? 'Not provided'}
             />
           </DetailGrid>
         </DetailGroup>
@@ -506,7 +507,7 @@ function DetailBlock({
   breakAnywhere = false,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   className?: string;
   breakAnywhere?: boolean;
 }) {
@@ -524,6 +525,32 @@ function DetailBlock({
           {value}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ShippingAddressValue({
+  businessName,
+  shippingAddress,
+}: {
+  businessName?: string | null;
+  shippingAddress?: string | null;
+}) {
+  const trimmedBusinessName = businessName?.trim();
+  const trimmedShippingAddress = shippingAddress?.trim();
+
+  if (!trimmedBusinessName && !trimmedShippingAddress) {
+    return 'Not provided';
+  }
+
+  return (
+    <div className="space-y-1">
+      {trimmedBusinessName ? (
+        <p className="font-semibold text-foreground">{trimmedBusinessName}</p>
+      ) : null}
+      {trimmedShippingAddress ? (
+        <p className="whitespace-pre-wrap text-foreground">{trimmedShippingAddress}</p>
+      ) : null}
     </div>
   );
 }

@@ -210,7 +210,12 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
               <CollapsibleDetailSection title="Shipping Information">
                 <DetailBlock
                   label="Shipping Address"
-                  value={intake.shippingAddress ?? 'Not provided'}
+                  value={
+                    <ShippingAddressValue
+                      businessName={intake.companyName}
+                      shippingAddress={intake.shippingAddress}
+                    />
+                  }
                 />
                 <DetailBlock
                   label="Shipping Person"
@@ -223,10 +228,6 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 <DetailBlock
                   label="Shipping Date"
                   value={intake.shippingAt ? formatDate(intake.shippingAt) : 'Not provided'}
-                />
-                <DetailBlock
-                  label="Company Name"
-                  value={intake.companyName ?? 'Not provided'}
                 />
                 <DetailBlock
                   label="Shipping status"
@@ -564,6 +565,32 @@ function DetailBlock({
       <div className="mt-1.5 whitespace-pre-wrap text-sm leading-6 text-foreground">
         {value}
       </div>
+    </div>
+  );
+}
+
+function ShippingAddressValue({
+  businessName,
+  shippingAddress,
+}: {
+  businessName?: string | null;
+  shippingAddress?: string | null;
+}) {
+  const trimmedBusinessName = businessName?.trim();
+  const trimmedShippingAddress = shippingAddress?.trim();
+
+  if (!trimmedBusinessName && !trimmedShippingAddress) {
+    return 'Not provided';
+  }
+
+  return (
+    <div className="space-y-1">
+      {trimmedBusinessName ? (
+        <p className="font-semibold text-foreground">{trimmedBusinessName}</p>
+      ) : null}
+      {trimmedShippingAddress ? (
+        <p className="whitespace-pre-wrap text-foreground">{trimmedShippingAddress}</p>
+      ) : null}
     </div>
   );
 }
