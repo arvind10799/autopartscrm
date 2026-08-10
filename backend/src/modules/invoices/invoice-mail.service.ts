@@ -320,16 +320,22 @@ export class InvoiceMailService {
 
     const left = 30;
     const right = 565;
+    const shippingAddress = this.splitShippingAddress(invoice.shippingAddress);
 
     document
       .fontSize(11)
       .fillColor('#56575c')
       .font('Helvetica-Bold')
       .text('Shipping Address:', left + 10, 138)
-      .font('Helvetica')
+      .font('Helvetica-Bold')
       .fontSize(8)
       .fillColor('#111827')
-      .text(invoice.shippingAddress ?? '', left + 116, 139, { width: 168 });
+      .text(shippingAddress.businessName, left + 116, 139, { width: 168 })
+      .font('Helvetica')
+      .text(shippingAddress.businessAddress, left + 116, shippingAddress.businessName ? 151 : 139, {
+        width: 168,
+        lineGap: 2,
+      });
 
     document
       .fontSize(11)
@@ -744,6 +750,28 @@ export class InvoiceMailService {
 
   private normalizeMultilineText(value: string): string {
     return value.replace(/\r\n?/g, '\n');
+  }
+
+  private splitShippingAddress(value?: string | null): {
+    businessName: string;
+    businessAddress: string;
+  } {
+    const lines = this.normalizeMultilineText(value ?? '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length <= 1) {
+      return {
+        businessName: '',
+        businessAddress: lines.join('\n'),
+      };
+    }
+
+    return {
+      businessName: lines[0],
+      businessAddress: lines.slice(1).join('\n'),
+    };
   }
 
   private findInvoiceLogoPath(): string {

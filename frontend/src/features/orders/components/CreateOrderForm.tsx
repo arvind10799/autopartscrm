@@ -71,8 +71,6 @@ const defaultValues: CreateOrderFormValues = {
   note: '',
 };
 const DEFAULT_CREATE_ORDER_STATUS = 'CONFIRMED' as const;
-const DEFAULT_SHIPPING_ADDRESS_TEMPLATE = `Business name
-Business address`;
 
 function getFirstFilledAmount(
   ...values: Array<CreateOrderFormValues['salePrice'] | undefined>
@@ -105,10 +103,7 @@ function buildCreateOrderFormValues(
     customerPhone: formatUsPhoneNumber(getStringValue(values.customerPhone)),
     vehicleVin: getStringValue(values.vehicleVin).toUpperCase().slice(0, 17),
     billingPhone: formatUsPhoneNumber(getStringValue(values.billingPhone)),
-    shippingAddress:
-      getStringValue(values.shippingAddress).trim().length > 0
-        ? getStringValue(values.shippingAddress)
-        : DEFAULT_SHIPPING_ADDRESS_TEMPLATE,
+    shippingAddress: getStringValue(values.shippingAddress),
     shippingPhone: formatUsPhoneNumber(getStringValue(values.shippingPhone)),
     salePrice: getFirstFilledAmount(values.salePrice, inferredTotal) ?? '',
     total: getFirstFilledAmount(values.total, inferredTotal) ?? '',
@@ -1078,18 +1073,39 @@ export function CreateOrderForm({
                   Shipping
                 </p>
                 <div className="grid gap-3">
-                  <Field
-                    id="shippingAddress"
-                    label="Address"
-                    error={form.formState.errors.shippingAddress?.message?.toString()}
-                  >
-                    <Textarea
-                      id="shippingAddress"
-                      rows={3}
-                      className="min-h-[88px] rounded-xl"
-                      {...form.register('shippingAddress')}
-                    />
-                  </Field>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      Address
+                    </Label>
+                    <div className="grid gap-3 rounded-2xl border border-border/60 bg-white/60 p-3">
+                      <Field
+                        id="shippingAddress"
+                        label="Business address"
+                        error={form.formState.errors.shippingAddress?.message?.toString()}
+                      >
+                        <Textarea
+                          id="shippingAddress"
+                          rows={3}
+                          className="min-h-[88px] rounded-xl"
+                          placeholder="No112, AKR Tech Park, kudlu Gate, industrial Layout, Begur"
+                          {...form.register('shippingAddress')}
+                        />
+                      </Field>
+
+                      <Field
+                        id="companyName"
+                        label="Business name"
+                        error={form.formState.errors.companyName?.message?.toString()}
+                      >
+                        <Input
+                          id="companyName"
+                          className="h-11 rounded-xl"
+                          placeholder="Rock One"
+                          {...form.register('companyName')}
+                        />
+                      </Field>
+                    </div>
+                  </div>
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -1131,18 +1147,6 @@ export function CreateOrderForm({
                         type="date"
                         className="h-11 w-full min-w-0 rounded-xl pr-3"
                         {...form.register('shippingAt')}
-                      />
-                    </Field>
-
-                    <Field
-                      id="companyName"
-                      label="Company name"
-                      error={form.formState.errors.companyName?.message?.toString()}
-                    >
-                      <Input
-                        id="companyName"
-                        className="h-11 rounded-xl"
-                        {...form.register('companyName')}
                       />
                     </Field>
                   </div>

@@ -95,7 +95,10 @@ export class InvoicesService {
         order.customerPhone ??
         '',
       billingAddress: this.getString(intakeDetails.billingAddress) ?? '',
-      shippingAddress: this.getString(intakeDetails.shippingAddress) ?? '',
+      shippingAddress: this.formatShippingAddress(
+        this.getString(intakeDetails.companyName),
+        this.getString(intakeDetails.shippingAddress),
+      ),
       shippingVendor: 'LTL',
       deliveryTimeline: '7-8 Business Days',
       itemDescription: order.partDescription,
@@ -503,6 +506,16 @@ export class InvoicesService {
       createInvoiceDto.coreCharge;
 
     return Number(totalAmount.toFixed(2));
+  }
+
+  private formatShippingAddress(
+    businessName?: string | null,
+    businessAddress?: string | null,
+  ): string {
+    return [businessName, businessAddress]
+      .map((value) => value?.trim())
+      .filter(Boolean)
+      .join('\n');
   }
 
   private assertOrderCanGenerateInvoice(order: { status: string }) {

@@ -943,6 +943,8 @@ function PhotoIdViewModal({
 
 export const InvoiceDocument = forwardRef<HTMLDivElement, { invoice: InvoiceRecord }>(
 function InvoiceDocument({ invoice }, ref) {
+  const shippingAddress = splitShippingAddress(invoice.shippingAddress);
+
   return (
   <div ref={ref} className="invoice-document">
     <style>{INVOICE_DOCUMENT_CSS}</style>
@@ -954,7 +956,10 @@ function InvoiceDocument({ invoice }, ref) {
         <div className="invoice-address-cell invoice-address-cell--shipping">
           <p>
             <strong>Shipping Address :</strong>
-            <span>{invoice.shippingAddress || ''}</span>
+            <span className="invoice-shipping-address">
+              {shippingAddress.businessName ? <b>{shippingAddress.businessName}</b> : null}
+              {shippingAddress.businessAddress ? <span>{shippingAddress.businessAddress}</span> : null}
+            </span>
           </p>
           <p>
             <strong>Shipping Vendor :</strong>
@@ -1501,6 +1506,28 @@ function parseWarrantyLines(value?: string | null): string[] {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function splitShippingAddress(value?: string | null): {
+  businessName: string;
+  businessAddress: string;
+} {
+  const lines = (value ?? '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length <= 1) {
+    return {
+      businessName: '',
+      businessAddress: lines.join('\n'),
+    };
+  }
+
+  return {
+    businessName: lines[0],
+    businessAddress: lines.slice(1).join('\n'),
+  };
 }
 
 function formatMoney(value: number): string {
@@ -2413,6 +2440,25 @@ const INVOICE_DOCUMENT_CSS = `
     font-weight: 500;
     line-height: 19px;
     overflow-wrap: anywhere;
+  }
+
+  .invoice-address-cell .invoice-shipping-address {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 1px;
+    vertical-align: top;
+  }
+
+  .invoice-address-cell .invoice-shipping-address b {
+    color: #1f2732;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 15px;
+  }
+
+  .invoice-address-cell .invoice-shipping-address span {
+    margin-left: 0;
   }
 
   .invoice-delivery-note {
