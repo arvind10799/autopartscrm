@@ -1087,7 +1087,7 @@ export function CreateOrderForm({
                           id="shippingAddress"
                           rows={3}
                           className="min-h-[88px] rounded-xl"
-                          placeholder="No112, AKR Tech Park, kudlu Gate, industrial Layout, Begur"
+                          placeholder="Enter business address"
                           {...form.register('shippingAddress')}
                         />
                       </Field>
@@ -1100,7 +1100,7 @@ export function CreateOrderForm({
                         <Input
                           id="companyName"
                           className="h-11 rounded-xl"
-                          placeholder="Rock One"
+                          placeholder="Enter business name"
                           {...form.register('companyName')}
                         />
                       </Field>
