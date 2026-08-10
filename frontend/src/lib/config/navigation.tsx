@@ -58,7 +58,7 @@ export const navigationConfig: NavigationItemConfig[] = [
   },
   {
     href: '/shipments/create',
-    label: 'Create shipment',
+    label: 'Shipment orders',
     description: 'Pick eligible confirmed orders and convert them into shipments.',
     icon: Truck,
     roles: ['SHIPPING'],

@@ -1,7 +1,15 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { FileStack, History, PackageCheck, Search, X } from 'lucide-react';
+import {
+  FileStack,
+  History,
+  LoaderCircle,
+  MessageSquarePlus,
+  PackageCheck,
+  Search,
+  X,
+} from 'lucide-react';
 import {
   startTransition,
   useDeferredValue,
@@ -26,7 +34,8 @@ import {
   createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
 import { toast } from '@/lib/stores/toast.store';
-import { useOrderDetail } from '@/features/orders/hooks/useOrderDetail';
+import { notesApi } from '@/features/notes/api/notes-api';
+import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
 import { useOrdersList } from '@/features/orders/hooks/useOrdersList';
 import {
   formatCurrency,
@@ -126,7 +135,7 @@ export function CreateShipmentWorkspace() {
           <CardHeader className="space-y-4">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="space-y-2">
-                <CardTitle className="text-2xl sm:text-[1.75rem]">Eligible orders</CardTitle>
+                <CardTitle className="text-2xl sm:text-[1.75rem]">Shipment orders</CardTitle>
                 <CardDescription>
                   Click an order to open a shipment workspace with full order context.
                 </CardDescription>
@@ -236,7 +245,47 @@ function ShipmentOrderDetailsPanel({
 }: {
   selectedOrder: OrderSummary;
 }) {
-  const { order, isLoading, error } = useOrderDetail(selectedOrder.id);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+  const [noteMessage, setNoteMessage] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const { order, isLoading, error } = useOrderDetailWithRefresh(
+    selectedOrder.id,
+    refreshKey,
+  );
+
+  const handleAddNoteSubmit = async () => {
+    const trimmedMessage = noteMessage.trim();
+
+    if (!trimmedMessage) {
+      setNoteError('Note message is required.');
+      return;
+    }
+
+    setIsSavingNote(true);
+    setNoteError(null);
+
+    try {
+      await notesApi.create({
+        entityType: 'ORDER',
+        entityId: selectedOrder.id,
+        message: trimmedMessage,
+      });
+      setNoteMessage('');
+      setIsAddNoteOpen(false);
+      setRefreshKey((currentValue) => currentValue + 1);
+      toast.success('Note added', 'The shipment workspace notes have been refreshed.');
+    } catch (caughtError) {
+      setNoteError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Unable to add this note right now.',
+      );
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -436,12 +485,79 @@ function ShipmentOrderDetailsPanel({
 
       <Card className="border-border/70 shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-xl">Notes and edit history</CardTitle>
-          <CardDescription>
-            Shipping can review every customer note and prior order edit before dispatch.
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-xl">Notes and edit history</CardTitle>
+              <CardDescription>
+                Shipping can review and add customer notes before dispatch.
+              </CardDescription>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                setIsAddNoteOpen((currentValue) => !currentValue);
+                setNoteError(null);
+              }}
+            >
+              <MessageSquarePlus className="h-4 w-4" />
+              Add Note
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {isAddNoteOpen ? (
+            <form
+              className="space-y-3 rounded-2xl border border-border/70 bg-secondary/20 p-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleAddNoteSubmit();
+              }}
+            >
+              <label
+                htmlFor="shipment-workspace-order-note"
+                className="text-sm font-semibold text-foreground"
+              >
+                New note
+              </label>
+              <textarea
+                id="shipment-workspace-order-note"
+                value={noteMessage}
+                rows={4}
+                onChange={(event) => setNoteMessage(event.target.value)}
+                placeholder="Add a shipping handoff, customer update, or dispatch note."
+                className={`w-full rounded-2xl border bg-white/90 px-4 py-3 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  noteError ? 'border-destructive/60' : 'border-input'
+                }`}
+              />
+              {noteError ? (
+                <p className="text-sm text-destructive">{noteError}</p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" size="sm" disabled={isSavingNote}>
+                  {isSavingNote ? (
+                    <>
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save note'
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsAddNoteOpen(false);
+                    setNoteError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : null}
+
           {order.notes.length > 0 ? (
             <div className="space-y-3">
               {order.notes.map((note) => (
