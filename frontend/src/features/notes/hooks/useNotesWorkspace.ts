@@ -52,6 +52,7 @@ type UseNotesWorkspaceResult = {
   selectedEntityContext: NoteEntityContext | null;
   notes: NoteRecord[];
   isEntitiesLoading: boolean;
+  hasLoadedEntities: boolean;
   entitiesError: string | null;
   isNotesLoading: boolean;
   isNotesRefreshing: boolean;
@@ -78,6 +79,7 @@ export function useNotesWorkspace(
   const [shipments, setShipments] = useState<ShipmentSummary[]>([]);
   const [notes, setNotes] = useState<NoteRecord[]>([]);
   const [isEntitiesLoading, setIsEntitiesLoading] = useState(true);
+  const [hasLoadedEntities, setHasLoadedEntities] = useState(false);
   const [entitiesError, setEntitiesError] = useState<string | null>(null);
   const [isNotesLoading, setIsNotesLoading] = useState(false);
   const [isNotesRefreshing, setIsNotesRefreshing] = useState(false);
@@ -133,6 +135,7 @@ export function useNotesWorkspace(
   useEffect(() => {
     if (!authInitialized) {
       setIsEntitiesLoading(true);
+      setHasLoadedEntities(false);
       return;
     }
 
@@ -190,6 +193,7 @@ export function useNotesWorkspace(
           entityType: nextEntityType,
           entityId: nextEntityId,
         });
+        setHasLoadedEntities(true);
       } catch (error) {
         if (!entitiesRequestTracker.isCurrentRequest(requestId)) {
           return;
@@ -203,6 +207,7 @@ export function useNotesWorkspace(
         );
         setFormError(null);
         setNotesError(null);
+        setHasLoadedEntities(true);
       } finally {
         if (entitiesRequestTracker.isCurrentRequest(requestId)) {
           setIsEntitiesLoading(false);
@@ -369,6 +374,7 @@ export function useNotesWorkspace(
       selectedEntityContext && selectedEntityId ? selectedEntityContext : null,
     notes,
     isEntitiesLoading,
+    hasLoadedEntities,
     entitiesError,
     isNotesLoading,
     isNotesRefreshing,

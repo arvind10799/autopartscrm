@@ -40,6 +40,7 @@ export function NotesPageContent() {
     selectedEntityContext,
     notes,
     isEntitiesLoading,
+    hasLoadedEntities,
     entitiesError,
     isNotesLoading,
     isNotesRefreshing,
@@ -52,7 +53,7 @@ export function NotesPageContent() {
     handleSubmit,
   } = useNotesWorkspace(dateRangeQuery, deferredEntitySearchTerm);
 
-  if (isEntitiesLoading) {
+  if (isEntitiesLoading && !hasLoadedEntities) {
     return <WorkspacePageSkeleton />;
   }
 
