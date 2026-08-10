@@ -35,7 +35,7 @@ export function NotesList({
 
   if (error && !hasNotes) {
     return (
-      <Card>
+      <Card className="border-border/70 bg-white/90 shadow-sm">
         <CardHeader>
           <CardTitle className="text-3xl">Notes unavailable</CardTitle>
           <CardDescription>{error}</CardDescription>
@@ -52,7 +52,7 @@ export function NotesList({
 
   if (!hasNotes) {
     return (
-      <Card>
+      <Card className="border-border/70 bg-white/90 shadow-sm">
         <CardHeader>
           <CardTitle className="text-2xl sm:text-[1.75rem]">No notes yet</CardTitle>
           <CardDescription>
@@ -71,8 +71,8 @@ export function NotesList({
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden border-border/70 bg-white/90 shadow-sm">
+      <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(255,255,255,0.98))]">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
             <CardTitle className="text-2xl sm:text-[1.75rem]">Notes list</CardTitle>
@@ -91,7 +91,7 @@ export function NotesList({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-5">
         {error ? (
           <div className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between">
             <span>{error}</span>

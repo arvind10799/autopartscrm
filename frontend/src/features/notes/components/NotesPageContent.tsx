@@ -1,9 +1,10 @@
 'use client';
 
-import { RefreshCw } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { FileText, RefreshCw, Sparkles } from 'lucide-react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { WorkspacePageSkeleton } from '@/components/feedback/page-skeletons';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,6 +26,8 @@ export function NotesPageContent() {
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
+  const [entitySearchTerm, setEntitySearchTerm] = useState('');
+  const deferredEntitySearchTerm = useDeferredValue(entitySearchTerm);
   const dateRangeQuery = useMemo(
     () => buildTimestampRangeQuery(dateFilter),
     [dateFilter],
@@ -48,7 +51,7 @@ export function NotesPageContent() {
     handleEntityTypeChange,
     handleEntityIdChange,
     handleSubmit,
-  } = useNotesWorkspace(dateRangeQuery);
+  } = useNotesWorkspace(dateRangeQuery, deferredEntitySearchTerm);
 
   if (isEntitiesLoading) {
     return <WorkspacePageSkeleton />;
@@ -86,10 +89,38 @@ export function NotesPageContent() {
 
   return (
     <section className="grid gap-6">
-      <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+      <Card className="overflow-hidden border-white/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(37,99,235,0.82))] text-white shadow-xl shadow-slate-950/10">
+        <CardHeader className="space-y-5 p-6 sm:p-7">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl space-y-3">
+              <Badge className="w-fit border-white/20 bg-white/15 text-white hover:bg-white/20">
+                <Sparkles className="h-3.5 w-3.5" />
+                Team activity hub
+              </Badge>
+              <div className="space-y-2">
+                <CardTitle className="flex items-center gap-3 text-3xl sm:text-4xl">
+                  <FileText className="h-8 w-8 text-blue-100" />
+                  Notes workspace
+                </CardTitle>
+                <CardDescription className="max-w-2xl text-sm leading-6 text-blue-50/85">
+                  Search orders or PRO numbers, attach handoff notes, and keep every
+                  customer update visible across sales, shipping, and admin workflows.
+                </CardDescription>
+              </div>
+            </div>
+            <div className="rounded-3xl border border-white/15 bg-white/10 p-3 backdrop-blur">
+              <DateRangeFilter
+                value={dateFilter}
+                onChange={setDateFilter}
+                variant="inline"
+              />
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
+        <Card className="border-border/70 bg-white/90 shadow-sm">
           <CardHeader className="pb-3">
             <CardDescription>Entity type</CardDescription>
             <CardTitle className="text-2xl sm:text-[1.75rem]">
@@ -103,7 +134,7 @@ export function NotesPageContent() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/70 bg-white/90 shadow-sm">
           <CardHeader className="pb-3">
             <CardDescription>Selected entity</CardDescription>
             <CardTitle className="text-2xl sm:text-[1.75rem]">
@@ -117,7 +148,7 @@ export function NotesPageContent() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/70 bg-white/90 shadow-sm">
           <CardHeader className="pb-3">
             <CardDescription>Loaded notes</CardDescription>
             <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
@@ -140,14 +171,16 @@ export function NotesPageContent() {
             selectedEntityType={selectedEntityType}
             selectedEntityId={selectedEntityId}
             selectableEntities={selectableEntities}
+            entitySearchTerm={entitySearchTerm}
             isEntitiesLoading={isEntitiesLoading}
             formError={formError}
+            onEntitySearchChange={setEntitySearchTerm}
             onEntityTypeChange={handleEntityTypeChange}
             onEntityIdChange={handleEntityIdChange}
             onSubmit={handleSubmit}
           />
 
-          <Card>
+          <Card className="border-border/70 bg-white/90 shadow-sm">
             <CardHeader>
               <CardTitle className="text-3xl">Entity context</CardTitle>
               <CardDescription>

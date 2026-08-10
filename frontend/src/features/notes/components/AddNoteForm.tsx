@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, LoaderCircle } from 'lucide-react';
+import { ArrowRight, LoaderCircle, Search } from 'lucide-react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { cn } from '@/lib/utils/cn';
@@ -26,8 +27,10 @@ type AddNoteFormProps = {
   selectedEntityType: NoteEntityType;
   selectedEntityId: string;
   selectableEntities: NoteEntityOption[];
+  entitySearchTerm: string;
   isEntitiesLoading: boolean;
   formError: string | null;
+  onEntitySearchChange: (value: string) => void;
   onEntityTypeChange: (entityType: NoteEntityType) => void;
   onEntityIdChange: (entityId: string) => void;
   onSubmit: ReturnType<UseFormReturn<NoteFormValues>['handleSubmit']>;
@@ -39,15 +42,18 @@ export function AddNoteForm({
   selectedEntityType,
   selectedEntityId,
   selectableEntities,
+  entitySearchTerm,
   isEntitiesLoading,
   formError,
+  onEntitySearchChange,
   onEntityTypeChange,
   onEntityIdChange,
   onSubmit,
 }: AddNoteFormProps) {
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden border-border/70 bg-white/90 shadow-sm">
+      <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(37,99,235,0.09),rgba(255,255,255,0.96))]">
+        <CardDescription>Record selector</CardDescription>
         <CardTitle className="text-3xl">Add note</CardTitle>
         <CardDescription>
           Save a note against an order or shipment and refresh the activity feed in real time.
@@ -56,6 +62,23 @@ export function AddNoteForm({
 
       <CardContent>
         <form className="space-y-5" onSubmit={onSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="entitySearch">Search order / PRO number</Label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="entitySearch"
+                value={entitySearchTerm}
+                onChange={(event) => onEntitySearchChange(event.target.value)}
+                className="h-11 rounded-xl pl-9"
+                placeholder="Search by order number or PRO number"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Results update the record dropdown using your selected entity type.
+            </p>
+          </div>
+
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="entityType">Entity type</Label>
@@ -103,7 +126,7 @@ export function AddNoteForm({
                 ) : (
                   selectableEntities.map((entity) => (
                     <option key={entity.id} value={entity.id}>
-                      {entity.label}
+                      {entity.label} — {entity.description}
                     </option>
                   ))
                 )}

@@ -66,6 +66,7 @@ type UseNotesWorkspaceResult = {
 
 export function useNotesWorkspace(
   dateRangeQuery: TimestampRangeQuery = {},
+  entitySearchTerm = '',
 ): UseNotesWorkspaceResult {
   const authInitialized = useAuthStore((state) => state.initialized);
   const role = useAuthStore((state) => state.user?.role ?? null);
@@ -92,6 +93,7 @@ export function useNotesWorkspace(
     control: form.control,
     name: ['entityType', 'entityId'],
   });
+  const normalizedEntitySearchTerm = entitySearchTerm.trim();
   const availableEntityTypes = useMemo(
     () => (authInitialized ? getAvailableNoteEntityTypes(role) : []),
     [authInitialized, role],
@@ -148,12 +150,14 @@ export function useNotesWorkspace(
             ? ordersApi.list({
                 page: 1,
                 limit: ENTITY_FETCH_LIMIT,
+                search: normalizedEntitySearchTerm || undefined,
               })
             : Promise.resolve(createEmptyOrdersResponse(1, ENTITY_FETCH_LIMIT)),
           shouldLoadShipments
             ? shipmentsApi.list({
                 page: 1,
                 limit: ENTITY_FETCH_LIMIT,
+                search: normalizedEntitySearchTerm || undefined,
               })
             : Promise.resolve(
                 createEmptyShipmentsResponse(1, ENTITY_FETCH_LIMIT),
@@ -212,6 +216,7 @@ export function useNotesWorkspace(
     entitiesRefreshKey,
     entitiesRequestTracker,
     form,
+    normalizedEntitySearchTerm,
     role,
   ]);
 
