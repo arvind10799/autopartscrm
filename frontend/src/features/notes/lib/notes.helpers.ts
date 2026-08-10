@@ -42,9 +42,8 @@ export function getAvailableNoteEntityTypes(
   switch (role) {
     case 'ADMIN':
     case 'SALES':
-      return ['ORDER', 'SHIPMENT'];
     case 'SHIPPING':
-      return ['SHIPMENT'];
+      return ['ORDER', 'SHIPMENT'];
     default:
       return [];
   }
@@ -53,7 +52,7 @@ export function getAvailableNoteEntityTypes(
 export function canBrowseOrderNotes(
   role: UserRole | null | undefined,
 ): boolean {
-  return role === 'ADMIN' || role === 'SALES';
+  return role === 'ADMIN' || role === 'SALES' || role === 'SHIPPING';
 }
 
 export function canBrowseShipmentNotes(
