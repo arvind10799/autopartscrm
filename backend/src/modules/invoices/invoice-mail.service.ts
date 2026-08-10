@@ -359,79 +359,82 @@ export class InvoiceMailService {
       .text(
         `Delivery timeline is ${invoice.deliveryTimeline}, may vary due to distance and shipping vendor`,
         left,
-        270,
+        286,
       )
-      .moveTo(left, 290)
-      .lineTo(right, 290)
+      .moveTo(left, 306)
+      .lineTo(right, 306)
       .lineWidth(2)
       .strokeColor('#9c9c9c')
       .stroke();
 
-    this.drawRoundedBox(document, left, 300, 535, 96);
+    this.drawRoundedBox(document, left, 318, 535, 96);
     document
       .font('Helvetica-Bold')
       .fontSize(13)
       .fillColor('#5b5c62')
-      .text('Item Descriptions', left + 12, 310)
-      .text('Qty', 405, 310, { width: 42, align: 'center' })
-      .text('Amount', 486, 310, { width: 56, align: 'center' });
+      .text('Item Descriptions', left + 12, 328)
+      .text('Qty', 405, 328, { width: 42, align: 'center' })
+      .text('Amount', 486, 328, { width: 56, align: 'center' });
 
     document
       .font('Helvetica')
       .fontSize(8)
       .fillColor('#111827')
-      .text(invoice.itemDescription, left + 12, 338)
-      .text(invoice.vehiclePartDescription ?? '', left + 12, 362, { width: 300 })
-      .text(String(invoice.quantity), 405, 338, { width: 42, align: 'center' })
-      .text(this.formatMoney(invoice.saleAmount), 486, 338, {
+      .text(this.normalizeMultilineText(invoice.itemDescription), left + 12, 356, {
+        width: 300,
+        lineGap: 2,
+      })
+      .text(invoice.vehiclePartDescription ?? '', left + 12, 380, { width: 300 })
+      .text(String(invoice.quantity), 405, 356, { width: 42, align: 'center' })
+      .text(this.formatMoney(invoice.saleAmount), 486, 356, {
         width: 56,
         align: 'center',
       });
 
-    this.drawRoundedBox(document, left, 406, 535, 106);
+    this.drawRoundedBox(document, left, 424, 535, 106);
     document
       .font('Helvetica-Bold')
       .fontSize(8)
       .fillColor('#56575c')
-      .text('Payment Status:', left + 12, 418)
-      .text('Date:', left + 12, 432)
-      .text('Payment Source:', left + 12, 446)
+      .text('Payment Status:', left + 12, 436)
+      .text('Date:', left + 12, 450)
+      .text('Payment Source:', left + 12, 464)
       .font('Helvetica')
       .fillColor('#111827')
-      .text(invoice.paymentStatus ?? '', left + 92, 418)
-      .text(invoice.paymentDate ? this.formatDate(invoice.paymentDate) : '', left + 92, 432)
-      .text(invoice.paymentSource ?? '', left + 92, 446);
+      .text(invoice.paymentStatus ?? '', left + 92, 436)
+      .text(invoice.paymentDate ? this.formatDate(invoice.paymentDate) : '', left + 92, 450)
+      .text(invoice.paymentSource ?? '', left + 92, 464);
 
     document
       .fontSize(8.5)
       .fillColor('#ff1f28')
-      .text('Additional charges will be applicable :', left + 12, 470, {
+      .text('Additional charges will be applicable :', left + 12, 488, {
         underline: true,
       })
       .fontSize(6.5)
       .fillColor('#56575c')
-      .text('• If ', left + 18, 492, { continued: true })
+      .text('• If ', left + 18, 510, { continued: true })
       .fillColor('#ff1f28')
       .text('unloading equipment', { continued: true })
       .fillColor('#56575c')
       .text(' is unavailable at the time of delivery ( Freight’s only)')
-      .text('• ', left + 18, 506, { continued: true })
+      .text('• ', left + 18, 524, { continued: true })
       .fillColor('#ff1f28')
       .text('Reschedule delivery', { continued: true })
       .fillColor('#56575c')
       .text(' ( Missed or reattempt delivery )');
 
-    this.drawChargeLine(document, 'Shipping Cost', invoice.shippingCost, 388, 418);
-    this.drawChargeLine(document, 'Sales Taxes', invoice.salesTaxes, 388, 434);
-    this.drawChargeLine(document, 'Core Charge', invoice.coreCharge, 388, 450);
+    this.drawChargeLine(document, 'Shipping Cost', invoice.shippingCost, 388, 436);
+    this.drawChargeLine(document, 'Sales Taxes', invoice.salesTaxes, 388, 452);
+    this.drawChargeLine(document, 'Core Charge', invoice.coreCharge, 388, 468);
     document
       .font('Helvetica-Bold')
       .fontSize(11)
       .fillColor('#4f5056')
-      .text('TOTAL', 390, 486)
+      .text('TOTAL', 390, 504)
       .fontSize(8)
       .fillColor('#111827')
-      .text(this.formatMoney(invoice.totalAmount), 500, 488);
+      .text(this.formatMoney(invoice.totalAmount), 500, 506);
 
     this.drawSignature(document, invoice);
     this.drawFooter(document);
@@ -737,6 +740,10 @@ export class InvoiceMailService {
 
   private formatShortDate(value: Date): string {
     return value.toLocaleDateString('en-US');
+  }
+
+  private normalizeMultilineText(value: string): string {
+    return value.replace(/\r\n?/g, '\n');
   }
 
   private findInvoiceLogoPath(): string {

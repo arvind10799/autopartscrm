@@ -1464,7 +1464,12 @@ function draftToInvoicePreview(orderId: string, draft: InvoiceDraft): InvoiceRec
 }
 
 function calculateInvoiceTotal(draft: InvoiceDraft): number {
-  return toAmount(draft.saleAmount);
+  return (
+    toAmount(draft.saleAmount) +
+    toAmount(draft.shippingCost) +
+    toAmount(draft.salesTaxes) +
+    toAmount(draft.coreCharge)
+  );
 }
 
 function toAmount(value: string): number {
@@ -2361,12 +2366,12 @@ const INVOICE_DOCUMENT_CSS = `
     display: grid;
     grid-template-columns: 1fr 2px 1fr;
     width: 742px;
-    min-height: 112px;
+    min-height: 128px;
     border-top: 4px solid #929293;
   }
 
   .invoice-address-divider {
-    margin: 14px 0 0;
+    margin: 16px 0 0;
     background: #969698;
   }
 
@@ -2413,16 +2418,16 @@ const INVOICE_DOCUMENT_CSS = `
   .invoice-delivery-note {
     position: absolute;
     left: 26px;
-    top: 278px;
+    top: 300px;
     z-index: 2;
     width: 742px;
     margin: 0;
-    padding-bottom: 10px;
+    padding: 4px 0 12px;
     border-bottom: 4px solid #929293;
     color: #62656b;
     font-size: 13px;
-    font-weight: 700;
-    line-height: 1.3;
+    font-weight: 600;
+    line-height: 1.35;
     text-align: left;
   }
 
@@ -2438,7 +2443,7 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-item-box {
-    top: 322px;
+    top: 346px;
     height: 122px;
     padding: 10px 10px;
   }
@@ -2474,8 +2479,13 @@ const INVOICE_DOCUMENT_CSS = `
     line-height: 19px;
   }
 
+  .invoice-table-row span:first-child {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   .invoice-payment-box {
-    top: 453px;
+    top: 477px;
     height: 142px;
     display: grid;
     grid-template-columns: 1fr 276px;

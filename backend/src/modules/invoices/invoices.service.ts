@@ -496,7 +496,13 @@ export class InvoicesService {
   }
 
   private calculateTotalAmount(createInvoiceDto: CreateInvoiceDto): number {
-    return Number(createInvoiceDto.saleAmount.toFixed(2));
+    const totalAmount =
+      createInvoiceDto.saleAmount +
+      createInvoiceDto.shippingCost +
+      createInvoiceDto.salesTaxes +
+      createInvoiceDto.coreCharge;
+
+    return Number(totalAmount.toFixed(2));
   }
 
   private assertOrderCanGenerateInvoice(order: { status: string }) {
