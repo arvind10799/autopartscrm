@@ -18,6 +18,8 @@ type NotesListProps = {
   isRefreshing: boolean;
   error: string | null;
   onRetry: () => void;
+  selectedEntityTitle: string;
+  selectedEntitySubtitle: string;
 };
 
 export function NotesList({
@@ -26,6 +28,8 @@ export function NotesList({
   isRefreshing,
   error,
   onRetry,
+  selectedEntityTitle,
+  selectedEntitySubtitle,
 }: NotesListProps) {
   const hasNotes = notes.length > 0;
 
@@ -52,12 +56,10 @@ export function NotesList({
 
   if (!hasNotes) {
     return (
-      <Card className="border-border/70 bg-white/90 shadow-sm">
+      <Card className="overflow-hidden border-border/70 bg-white/90 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-2xl sm:text-[1.75rem]">No notes yet</CardTitle>
-          <CardDescription>
-            Add the first note to start a shared activity trail for this entity.
-          </CardDescription>
+          <CardDescription>{selectedEntitySubtitle}</CardDescription>
+          <CardTitle className="text-2xl sm:text-[1.75rem]">{selectedEntityTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           <EmptyState
@@ -71,14 +73,14 @@ export function NotesList({
   }
 
   return (
-    <Card className="overflow-hidden border-border/70 bg-white/90 shadow-sm">
-      <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(255,255,255,0.98))]">
+    <Card className="overflow-hidden border-border/70 bg-white/95 shadow-sm">
+      <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.05),rgba(255,255,255,0.98))] px-5 py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-2">
-            <CardTitle className="text-2xl sm:text-[1.75rem]">Notes list</CardTitle>
-            <CardDescription>
-              Most recent notes appear first so the latest collaboration stays visible.
-            </CardDescription>
+          <div className="space-y-1">
+            <CardDescription>{selectedEntitySubtitle}</CardDescription>
+            <CardTitle className="text-2xl sm:text-[1.75rem]">
+              {selectedEntityTitle}
+            </CardTitle>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -91,7 +93,7 @@ export function NotesList({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 p-5">
+      <CardContent className="space-y-3 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.06),transparent_35%),linear-gradient(180deg,rgba(248,250,252,0.9),rgba(255,255,255,0.96))] p-4 sm:p-5">
         {error ? (
           <div className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between">
             <span>{error}</span>
@@ -102,9 +104,11 @@ export function NotesList({
           </div>
         ) : null}
 
+        <div className="space-y-3">
         {notes.map((note) => (
           <NoteCard key={note.id} note={note} />
         ))}
+        </div>
       </CardContent>
     </Card>
   );

@@ -17,7 +17,6 @@ import {
   buildTimestampRangeQuery,
   createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
-import { formatNoteEntityTypeLabel } from '../lib/notes.helpers';
 import { AddNoteForm } from './AddNoteForm';
 import { NotesList } from './NotesList';
 import { useNotesWorkspace } from '../hooks/useNotesWorkspace';
@@ -108,7 +107,7 @@ export function NotesPageContent() {
                 </CardDescription>
               </div>
             </div>
-            <div className="rounded-3xl border border-white/15 bg-white/10 p-3 backdrop-blur">
+            <div className="rounded-3xl border border-white/15 bg-white/10 p-3 backdrop-blur [&_input]:!bg-white [&_input]:!text-slate-900 [&_input]:!placeholder-slate-400 [&_label]:!text-blue-50 [&_select]:!bg-white [&_select]:!text-slate-900">
               <DateRangeFilter
                 value={dateFilter}
                 onChange={setDateFilter}
@@ -119,52 +118,8 @@ export function NotesPageContent() {
         </CardHeader>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="border-border/70 bg-white/90 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardDescription>Entity type</CardDescription>
-            <CardTitle className="text-2xl sm:text-[1.75rem]">
-              {formatNoteEntityTypeLabel(selectedEntityType)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Switch between supported record types without leaving the workspace.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/70 bg-white/90 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardDescription>Selected entity</CardDescription>
-            <CardTitle className="text-2xl sm:text-[1.75rem]">
-              {selectedEntityContext?.title ?? '--'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {selectedEntityContext?.subtitle ?? 'Choose an entity to view and add notes.'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/70 bg-white/90 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardDescription>Loaded notes</CardDescription>
-            <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-              {notes.length}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Refreshes after every successful save so the activity trail stays current.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <div className="grid gap-6">
+      <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
+        <aside className="xl:sticky xl:top-6 xl:self-start">
           <AddNoteForm
             form={form}
             availableEntityTypes={availableEntityTypes}
@@ -179,51 +134,7 @@ export function NotesPageContent() {
             onEntityIdChange={handleEntityIdChange}
             onSubmit={handleSubmit}
           />
-
-          <Card className="border-border/70 bg-white/90 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-3xl">Entity context</CardTitle>
-              <CardDescription>
-                Keep selection details visible while writing follow-ups and handoffs.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Focus record
-                </p>
-                <p className="mt-2 text-lg font-semibold text-foreground">
-                  {selectedEntityContext?.title ?? 'No entity selected'}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {selectedEntityContext?.subtitle ??
-                    'Select an order or shipment to activate the workspace.'}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Workspace behavior
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {selectedEntityContext?.helperText ??
-                    'Saved notes appear again after the list refresh completes.'}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Selection coverage
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {selectableEntities.length} accessible{' '}
-                  {selectedEntityType === 'ORDER' ? 'orders' : 'shipments'} available
-                  for note attachment.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        </aside>
 
         <NotesList
           notes={notes}
@@ -231,6 +142,8 @@ export function NotesPageContent() {
           isRefreshing={isNotesRefreshing}
           error={notesError}
           onRetry={retryNotes}
+          selectedEntityTitle={selectedEntityContext?.title ?? 'No record selected'}
+          selectedEntitySubtitle={selectedEntityContext?.subtitle ?? 'Choose an order or shipment to view its notes.'}
         />
       </div>
     </section>

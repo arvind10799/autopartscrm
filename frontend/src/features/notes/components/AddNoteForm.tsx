@@ -52,15 +52,15 @@ export function AddNoteForm({
 }: AddNoteFormProps) {
   return (
     <Card className="overflow-hidden border-border/70 bg-white/90 shadow-sm">
-      <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(37,99,235,0.09),rgba(255,255,255,0.96))]">
+      <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(37,99,235,0.09),rgba(255,255,255,0.96))] p-5">
         <CardDescription>Record selector</CardDescription>
-        <CardTitle className="text-3xl">Add note</CardTitle>
+        <CardTitle className="text-2xl sm:text-[1.75rem]">Add note</CardTitle>
         <CardDescription>
           Save a note against an order or shipment and refresh the activity feed in real time.
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="p-5">
         <form className="space-y-5" onSubmit={onSubmit}>
           <div className="space-y-2">
             <Label htmlFor="entitySearch">Search order / PRO number</Label>
@@ -152,7 +152,7 @@ export function AddNoteForm({
               rows={6}
               placeholder="Add a meaningful update, handoff, or follow-up note."
               className={cn(
-                'flex min-h-[152px] w-full rounded-2xl border border-input bg-white/90 px-4 py-3 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'flex min-h-[132px] w-full rounded-2xl border border-input bg-white/90 px-4 py-3 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 form.formState.errors.message ? 'border-destructive/60' : null,
               )}
               {...form.register('message')}
