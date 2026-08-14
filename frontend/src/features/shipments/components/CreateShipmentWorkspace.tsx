@@ -2,14 +2,15 @@
 
 import type { ReactNode } from 'react';
 import {
+  ArrowLeft,
   FileStack,
   History,
   LoaderCircle,
   MessageSquarePlus,
   PackageCheck,
   Search,
-  X,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import {
   startTransition,
   useDeferredValue,
@@ -47,19 +48,18 @@ import {
 import type {
   OrderDetail,
   OrderNote,
-  OrderSummary,
 } from '@/features/orders/types/order.types';
 import { CreateShipmentForm } from './CreateShipmentForm';
 import { ShipmentEligibleOrdersTable } from './ShipmentEligibleOrdersTable';
 
 export function CreateShipmentWorkspace() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const activeSearch = deferredSearchTerm.trim();
   const dateRangeQuery = useMemo(
@@ -91,19 +91,6 @@ export function CreateShipmentWorkspace() {
     }
   }, [isLoading, ordersResponse.meta.totalPages, page]);
 
-  useEffect(() => {
-    if (!selectedOrder) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [selectedOrder]);
-
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     startTransition(() => setPage(1));
@@ -113,185 +100,86 @@ export function CreateShipmentWorkspace() {
     setRefreshKey((currentValue) => currentValue + 1);
   };
 
-  const handleShipmentCreated = () => {
-    const completedOrder = selectedOrder;
-
-    setSelectedOrder(null);
-    startTransition(() => setPage(1));
-    setRefreshKey((currentValue) => currentValue + 1);
-
-    if (completedOrder) {
-      toast.success(
-        `Shipment created for ${completedOrder.orderNumber}`,
-        'The shipped order has been removed from the eligible orders list.',
-      );
-    }
-  };
-
   return (
-    <>
-      <section className="grid gap-6">
-        <Card>
-          <CardHeader className="space-y-4">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div className="space-y-2">
-                <CardTitle className="text-2xl sm:text-[1.75rem]">Shipment orders</CardTitle>
-                <CardDescription>
-                  Click an order to open a shipment workspace with full order context.
-                </CardDescription>
-              </div>
-              <div className="w-full xl:max-w-xl">
-                <DateRangeFilter
-                  value={dateFilter}
-                  onChange={setDateFilter}
-                  variant="inline"
-                />
-              </div>
+    <section className="grid gap-6">
+      <Card>
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="space-y-2">
+              <CardTitle className="text-2xl sm:text-[1.75rem]">Shipment orders</CardTitle>
+              <CardDescription>
+                Click an order to open a full shipment workspace with order context.
+              </CardDescription>
             </div>
-
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchTerm}
-                onChange={(event) => handleSearchChange(event.target.value)}
-                className="pl-9"
-                placeholder="Search by order number, customer, part, or sales agent"
+            <div className="w-full xl:max-w-xl">
+              <DateRangeFilter
+                value={dateFilter}
+                onChange={setDateFilter}
+                variant="inline"
               />
             </div>
-          </CardHeader>
-
-          <CardContent>
-            <ShipmentEligibleOrdersTable
-              orders={ordersResponse.items}
-              meta={ordersResponse.meta}
-              isLoading={isLoading}
-              error={error}
-              onRetry={handleRetry}
-              onPageChange={setPage}
-              selectedOrderId={selectedOrder?.id ?? null}
-              onSelectOrder={setSelectedOrder}
-            />
-          </CardContent>
-        </Card>
-
-        <EmptyState
-          icon={<PackageCheck className="h-5 w-5" />}
-          title="Open a shipment workspace from the table"
-          description="Selecting an eligible order opens a dedicated popup with full order details, notes, and the shipment creation form side by side."
-          className="max-w-none bg-white"
-        />
-      </section>
-
-      {selectedOrder ? (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/50 px-4 py-4 backdrop-blur-sm sm:py-6"
-        >
-          <div
-            className="w-full max-w-7xl rounded-[1.9rem] border border-border/70 bg-white shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-border/70 px-6 py-5">
-              <div className="space-y-1">
-                <h2 className="font-[var(--font-heading)] text-2xl font-semibold tracking-[-0.03em] text-foreground">
-                  Shipment workspace
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Review {selectedOrder.orderNumber} and create its shipment without
-                  leaving the eligible orders list.
-                </p>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedOrder(null)}
-                aria-label="Close shipment workspace popup"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="max-h-[calc(100vh-5.5rem)] overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
-              <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.9fr)]">
-                <ShipmentOrderDetailsPanel selectedOrder={selectedOrder} />
-
-                <div className="xl:sticky xl:top-0 xl:self-start">
-                  <Card className="overflow-hidden border-border/70 shadow-sm">
-                    <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(59,130,246,0.08),rgba(255,255,255,0.98))]">
-                      <CardDescription>Create shipment</CardDescription>
-                      <CardTitle className="text-2xl sm:text-[1.75rem]">
-                        Dispatch this order
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-5">
-                      <CreateShipmentForm
-                        selectedOrder={selectedOrder}
-                        onCreated={handleShipmentCreated}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </div>
           </div>
-        </div>
-      ) : null}
-    </>
+
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              className="pl-9"
+              placeholder="Search by order number, customer, part, or sales agent"
+            />
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <ShipmentEligibleOrdersTable
+            orders={ordersResponse.items}
+            meta={ordersResponse.meta}
+            isLoading={isLoading}
+            error={error}
+            onRetry={handleRetry}
+            onPageChange={setPage}
+            selectedOrderId={null}
+            onSelectOrder={(order) => router.push(`/shipments/create/${order.id}`)}
+          />
+        </CardContent>
+      </Card>
+
+      <EmptyState
+        icon={<PackageCheck className="h-5 w-5" />}
+        title="Open a shipment workspace from the table"
+        description="Selecting an eligible order opens a full page with order details, notes, and shipment creation tools."
+        className="max-w-none bg-white"
+      />
+    </section>
   );
 }
 
-function ShipmentOrderDetailsPanel({
-  selectedOrder,
-}: {
-  selectedOrder: OrderSummary;
-}) {
+export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
+  const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
-  const [noteMessage, setNoteMessage] = useState('');
-  const [noteError, setNoteError] = useState<string | null>(null);
-  const [isSavingNote, setIsSavingNote] = useState(false);
   const { order, isLoading, error } = useOrderDetailWithRefresh(
-    selectedOrder.id,
+    orderId,
     refreshKey,
   );
 
-  const handleAddNoteSubmit = async () => {
-    const trimmedMessage = noteMessage.trim();
+  const handleShipmentCreated = () => {
+    const completedOrder = order;
 
-    if (!trimmedMessage) {
-      setNoteError('Note message is required.');
-      return;
-    }
-
-    setIsSavingNote(true);
-    setNoteError(null);
-
-    try {
-      await notesApi.create({
-        entityType: 'ORDER',
-        entityId: selectedOrder.id,
-        message: trimmedMessage,
-      });
-      setNoteMessage('');
-      setIsAddNoteOpen(false);
-      setRefreshKey((currentValue) => currentValue + 1);
-      toast.success('Note added', 'The shipment workspace notes have been refreshed.');
-    } catch (caughtError) {
-      setNoteError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Unable to add this note right now.',
-      );
-    } finally {
-      setIsSavingNote(false);
-    }
+    toast.success(
+      completedOrder
+        ? `Shipment created for ${completedOrder.orderNumber}`
+        : 'Shipment created',
+      'The shipped order has been removed from the eligible orders list.',
+    );
+    router.push('/shipments/create');
   };
 
   if (isLoading) {
     return (
       <Card className="border-border/70 shadow-sm">
         <CardHeader>
-          <CardDescription>Selected order</CardDescription>
+          <CardDescription>Shipment workspace</CardDescription>
           <CardTitle className="text-2xl sm:text-[1.75rem]">
             Loading order details...
           </CardTitle>
@@ -309,19 +197,138 @@ function ShipmentOrderDetailsPanel({
     return (
       <Card className="border-border/70 shadow-sm">
         <CardHeader>
-          <CardDescription>Selected order</CardDescription>
+          <CardDescription>Shipment workspace</CardDescription>
           <CardTitle className="text-2xl sm:text-[1.75rem]">
             Order details unavailable
           </CardTitle>
+          <CardDescription>
+            {error ?? 'The selected order could not be loaded right now.'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-4 text-sm text-destructive">
-            {error ?? 'The selected order could not be loaded right now.'}
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push('/shipments/create')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to shipment orders
+          </Button>
         </CardContent>
       </Card>
     );
   }
+
+  return (
+    <section className="grid gap-6">
+      <Card className="overflow-hidden border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(37,99,235,0.82))] text-white shadow-xl shadow-slate-950/10">
+        <CardHeader className="p-6 sm:p-7">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-fit border-white/30 bg-white/15 text-white hover:bg-white/25"
+                onClick={() => router.push('/shipments/create')}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to shipment orders
+              </Button>
+              <div className="space-y-1">
+                <CardDescription className="text-blue-50/80">
+                  Shipment workspace
+                </CardDescription>
+                <CardTitle className="text-3xl sm:text-4xl">
+                  {order.orderNumber}
+                </CardTitle>
+                <CardDescription className="max-w-2xl text-blue-50/85">
+                  Review order details, add notes, and dispatch this shipment from a
+                  full-page workspace.
+                </CardDescription>
+              </div>
+            </div>
+            <div className="rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-sm backdrop-blur">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/75">
+                Customer
+              </p>
+              <p className="mt-1 font-semibold text-white">{order.customerName}</p>
+              <p className="mt-1 text-blue-50/80">{order.partDescription}</p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.9fr)]">
+        <ShipmentOrderDetailsPanel
+          order={order}
+          onRefresh={() => setRefreshKey((currentValue) => currentValue + 1)}
+        />
+
+        <div className="xl:sticky xl:top-6 xl:self-start">
+          <Card className="overflow-hidden border-border/70 shadow-sm">
+            <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(59,130,246,0.08),rgba(255,255,255,0.98))]">
+              <CardDescription>Create shipment</CardDescription>
+              <CardTitle className="text-2xl sm:text-[1.75rem]">
+                Dispatch this order
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5">
+              <CreateShipmentForm
+                selectedOrder={order}
+                onCreated={handleShipmentCreated}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function ShipmentOrderDetailsPanel({
+  order,
+  onRefresh,
+}: {
+  order: OrderDetail;
+  onRefresh: () => void;
+}) {
+  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+  const [noteMessage, setNoteMessage] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
+  const handleAddNoteSubmit = async () => {
+    const trimmedMessage = noteMessage.trim();
+
+    if (!trimmedMessage) {
+      setNoteError('Note message is required.');
+      return;
+    }
+
+    setIsSavingNote(true);
+    setNoteError(null);
+
+    try {
+      await notesApi.create({
+        entityType: 'ORDER',
+        entityId: order.id,
+        message: trimmedMessage,
+      });
+      setNoteMessage('');
+      setIsAddNoteOpen(false);
+      onRefresh();
+      toast.success('Note added', 'The shipment workspace notes have been refreshed.');
+    } catch (caughtError) {
+      setNoteError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Unable to add this note right now.',
+      );
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
 
   const intake = order.intakeDetails;
 
