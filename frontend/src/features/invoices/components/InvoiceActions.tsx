@@ -34,6 +34,7 @@ type InvoiceDraft = {
   itemDescription: string;
   vehiclePartDescription: string;
   warrantyPartsOnly: string;
+  cancellationPolicy: string;
   quantity: string;
   saleAmount: string;
   currency: InvoiceCurrency;
@@ -56,6 +57,8 @@ const DEFAULT_WARRANTY_PARTS_ONLY = [
   'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
   'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
 ].join('\n');
+const DEFAULT_CANCELLATION_POLICY =
+  'Cancellation request after payment confirmation will have standard 25% restocking fee remainder will be refunded to the source payment method except wire payments, also additional shipping charges will apply for any requests post 24 hrs from payment confirmation.';
 
 export function InvoiceActions({
   order,
@@ -757,6 +760,11 @@ function InvoiceFormModal({
                 value={draft.warrantyPartsOnly}
                 onChange={(value) => updateField('warrantyPartsOnly', value)}
               />
+              <InvoiceTextarea
+                label="Cancellation Details"
+                value={draft.cancellationPolicy}
+                onChange={(value) => updateField('cancellationPolicy', value)}
+              />
             </InvoiceFormSection>
 
             <InvoiceFormSection title="Payment Information">
@@ -1061,7 +1069,10 @@ function InvoiceDocument({ invoice }, ref) {
     <div className="invoice-page invoice-page--warranty">
       <InvoiceWatermark />
       <InvoiceTemplateHeader invoice={invoice} title="WARRANTY - TERMS & CONDITION" />
-      <WarrantyTerms warrantyPartsOnly={invoice.warrantyPartsOnly} />
+      <WarrantyTerms
+        warrantyPartsOnly={invoice.warrantyPartsOnly}
+        cancellationPolicy={invoice.cancellationPolicy}
+      />
       <div className="invoice-acceptance-box">
         <strong>Acceptance:</strong>
         <span>
@@ -1197,10 +1208,13 @@ function InvoiceFooter() {
 
 function WarrantyTerms({
   warrantyPartsOnly,
+  cancellationPolicy,
 }: {
   warrantyPartsOnly?: string | null;
+  cancellationPolicy?: string | null;
 }) {
   const warrantyLines = parseWarrantyLines(warrantyPartsOnly);
+  const cancellationLines = parseCancellationLines(cancellationPolicy);
 
   return (
     <section className="invoice-warranty">
@@ -1223,7 +1237,9 @@ function WarrantyTerms({
 
       <h3>Cancellation</h3>
       <ul>
-        <li>Cancellation request after payment confirmation will have standard 25% restocking fee remainder will be refunded to the source payment method except wire payments, also additional shipping charges will apply for any requests post 24 hrs from payment confirmation.</li>
+        {cancellationLines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
       </ul>
 
       <p>
@@ -1348,6 +1364,7 @@ function defaultsToDraft(defaults: InvoiceDefaults): InvoiceDraft {
     ...defaults,
     contactNumber: formatUsPhoneNumber(defaults.contactNumber),
     warrantyPartsOnly: defaults.warrantyPartsOnly || DEFAULT_WARRANTY_PARTS_ONLY,
+    cancellationPolicy: defaults.cancellationPolicy || DEFAULT_CANCELLATION_POLICY,
     quantity: String(defaults.quantity),
     saleAmount: formatNumberInput(defaults.saleAmount),
     shippingCost: formatNumberInput(defaults.shippingCost),
@@ -1390,6 +1407,7 @@ function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
     itemDescription: invoice.itemDescription,
     vehiclePartDescription: invoice.vehiclePartDescription ?? '',
     warrantyPartsOnly: invoice.warrantyPartsOnly ?? DEFAULT_WARRANTY_PARTS_ONLY,
+    cancellationPolicy: invoice.cancellationPolicy ?? DEFAULT_CANCELLATION_POLICY,
     quantity: String(invoice.quantity),
     saleAmount: formatNumberInput(invoice.saleAmount),
     currency: invoice.currency,
@@ -1429,6 +1447,7 @@ function draftToPayload(draft: InvoiceDraft): CreateInvoiceInput {
     itemDescription: draft.itemDescription,
     vehiclePartDescription: '',
     warrantyPartsOnly: draft.warrantyPartsOnly,
+    cancellationPolicy: draft.cancellationPolicy,
     quantity: Number(draft.quantity),
     saleAmount: toAmount(draft.saleAmount),
     paymentStatus: draft.paymentStatus,
@@ -1454,6 +1473,7 @@ function draftToInvoicePreview(orderId: string, draft: InvoiceDraft): InvoiceRec
     shippingAddress: draft.shippingAddress || null,
     vehiclePartDescription: null,
     warrantyPartsOnly: draft.warrantyPartsOnly || DEFAULT_WARRANTY_PARTS_ONLY,
+    cancellationPolicy: draft.cancellationPolicy || DEFAULT_CANCELLATION_POLICY,
     paymentStatus: draft.paymentStatus || null,
     paymentDate: draft.paymentDate || null,
     paymentSource: draft.paymentSource || null,
@@ -1512,6 +1532,15 @@ function formatDateInputValue(value: string | null): string {
 
 function parseWarrantyLines(value?: string | null): string[] {
   const source = value?.trim() ? value : DEFAULT_WARRANTY_PARTS_ONLY;
+
+  return source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function parseCancellationLines(value?: string | null): string[] {
+  const source = value?.trim() ? value : DEFAULT_CANCELLATION_POLICY;
 
   return source
     .split(/\r?\n/)

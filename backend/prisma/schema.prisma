@@ -145,6 +145,7 @@ model Invoice {
   itemDescription        String    @db.VarChar(255)
   vehiclePartDescription String?   @db.VarChar(255)
   warrantyPartsOnly      String?   @db.Text
+  cancellationPolicy     String?   @db.Text
   quantity               Int
   saleAmount             Decimal   @db.Decimal(12, 2)
   paymentStatus          String?   @db.VarChar(80)

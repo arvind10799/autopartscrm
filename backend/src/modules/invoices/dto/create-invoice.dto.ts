@@ -65,6 +65,11 @@ export class CreateInvoiceDto {
   @MaxLength(3000)
   warrantyPartsOnly?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  cancellationPolicy?: string;
+
   @IsInt()
   @Min(1)
   @Max(9999)

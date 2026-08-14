@@ -98,6 +98,7 @@ export const invoiceRecordSchema = z.object({
   itemDescription: z.string(),
   vehiclePartDescription: z.string().nullable(),
   warrantyPartsOnly: z.string().nullable(),
+  cancellationPolicy: z.string().nullable(),
   quantity: z.number(),
   saleAmount: z.coerce.number(),
   currency: invoiceCurrencySchema,
@@ -141,6 +142,7 @@ export const invoiceDefaultsSchema = z.object({
   itemDescription: z.string(),
   vehiclePartDescription: z.string(),
   warrantyPartsOnly: z.string(),
+  cancellationPolicy: z.string(),
   quantity: z.number(),
   saleAmount: z.coerce.number(),
   currency: invoiceCurrencySchema,
@@ -241,6 +243,10 @@ export const createInvoiceSchema = z
     warrantyPartsOnly: optionalInvoiceTextSchema(
       3000,
       'Warranty terms must be 3000 characters or fewer.',
+    ),
+    cancellationPolicy: optionalInvoiceTextSchema(
+      3000,
+      'Cancellation details must be 3000 characters or fewer.',
     ),
     quantity: z.coerce
       .number()

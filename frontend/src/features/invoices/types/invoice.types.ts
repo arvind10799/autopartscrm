@@ -47,6 +47,7 @@ export interface InvoiceRecord {
   itemDescription: string;
   vehiclePartDescription: string | null;
   warrantyPartsOnly: string | null;
+  cancellationPolicy: string | null;
   quantity: number;
   saleAmount: number;
   currency: InvoiceCurrency;
@@ -91,6 +92,7 @@ export type InvoiceDefaults = Omit<
   | 'billingAddress'
   | 'shippingAddress'
   | 'vehiclePartDescription'
+  | 'cancellationPolicy'
   | 'paymentStatus'
   | 'paymentDate'
   | 'paymentSource'
@@ -114,6 +116,7 @@ export type InvoiceDefaults = Omit<
   shippingAddress: string;
   vehiclePartDescription: string;
   warrantyPartsOnly: string;
+  cancellationPolicy: string;
   paymentStatus: string;
   paymentDate: string;
   paymentSource: string;
@@ -135,6 +138,7 @@ export interface CreateInvoiceInput {
   itemDescription: string;
   vehiclePartDescription?: string;
   warrantyPartsOnly?: string;
+  cancellationPolicy?: string;
   quantity: number;
   saleAmount: number;
   paymentStatus?: string;

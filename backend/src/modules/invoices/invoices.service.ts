@@ -35,6 +35,8 @@ const DEFAULT_WARRANTY_PARTS_ONLY = [
   'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
   'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
 ].join('\n');
+const DEFAULT_CANCELLATION_POLICY =
+  'Cancellation request after payment confirmation will have standard 25% restocking fee remainder will be refunded to the source payment method except wire payments, also additional shipping charges will apply for any requests post 24 hrs from payment confirmation.';
 
 type InvoiceAuditActor = {
   name?: string | null;
@@ -105,6 +107,7 @@ export class InvoicesService {
       itemDescription: order.partDescription,
       vehiclePartDescription: this.buildVehiclePartDescription(order),
       warrantyPartsOnly: DEFAULT_WARRANTY_PARTS_ONLY,
+      cancellationPolicy: DEFAULT_CANCELLATION_POLICY,
       quantity: order.quantity,
       saleAmount: Number(order.totalSaleAmount),
       currency: this.normalizeCurrency(order.currency),
@@ -170,6 +173,9 @@ export class InvoicesService {
       warrantyPartsOnly:
         this.optionalText(createInvoiceDto.warrantyPartsOnly) ??
         DEFAULT_WARRANTY_PARTS_ONLY,
+      cancellationPolicy:
+        this.optionalText(createInvoiceDto.cancellationPolicy) ??
+        DEFAULT_CANCELLATION_POLICY,
       quantity: createInvoiceDto.quantity,
       saleAmount: new Prisma.Decimal(createInvoiceDto.saleAmount),
       paymentStatus: this.optionalText(createInvoiceDto.paymentStatus),
@@ -254,6 +260,9 @@ export class InvoicesService {
       warrantyPartsOnly:
         this.optionalText(createInvoiceDto.warrantyPartsOnly) ??
         DEFAULT_WARRANTY_PARTS_ONLY,
+      cancellationPolicy:
+        this.optionalText(createInvoiceDto.cancellationPolicy) ??
+        DEFAULT_CANCELLATION_POLICY,
       quantity: createInvoiceDto.quantity,
       saleAmount: new Prisma.Decimal(createInvoiceDto.saleAmount),
       paymentStatus: this.optionalText(createInvoiceDto.paymentStatus),
@@ -342,6 +351,9 @@ export class InvoicesService {
       warrantyPartsOnly:
         this.optionalText(createInvoiceDto.warrantyPartsOnly) ??
         DEFAULT_WARRANTY_PARTS_ONLY,
+      cancellationPolicy:
+        this.optionalText(createInvoiceDto.cancellationPolicy) ??
+        DEFAULT_CANCELLATION_POLICY,
       quantity: createInvoiceDto.quantity,
       saleAmount: new Prisma.Decimal(createInvoiceDto.saleAmount),
       paymentStatus: this.optionalText(createInvoiceDto.paymentStatus),
@@ -473,6 +485,8 @@ export class InvoicesService {
           vehiclePartDescription: signedInvoice.vehiclePartDescription,
           warrantyPartsOnly:
             signedInvoice.warrantyPartsOnly ?? DEFAULT_WARRANTY_PARTS_ONLY,
+          cancellationPolicy:
+            signedInvoice.cancellationPolicy ?? DEFAULT_CANCELLATION_POLICY,
           quantity: signedInvoice.quantity,
           saleAmount: Number(signedInvoice.saleAmount),
           currency: this.normalizeCurrency(signedInvoice.order.currency),

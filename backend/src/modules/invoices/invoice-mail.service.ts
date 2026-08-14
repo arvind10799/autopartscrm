@@ -24,6 +24,7 @@ type SignedMailInvoice = MailInvoice & {
   itemDescription: string;
   vehiclePartDescription?: string | null;
   warrantyPartsOnly?: string | null;
+  cancellationPolicy?: string | null;
   quantity: number;
   saleAmount: number;
   currency?: string | null;
@@ -47,6 +48,8 @@ const DEFAULT_WARRANTY_PARTS_ONLY = [
   'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
   'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
 ].join('\n');
+const DEFAULT_CANCELLATION_POLICY =
+  'Cancellation request after payment confirmation will have standard 25% restocking fee remainder will be refunded to the source payment method except wire payments, also additional shipping charges will apply for any requests post 24 hrs from payment confirmation.';
 
 @Injectable()
 export class InvoiceMailService {
@@ -496,9 +499,13 @@ export class InvoiceMailService {
       'Defective Parts: MEE Auto Parts will exchange defective parts or issue a refund only if the part is out of stock.',
       'Returns: Parts must be returned in their original condition.',
     ]);
-    y = this.drawWarrantySection(document, x, y + 12, 'Cancellation', [
-      'Cancellation request after payment confirmation will have standard 25% restocking fee remainder will be refunded to the source payment method except wire payments, also additional shipping charges will apply for any requests post 24 hrs from payment confirmation.',
-    ]);
+    y = this.drawWarrantySection(
+      document,
+      x,
+      y + 12,
+      'Cancellation',
+      this.parseCancellationLines(invoice.cancellationPolicy),
+    );
 
     document
       .font('Helvetica')
@@ -713,6 +720,15 @@ export class InvoiceMailService {
 
   private parseWarrantyLines(value?: string | null): string[] {
     const source = value?.trim() ? value : DEFAULT_WARRANTY_PARTS_ONLY;
+
+    return source
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  private parseCancellationLines(value?: string | null): string[] {
+    const source = value?.trim() ? value : DEFAULT_CANCELLATION_POLICY;
 
     return source
       .split(/\r?\n/)
