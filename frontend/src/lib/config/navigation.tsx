@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   ClipboardList,
-  CreditCard,
   FileText,
   Gauge,
   Phone,
@@ -62,14 +61,6 @@ export const navigationConfig: NavigationItemConfig[] = [
     description: 'Pick eligible confirmed orders and convert them into shipments.',
     icon: Truck,
     roles: ['SHIPPING'],
-    group: 'workspace',
-  },
-  {
-    href: '/costs',
-    label: 'Costs',
-    description: 'Margin, purchase, shipping, and review workflows.',
-    icon: CreditCard,
-    roles: ['ADMIN', 'SHIPPING'],
     group: 'workspace',
   },
   {
