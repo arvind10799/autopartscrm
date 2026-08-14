@@ -41,7 +41,7 @@ export class InvoicesController {
     return this.invoicesService.findByOrderId(params.id, user);
   }
 
-  @Roles(Role.ADMIN, Role.SALES)
+  @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
   @Post()
   create(
     @Param() params: UuidParamDto,
@@ -57,7 +57,7 @@ export class InvoicesController {
     );
   }
 
-  @Roles(Role.ADMIN, Role.SALES)
+  @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
   @Patch()
   update(
     @Param() params: UuidParamDto,
@@ -73,7 +73,7 @@ export class InvoicesController {
     );
   }
 
-  @Roles(Role.ADMIN, Role.SALES)
+  @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
   @Post('signature-request')
   resendSignatureRequest(
     @Param() params: UuidParamDto,
@@ -87,7 +87,7 @@ export class InvoicesController {
     );
   }
 
-  @Roles(Role.ADMIN, Role.SALES)
+  @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
   @Post('signing-link')
   generateNewSigningLink(
     @Param() params: UuidParamDto,
@@ -101,7 +101,7 @@ export class InvoicesController {
     );
   }
 
-  @Roles(Role.ADMIN, Role.SALES)
+  @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
   @Post('clone')
   cloneSignedInvoice(
     @Param() params: UuidParamDto,

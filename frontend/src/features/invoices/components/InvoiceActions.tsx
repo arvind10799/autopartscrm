@@ -84,7 +84,9 @@ export function InvoiceActions({
   const authUser = useAuthStore((state) => state.user);
   const printableInvoiceRef = useRef<HTMLDivElement>(null);
   const canManageSignatureRequest =
-    authUser?.role === 'ADMIN' || authUser?.role === 'SALES';
+    authUser?.role === 'ADMIN' ||
+    authUser?.role === 'SALES' ||
+    authUser?.role === 'SHIPPING';
 
   useEffect(() => {
     setInvoice(order.invoice);
