@@ -56,7 +56,7 @@ const defaultValues: CreateOrderFormValues = {
   shippingPhone: '',
   shippingAt: '',
   companyName: '',
-  milesOffered: undefined,
+  milesOffered: '',
   salePrice: '',
   basePrice: undefined,
   salesTax: 0,
@@ -71,6 +71,15 @@ const defaultValues: CreateOrderFormValues = {
   note: '',
 };
 const DEFAULT_CREATE_ORDER_STATUS = 'CONFIRMED' as const;
+
+function getTodayDateInputValue() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
 
 function getFirstFilledAmount(
   ...values: Array<CreateOrderFormValues['salePrice'] | undefined>
@@ -374,6 +383,7 @@ export function CreateOrderForm({
     ...resolvedInitialValues,
     advisorName: authUser?.name ?? resolvedInitialValues.advisorName,
   };
+  const maxOrderDate = useMemo(() => getTodayDateInputValue(), []);
   const form = useForm<CreateOrderFormValues>({
     resolver: zodResolver(createOrderFormSchema),
     defaultValues: resolvedFormValues,
@@ -826,6 +836,7 @@ export function CreateOrderForm({
                 <Input
                   id="orderDate"
                   type="date"
+                  max={maxOrderDate}
                   className="h-11 rounded-xl"
                   {...form.register('orderDate')}
                 />
@@ -999,14 +1010,14 @@ export function CreateOrderForm({
 
               <Field
                 id="vehicleNotes"
-                label="Vehicle notes"
+                label="Part Description"
                 error={form.formState.errors.vehicleNotes?.message?.toString()}
                 className="xl:col-span-2"
               >
                 <Textarea
                   id="vehicleNotes"
                   rows={3}
-                  placeholder="Vehicle or part notes"
+                  placeholder="Part description notes"
                   className="min-h-[92px] rounded-xl"
                   {...form.register('vehicleNotes')}
                 />
@@ -1135,21 +1146,6 @@ export function CreateOrderForm({
                       />
                     </Field>
                   </div>
-
-                  <div className="grid gap-3">
-                    <Field
-                      id="shippingAt"
-                      label="Date"
-                      error={form.formState.errors.shippingAt?.message?.toString()}
-                    >
-                      <Input
-                        id="shippingAt"
-                        type="date"
-                        className="h-11 w-full min-w-0 rounded-xl pr-3"
-                        {...form.register('shippingAt')}
-                      />
-                    </Field>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1218,7 +1214,6 @@ export function CreateOrderForm({
               >
                 <Input
                   id="milesOffered"
-                  inputMode="decimal"
                   className="h-11 rounded-xl"
                   {...form.register('milesOffered')}
                 />

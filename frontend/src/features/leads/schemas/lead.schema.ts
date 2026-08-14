@@ -12,6 +12,22 @@ const cmptSchema = z.enum(['YES', 'NO'], {
 const cmptFormSchema = z
   .string()
   .refine((value) => value === 'YES' || value === 'NO', 'CMPT is required.');
+
+const pastOrTodayDateSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Lead date is required.')
+  .refine((value) => !isFutureLocalDate(value), 'Future dates are not allowed.');
+
+function isFutureLocalDate(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  const inputDate = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return inputDate.getTime() > today.getTime();
+}
+
 const requiredPhoneSchema = z.preprocess(
   (value) => {
     if (typeof value !== 'string') {
@@ -138,10 +154,7 @@ export const leadsListSchema = z
   }));
 
 export const createLeadSchema = z.object({
-  leadDate: z
-    .string()
-    .trim()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Lead date is required.'),
+  leadDate: pastOrTodayDateSchema,
   cmpt: cmptSchema,
   customerPhone: requiredPhoneSchema,
   customerName: z
@@ -198,10 +211,7 @@ export const createLeadSchema = z.object({
 });
 
 export const createLeadFormSchema = z.object({
-  leadDate: z
-    .string()
-    .trim()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Lead date is required.'),
+  leadDate: pastOrTodayDateSchema,
   cmpt: cmptFormSchema,
   customerPhone: requiredPhoneSchema,
   customerName: z

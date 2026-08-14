@@ -45,6 +45,10 @@ export class OrdersService {
           }
         : createOrderDto;
 
+    this.assertPastOrTodayDate(
+      normalizedCreateOrderDto.orderDate,
+      'Order date cannot be in the future.',
+    );
     this.validatePaymentMethodForStatus(
       normalizedStatus,
       normalizedCreateOrderDto.paymentMethod,
@@ -118,6 +122,14 @@ export class OrdersService {
       updateOrderDto.paymentMethod !== undefined
         ? updateOrderDto.paymentMethod
         : existingOrder.paymentMethod;
+
+    if (updateOrderDto.orderDate) {
+      this.assertPastOrTodayDate(
+        updateOrderDto.orderDate,
+        'Order date cannot be in the future.',
+      );
+    }
+
     this.validatePaymentMethodForStatus(nextStatus, nextPaymentMethod);
 
     if (
@@ -428,6 +440,24 @@ export class OrdersService {
     return String(value);
   }
 
+  private assertPastOrTodayDate(value: string, message: string): void {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      throw new BadRequestException('Date value is invalid.');
+    }
+
+    if (value > this.formatLocalDate(new Date())) {
+      throw new BadRequestException(message);
+    }
+  }
+
+  private formatLocalDate(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
   private static readonly intakeHistoryLabels: Record<string, string> = {
     advisorName: 'Advisor name',
     orderDate: 'Order date',
@@ -436,7 +466,7 @@ export class OrdersService {
     vehicleYear: 'Vehicle year',
     vehicleVariant: 'Vehicle variant',
     vehicleVin: 'VIN',
-    vehicleNotes: 'Vehicle notes',
+    vehicleNotes: 'Part description',
     vehicleConfiguration: 'Vehicle configuration',
     billingAddress: 'Billing address',
     billingPerson: 'Billing person',

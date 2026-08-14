@@ -183,7 +183,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 <DetailBlock label="Variant" value={intake.vehicleVariant ?? 'Not provided'} />
                 <DetailBlock label="VIN" value={intake.vehicleVin ?? 'Not provided'} />
                 <DetailBlock
-                  label="Vehicle notes"
+                  label="Part Description"
                   value={intake.vehicleNotes ?? 'Not provided'}
                 />
                 <DetailBlock
@@ -226,10 +226,6 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                   value={intake.shippingPhone ?? 'Not provided'}
                 />
                 <DetailBlock
-                  label="Shipping Date"
-                  value={intake.shippingAt ? formatDate(intake.shippingAt) : 'Not provided'}
-                />
-                <DetailBlock
                   label="Shipping status"
                   value={
                     <ShippingStatusValue
@@ -243,7 +239,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
               <DetailSection title="Pricing / Sales Info">
                 <DetailBlock
                   label="Miles Offered"
-                  value={formatNullableNumber(intake.milesOffered)}
+                  value={formatNullableText(intake.milesOffered)}
                 />
                 <DetailBlock
                   label="Price Offered"
@@ -499,6 +495,10 @@ function formatNullableCurrency(value: number | null, currency = 'USD'): string 
 
 function formatNullableNumber(value: number | null): string {
   return value === null ? 'Not provided' : String(value);
+}
+
+function formatNullableText(value: string | null): string {
+  return value?.trim() ? value : 'Not provided';
 }
 
 function ShippingStatusValue({

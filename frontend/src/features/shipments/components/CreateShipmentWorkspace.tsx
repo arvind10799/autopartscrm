@@ -368,7 +368,7 @@ export function ShipmentOrderDetailsPanel({
               className="2xl:col-span-2"
             />
             <DetailBlock
-              label="Vehicle notes"
+              label="Part Description"
               value={intake.vehicleNotes ?? 'Not provided'}
               className="2xl:col-span-2"
             />
@@ -408,10 +408,6 @@ export function ShipmentOrderDetailsPanel({
               label="Shipping phone"
               value={intake.shippingPhone ?? 'Not provided'}
             />
-            <DetailBlock
-              label="Shipping date"
-              value={intake.shippingAt ? formatDate(intake.shippingAt) : 'Not provided'}
-            />
           </DetailGrid>
         </DetailGroup>
 
@@ -428,7 +424,7 @@ export function ShipmentOrderDetailsPanel({
             />
             <DetailBlock
               label="Miles offered"
-              value={formatNullableNumber(intake.milesOffered)}
+              value={formatNullableText(intake.milesOffered)}
             />
             <DetailBlock
               label="Base price"
@@ -673,6 +669,10 @@ function formatNullableCurrency(value: number | null, currency = 'USD'): string 
 
 function formatNullableNumber(value: number | null): string {
   return value === null ? 'Not provided' : String(value);
+}
+
+function formatNullableText(value: string | null): string {
+  return value?.trim() ? value : 'Not provided';
 }
 
 function formatPaidAmount(order: OrderDetail): string {

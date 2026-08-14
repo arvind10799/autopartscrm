@@ -178,11 +178,11 @@ export class UpdateOrderDto {
   @MaxLength(160)
   companyName?: string;
 
-  @Type(() => Number)
+  @Transform(({ value }) => trimToUndefined(value))
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  milesOffered?: number;
+  @IsString()
+  @MaxLength(120)
+  milesOffered?: string;
 
   @Type(() => Number)
   @IsOptional()

@@ -42,6 +42,15 @@ const defaultValues: CreateLeadFormValues = {
   status: 'PROSPECT',
 };
 
+function getTodayDateInputValue() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
 function buildDefaultValues(lead?: LeadSummary | null): CreateLeadFormValues {
   if (!lead) {
     return defaultValues;
@@ -113,6 +122,7 @@ export function CreateLeadForm({
     resolver: zodResolver(createLeadFormSchema),
     defaultValues: buildDefaultValues(initialLead),
   });
+  const maxLeadDate = getTodayDateInputValue();
   const customerPhoneInput = form.register('customerPhone');
   const handleCustomerPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
     event.target.value = formatUsPhoneNumber(event.target.value);
@@ -321,6 +331,7 @@ export function CreateLeadForm({
             <Input
               id="leadDate"
               type="date"
+              max={maxLeadDate}
               className="h-11 rounded-xl"
               {...form.register('leadDate')}
             />

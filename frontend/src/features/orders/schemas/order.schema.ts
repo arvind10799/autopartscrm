@@ -14,6 +14,10 @@ const orderPaymentMethodSchema = z.enum(ORDER_PAYMENT_METHODS);
 const orderCurrencySchema = z.enum(ORDER_CURRENCIES);
 const orderShipmentStatusSchema = z.enum(ORDER_SHIPMENT_STATUSES);
 const numericAmountSchema = z.coerce.number().finite();
+const optionalStringAmountSchema = z.preprocess(
+  (value) => (value === null || value === undefined ? undefined : String(value)),
+  z.string().nullable().optional(),
+);
 const optionalEmailSchema = z.preprocess(
   (value) => {
     if (typeof value !== 'string') {
@@ -146,6 +150,33 @@ function createRequiredTextSchema(
   );
 }
 
+function createRequiredPastOrTodayDateSchema(requiredMessage: string) {
+  return z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, requiredMessage)
+    .refine((value) => !isFutureLocalDate(value), 'Future dates are not allowed.');
+}
+
+function createOptionalPastOrTodayDateSchema(maxLengthMessage: string) {
+  return z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    },
+    z
+      .string()
+      .max(30, maxLengthMessage)
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.')
+      .refine((value) => !isFutureLocalDate(value), 'Future dates are not allowed.')
+      .optional(),
+  );
+}
+
 function createRequiredNumericSchema(
   requiredMessage: string,
   maxDecimalMessage: string,
@@ -169,6 +200,15 @@ function createRequiredNumericSchema(
         maxDecimalMessage,
       ),
   );
+}
+
+function isFutureLocalDate(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  const inputDate = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return inputDate.getTime() > today.getTime();
 }
 
 const requiredEmailSchema = z.preprocess(
@@ -260,7 +300,7 @@ const orderIntakeDetailsSchema = z.object({
   shippingPhone: z.string().nullable().optional(),
   shippingAt: z.string().nullable().optional(),
   companyName: z.string().nullable().optional(),
-  milesOffered: numericAmountSchema.nullable().optional(),
+  milesOffered: optionalStringAmountSchema,
   basePrice: numericAmountSchema.nullable().optional(),
   salesTax: numericAmountSchema.nullable().optional(),
   shippingCharges: numericAmountSchema.nullable().optional(),
@@ -429,11 +469,7 @@ export const createOrderSchema = z.object({
       .min(1, 'Order number is required.')
       .max(50, 'Order number must be 50 characters or fewer.'),
   ),
-  orderDate: z
-    .string()
-    .trim()
-    .min(1, 'Date is required.')
-    .max(30, 'Date must be 30 characters or fewer.'),
+  orderDate: createRequiredPastOrTodayDateSchema('Date is required.'),
   customerName: z
     .string()
     .trim()
@@ -469,8 +505,8 @@ export const createOrderSchema = z.object({
   vehicleVin: createRequiredVinSchema(),
   vehicleNotes: createRequiredTextSchema(
     1000,
-    'Vehicle notes are required.',
-    'Notes must be 1000 characters or fewer.',
+    'Part description is required.',
+    'Part description must be 1000 characters or fewer.',
   ),
   vehicleConfiguration: createOptionalTextSchema(
     255,
@@ -498,19 +534,19 @@ export const createOrderSchema = z.object({
     'Shipping person must be 160 characters or fewer.',
   ),
   shippingPhone: createRequiredPhoneSchema('Shipping phone is required.'),
-  shippingAt: createRequiredTextSchema(
+  shippingAt: createOptionalTextSchema(
     40,
-    'Shipping date is required.',
-    'Shipping at must be 40 characters or fewer.',
+    'Shipping date must be 40 characters or fewer.',
   ),
   companyName: createRequiredTextSchema(
     160,
     'Company name is required.',
     'Company name must be 160 characters or fewer.',
   ),
-  milesOffered: createRequiredNumericSchema(
+  milesOffered: createRequiredTextSchema(
+    120,
     'Miles offered is required.',
-    'Miles offered can include at most 2 decimal places.',
+    'Miles offered must be 120 characters or fewer.',
   ),
   salePrice: z.coerce
     .number()
@@ -614,11 +650,7 @@ export const createOrderFormSchema = z.object({
       .min(1, 'Order number is required.')
       .max(50, 'Order number must be 50 characters or fewer.'),
   ),
-  orderDate: z
-    .string()
-    .trim()
-    .min(1, 'Date is required.')
-    .max(30, 'Date must be 30 characters or fewer.'),
+  orderDate: createRequiredPastOrTodayDateSchema('Date is required.'),
   customerName: z
     .string()
     .trim()
@@ -654,8 +686,8 @@ export const createOrderFormSchema = z.object({
   vehicleVin: createRequiredVinSchema(),
   vehicleNotes: createRequiredTextSchema(
     1000,
-    'Vehicle notes are required.',
-    'Notes must be 1000 characters or fewer.',
+    'Part description is required.',
+    'Part description must be 1000 characters or fewer.',
   ),
   vehicleConfiguration: z
     .string()
@@ -683,19 +715,19 @@ export const createOrderFormSchema = z.object({
     'Shipping person must be 160 characters or fewer.',
   ),
   shippingPhone: createRequiredPhoneSchema('Shipping phone is required.'),
-  shippingAt: createRequiredTextSchema(
+  shippingAt: createOptionalTextSchema(
     40,
-    'Shipping date is required.',
-    'Shipping at must be 40 characters or fewer.',
+    'Shipping date must be 40 characters or fewer.',
   ),
   companyName: createRequiredTextSchema(
     160,
     'Company name is required.',
     'Company name must be 160 characters or fewer.',
   ),
-  milesOffered: createRequiredNumericSchema(
+  milesOffered: createRequiredTextSchema(
+    120,
     'Miles offered is required.',
-    'Miles offered can include at most 2 decimal places.',
+    'Miles offered must be 120 characters or fewer.',
   ),
   salePrice: z.preprocess(
     (val) => (typeof val === 'number' ? String(val) : val),
@@ -850,13 +882,13 @@ export const updateOrderSchema = z.object({
     120,
     'Advisor name must be 120 characters or fewer.',
   ),
-  orderDate: createOptionalTextSchema(30, 'Order date must be 30 characters or fewer.'),
+  orderDate: createOptionalPastOrTodayDateSchema('Order date must be 30 characters or fewer.'),
   vehicleMake: createOptionalTextSchema(120, 'Make must be 120 characters or fewer.'),
   vehicleModel: createOptionalTextSchema(120, 'Model must be 120 characters or fewer.'),
   vehicleYear: createOptionalTextSchema(20, 'Year must be 20 characters or fewer.'),
   vehicleVariant: createOptionalTextSchema(120, 'Variant must be 120 characters or fewer.'),
   vehicleVin: createOptionalVinSchema(),
-  vehicleNotes: createOptionalTextSchema(1000, 'Vehicle notes must be 1000 characters or fewer.'),
+  vehicleNotes: createOptionalTextSchema(1000, 'Part description must be 1000 characters or fewer.'),
   vehicleConfiguration: createOptionalTextSchema(255, 'Configuration must be 255 characters or fewer.'),
   billingAddress: createOptionalTextSchema(500, 'Billing address must be 500 characters or fewer.'),
   billingPerson: createOptionalTextSchema(160, 'Billing person must be 160 characters or fewer.'),
@@ -866,7 +898,7 @@ export const updateOrderSchema = z.object({
   shippingPhone: createOptionalPhoneSchema('Shipping phone must be 10 digits.'),
   shippingAt: createOptionalTextSchema(40, 'Shipping date must be 40 characters or fewer.'),
   companyName: createOptionalTextSchema(160, 'Company name must be 160 characters or fewer.'),
-  milesOffered: optionalNumericValueSchema,
+  milesOffered: createOptionalTextSchema(120, 'Miles offered must be 120 characters or fewer.'),
   basePrice: optionalNumericValueSchema,
   salesTax: optionalNumericValueSchema,
   shippingCharges: optionalNumericValueSchema,
@@ -896,13 +928,13 @@ export const updateOrderFormSchema = z.object({
     orderPaymentMethodSchema.nullable().optional(),
   ),
   advisorName: z.string().max(120).optional(),
-  orderDate: z.string().max(30).optional(),
+  orderDate: createOptionalPastOrTodayDateSchema('Order date must be 30 characters or fewer.'),
   vehicleMake: z.string().max(120).optional(),
   vehicleModel: z.string().max(120).optional(),
   vehicleYear: z.string().max(20).optional(),
   vehicleVariant: z.string().max(120).optional(),
   vehicleVin: createOptionalVinSchema(),
-  vehicleNotes: z.string().max(1000).optional(),
+  vehicleNotes: z.string().max(1000, 'Part description must be 1000 characters or fewer.').optional(),
   vehicleConfiguration: z.string().max(255).optional(),
   billingAddress: z.string().max(500).optional(),
   billingPerson: z.string().max(160).optional(),
@@ -912,7 +944,7 @@ export const updateOrderFormSchema = z.object({
   shippingPhone: createOptionalPhoneSchema('Shipping phone must be 10 digits.'),
   shippingAt: z.string().max(40).optional(),
   companyName: z.string().max(160).optional(),
-  milesOffered: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),
+  milesOffered: createOptionalTextSchema(120, 'Miles offered must be 120 characters or fewer.'),
   basePrice: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),
   salesTax: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),
   shippingCharges: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().min(0).optional()),

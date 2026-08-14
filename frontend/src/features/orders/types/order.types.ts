@@ -65,7 +65,7 @@ export interface OrderIntakeDetails {
   shippingPhone: string | null;
   shippingAt: string | null;
   companyName: string | null;
-  milesOffered: number | null;
+  milesOffered: string | null;
   basePrice: number | null;
   salesTax: number | null;
   shippingCharges: number | null;
@@ -173,7 +173,7 @@ export interface CreateOrderInput {
   shippingPhone?: string;
   shippingAt?: string;
   companyName?: string;
-  milesOffered?: number;
+  milesOffered?: string;
   salePrice: number;
   basePrice?: number;
   salesTax?: number;
@@ -220,7 +220,7 @@ export interface UpdateOrderInput {
   shippingPhone?: string;
   shippingAt?: string;
   companyName?: string;
-  milesOffered?: number;
+  milesOffered?: string;
   basePrice?: number;
   salesTax?: number;
   shippingCharges?: number;

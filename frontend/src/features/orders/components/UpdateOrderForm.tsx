@@ -38,6 +38,15 @@ function isHistoryNote(note: OrderNote): boolean {
   return note.content.startsWith('Order updated:');
 }
 
+function getTodayDateInputValue() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
 export function UpdateOrderForm({
   orderId,
   onUpdated,
@@ -141,7 +150,7 @@ export function UpdateOrderForm({
       shippingPhone: formatUsPhoneNumber(order.intakeDetails.shippingPhone ?? ''),
       shippingAt: order.intakeDetails.shippingAt ?? '',
       companyName: order.intakeDetails.companyName ?? '',
-      milesOffered: order.intakeDetails.milesOffered?.toString() ?? '',
+      milesOffered: order.intakeDetails.milesOffered ?? '',
       basePrice: order.intakeDetails.basePrice?.toString() ?? '',
       salesTax: order.intakeDetails.salesTax?.toString() ?? '',
       shippingCharges: order.intakeDetails.shippingCharges?.toString() ?? '',
@@ -267,7 +276,7 @@ export function UpdateOrderForm({
                 <Input id="advisorName" {...form.register('advisorName')} />
               </EditorField>
               <EditorField label="Order date" id="orderDate">
-                <Input id="orderDate" type="date" {...form.register('orderDate')} />
+                <Input id="orderDate" type="date" max={getTodayDateInputValue()} {...form.register('orderDate')} />
               </EditorField>
               <EditorField label="Sale price" id="price">
                 <Input id="price" inputMode="decimal" {...form.register('price')} />
@@ -317,7 +326,7 @@ export function UpdateOrderForm({
                 />
               </EditorField>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="vehicleNotes">Vehicle notes</Label>
+                <Label htmlFor="vehicleNotes">Part Description</Label>
                 <Textarea id="vehicleNotes" rows={3} {...form.register('vehicleNotes')} />
               </div>
             </EditorSection>
@@ -326,7 +335,6 @@ export function UpdateOrderForm({
               {[
                 ['billingPerson', 'Billing person'],
                 ['shippingPerson', 'Shipping person'],
-                ['shippingAt', 'Shipping date'],
                 ['companyName', 'Company name'],
               ].map(([field, label]) => (
                 <EditorField key={field} label={label} id={field}>

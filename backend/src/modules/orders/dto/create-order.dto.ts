@@ -146,10 +146,10 @@ export class CreateOrderDto {
   shippingPhone: string;
 
   @Transform(({ value }) => trimString(value))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(40)
-  shippingAt: string;
+  shippingAt?: string;
 
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -157,10 +157,11 @@ export class CreateOrderDto {
   @MaxLength(160)
   companyName: string;
 
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  milesOffered: number;
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  milesOffered: string;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })

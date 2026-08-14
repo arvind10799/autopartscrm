@@ -10,6 +10,11 @@ export class LeadsService {
   constructor(private readonly leadsRepository: LeadsRepository) {}
 
   create(createLeadDto: CreateLeadDto, user: AuthenticatedUser) {
+    this.assertPastOrTodayDate(
+      createLeadDto.leadDate,
+      'Lead date cannot be in the future.',
+    );
+
     return this.leadsRepository.create(createLeadDto, user);
   }
 
@@ -30,6 +35,31 @@ export class LeadsService {
 
     await this.leadsRepository.findEditableById(id, user);
 
+    if (updateLeadDto.leadDate) {
+      this.assertPastOrTodayDate(
+        updateLeadDto.leadDate,
+        'Lead date cannot be in the future.',
+      );
+    }
+
     return this.leadsRepository.update(id, updateLeadDto);
+  }
+
+  private assertPastOrTodayDate(value: string, message: string): void {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      throw new BadRequestException('Date value is invalid.');
+    }
+
+    if (value > this.formatLocalDate(new Date())) {
+      throw new BadRequestException(message);
+    }
+  }
+
+  private formatLocalDate(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 }
