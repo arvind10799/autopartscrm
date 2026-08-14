@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
+import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
 import { getErrorMessage } from '@/lib/utils/error';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { ordersApi } from '../api/orders-api';
@@ -36,15 +37,6 @@ function getFieldErrorMessage(message: unknown): string {
 
 function isHistoryNote(note: OrderNote): boolean {
   return note.content.startsWith('Order updated:');
-}
-
-function getTodayDateInputValue() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
 }
 
 export function UpdateOrderForm({
@@ -276,7 +268,7 @@ export function UpdateOrderForm({
                 <Input id="advisorName" {...form.register('advisorName')} />
               </EditorField>
               <EditorField label="Order date" id="orderDate">
-                <Input id="orderDate" type="date" max={getTodayDateInputValue()} {...form.register('orderDate')} />
+                <Input id="orderDate" type="date" max={getPacificTodayDateInputValue()} {...form.register('orderDate')} />
               </EditorField>
               <EditorField label="Sale price" id="price">
                 <Input id="price" inputMode="decimal" {...form.register('price')} />

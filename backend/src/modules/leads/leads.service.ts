@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { getPacificTodayDateInputValue } from '../../common/utils/pacific-date.util';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
@@ -50,16 +51,8 @@ export class LeadsService {
       throw new BadRequestException('Date value is invalid.');
     }
 
-    if (value > this.formatLocalDate(new Date())) {
+    if (value > getPacificTodayDateInputValue()) {
       throw new BadRequestException(message);
     }
-  }
-
-  private formatLocalDate(value: Date): string {
-    const year = value.getFullYear();
-    const month = String(value.getMonth() + 1).padStart(2, '0');
-    const day = String(value.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
   }
 }

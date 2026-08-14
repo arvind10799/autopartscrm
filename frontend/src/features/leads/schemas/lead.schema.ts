@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { formatUsPhoneNumber, hasCompleteUsPhoneNumber } from '@/lib/forms/phone-format';
+import { isFuturePacificDate } from '@/lib/utils/pacific-date';
 import { LEAD_QUOTE_CURRENCIES, LEAD_STATUSES } from '../types/lead.types';
 
 const userRoleSchema = z.enum(['ADMIN', 'SALES', 'SHIPPING']);
@@ -17,16 +18,7 @@ const pastOrTodayDateSchema = z
   .string()
   .trim()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Lead date is required.')
-  .refine((value) => !isFutureLocalDate(value), 'Future dates are not allowed.');
-
-function isFutureLocalDate(value: string) {
-  const [year, month, day] = value.split('-').map(Number);
-  const inputDate = new Date(year, month - 1, day);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  return inputDate.getTime() > today.getTime();
-}
+  .refine((value) => !isFuturePacificDate(value), 'Future dates are not allowed.');
 
 const requiredPhoneSchema = z.preprocess(
   (value) => {

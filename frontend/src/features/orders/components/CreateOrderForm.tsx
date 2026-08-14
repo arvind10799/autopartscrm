@@ -13,6 +13,7 @@ import { useAuthStore } from '@/features/auth/store/auth.store';
 import { vehicleLookupApi } from '@/features/vehicle-lookup/api/vehicle-lookup-api';
 import type { VehicleLookupOption } from '@/features/vehicle-lookup/types/vehicle-lookup.types';
 import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
+import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
 import { cn } from '@/lib/utils/cn';
 import { getErrorMessage } from '@/lib/utils/error';
 import { ordersApi } from '../api/orders-api';
@@ -71,15 +72,6 @@ const defaultValues: CreateOrderFormValues = {
   note: '',
 };
 const DEFAULT_CREATE_ORDER_STATUS = 'CONFIRMED' as const;
-
-function getTodayDateInputValue() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
 
 function getFirstFilledAmount(
   ...values: Array<CreateOrderFormValues['salePrice'] | undefined>
@@ -383,7 +375,7 @@ export function CreateOrderForm({
     ...resolvedInitialValues,
     advisorName: authUser?.name ?? resolvedInitialValues.advisorName,
   };
-  const maxOrderDate = useMemo(() => getTodayDateInputValue(), []);
+  const maxOrderDate = useMemo(() => getPacificTodayDateInputValue(), []);
   const form = useForm<CreateOrderFormValues>({
     resolver: zodResolver(createOrderFormSchema),
     defaultValues: resolvedFormValues,

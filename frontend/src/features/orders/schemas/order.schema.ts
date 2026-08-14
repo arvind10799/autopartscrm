@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { invoiceRecordSchema } from '@/features/invoices/schemas/invoice.schema';
 import { formatUsPhoneNumber, hasCompleteUsPhoneNumber } from '@/lib/forms/phone-format';
+import { isFuturePacificDate } from '@/lib/utils/pacific-date';
 import {
   ORDER_PAYMENT_METHODS,
   ORDER_CURRENCIES,
@@ -155,7 +156,7 @@ function createRequiredPastOrTodayDateSchema(requiredMessage: string) {
     .string()
     .trim()
     .regex(/^\d{4}-\d{2}-\d{2}$/, requiredMessage)
-    .refine((value) => !isFutureLocalDate(value), 'Future dates are not allowed.');
+    .refine((value) => !isFuturePacificDate(value), 'Future dates are not allowed.');
 }
 
 function createOptionalPastOrTodayDateSchema(maxLengthMessage: string) {
@@ -172,7 +173,7 @@ function createOptionalPastOrTodayDateSchema(maxLengthMessage: string) {
       .string()
       .max(30, maxLengthMessage)
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.')
-      .refine((value) => !isFutureLocalDate(value), 'Future dates are not allowed.')
+      .refine((value) => !isFuturePacificDate(value), 'Future dates are not allowed.')
       .optional(),
   );
 }
@@ -200,15 +201,6 @@ function createRequiredNumericSchema(
         maxDecimalMessage,
       ),
   );
-}
-
-function isFutureLocalDate(value: string) {
-  const [year, month, day] = value.split('-').map(Number);
-  const inputDate = new Date(year, month - 1, day);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  return inputDate.getTime() > today.getTime();
 }
 
 const requiredEmailSchema = z.preprocess(

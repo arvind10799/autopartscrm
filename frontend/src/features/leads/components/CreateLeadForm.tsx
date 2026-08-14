@@ -13,6 +13,7 @@ import { vehicleLookupApi } from '@/features/vehicle-lookup/api/vehicle-lookup-a
 import { VehicleCombobox } from '@/features/vehicle-lookup/components/VehicleCombobox';
 import type { VehicleLookupOption } from '@/features/vehicle-lookup/types/vehicle-lookup.types';
 import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
+import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
 import { cn } from '@/lib/utils/cn';
 import { getErrorMessage } from '@/lib/utils/error';
 import { leadsApi } from '../api/leads-api';
@@ -41,15 +42,6 @@ const defaultValues: CreateLeadFormValues = {
   prospects: '',
   status: 'PROSPECT',
 };
-
-function getTodayDateInputValue() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
 
 function buildDefaultValues(lead?: LeadSummary | null): CreateLeadFormValues {
   if (!lead) {
@@ -122,7 +114,7 @@ export function CreateLeadForm({
     resolver: zodResolver(createLeadFormSchema),
     defaultValues: buildDefaultValues(initialLead),
   });
-  const maxLeadDate = getTodayDateInputValue();
+  const maxLeadDate = getPacificTodayDateInputValue();
   const customerPhoneInput = form.register('customerPhone');
   const handleCustomerPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
     event.target.value = formatUsPhoneNumber(event.target.value);

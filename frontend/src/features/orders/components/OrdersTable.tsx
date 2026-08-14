@@ -7,10 +7,7 @@ import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import type { UserRole } from '@/features/auth/types/auth.types';
-import {
-  formatCurrency,
-  formatDateTime,
-} from '../lib/order-formatters';
+import { formatCurrency } from '../lib/order-formatters';
 import type { PaginationMeta, OrderSummary } from '../types/order.types';
 import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
 
@@ -27,24 +24,19 @@ function buildColumns(
       accessorKey: 'orderNumber',
       header: 'Order',
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <Link
-            href={`/orders/${row.original.id}`}
-            className="font-semibold text-primary transition hover:text-primary/80"
-          >
-            {row.original.orderNumber}
-          </Link>
-          <p className="text-xs text-muted-foreground">
-            Created {formatDateTime(row.original.createdAt)}
-          </p>
-        </div>
+        <Link
+          href={`/orders/${row.original.id}`}
+          className="font-semibold text-primary transition hover:text-primary/80"
+        >
+          {row.original.orderNumber}
+        </Link>
       ),
     },
     {
       accessorKey: 'customerName',
       header: 'Customer',
       cell: ({ row }) => (
-        <p className="font-medium text-foreground">{row.original.customerName}</p>
+        <p className="truncate font-medium text-foreground">{row.original.customerName}</p>
       ),
     },
   ];
@@ -66,7 +58,7 @@ function buildColumns(
       accessorKey: 'partDescription',
       header: 'Part',
       cell: ({ row }) => (
-        <p className="max-w-xs text-sm text-foreground">
+        <p className="max-w-xs truncate text-sm text-foreground">
           {row.original.partDescription}
         </p>
       ),
@@ -94,14 +86,14 @@ function buildColumns(
       id: 'actions',
       header: '',
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => onEdit(row.original.id)}>
+        <div className="flex items-center gap-1.5">
+          <Button className="h-8 px-2.5" variant="outline" size="sm" onClick={() => onEdit(row.original.id)}>
             <PencilLine className="h-4 w-4" />
             Edit
           </Button>
           <Link
             href={`/orders/${row.original.id}`}
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'h-8 px-2')}
           >
             View
             <ArrowRight className="h-4 w-4" />
@@ -155,6 +147,7 @@ export function OrdersTable({
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
+      density="compact"
       emptyTitle="No orders found"
       emptyDescription="Try a different search term or clear the current status filter."
       footer={
