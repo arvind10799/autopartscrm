@@ -60,9 +60,14 @@ const DEFAULT_WARRANTY_PARTS_ONLY = [
 export function InvoiceActions({
   order,
   onInvoiceCreated,
+  backLink = { href: '/orders', label: 'Back to orders' },
 }: {
   order: OrderDetail;
   onInvoiceCreated: () => void;
+  backLink?: {
+    href: string;
+    label: string;
+  };
 }) {
   const [invoice, setInvoice] = useState<InvoiceRecord | null>(order.invoice);
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
@@ -300,14 +305,14 @@ export function InvoiceActions({
             </CardDescription>
           </div>
           <Link
-            href="/orders"
+            href={backLink.href}
             className={cn(
               buttonVariants({ variant: 'outline', size: 'sm' }),
               'h-8 shrink-0 rounded-full px-3 text-xs',
             )}
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Back to orders
+            {backLink.label}
           </Link>
         </CardHeader>
         <CardContent className="space-y-3 pt-1">

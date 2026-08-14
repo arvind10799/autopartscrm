@@ -35,6 +35,7 @@ import {
   createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
 import { toast } from '@/lib/stores/toast.store';
+import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { notesApi } from '@/features/notes/api/notes-api';
 import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
 import { useOrdersList } from '@/features/orders/hooks/useOrdersList';
@@ -221,43 +222,14 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
 
   return (
     <section className="grid gap-6">
-      <Card className="overflow-hidden border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(37,99,235,0.82))] text-white shadow-xl shadow-slate-950/10">
-        <CardHeader className="p-6 sm:p-7">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-fit border-white/30 bg-white/15 text-white hover:bg-white/25"
-                onClick={() => router.push('/shipments/create')}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to shipment orders
-              </Button>
-              <div className="space-y-1">
-                <CardDescription className="text-blue-50/80">
-                  Shipment workspace
-                </CardDescription>
-                <CardTitle className="text-3xl sm:text-4xl">
-                  {order.orderNumber}
-                </CardTitle>
-                <CardDescription className="max-w-2xl text-blue-50/85">
-                  Review order details, add notes, and dispatch this shipment from a
-                  full-page workspace.
-                </CardDescription>
-              </div>
-            </div>
-            <div className="rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-sm backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-50/75">
-                Customer
-              </p>
-              <p className="mt-1 font-semibold text-white">{order.customerName}</p>
-              <p className="mt-1 text-blue-50/80">{order.partDescription}</p>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      <InvoiceActions
+        order={order}
+        onInvoiceCreated={() => setRefreshKey((currentValue) => currentValue + 1)}
+        backLink={{
+          href: '/shipments/create',
+          label: 'Back to shipment orders',
+        }}
+      />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.9fr)]">
         <ShipmentOrderDetailsPanel
