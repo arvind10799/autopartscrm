@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/feedback/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_TABLE_SKELETON_ROWS } from '@/lib/constants/app';
+import { cn } from '@/lib/utils/cn';
 
 type DataTableProps<TData> = {
   columns: ColumnDef<TData, unknown>[];
@@ -57,6 +58,8 @@ export function DataTable<TData>({
     density === 'compact' ? 'px-3 py-1.5 align-top text-sm' : 'px-4 py-3.5 align-top text-sm';
   const skeletonCellClassName =
     density === 'compact' ? 'px-3 py-1.5 align-top' : 'px-4 py-3.5 align-top';
+  const skeletonClassName =
+    'rounded-lg bg-gradient-to-r from-slate-100 via-sky-50 to-slate-100 shadow-inner';
   const getColumnClassName = (meta: unknown) =>
     typeof meta === 'object' &&
     meta !== null &&
@@ -67,9 +70,11 @@ export function DataTable<TData>({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-sm">
-      <div className="border-b border-border/70 bg-secondary/35 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:hidden">
-        Swipe horizontally to view all table columns
-      </div>
+      {layout === 'scroll' ? (
+        <div className="border-b border-border/70 bg-secondary/35 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:hidden">
+          Swipe horizontally to view all table columns
+        </div>
+      ) : null}
       <div className={layout === 'fit' ? 'overflow-hidden' : 'overflow-x-auto'}>
         <table
           className={
@@ -110,13 +115,14 @@ export function DataTable<TData>({
                       className={skeletonCellClassName}
                     >
                       <Skeleton
-                        className={
+                        className={cn(
+                          skeletonClassName,
                           cellIndex === 0
-                            ? 'h-5 w-24 rounded-lg'
+                            ? 'h-5 w-24'
                             : cellIndex === columnCount - 1
                               ? 'h-9 w-16 rounded-xl'
-                              : 'h-5 w-full max-w-[12rem] rounded-lg'
-                        }
+                              : 'h-5 w-full max-w-[12rem]',
+                        )}
                       />
                     </td>
                   ))}
@@ -145,7 +151,7 @@ export function DataTable<TData>({
                     icon={<Database className="h-5 w-5" />}
                     title={emptyTitle}
                     description={emptyDescription}
-                    className="border-0 bg-transparent px-0 py-4"
+                    className="border-sky-100/90 px-5 py-8"
                   />
                 </td>
               </tr>
