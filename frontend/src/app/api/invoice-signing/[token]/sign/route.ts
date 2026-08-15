@@ -3,6 +3,8 @@ import { requestBackend } from '@/lib/api/backend-api';
 import { signInvoiceSchema } from '@/features/invoices/schemas/invoice.schema';
 import { buildNoStoreJsonResponse } from '@/lib/api/server-proxy';
 
+const SIGN_INVOICE_TIMEOUT_MS = 70000;
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ token: string }> },
@@ -34,6 +36,7 @@ export async function POST(
     {
       method: 'POST',
       body: parsedPayload.data,
+      timeoutMs: SIGN_INVOICE_TIMEOUT_MS,
     },
   );
 

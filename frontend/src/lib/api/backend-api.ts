@@ -7,6 +7,7 @@ export type BackendRequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   accessToken?: string | null;
   body?: unknown;
+  timeoutMs?: number;
 };
 
 export type BackendApiResult<T> = {
@@ -18,7 +19,7 @@ export async function requestBackend<T>(
   path: string,
   options: BackendRequestOptions = {},
 ): Promise<BackendApiResult<T>> {
-  const { method = 'GET', accessToken, body } = options;
+  const { method = 'GET', accessToken, body, timeoutMs } = options;
 
   const headers = new Headers({
     Accept: 'application/json',
@@ -37,7 +38,7 @@ export async function requestBackend<T>(
       method,
       headers,
       cache: 'no-store',
-      signal: AbortSignal.timeout(getBackendApiTimeoutMs()),
+      signal: AbortSignal.timeout(timeoutMs ?? getBackendApiTimeoutMs()),
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 

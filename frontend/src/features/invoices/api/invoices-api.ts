@@ -22,6 +22,8 @@ import { HttpError } from '@/lib/api/http-error';
 import { parseApiData } from '@/lib/api/parse-api-data';
 import { isValidOrderId } from '@/features/orders/lib/orders.helpers';
 
+const SIGN_INVOICE_TIMEOUT_MS = 75000;
+
 export const invoicesApi = {
   async getDefaults(orderId: string): Promise<InvoiceDefaults> {
     this.assertOrderId(orderId);
@@ -152,6 +154,7 @@ export const invoicesApi = {
     const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
       `/api/invoice-signing/${token}/sign`,
       requestPayload,
+      { timeout: SIGN_INVOICE_TIMEOUT_MS },
     );
 
     return parseApiData(response, publicInvoiceRecordSchema, {

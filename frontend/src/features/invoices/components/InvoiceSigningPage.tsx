@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent, PointerEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
@@ -50,6 +50,15 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const invoiceDocumentRef = useRef<HTMLDivElement>(null);
   const isDrawingRef = useRef(false);
 
+  const syncInvoiceState = useCallback((loadedInvoice: PublicInvoiceRecord) => {
+    setInvoice(loadedInvoice);
+    setSignatureName(loadedInvoice.customerSignature ?? loadedInvoice.customerName);
+    setSignatureImage(loadedInvoice.customerSignatureImage ?? '');
+    setPhotoIdDocument(loadedInvoice.photoIdDocument ?? '');
+    setPhotoIdFileName(loadedInvoice.photoIdFileName ?? '');
+    setPhotoIdMimeType(loadedInvoice.photoIdMimeType ?? '');
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -60,12 +69,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
           return;
         }
 
-        setInvoice(loadedInvoice);
-        setSignatureName(loadedInvoice.customerSignature ?? loadedInvoice.customerName);
-        setSignatureImage(loadedInvoice.customerSignatureImage ?? '');
-        setPhotoIdDocument(loadedInvoice.photoIdDocument ?? '');
-        setPhotoIdFileName(loadedInvoice.photoIdFileName ?? '');
-        setPhotoIdMimeType(loadedInvoice.photoIdMimeType ?? '');
+        syncInvoiceState(loadedInvoice);
       })
       .catch((caughtError) => {
         if (!isMounted) {
@@ -87,7 +91,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [syncInvoiceState, token]);
 
   useEffect(() => {
     const canvas = drawCanvasRef.current;
@@ -324,6 +328,17 @@ export function InvoiceSigningPage({ token }: { token: string }) {
       setHasSubmittedSuccessfully(true);
       toast.success('Invoice signed', 'Your signed invoice has been received.');
     } catch (caughtError) {
+      const latestInvoice = await invoicesApi
+        .getBySigningToken(token)
+        .catch(() => null);
+
+      if (latestInvoice?.status === 'SIGNED') {
+        syncInvoiceState(latestInvoice);
+        setHasSubmittedSuccessfully(true);
+        toast.success('Invoice signed', 'Your signed invoice has been received.');
+        return;
+      }
+
       setInvoice(invoice);
       setHasSubmittedSuccessfully(false);
       toast.error(
@@ -381,7 +396,9 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                 ) : (
                   <PenLine className="h-5 w-5 text-primary" />
                 )}
-                {isSigned
+                {isSubmitting
+                  ? 'Submitting...'
+                  : isSigned
                   ? hasSubmittedSuccessfully
                     ? 'Submitted Successfully'
                     : 'Invoice Signed'
@@ -392,7 +409,22 @@ export function InvoiceSigningPage({ token }: { token: string }) {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isSigned ? (
+              {isSubmitting ? (
+                <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
+                      <LoaderCircle className="h-5 w-5 animate-spin" />
+                    </span>
+                    <div>
+                      <p className="font-semibold">Submitting, please wait...</p>
+                      <p className="mt-1 leading-6 text-sky-800">
+                        Your signature and attachment are being saved securely.
+                        Please do not refresh or submit again.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : isSigned ? (
                 <div className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
                   <div className="flex items-start gap-3">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
