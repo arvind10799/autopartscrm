@@ -86,10 +86,8 @@ export function InvoiceActions({
   const [isSignatureActionRunning, setIsSignatureActionRunning] = useState(false);
   const authUser = useAuthStore((state) => state.user);
   const printableInvoiceRef = useRef<HTMLDivElement>(null);
-  const canManageSignatureRequest =
-    authUser?.role === 'ADMIN' ||
-    authUser?.role === 'SALES' ||
-    authUser?.role === 'SHIPPING';
+  const canManageInvoice =
+    authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
 
   useEffect(() => {
     setInvoice(order.invoice);
@@ -306,7 +304,9 @@ export function InvoiceActions({
               Invoice Management
             </CardTitle>
             <CardDescription className="text-sm">
-              Generate, view, and download the purchase invoice.
+              {canManageInvoice
+                ? 'Generate, view, and download the purchase invoice.'
+                : 'View and download the purchase invoice and audit trail.'}
             </CardDescription>
           </div>
           <Link
@@ -366,18 +366,18 @@ export function InvoiceActions({
                     </Button>
                   </>
                 ) : null}
-                {invoice.status === 'SIGNED' && canManageSignatureRequest ? (
+                {invoice.status === 'SIGNED' && canManageInvoice ? (
                   <Button
                     type="button"
                     size="sm"
-                  variant="outline"
-                  onClick={openCloneModal}
-                >
-                  <Copy className="h-4 w-4" />
-                  Clone Invoice
-                </Button>
+                    variant="outline"
+                    onClick={openCloneModal}
+                  >
+                    <Copy className="h-4 w-4" />
+                    Clone Invoice
+                  </Button>
                 ) : null}
-                {invoice.status !== 'SIGNED' && canManageSignatureRequest ? (
+                {invoice.status !== 'SIGNED' && canManageInvoice ? (
                   <>
                     <Button
                       type="button"
@@ -399,15 +399,15 @@ export function InvoiceActions({
                         <LoaderCircle className="h-4 w-4 animate-spin" />
                       ) : (
                         <Send className="h-4 w-4" />
-                    )}
-                    Resend Signature Request
-                  </Button>
-                </>
-              ) : null}
+                      )}
+                      Resend Signature Request
+                    </Button>
+                  </>
+                ) : null}
               </div>
               <InvoiceAuditTrailPanel invoice={invoice} />
             </>
-          ) : (
+          ) : canManageInvoice ? (
             <Button type="button" size="sm" onClick={openGenerateModal} disabled={isLoadingDefaults}>
               {isLoadingDefaults ? (
                 <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -416,6 +416,10 @@ export function InvoiceActions({
               )}
               Generate Invoice
             </Button>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              Invoice is not available yet. Sales users can view and download invoices once created.
+            </div>
           )}
         </CardContent>
       </Card>

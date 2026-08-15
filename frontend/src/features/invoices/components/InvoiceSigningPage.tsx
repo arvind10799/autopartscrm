@@ -44,6 +44,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const [photoIdMimeType, setPhotoIdMimeType] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasSubmittedSuccessfully, setHasSubmittedSuccessfully] = useState(false);
   const [hasDrawing, setHasDrawing] = useState(false);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
   const invoiceDocumentRef = useRef<HTMLDivElement>(null);
@@ -286,6 +287,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     }
 
     setIsSubmitting(true);
+    setHasSubmittedSuccessfully(false);
 
     try {
       const signedAt = new Date().toISOString();
@@ -319,9 +321,11 @@ export function InvoiceSigningPage({ token }: { token: string }) {
         photoIdMimeType: photoIdMimeType || undefined,
       });
       setInvoice(signedInvoice);
+      setHasSubmittedSuccessfully(true);
       toast.success('Invoice signed', 'Your signed invoice has been received.');
     } catch (caughtError) {
       setInvoice(invoice);
+      setHasSubmittedSuccessfully(false);
       toast.error(
         'Unable to sign invoice',
         caughtError instanceof Error
@@ -377,7 +381,11 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                 ) : (
                   <PenLine className="h-5 w-5 text-primary" />
                 )}
-                {isSigned ? 'Invoice Signed' : 'Review & Sign'}
+                {isSigned
+                  ? hasSubmittedSuccessfully
+                    ? 'Submitted Successfully'
+                    : 'Invoice Signed'
+                  : 'Review & Sign'}
               </CardTitle>
               <CardDescription>
                 Invoice #{invoice.invoiceNumber}
@@ -385,8 +393,30 @@ export function InvoiceSigningPage({ token }: { token: string }) {
             </CardHeader>
             <CardContent className="space-y-4">
               {isSigned ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                  This invoice has been signed and is now read-only.
+                <div className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="font-semibold">
+                        {hasSubmittedSuccessfully
+                          ? 'Signature submitted successfully.'
+                          : 'This invoice has already been signed.'}
+                      </p>
+                      <p className="mt-1 leading-6 text-emerald-800">
+                        {hasSubmittedSuccessfully
+                          ? 'Your signature and required attachment have been received. This page is read-only now.'
+                          : 'This secure signing link is read-only now.'}
+                      </p>
+                    </div>
+                  </div>
+                  {photoIdFileName ? (
+                    <div className="rounded-xl border border-emerald-200 bg-white/80 px-3 py-2 text-xs text-emerald-800">
+                      <span className="font-semibold">Attachment submitted:</span>{' '}
+                      {photoIdFileName}
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <>
@@ -452,7 +482,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                             Photo ID required
                           </p>
                           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            Upload a driver license, passport, or other valid photo ID.
+                            Upload a driver license, passport.
                           </p>
                         </div>
                         {photoIdDocument ? (
