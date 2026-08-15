@@ -25,6 +25,7 @@ type DataTableProps<TData> = {
   getRowId?: (originalRow: TData, index: number, parent?: unknown) => string;
   skeletonRowCount?: number;
   density?: 'normal' | 'compact';
+  layout?: 'scroll' | 'fit';
 };
 
 export function DataTable<TData>({
@@ -39,6 +40,7 @@ export function DataTable<TData>({
   getRowId,
   skeletonRowCount = DEFAULT_TABLE_SKELETON_ROWS,
   density = 'normal',
+  layout = 'scroll',
 }: DataTableProps<TData>) {
   const table = useReactTable({
     data,
@@ -55,21 +57,36 @@ export function DataTable<TData>({
     density === 'compact' ? 'px-3 py-1.5 align-top text-sm' : 'px-4 py-3.5 align-top text-sm';
   const skeletonCellClassName =
     density === 'compact' ? 'px-3 py-1.5 align-top' : 'px-4 py-3.5 align-top';
+  const getColumnClassName = (meta: unknown) =>
+    typeof meta === 'object' &&
+    meta !== null &&
+    'className' in meta &&
+    typeof meta.className === 'string'
+      ? meta.className
+      : '';
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-sm">
       <div className="border-b border-border/70 bg-secondary/35 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:hidden">
         Swipe horizontally to view all table columns
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-[760px] w-full border-collapse">
+      <div className={layout === 'fit' ? 'overflow-hidden' : 'overflow-x-auto'}>
+        <table
+          className={
+            layout === 'fit'
+              ? 'w-full table-fixed border-collapse'
+              : 'min-w-[760px] w-full border-collapse'
+          }
+        >
           <thead className="bg-secondary/45">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className={headerCellClassName}
+                    className={`${headerCellClassName} ${getColumnClassName(
+                      header.column.columnDef.meta,
+                    )}`}
                   >
                     {header.isPlaceholder
                       ? null
@@ -139,7 +156,12 @@ export function DataTable<TData>({
                   className="border-t border-border/60 transition hover:bg-secondary/30"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className={bodyCellClassName}>
+                    <td
+                      key={cell.id}
+                      className={`${bodyCellClassName} ${getColumnClassName(
+                        cell.column.columnDef.meta,
+                      )}`}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

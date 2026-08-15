@@ -80,20 +80,24 @@ export function AppSidebar({
               onClick={onClose}
               className={cn(
                 'flex min-w-0 items-center justify-center',
-                isCollapsed ? 'h-10 w-10 overflow-hidden rounded-xl bg-white' : 'w-full',
+                isCollapsed
+                  ? 'h-11 w-11 overflow-hidden rounded-xl bg-white/90 p-1.5'
+                  : 'w-full',
               )}
               aria-label="Mee Auto Parts"
               title="Mee Auto Parts"
             >
               <Image
-                src="/images/logo.png"
+                src="/images/mee-auto-parts-sidebar-logo.png"
                 alt="Mee Auto Parts"
-                width={224}
-                height={72}
+                width={631}
+                height={247}
                 priority
                 className={cn(
                   'object-contain',
-                  isCollapsed ? 'h-8 w-24 max-w-none' : 'h-auto w-full max-w-[11.5rem]',
+                  isCollapsed
+                    ? 'h-full w-full scale-[2.6] object-left'
+                    : 'h-auto w-full max-w-[12.5rem]',
                 )}
               />
             </Link>

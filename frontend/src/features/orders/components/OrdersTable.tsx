@@ -23,10 +23,13 @@ function buildColumns(
     {
       accessorKey: 'orderNumber',
       header: 'Order',
+      meta: {
+        className: 'w-[11%]',
+      },
       cell: ({ row }) => (
         <Link
           href={`/orders/${row.original.id}`}
-          className="font-semibold text-primary transition hover:text-primary/80"
+          className="block truncate font-semibold text-primary transition hover:text-primary/80"
         >
           {row.original.orderNumber}
         </Link>
@@ -35,6 +38,9 @@ function buildColumns(
     {
       accessorKey: 'customerName',
       header: 'Customer',
+      meta: {
+        className: 'w-[16%]',
+      },
       cell: ({ row }) => (
         <p className="truncate font-medium text-foreground">{row.original.customerName}</p>
       ),
@@ -44,9 +50,12 @@ function buildColumns(
   if (role === 'ADMIN') {
     columns.push({
       accessorKey: 'createdBy',
-      header: 'Advisor Name',
+      header: 'Advisor',
+      meta: {
+        className: 'w-[8%]',
+      },
       cell: ({ row }) => (
-        <p className="font-medium text-foreground">
+        <p className="truncate font-medium text-foreground">
           {getFirstName(row.original.createdBy.name)}
         </p>
       ),
@@ -57,39 +66,51 @@ function buildColumns(
     {
       accessorKey: 'partDescription',
       header: 'Part',
+      meta: {
+        className: role === 'ADMIN' ? 'w-[28%]' : 'w-[36%]',
+      },
       cell: ({ row }) => (
-        <p className="max-w-xs truncate text-sm text-foreground">
+        <p className="truncate text-sm text-foreground" title={row.original.partDescription}>
           {row.original.partDescription}
         </p>
       ),
     },
     {
       accessorKey: 'totalSaleAmount',
-      header: 'Total sale amount',
+      header: 'Total',
+      meta: {
+        className: 'w-[10%]',
+      },
       cell: ({ row }) => (
-        <span className="font-semibold text-foreground">
+        <span className="block truncate font-semibold text-foreground">
           {formatCurrency(row.original.totalSaleAmount, row.original.currency)}
         </span>
       ),
     },
     {
       accessorKey: 'latestShipmentStatus',
-      header: 'Shipping status',
+      header: 'Shipping',
+      meta: {
+        className: 'w-[12%]',
+      },
       cell: ({ row }) =>
         row.original.latestShipmentStatus ? (
           <ShipmentStatusBadge status={row.original.latestShipmentStatus} />
         ) : (
-          <span className="text-sm text-muted-foreground">No shipment</span>
+          <span className="text-xs text-muted-foreground">No shipment</span>
         ),
     },
     {
       id: 'actions',
       header: '',
+      meta: {
+        className: 'w-[15%]',
+      },
       cell: ({ row }) => (
-        <div className="flex items-center gap-1.5">
-          <Button className="h-8 px-2.5" variant="outline" size="sm" onClick={() => onEdit(row.original.id)}>
+        <div className="flex items-center justify-end gap-1">
+          <Button className="h-8 px-2" variant="outline" size="sm" onClick={() => onEdit(row.original.id)}>
             <PencilLine className="h-4 w-4" />
-            Edit
+            <span className="hidden xl:inline">Edit</span>
           </Button>
           <Link
             href={`/orders/${row.original.id}`}
@@ -148,6 +169,7 @@ export function OrdersTable({
       error={error}
       onRetry={onRetry}
       density="compact"
+      layout="fit"
       emptyTitle="No orders found"
       emptyDescription="Try a different search term or clear the current status filter."
       footer={
