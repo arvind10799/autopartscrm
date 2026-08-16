@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
+import { resolveClientIpAddress } from '../../common/utils/resolve-client-ip-address';
 import { SignInvoiceDto } from './dto/sign-invoice.dto';
 import { InvoicesService } from './invoices.service';
 
@@ -11,7 +12,7 @@ export class InvoiceSigningController {
   findByToken(@Param('token') token: string, @Req() request: Request) {
     return this.invoicesService.findBySigningToken(
       token,
-      this.resolveIpAddress(request),
+      resolveClientIpAddress(request),
     );
   }
 
@@ -24,17 +25,7 @@ export class InvoiceSigningController {
     return this.invoicesService.signWithToken(
       token,
       signInvoiceDto,
-      this.resolveIpAddress(request),
+      resolveClientIpAddress(request),
     );
-  }
-
-  private resolveIpAddress(request: Request): string | undefined {
-    const forwardedFor = request.headers['x-forwarded-for'];
-
-    if (typeof forwardedFor === 'string') {
-      return forwardedFor.split(',')[0]?.trim();
-    }
-
-    return request.ip;
   }
 }

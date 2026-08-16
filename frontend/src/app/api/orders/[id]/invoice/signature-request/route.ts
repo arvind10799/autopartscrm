@@ -6,7 +6,7 @@ import {
 } from '@/lib/api/server-proxy';
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -21,5 +21,6 @@ export async function POST(
 
   return proxyBackendWithSession(`/orders/${normalizedId}/invoice/signature-request`, {
     method: 'POST',
+    sourceRequest: request,
   });
 }

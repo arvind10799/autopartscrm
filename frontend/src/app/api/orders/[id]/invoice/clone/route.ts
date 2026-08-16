@@ -35,5 +35,6 @@ export async function POST(
   return proxyBackendWithSession(`/orders/${normalizedId}/invoice/clone`, {
     method: 'POST',
     body: parsedPayload.data,
+    sourceRequest: request,
   });
 }

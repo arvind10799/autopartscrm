@@ -37,6 +37,7 @@ export async function POST(
       method: 'POST',
       body: parsedPayload.data,
       timeoutMs: SIGN_INVOICE_TIMEOUT_MS,
+      forwardedHeaders: request.headers,
     },
   );
 

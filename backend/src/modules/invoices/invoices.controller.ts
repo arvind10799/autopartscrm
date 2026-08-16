@@ -14,6 +14,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidParamDto } from '../../common/dto/uuid-param.dto';
 import { Role } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { resolveClientIpAddress } from '../../common/utils/resolve-client-ip-address';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/role.guard';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -53,7 +54,7 @@ export class InvoicesController {
       params.id,
       createInvoiceDto,
       user,
-      this.resolveIpAddress(request),
+      resolveClientIpAddress(request),
     );
   }
 
@@ -69,7 +70,7 @@ export class InvoicesController {
       params.id,
       createInvoiceDto,
       user,
-      this.resolveIpAddress(request),
+      resolveClientIpAddress(request),
     );
   }
 
@@ -83,7 +84,7 @@ export class InvoicesController {
     return this.invoicesService.resendSignatureRequest(
       params.id,
       user,
-      this.resolveIpAddress(request),
+      resolveClientIpAddress(request),
     );
   }
 
@@ -97,7 +98,7 @@ export class InvoicesController {
     return this.invoicesService.generateNewSigningLink(
       params.id,
       user,
-      this.resolveIpAddress(request),
+      resolveClientIpAddress(request),
     );
   }
 
@@ -113,17 +114,7 @@ export class InvoicesController {
       params.id,
       createInvoiceDto,
       user,
-      this.resolveIpAddress(request),
+      resolveClientIpAddress(request),
     );
-  }
-
-  private resolveIpAddress(request: Request): string | undefined {
-    const forwardedFor = request.headers['x-forwarded-for'];
-
-    if (typeof forwardedFor === 'string') {
-      return forwardedFor.split(',')[0]?.trim();
-    }
-
-    return request.ip;
   }
 }

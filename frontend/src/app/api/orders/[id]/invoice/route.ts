@@ -52,6 +52,7 @@ export async function POST(
   return proxyBackendWithSession(`/orders/${normalizedId}/invoice`, {
     method: 'POST',
     body: parsedPayload.data,
+    sourceRequest: request,
   });
 }
 
@@ -84,5 +85,6 @@ export async function PATCH(
   return proxyBackendWithSession(`/orders/${normalizedId}/invoice`, {
     method: 'PATCH',
     body: parsedPayload.data,
+    sourceRequest: request,
   });
 }

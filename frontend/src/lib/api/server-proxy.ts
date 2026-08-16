@@ -17,7 +17,9 @@ export function buildUnauthorizedApiResponse(message = 'Authentication required.
 
 export async function proxyBackendWithSession<T>(
   path: string,
-  options: Omit<BackendRequestOptions, 'accessToken'> = {},
+  options: Omit<BackendRequestOptions, 'accessToken' | 'forwardedHeaders'> & {
+    sourceRequest?: Request;
+  } = {},
 ) {
   const session = readSessionFromCookies(await cookies());
 
@@ -25,9 +27,11 @@ export async function proxyBackendWithSession<T>(
     return buildUnauthorizedApiResponse();
   }
 
+  const { sourceRequest, ...backendOptions } = options;
   const { status, payload } = await requestBackend<T>(path, {
-    ...options,
+    ...backendOptions,
     accessToken: session.accessToken,
+    forwardedHeaders: sourceRequest?.headers,
   });
 
   return buildNoStoreJsonResponse(payload, status || 500);

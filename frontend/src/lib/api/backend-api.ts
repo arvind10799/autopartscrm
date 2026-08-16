@@ -8,6 +8,7 @@ export type BackendRequestOptions = {
   accessToken?: string | null;
   body?: unknown;
   timeoutMs?: number;
+  forwardedHeaders?: Headers;
 };
 
 export type BackendApiResult<T> = {
@@ -19,11 +20,12 @@ export async function requestBackend<T>(
   path: string,
   options: BackendRequestOptions = {},
 ): Promise<BackendApiResult<T>> {
-  const { method = 'GET', accessToken, body, timeoutMs } = options;
+  const { method = 'GET', accessToken, body, timeoutMs, forwardedHeaders } = options;
 
   const headers = new Headers({
     Accept: 'application/json',
   });
+  copyForwardedIpHeaders(headers, forwardedHeaders);
 
   if (body !== undefined) {
     headers.set('Content-Type', 'application/json');
@@ -68,5 +70,29 @@ export async function requestBackend<T>(
       status: error instanceof Error && error.name === 'TimeoutError' ? 504 : 503,
       payload: buildApiEnvelope<T>(message),
     };
+  }
+}
+
+function copyForwardedIpHeaders(targetHeaders: Headers, sourceHeaders?: Headers) {
+  if (!sourceHeaders) {
+    return;
+  }
+
+  const forwardedFor = sourceHeaders.get('x-forwarded-for');
+  const realIp = sourceHeaders.get('x-real-ip');
+  const forwardedProto = sourceHeaders.get('x-forwarded-proto');
+
+  if (forwardedFor) {
+    targetHeaders.set('X-Forwarded-For', forwardedFor);
+  }
+
+  if (realIp) {
+    targetHeaders.set('X-Real-IP', realIp);
+  } else if (forwardedFor) {
+    targetHeaders.set('X-Real-IP', forwardedFor.split(',')[0]?.trim() ?? forwardedFor);
+  }
+
+  if (forwardedProto) {
+    targetHeaders.set('X-Forwarded-Proto', forwardedProto);
   }
 }

@@ -3,7 +3,7 @@ import { requestBackend } from '@/lib/api/backend-api';
 import { buildNoStoreJsonResponse } from '@/lib/api/server-proxy';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
@@ -18,6 +18,9 @@ export async function GET(
 
   const { status, payload } = await requestBackend(
     `/invoice-signing/${normalizedToken}`,
+    {
+      forwardedHeaders: request.headers,
+    },
   );
 
   return buildNoStoreJsonResponse(payload, status || 500);
