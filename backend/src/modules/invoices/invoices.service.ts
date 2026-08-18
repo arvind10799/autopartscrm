@@ -580,6 +580,8 @@ export class InvoicesService {
         invoiceNumber: invoice.invoiceNumber,
         customerName: invoice.customerName,
         customerEmail,
+        totalAmount: Number(invoice.totalAmount),
+        currency: invoice.order.currency,
         signatureTokenExpiresAt: invoice.signatureTokenExpiresAt,
       },
       this.buildSigningUrl(signatureToken.token),

@@ -10,6 +10,8 @@ type MailInvoice = {
   invoiceNumber: string;
   customerName: string;
   customerEmail: string;
+  totalAmount?: number;
+  currency?: string | null;
   signatureTokenExpiresAt?: Date | null;
   signedAt?: Date | null;
 };
@@ -82,28 +84,34 @@ export class InvoiceMailService {
   }
 
   async sendSignatureRequest(invoice: MailInvoice, signingUrl: string) {
+    const formattedAmount =
+      typeof invoice.totalAmount === 'number'
+        ? this.formatMoney(invoice.totalAmount, invoice.currency)
+        : 'Available on invoice';
+
     await this.sendMail({
       to: invoice.customerEmail,
-      subject: `Invoice #${invoice.invoiceNumber} - Signature Required`,
+      subject: `Invoice ${invoice.invoiceNumber} from MEE Auto Parts`,
       html: this.buildSignatureRequestHtml(invoice, signingUrl),
       text: [
         `Hi ${invoice.customerName},`,
         '',
-        'MEEHIKAA AUTO PARTS INC has requested you to review and sign the document Invoice - Mee Auto Parts.',
+        'Thank you for your order with MEE Auto Parts.',
         '',
-        'Review and sign:',
+        `Your invoice ${invoice.invoiceNumber} is ready for review. Please open the invoice using the link below and complete the required signature.`,
+        '',
+        'Review invoice:',
         signingUrl,
         '',
-        'Document Details',
-        'Document Title: Invoice - Mee Auto Parts',
+        `Order: ${invoice.invoiceNumber}`,
         `Invoice Number: ${invoice.invoiceNumber}`,
+        `Amount: ${formattedAmount}`,
         `Expiry Date: ${this.formatSignatureRequestExpiry(invoice.signatureTokenExpiresAt)}`,
         '',
-        'Signer(s):',
-        `${invoice.customerName} (${invoice.customerEmail})`,
-        '',
-        'Please do not share this email since it contains your unique link for signing the document.',
-        signingUrl,
+        'Thank you,',
+        'MEE Auto Parts',
+        'support@meeautoparts.com',
+        '(888) 338-9652',
       ].join('\n'),
     });
   }
@@ -183,13 +191,15 @@ export class InvoiceMailService {
     const safeCustomerEmail = this.escapeHtml(invoice.customerEmail);
     const safeSigningUrl = this.escapeHtml(signingUrl);
     const safeInvoiceNumber = this.escapeHtml(invoice.invoiceNumber);
+    const safeAmount = this.escapeHtml(
+      typeof invoice.totalAmount === 'number'
+        ? this.formatMoney(invoice.totalAmount, invoice.currency)
+        : 'Available on invoice',
+    );
     const safeExpiry = this.escapeHtml(
       this.formatSignatureRequestExpiry(invoice.signatureTokenExpiresAt),
     );
     const safeLogoUrl = this.escapeHtml(this.buildPublicAssetUrl('/images/logo.png'));
-    const safeBillingEmail = this.escapeHtml(
-      this.configService.get<string>('SMTP_USER', 'billing@meeautoparts.com'),
-    );
 
     return `
       <!doctype html>
@@ -197,7 +207,7 @@ export class InvoiceMailService {
         <head>
           <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Invoice Signature Required</title>
+          <title>Invoice from MEE Auto Parts</title>
         </head>
         <body style="margin:0;padding:0;background:#fdeaea;font-family:Arial,Helvetica,sans-serif;color:#101828;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fdeaea;margin:0;padding:46px 16px;">
@@ -212,50 +222,41 @@ export class InvoiceMailService {
                   <tr>
                     <td style="background:#ffffff;padding:36px 48px 0;">
                       <p style="margin:0 0 22px;font-size:16px;line-height:1.5;color:#101828;">Hi ${safeCustomerName},</p>
+                      <p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#101828;">
+                        Thank you for your order with <strong>MEE Auto Parts</strong>.
+                      </p>
                       <p style="margin:0 0 26px;font-size:16px;line-height:1.5;color:#101828;">
-                        <strong>MEEHIKAA AUTO PARTS INC</strong>
-                        (<a href="mailto:${safeBillingEmail}" style="color:#0645ff;text-decoration:underline;font-weight:700;">${safeBillingEmail}</a>)
-                        has requested you to review and sign the document
-                        <strong>Invoice - Mee Auto Parts</strong>.
+                        Your invoice <strong>${safeInvoiceNumber}</strong> is ready for review. Please open the invoice using the button below and complete the required signature.
                       </p>
                       <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                         <tr>
                           <td align="center" style="padding:0 0 34px;">
                             <a href="${safeSigningUrl}" style="display:inline-block;background:#3f0df6;color:#ffffff;font-size:16px;font-weight:700;line-height:1;text-decoration:none;border-radius:4px;padding:16px 26px;">
-                              Review and Sign
+                              Review Invoice
                             </a>
                           </td>
                         </tr>
                       </table>
-                      <p style="margin:0 0 34px;text-align:center;">
-                        <a href="${safeSigningUrl}" style="color:#475467;font-size:16px;text-decoration:underline;">Document Details</a>
-                      </p>
-                      <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#101828;"><strong>Document Title:</strong></p>
-                      <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#344054;">Invoice - Mee Auto Parts</p>
+                      <p style="margin:0 0 26px;text-align:center;font-size:14px;line-height:1.5;color:#667085;">Order and invoice details</p>
+                      <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#101828;"><strong>Order:</strong></p>
+                      <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#344054;">${safeInvoiceNumber}</p>
                       <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#101828;"><strong>Invoice Number:</strong></p>
                       <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#344054;">${safeInvoiceNumber}</p>
+                      <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#101828;"><strong>Amount:</strong></p>
+                      <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#344054;">${safeAmount}</p>
                       <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#101828;"><strong>Expiry Date:</strong></p>
-                      <p style="margin:0 0 34px;font-size:15px;line-height:1.5;color:#344054;">${safeExpiry}</p>
+                      <p style="margin:0 0 28px;font-size:15px;line-height:1.5;color:#344054;">${safeExpiry}</p>
                       <div style="height:1px;background:#e4e7ec;margin:0 0 28px;"></div>
-                      <p style="margin:0 0 22px;font-size:16px;line-height:1.5;color:#101828;"><strong>Signer(s):</strong></p>
+                      <p style="margin:0 0 22px;font-size:16px;line-height:1.5;color:#101828;"><strong>Customer:</strong></p>
                       <p style="margin:0 0 34px;font-size:15px;line-height:1.5;color:#344054;">
                         ${safeCustomerName}
                         (<a href="mailto:${safeCustomerEmail}" style="color:#0645ff;text-decoration:underline;">${safeCustomerEmail}</a>)
                       </p>
-                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                        <tr>
-                          <td align="center" style="padding:0 0 28px;">
-                            <a href="${safeSigningUrl}" style="display:inline-block;background:#3f0df6;color:#ffffff;font-size:16px;font-weight:700;line-height:1;text-decoration:none;border-radius:4px;padding:16px 26px;">
-                              Review and Sign
-                            </a>
-                          </td>
-                        </tr>
-                      </table>
                     </td>
                   </tr>
                   <tr>
                     <td align="center" style="background:#f8fafc;padding:18px 28px;color:#667085;font-size:12px;line-height:1.5;">
-                      Please do not share this email since it contains your unique link for signing the document.
+                      MEE Auto Parts &nbsp;|&nbsp; support@meeautoparts.com &nbsp;|&nbsp; (888) 338-9652
                     </td>
                   </tr>
                 </table>
