@@ -42,6 +42,8 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const [photoIdDocument, setPhotoIdDocument] = useState('');
   const [photoIdFileName, setPhotoIdFileName] = useState('');
   const [photoIdMimeType, setPhotoIdMimeType] = useState('');
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmittedSuccessfully, setHasSubmittedSuccessfully] = useState(false);
@@ -272,6 +274,14 @@ export function InvoiceSigningPage({ token }: { token: string }) {
 
   const submitSignature = async () => {
     if (!invoice) {
+      return;
+    }
+
+    if (!hasAcceptedTerms) {
+      toast.error(
+        'Agreement required',
+        'Please read and agree to the electronic signature terms before continuing.',
+      );
       return;
     }
 
@@ -568,28 +578,9 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                     </div>
                   ) : null}
 
-                  <p className="rounded-2xl bg-slate-50 px-4 py-3 text-center text-xs font-medium text-slate-700">
-                    I understand that this is a legal representation of my signature.
-                  </p>
-
-                  <Button
-                    type="button"
-                    className="w-full"
-                    disabled={isSubmitting}
-                    onClick={submitSignature}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                        Signing...
-                      </>
-                    ) : (
-                      <>
-                        <PenLine className="h-4 w-4" />
-                        Sign Invoice
-                      </>
-                    )}
-                  </Button>
+                  <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-xs leading-5 text-slate-700">
+                    Add your signature and complete the agreement bar at the bottom to continue.
+                  </div>
 
                   {isSignatureModalOpen && typeof document !== 'undefined'
                     ? createPortal(
@@ -780,13 +771,33 @@ export function InvoiceSigningPage({ token }: { token: string }) {
           </Card>
         </aside>
       </div>
+
+      {!isSigned ? (
+        <SigningAgreementBar
+          checked={hasAcceptedTerms}
+          disabled={isSubmitting}
+          onCheckedChange={setHasAcceptedTerms}
+          onOpenTerms={() => setIsTermsModalOpen(true)}
+          onContinue={submitSignature}
+        />
+      ) : null}
+
+      {isTermsModalOpen && typeof document !== 'undefined'
+        ? createPortal(
+            <TermsModal
+              invoice={invoice}
+              onClose={() => setIsTermsModalOpen(false)}
+            />,
+            document.body,
+          )
+        : null}
     </SigningShell>
   );
 }
 
 function SigningShell({ children }: { children: ReactNode }) {
   return (
-    <section className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#edf2f7_100%)] px-4 py-6 sm:px-6 lg:px-8">
+    <section className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#edf2f7_100%)] px-4 pb-36 pt-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex flex-col items-center gap-3 text-center">
           <Image
@@ -801,6 +812,163 @@ function SigningShell({ children }: { children: ReactNode }) {
         {children}
       </div>
     </section>
+  );
+}
+
+function SigningAgreementBar({
+  checked,
+  disabled,
+  onCheckedChange,
+  onOpenTerms,
+  onContinue,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  onOpenTerms: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 px-4 py-4 shadow-[0_-18px_45px_rgba(15,23,42,0.14)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-lg sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-800">
+          <input
+            type="checkbox"
+            checked={checked}
+            disabled={disabled}
+            onChange={(event) => onCheckedChange(event.target.checked)}
+            className="mt-1 h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary"
+          />
+          <span>
+            I have read and agreed{' '}
+            <button
+              type="button"
+              className="font-medium text-primary underline underline-offset-4"
+              onClick={(event) => {
+                event.preventDefault();
+                onOpenTerms();
+              }}
+            >
+              Terms & Conditions - Warranty | Returns | Cancellation
+            </button>
+          </span>
+        </label>
+
+        <Button
+          type="button"
+          className="min-w-44 bg-[#3f0df6] hover:bg-[#3210bd]"
+          disabled={!checked || disabled}
+          onClick={onContinue}
+        >
+          {disabled ? (
+            <>
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            'Continue'
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function TermsModal({
+  invoice,
+  onClose,
+}: {
+  invoice: PublicInvoiceRecord;
+  onClose: () => void;
+}) {
+  const warrantyLines = parseTermsLines(
+    invoice.warrantyPartsOnly,
+    DEFAULT_WARRANTY_PARTS_ONLY,
+  );
+  const cancellationLines = parseTermsLines(
+    invoice.cancellationPolicy,
+    DEFAULT_CANCELLATION_POLICY,
+  );
+
+  return (
+    <div className="fixed inset-0 z-[10020] flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm">
+      <div className="flex max-h-[82vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-slate-900/10">
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+          <h2 className="text-2xl font-bold tracking-[-0.03em] text-slate-900">
+            Terms & Conditions - Warranty | Returns | Cancellation
+          </h2>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 rounded-full p-0 text-slate-500"
+            onClick={onClose}
+            aria-label="Close terms"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="space-y-6 overflow-auto px-6 py-5 text-sm leading-6 text-slate-800">
+          <section>
+            <h3 className="text-lg font-bold text-slate-950">
+              Warranty ( parts only )
+            </h3>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {warrantyLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </section>
+
+          <section>
+            <h3 className="text-3xl font-bold tracking-[-0.04em] text-slate-950">
+              Installation & Returns
+            </h3>
+            <ul className="mt-3 list-disc space-y-1 pl-5">
+              <li>
+                Installation: Engines and transmissions must be installed within
+                the warranty period by a licensed professional at a licensed
+                repair facility, following manufacturer guidelines.
+              </li>
+              <li>
+                Defective Parts: MEE Auto Parts will exchange defective parts or
+                issue a refund only if the part is out of stock.
+              </li>
+              <li>Returns: Parts must be returned in their original condition.</li>
+              <li>No Refunds: Unless the part is out of stock.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3 className="text-3xl font-bold tracking-[-0.04em] text-slate-950">
+              Cancellation
+            </h3>
+            <ul className="mt-3 list-disc space-y-1 pl-5">
+              {cancellationLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </section>
+
+          <p>
+            <strong>Note :</strong> MEE AUTO PARTS is not responsible for improper
+            installation or usage, labor charges, loss of income, wages, salary,
+            or car rental charges.
+          </p>
+        </div>
+
+        <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+          <Button
+            type="button"
+            className="min-w-28 bg-[#3f0df6] hover:bg-[#3210bd]"
+            onClick={onClose}
+          >
+            Ok
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -860,6 +1028,26 @@ function createTypedSignatureImage(name: string, styleIndex: number) {
   context.fillText(name, width / 2, height / 2 + 5, width - 80);
 
   return canvas.toDataURL('image/png');
+}
+
+const DEFAULT_WARRANTY_PARTS_ONLY = [
+  'Standard: 90 days for non-performance engines and transmissions.',
+  "No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accesories sent isn't charged or covered.",
+  'Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accesories.',
+  'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
+  'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
+].join('\n');
+
+const DEFAULT_CANCELLATION_POLICY =
+  'Cancellation request after payment confirmation will have standard 25% restocking fee remainder will be refunded to the source payment method except wire payments, also additional shipping charges will apply for any requests post 24 hrs from payment confirmation.';
+
+function parseTermsLines(value: string | null | undefined, fallback: string) {
+  const source = value?.trim() ? value : fallback;
+
+  return source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function fileToCompressedSignatureDataUrl(file: File) {
