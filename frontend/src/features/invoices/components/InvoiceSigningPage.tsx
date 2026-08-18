@@ -47,7 +47,6 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmittedSuccessfully, setHasSubmittedSuccessfully] = useState(false);
-  const [hasShownInitialTerms, setHasShownInitialTerms] = useState(false);
   const [hasDrawing, setHasDrawing] = useState(false);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
   const invoiceDocumentRef = useRef<HTMLDivElement>(null);
@@ -110,15 +109,6 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     prepareSignatureCanvas(canvas);
     setHasDrawing(false);
   }, [invoice?.canSign, isSignatureModalOpen, signatureMode]);
-
-  useEffect(() => {
-    if (!invoice || invoice.status === 'SIGNED' || hasShownInitialTerms) {
-      return;
-    }
-
-    setIsTermsModalOpen(true);
-    setHasShownInitialTerms(true);
-  }, [hasShownInitialTerms, invoice]);
 
   const startDrawing = (event: PointerEvent<HTMLCanvasElement>) => {
     const context = drawCanvasRef.current?.getContext('2d');
@@ -290,7 +280,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     if (!hasAcceptedTerms) {
       toast.error(
         'Agreement required',
-        'Please read and agree to the electronic signature terms before continuing.',
+        'Please read and agree to the terms before submitting.',
       );
       return;
     }
@@ -469,6 +459,16 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                       {photoIdFileName}
                     </div>
                   ) : null}
+                </div>
+              ) : !hasAcceptedTerms ? (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-3 text-sm text-slate-800">
+                  <p className="font-semibold text-foreground">
+                    Terms agreement required
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Please check the terms agreement at the bottom of the page.
+                    Signature and document upload will unlock after acceptance.
+                  </p>
                 </div>
               ) : (
                 <>
@@ -801,7 +801,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
         </aside>
       </div>
 
-      {!isSigned ? (
+      {!isSigned && !hasAcceptedTerms ? (
         <SigningAgreementBar
           checked={hasAcceptedTerms}
           disabled={isSubmitting}
