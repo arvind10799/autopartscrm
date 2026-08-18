@@ -825,7 +825,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
 
 function SigningShell({ children }: { children: ReactNode }) {
   return (
-    <section className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#edf2f7_100%)] px-4 pb-36 pt-6 sm:px-6 lg:px-8">
+    <section className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#edf2f7_100%)] px-4 pb-24 pt-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex flex-col items-center gap-3 text-center">
           <Image
@@ -855,8 +855,8 @@ function SigningAgreementBar({
   onOpenTerms: () => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 px-4 py-3 shadow-[0_-14px_34px_rgba(15,23,42,0.12)] backdrop-blur-xl">
-      <div className="mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-md">
+    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 px-4">
+      <div className="pointer-events-auto mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur-xl">
         <label className="flex cursor-pointer items-center gap-3 text-xs leading-5 text-slate-800 sm:text-sm">
           <input
             type="checkbox"
