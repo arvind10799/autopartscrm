@@ -186,10 +186,6 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                   label="Part Description"
                   value={intake.vehicleNotes ?? 'Not provided'}
                 />
-                <DetailBlock
-                  label="Configuration"
-                  value={intake.vehicleConfiguration ?? 'Not provided'}
-                />
               </DetailSection>
 
               <CollapsibleDetailSection title="Billing Information">

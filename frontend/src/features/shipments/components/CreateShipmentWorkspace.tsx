@@ -363,11 +363,6 @@ export function ShipmentOrderDetailsPanel({
             <DetailBlock label="Variant" value={intake.vehicleVariant ?? 'Not provided'} />
             <DetailBlock label="VIN" value={intake.vehicleVin ?? 'Not provided'} />
             <DetailBlock
-              label="Configuration"
-              value={intake.vehicleConfiguration ?? 'Not provided'}
-              className="2xl:col-span-2"
-            />
-            <DetailBlock
               label="Part Description"
               value={intake.vehicleNotes ?? 'Not provided'}
               className="2xl:col-span-2"

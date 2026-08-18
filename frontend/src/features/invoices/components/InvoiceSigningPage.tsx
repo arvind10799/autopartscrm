@@ -47,6 +47,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmittedSuccessfully, setHasSubmittedSuccessfully] = useState(false);
+  const [hasShownInitialTerms, setHasShownInitialTerms] = useState(false);
   const [hasDrawing, setHasDrawing] = useState(false);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
   const invoiceDocumentRef = useRef<HTMLDivElement>(null);
@@ -109,6 +110,15 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     prepareSignatureCanvas(canvas);
     setHasDrawing(false);
   }, [invoice?.canSign, isSignatureModalOpen, signatureMode]);
+
+  useEffect(() => {
+    if (!invoice || invoice.status === 'SIGNED' || hasShownInitialTerms) {
+      return;
+    }
+
+    setIsTermsModalOpen(true);
+    setHasShownInitialTerms(true);
+  }, [hasShownInitialTerms, invoice]);
 
   const startDrawing = (event: PointerEvent<HTMLCanvasElement>) => {
     const context = drawCanvasRef.current?.getContext('2d');
@@ -398,13 +408,13 @@ export function InvoiceSigningPage({ token }: { token: string }) {
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-          <Card className="border-border/70 bg-white/95">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-2xl">
+          <Card className="border-border/70 bg-white/95 shadow-sm">
+            <CardHeader className="space-y-1 px-4 pb-2 pt-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
                 {isSigned ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                 ) : (
-                  <PenLine className="h-5 w-5 text-primary" />
+                  <PenLine className="h-4 w-4 text-primary" />
                 )}
                 {isSubmitting
                   ? 'Submitting...'
@@ -414,20 +424,20 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                     : 'Invoice Signed'
                   : 'Review & Sign'}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 Invoice #{invoice.invoiceNumber}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 px-4 pb-4 pt-0">
               {isSubmitting ? (
-                <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
-                      <LoaderCircle className="h-5 w-5 animate-spin" />
+                <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-sky-900">
+                  <div className="flex items-start gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-primary shadow-sm">
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
                     </span>
                     <div>
                       <p className="font-semibold">Submitting, please wait...</p>
-                      <p className="mt-1 leading-6 text-sky-800">
+                      <p className="mt-1 text-xs leading-5 text-sky-800">
                         Your signature and attachment are being saved securely.
                         Please do not refresh or submit again.
                       </p>
@@ -435,10 +445,10 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                   </div>
                 </div>
               ) : isSigned ? (
-                <div className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
-                      <CheckCircle2 className="h-5 w-5" />
+                <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-900">
+                  <div className="flex items-start gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm">
+                      <CheckCircle2 className="h-4 w-4" />
                     </span>
                     <div>
                       <p className="font-semibold">
@@ -446,7 +456,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                           ? 'Signature submitted successfully.'
                           : 'This invoice has already been signed.'}
                       </p>
-                      <p className="mt-1 leading-6 text-emerald-800">
+                      <p className="mt-1 text-xs leading-5 text-emerald-800">
                         {hasSubmittedSuccessfully
                           ? 'Your signature and required attachment have been received. This page is read-only now.'
                           : 'This secure signing link is read-only now.'}
@@ -462,18 +472,18 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                 </div>
               ) : (
                 <>
-                  <label className="space-y-1.5 text-sm font-medium text-foreground">
+                  <label className="space-y-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                     <span>Signature Name</span>
                     <input
                       value={signatureName}
                       onChange={(event) => setSignatureName(event.target.value)}
-                      className="w-full rounded-2xl border border-input bg-white px-4 py-2.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="w-full rounded-xl border border-input bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
                   </label>
 
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4">
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 p-3">
                     {signatureImage ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-foreground">
                             Saved signature
@@ -487,18 +497,18 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                             Change
                           </Button>
                         </div>
-                        <div className="flex h-32 items-center justify-center rounded-xl bg-white shadow-inner">
+                        <div className="flex h-24 items-center justify-center rounded-lg bg-white shadow-inner">
                           <img
                             src={signatureImage}
                             alt="Saved customer signature"
-                            className="max-h-24 max-w-full object-contain"
+                            className="max-h-20 max-w-full object-contain"
                           />
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-3 text-center">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                          <PenLine className="h-5 w-5" />
+                      <div className="space-y-2 text-center">
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <PenLine className="h-4 w-4" />
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-foreground">
@@ -517,8 +527,8 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                   </div>
 
                   {invoice.photoIdRequired ? (
-                    <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4">
-                      <div className="mb-3 flex items-start justify-between gap-3">
+                    <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3">
+                      <div className="mb-2 flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-foreground">
                             Photo ID required
@@ -532,8 +542,8 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                         ) : null}
                       </div>
                       {photoIdDocument ? (
-                        <div className="space-y-3">
-                          <div className="rounded-xl border border-border bg-white p-3 text-sm text-foreground">
+                        <div className="space-y-2">
+                          <div className="rounded-lg border border-border bg-white p-2.5 text-sm text-foreground">
                             <p className="truncate font-medium">
                               {photoIdFileName || 'Photo ID document'}
                             </p>
@@ -558,9 +568,9 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                         <label
                           onDragOver={(event) => event.preventDefault()}
                           onDrop={handlePhotoIdDrop}
-                          className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-6 text-center transition hover:border-primary/50 hover:bg-primary/5"
+                          className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-4 text-center transition hover:border-primary/50 hover:bg-primary/5"
                         >
-                          <UploadCloud className="h-7 w-7 text-primary" />
+                          <UploadCloud className="h-6 w-6 text-primary" />
                           <p className="mt-2 text-sm font-semibold text-foreground">
                             Drop photo ID here or browse
                           </p>
@@ -578,9 +588,28 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                     </div>
                   ) : null}
 
-                  <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-xs leading-5 text-slate-700">
-                    Add your signature and complete the agreement bar at the bottom to continue.
+                  <div className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs leading-5 text-slate-700">
+                    Add your signature and confirm the agreement before submitting.
                   </div>
+
+                  <Button
+                    type="button"
+                    className="w-full"
+                    disabled={isSubmitting}
+                    onClick={submitSignature}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <PenLine className="h-4 w-4" />
+                        Submit Signature
+                      </>
+                    )}
+                  </Button>
 
                   {isSignatureModalOpen && typeof document !== 'undefined'
                     ? createPortal(
@@ -778,7 +807,6 @@ export function InvoiceSigningPage({ token }: { token: string }) {
           disabled={isSubmitting}
           onCheckedChange={setHasAcceptedTerms}
           onOpenTerms={() => setIsTermsModalOpen(true)}
-          onContinue={submitSignature}
         />
       ) : null}
 
@@ -820,26 +848,24 @@ function SigningAgreementBar({
   disabled,
   onCheckedChange,
   onOpenTerms,
-  onContinue,
 }: {
   checked: boolean;
   disabled: boolean;
   onCheckedChange: (checked: boolean) => void;
   onOpenTerms: () => void;
-  onContinue: () => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 px-4 py-4 shadow-[0_-18px_45px_rgba(15,23,42,0.14)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-lg sm:flex-row sm:items-center sm:justify-between sm:px-5">
-        <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-800">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 px-4 py-3 shadow-[0_-14px_34px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+      <div className="mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-md">
+        <label className="flex cursor-pointer items-center gap-3 text-xs leading-5 text-slate-800 sm:text-sm">
           <input
             type="checkbox"
             checked={checked}
             disabled={disabled}
             onChange={(event) => onCheckedChange(event.target.checked)}
-            className="mt-1 h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary"
+            className="h-4 w-4 shrink-0 rounded border-slate-300 text-primary focus:ring-primary"
           />
-          <span>
+          <span className="min-w-0">
             I have read and agreed{' '}
             <button
               type="button"
@@ -853,22 +879,6 @@ function SigningAgreementBar({
             </button>
           </span>
         </label>
-
-        <Button
-          type="button"
-          className="min-w-44 bg-[#3f0df6] hover:bg-[#3210bd]"
-          disabled={!checked || disabled}
-          onClick={onContinue}
-        >
-          {disabled ? (
-            <>
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            'Continue'
-          )}
-        </Button>
       </div>
     </div>
   );
