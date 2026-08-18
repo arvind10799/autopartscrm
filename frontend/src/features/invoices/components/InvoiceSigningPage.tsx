@@ -46,6 +46,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAcceptingTerms, setIsAcceptingTerms] = useState(false);
   const [hasSubmittedSuccessfully, setHasSubmittedSuccessfully] = useState(false);
   const [hasDrawing, setHasDrawing] = useState(false);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -59,6 +60,11 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     setPhotoIdDocument(loadedInvoice.photoIdDocument ?? '');
     setPhotoIdFileName(loadedInvoice.photoIdFileName ?? '');
     setPhotoIdMimeType(loadedInvoice.photoIdMimeType ?? '');
+    setHasAcceptedTerms(
+      loadedInvoice.auditTrail?.events.some(
+        (event) => event.eventType === 'TERMS_ACCEPTED',
+      ) ?? false,
+    );
   }, []);
 
   useEffect(() => {
@@ -236,6 +242,32 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const handlePhotoIdDrop = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
     void handlePhotoIdFile(event.dataTransfer.files?.[0]);
+  };
+
+  const handleTermsAcceptanceChange = async (checked: boolean) => {
+    if (!checked) {
+      setHasAcceptedTerms(false);
+      return;
+    }
+
+    setIsAcceptingTerms(true);
+
+    try {
+      const acceptedInvoice = await invoicesApi.acceptTermsWithToken(token);
+      syncInvoiceState(acceptedInvoice);
+      setHasAcceptedTerms(true);
+      toast.success('Terms accepted', 'You can now sign and upload documents.');
+    } catch (caughtError) {
+      setHasAcceptedTerms(false);
+      toast.error(
+        'Unable to accept terms',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    } finally {
+      setIsAcceptingTerms(false);
+    }
   };
 
   const saveSignatureFromModal = () => {
@@ -804,8 +836,11 @@ export function InvoiceSigningPage({ token }: { token: string }) {
       {!isSigned && !hasAcceptedTerms ? (
         <SigningAgreementBar
           checked={hasAcceptedTerms}
-          disabled={isSubmitting}
-          onCheckedChange={setHasAcceptedTerms}
+          disabled={isSubmitting || isAcceptingTerms}
+          isAccepting={isAcceptingTerms}
+          onCheckedChange={(checked) => {
+            void handleTermsAcceptanceChange(checked);
+          }}
           onOpenTerms={() => setIsTermsModalOpen(true)}
         />
       ) : null}
@@ -846,11 +881,13 @@ function SigningShell({ children }: { children: ReactNode }) {
 function SigningAgreementBar({
   checked,
   disabled,
+  isAccepting,
   onCheckedChange,
   onOpenTerms,
 }: {
   checked: boolean;
   disabled: boolean;
+  isAccepting: boolean;
   onCheckedChange: (checked: boolean) => void;
   onOpenTerms: () => void;
 }) {
@@ -866,7 +903,7 @@ function SigningAgreementBar({
             className="h-4 w-4 shrink-0 rounded border-slate-300 text-primary focus:ring-primary"
           />
           <span className="min-w-0">
-            I have read and agreed{' '}
+            {isAccepting ? 'Saving agreement...' : 'I have read and agreed'}{' '}
             <button
               type="button"
               className="font-medium text-primary underline underline-offset-4"

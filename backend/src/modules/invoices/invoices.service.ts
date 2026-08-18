@@ -515,6 +515,42 @@ export class InvoicesService {
     };
   }
 
+  async acceptTermsWithToken(token: string, ipAddress?: string) {
+    const invoice = await this.findInvoiceForToken(token);
+
+    if (invoice.status === SIGNED_INVOICE_STATUS) {
+      throw new ConflictException('This invoice has already been signed.');
+    }
+
+    this.assertTokenIsActive(invoice);
+
+    const hasAcceptedTerms = invoice.auditEvents?.some(
+      (event) => event.eventType === 'TERMS_ACCEPTED',
+    );
+
+    if (!hasAcceptedTerms) {
+      await this.createAuditEvent(invoice.id, 'TERMS_ACCEPTED', {
+        actor: this.customerToAuditActor(invoice),
+        description: `${this.describeCustomer(invoice)} agreed to Terms & Conditions - Warranty | Returns | Cancellation.`,
+        ipAddress,
+        metadata: {
+          agreement:
+            'Terms & Conditions - Warranty | Returns | Cancellation',
+          checkboxText:
+            'I have read and agreed Terms & Conditions - Warranty | Returns | Cancellation',
+        },
+      });
+    }
+
+    const refreshedInvoice =
+      (await this.invoicesRepository.findById(invoice.id)) ?? invoice;
+
+    return {
+      ...this.serializeInvoice(refreshedInvoice),
+      canSign: true,
+    };
+  }
+
   private calculateTotalAmount(createInvoiceDto: CreateInvoiceDto): number {
     const totalAmount =
       createInvoiceDto.saleAmount +
@@ -772,7 +808,11 @@ export class InvoicesService {
     );
 
     const timestamps = sortedEvents
-      .filter((event) => ['SIGNED', 'VIEWED', 'SENT'].includes(event.eventType))
+      .filter((event) =>
+        ['SIGNED', 'VIEWED', 'SENT', 'TERMS_ACCEPTED'].includes(
+          event.eventType,
+        ),
+      )
       .map((event) => ({
         label: this.auditTitle(event.eventType),
         occurredAt: event.occurredAt,
@@ -880,6 +920,7 @@ export class InvoicesService {
       EDITED: 'Edited',
       VIEWED: 'Viewed',
       ATTACHED: 'Attached',
+      TERMS_ACCEPTED: 'Terms Accepted',
       SIGNED: 'Signed',
       COMPLETED: 'Completed',
       CLONED: 'Cloned',

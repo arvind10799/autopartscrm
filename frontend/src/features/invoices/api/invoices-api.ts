@@ -163,6 +163,17 @@ export const invoicesApi = {
     });
   },
 
+  async acceptTermsWithToken(token: string): Promise<PublicInvoiceRecord> {
+    const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
+      `/api/invoice-signing/${token}/terms-acceptance`,
+    );
+
+    return parseApiData(response, publicInvoiceRecordSchema, {
+      emptyMessage: response.data.message || 'Terms acceptance response was empty.',
+      invalidMessage: 'Terms acceptance payload was invalid.',
+    });
+  },
+
   assertOrderId(orderId: string): void {
     if (!isValidOrderId(orderId)) {
       throw new HttpError('Order identifier is invalid.', 400);

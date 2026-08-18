@@ -28,4 +28,12 @@ export class InvoiceSigningController {
       resolveClientIpAddress(request),
     );
   }
+
+  @Post(':token/terms-acceptance')
+  acceptTerms(@Param('token') token: string, @Req() request: Request) {
+    return this.invoicesService.acceptTermsWithToken(
+      token,
+      resolveClientIpAddress(request),
+    );
+  }
 }
