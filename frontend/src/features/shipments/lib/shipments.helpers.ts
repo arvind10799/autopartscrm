@@ -245,6 +245,8 @@ export function toUpdateShipmentStatusPayload(
 ): UpdateShipmentStatusInput {
   return {
     status: payload.status,
+    bolNumber: payload.bolNumber,
     proNumber: payload.proNumber,
+    carrierName: payload.carrierName,
   };
 }

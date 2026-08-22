@@ -104,6 +104,7 @@ export interface OrderSummary {
 
 export interface OrderShipment {
   id: string;
+  bolNumber: string | null;
   proNumber: string | null;
   carrierName: string | null;
   status: string;

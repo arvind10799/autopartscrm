@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   OrderStatus as PrismaOrderStatus,
   Prisma,
+  ShipmentStatus as PrismaShipmentStatus,
 } from '@prisma/client';
 import { Role } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
@@ -23,6 +24,13 @@ type CreateOrderPayload = CreateOrderDto & {
 type UpdateOrderPayload = Omit<UpdateOrderDto, 'note'> & {
   totalSaleAmount?: Prisma.Decimal;
 };
+
+const SHIPMENT_WORKFLOW_STATUSES = [
+  PrismaShipmentStatus.PENDING,
+  PrismaShipmentStatus.LOCATING,
+  PrismaShipmentStatus.PRE_PROCESSING,
+  PrismaShipmentStatus.PURCHASE,
+] satisfies PrismaShipmentStatus[];
 
 const orderListSelect = {
   id: true,
@@ -257,7 +265,31 @@ export class OrdersRepository {
     );
 
     if (hasShipmentFilter !== undefined && !queryOrdersDto.shipmentStatus) {
-      where.shipments = hasShipmentFilter ? { some: {} } : { none: {} };
+      if (hasShipmentFilter) {
+        where.shipments = { some: {} };
+      } else {
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : []),
+          {
+            OR: [
+              {
+                shipments: {
+                  none: {},
+                },
+              },
+              {
+                shipments: {
+                  some: {
+                    status: {
+                      in: SHIPMENT_WORKFLOW_STATUSES,
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ];
+      }
     }
 
     const createdAtFilter = buildCreatedAtFilter(

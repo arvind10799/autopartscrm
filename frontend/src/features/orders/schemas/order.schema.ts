@@ -267,6 +267,7 @@ const orderNoteSchema = z.object({
 
 const orderShipmentSchema = z.object({
   id: z.string(),
+  bolNumber: z.string().nullable(),
   proNumber: z.string().nullable(),
   carrierName: z.string().nullable(),
   status: orderShipmentStatusSchema,

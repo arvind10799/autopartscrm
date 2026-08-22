@@ -45,6 +45,14 @@ const shipmentDetailSelect = {
   ...shipmentSummarySelect,
 } satisfies Prisma.ShipmentSelect;
 
+const OPERATIONAL_SHIPMENT_STATUSES = [
+  PrismaShipmentStatus.SHIPPED,
+  PrismaShipmentStatus.IN_TRANSIT,
+  PrismaShipmentStatus.DELAYED,
+  PrismaShipmentStatus.DELIVERED,
+  PrismaShipmentStatus.CANCELLED,
+] satisfies PrismaShipmentStatus[];
+
 @Injectable()
 export class ShipmentsRepository {
   constructor(private readonly prismaService: PrismaService) {}
@@ -83,7 +91,15 @@ export class ShipmentsRepository {
     const where: Prisma.ShipmentWhereInput = {};
 
     if (queryShipmentsDto.status) {
-      where.status = queryShipmentsDto.status;
+      where.status = (
+        OPERATIONAL_SHIPMENT_STATUSES as readonly PrismaShipmentStatus[]
+      ).includes(queryShipmentsDto.status as PrismaShipmentStatus)
+        ? queryShipmentsDto.status
+        : { in: [] };
+    } else {
+      where.status = {
+        in: OPERATIONAL_SHIPMENT_STATUSES,
+      };
     }
 
     const createdAtFilter = buildCreatedAtFilter(
@@ -167,7 +183,9 @@ export class ShipmentsRepository {
     id: string,
     statusUpdate: {
       status: PrismaShipmentStatus;
+      bolNumber?: string;
       proNumber?: string;
+      carrierName?: string;
       shippedAt?: Date;
       deliveredAt?: Date;
     },
@@ -180,8 +198,16 @@ export class ShipmentsRepository {
       data.shippedAt = statusUpdate.shippedAt;
     }
 
+    if (statusUpdate.bolNumber) {
+      data.bolNumber = statusUpdate.bolNumber.trim();
+    }
+
     if (statusUpdate.proNumber) {
       data.proNumber = statusUpdate.proNumber.trim();
+    }
+
+    if (statusUpdate.carrierName !== undefined) {
+      data.carrierName = statusUpdate.carrierName?.trim();
     }
 
     if (statusUpdate.deliveredAt) {

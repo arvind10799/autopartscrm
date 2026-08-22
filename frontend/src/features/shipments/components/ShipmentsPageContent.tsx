@@ -24,8 +24,16 @@ import {
   parseShipmentStatusFilter,
   type ShipmentStatusFilter,
 } from '../lib/shipments.helpers';
-import { SHIPMENT_STATUSES } from '../types/shipment.types';
+import type { ShipmentStatus } from '../types/shipment.types';
 import { ShipmentsTable } from './ShipmentsTable';
+
+const OPERATIONAL_SHIPMENT_STATUS_FILTERS = [
+  'SHIPPED',
+  'IN_TRANSIT',
+  'DELAYED',
+  'DELIVERED',
+  'CANCELLED',
+] as const satisfies readonly ShipmentStatus[];
 
 export function ShipmentsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,7 +123,7 @@ export function ShipmentsPageContent() {
                 }
               >
                 <option value={ALL_SHIPMENT_STATUS_FILTER}>All statuses</option>
-                {SHIPMENT_STATUSES.map((status) => (
+                {OPERATIONAL_SHIPMENT_STATUS_FILTERS.map((status) => (
                   <option key={status} value={status}>
                     {formatShipmentStatusOptionLabel(status)}
                   </option>

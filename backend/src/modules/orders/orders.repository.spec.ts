@@ -101,9 +101,31 @@ describe('OrdersRepository', () => {
     expect(prismaService.order.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          shipments: {
-            none: {},
-          },
+          AND: [
+            {
+              OR: [
+                {
+                  shipments: {
+                    none: {},
+                  },
+                },
+                {
+                  shipments: {
+                    some: {
+                      status: {
+                        in: [
+                          'PENDING',
+                          'LOCATING',
+                          'PRE_PROCESSING',
+                          'PURCHASE',
+                        ],
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
         },
       }),
     );

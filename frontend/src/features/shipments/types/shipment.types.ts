@@ -115,5 +115,7 @@ export interface ShipmentsListQuery {
 
 export interface UpdateShipmentStatusInput {
   status: ShipmentStatus;
+  bolNumber?: string;
   proNumber?: string;
+  carrierName?: string;
 }

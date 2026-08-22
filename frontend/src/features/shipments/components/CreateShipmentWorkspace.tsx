@@ -58,6 +58,7 @@ import type {
   OrderNote,
   OrderShipmentStatus,
 } from '@/features/orders/types/order.types';
+import type { ShipmentSummary } from '../types/shipment.types';
 import { CreateShipmentForm } from './CreateShipmentForm';
 import { ShipmentEligibleOrdersTable } from './ShipmentEligibleOrdersTable';
 
@@ -209,15 +210,25 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
     refreshKey,
   );
 
-  const handleShipmentCreated = () => {
+  const handleShipmentCreated = (shipment: ShipmentSummary) => {
     const completedOrder = order;
+    const isOperationalShipment = shipment.currentStatus === 'SHIPPED';
 
-    toast.success(
-      completedOrder
-        ? `Shipment created for ${completedOrder.orderNumber}`
-        : 'Shipment created',
-      'The shipped order has been removed from the eligible orders list.',
-    );
+    if (isOperationalShipment) {
+      toast.success(
+        completedOrder
+          ? `Shipment created for ${completedOrder.orderNumber}`
+          : 'Shipment created',
+        'The shipped order is now available in the Shipment table.',
+      );
+    } else {
+      toast.success(
+        completedOrder
+          ? `Shipment workflow saved for ${completedOrder.orderNumber}`
+          : 'Shipment workflow saved',
+        'The order remains in Shipment orders until it is marked shipped with a BOL.',
+      );
+    }
     router.push('/shipments/create');
   };
 

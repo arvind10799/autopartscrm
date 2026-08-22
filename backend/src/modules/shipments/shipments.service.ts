@@ -110,6 +110,11 @@ export class ShipmentsService {
       nextStatus,
       Boolean(existingShipment.shippedAt),
     );
+    this.ensureBolNumberForShipped(
+      nextStatus,
+      existingShipment.bolNumber,
+      updateShipmentStatusDto.bolNumber,
+    );
     this.ensureProNumberForInTransit(
       nextStatus,
       existingShipment.proNumber,
@@ -118,10 +123,19 @@ export class ShipmentsService {
 
     const shipment = await this.shipmentsRepository.updateStatus(id, {
       status: nextStatus,
+      bolNumber:
+        nextStatus === PrismaShipmentStatus.SHIPPED &&
+        !existingShipment.bolNumber
+          ? updateShipmentStatusDto.bolNumber
+          : undefined,
       proNumber:
         nextStatus === PrismaShipmentStatus.IN_TRANSIT &&
         !existingShipment.proNumber
           ? updateShipmentStatusDto.proNumber
+          : undefined,
+      carrierName:
+        nextStatus === PrismaShipmentStatus.SHIPPED
+          ? updateShipmentStatusDto.carrierName
           : undefined,
       shippedAt:
         (nextStatus === PrismaShipmentStatus.SHIPPED ||
@@ -207,6 +221,22 @@ export class ShipmentsService {
     if (!nextProNumber) {
       throw new BadRequestException(
         'PRO number is required when moving shipment to in transit.',
+      );
+    }
+  }
+
+  private ensureBolNumberForShipped(
+    nextStatus: PrismaShipmentStatus,
+    existingBolNumber: string | null,
+    nextBolNumber?: string,
+  ): void {
+    if (nextStatus !== PrismaShipmentStatus.SHIPPED || existingBolNumber) {
+      return;
+    }
+
+    if (!nextBolNumber) {
+      throw new BadRequestException(
+        'BOL number is required when moving shipment to shipped.',
       );
     }
   }

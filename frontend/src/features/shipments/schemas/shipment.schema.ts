@@ -123,10 +123,22 @@ export const shipmentTimelineSchema = z.object({
 
 export const updateShipmentStatusSchema = z.object({
   status: shipmentStatusSchema,
+  bolNumber: z
+    .string()
+    .trim()
+    .max(50, 'BOL number must be 50 characters or fewer.')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
   proNumber: z
     .string()
     .trim()
     .max(50, 'PRO number must be 50 characters or fewer.')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+  carrierName: z
+    .string()
+    .trim()
+    .max(120, 'Carrier name must be 120 characters or fewer.')
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
 });

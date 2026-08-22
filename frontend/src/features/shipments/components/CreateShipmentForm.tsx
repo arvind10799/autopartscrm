@@ -9,9 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { getErrorMessage } from '@/lib/utils/error';
-import type { OrderSummary } from '@/features/orders/types/order.types';
+import type { OrderDetail, OrderSummary } from '@/features/orders/types/order.types';
 import { shipmentsApi } from '../api/shipments-api';
-import { formatShipmentStatusOptionLabel } from '../lib/shipments.helpers';
+import {
+  formatShipmentStatusOptionLabel,
+  isShipmentStatus,
+} from '../lib/shipments.helpers';
 import {
   createShipmentSchema,
   type CreateShipmentFormValues,
@@ -40,10 +43,12 @@ export function CreateShipmentForm({
   selectedOrder: Pick<
     OrderSummary,
     'id' | 'orderNumber' | 'customerName' | 'createdBy'
-  >;
+  > &
+    Partial<Pick<OrderDetail, 'shipments'>>;
   onCreated: (shipment: ShipmentSummary) => void;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
+  const currentShipment = selectedOrder.shipments?.[0] ?? null;
   const form = useForm<CreateShipmentFormValues>({
     resolver: zodResolver(createShipmentSchema),
     defaultValues,
@@ -52,11 +57,19 @@ export function CreateShipmentForm({
   const showShippingFields = selectedStatus === 'SHIPPED';
 
   useEffect(() => {
+    const currentStatus =
+      currentShipment && isShipmentStatus(currentShipment.status)
+        ? currentShipment.status
+        : defaultValues.status;
+
     form.reset({
       ...defaultValues,
       orderId: selectedOrder.id,
+      status: currentStatus,
+      bolNumber: currentShipment?.bolNumber ?? '',
+      carrierName: currentShipment?.carrierName ?? '',
     });
-  }, [form, selectedOrder]);
+  }, [currentShipment, form, selectedOrder.id]);
 
   useEffect(() => {
     if (showShippingFields) {
@@ -71,11 +84,14 @@ export function CreateShipmentForm({
     setFormError(null);
 
     try {
-      const createdShipment = await shipmentsApi.create({
+      const payload = {
         ...values,
         status: values.status ?? 'PENDING',
-      });
-      onCreated(createdShipment);
+      };
+      const savedShipment = currentShipment
+        ? await shipmentsApi.updateStatus(currentShipment.id, payload)
+        : await shipmentsApi.create(payload);
+      onCreated(savedShipment);
       form.reset({
         ...defaultValues,
         orderId: selectedOrder.id,
@@ -100,7 +116,11 @@ export function CreateShipmentForm({
             <Truck className="h-5 w-5" />
           </div>
           <div className="space-y-1">
-            <p className="font-semibold text-foreground">Create a new shipment</p>
+            <p className="font-semibold text-foreground">
+              {currentShipment
+                ? 'Update shipment workflow'
+                : 'Create a new shipment'}
+            </p>
             <p className="text-sm text-muted-foreground">
               Choose the workflow status now. BOL and freight carrier are captured once it is shipped.
             </p>
@@ -202,7 +222,13 @@ export function CreateShipmentForm({
         className="h-11 w-full rounded-xl"
         disabled={form.formState.isSubmitting}
       >
-        {form.formState.isSubmitting ? 'Creating shipment...' : 'Create shipment'}
+        {form.formState.isSubmitting
+          ? currentShipment
+            ? 'Updating status...'
+            : 'Creating shipment...'
+          : currentShipment
+            ? 'Update status'
+            : 'Create shipment'}
         <ArrowRight className="h-4 w-4" />
       </Button>
     </form>
