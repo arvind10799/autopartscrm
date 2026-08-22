@@ -295,6 +295,12 @@ export class OrdersRepository {
           },
         },
         {
+          customerPhone: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
           createdBy: {
             name: {
               contains: search,

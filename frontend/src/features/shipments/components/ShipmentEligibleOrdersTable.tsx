@@ -13,6 +13,7 @@ import type {
   OrderSummary,
   PaginationMeta,
 } from '@/features/orders/types/order.types';
+import { ShipmentStatusBadge } from './ShipmentStatusBadge';
 
 function getRangeLabel(meta: PaginationMeta, currentCount: number) {
   if (meta.total === 0 || currentCount === 0) {
@@ -89,6 +90,18 @@ export function ShipmentEligibleOrdersTable({
           {formatCurrency(row.original.totalSaleAmount, row.original.currency)}
         </span>
       ),
+    },
+    {
+      accessorKey: 'latestShipmentStatus',
+      header: 'Shipping status',
+      cell: ({ row }) =>
+        row.original.latestShipmentStatus ? (
+          <ShipmentStatusBadge status={row.original.latestShipmentStatus} />
+        ) : (
+          <span className="text-xs font-medium text-muted-foreground">
+            No shipment
+          </span>
+        ),
     },
     {
       id: 'action',
