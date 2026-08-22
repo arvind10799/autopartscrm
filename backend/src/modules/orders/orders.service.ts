@@ -98,6 +98,10 @@ export class OrdersService {
     return this.ordersRepository.findOne(id, user);
   }
 
+  findOrderAgents() {
+    return this.ordersRepository.findOrderAgents();
+  }
+
   async getNextOrderNumber() {
     return {
       orderNumber: await this.ordersRepository.getNextOrderNumber(),

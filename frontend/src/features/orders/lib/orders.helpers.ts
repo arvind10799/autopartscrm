@@ -38,6 +38,7 @@ const searchTermSchema = z
   .trim()
   .max(160)
   .transform((value) => (value.length > 0 ? value : undefined));
+const userIdSchema = z.string().uuid();
 
 export type NormalizedOrdersQuery = {
   page: number;
@@ -48,6 +49,7 @@ export type NormalizedOrdersQuery = {
   hasShipment?: boolean;
   createdFrom?: string;
   createdTo?: string;
+  createdById?: string;
 };
 
 export function createEmptyOrdersResponse(
@@ -122,6 +124,12 @@ export function isValidOrderId(value: string): boolean {
   return orderIdSchema.safeParse(value).success;
 }
 
+function parseUserIdFilter(value: string | null | undefined): string | undefined {
+  const parsed = userIdSchema.safeParse(value);
+
+  return parsed.success ? parsed.data : undefined;
+}
+
 export function parseOrdersQueryParams(
   searchParams: URLSearchParams,
 ): NormalizedOrdersQuery {
@@ -136,6 +144,7 @@ export function parseOrdersQueryParams(
   const statusValue = searchParams.get('status');
   const shipmentStatusValue = searchParams.get('shipmentStatus');
   const hasShipmentValue = searchParams.get('hasShipment');
+  const createdById = parseUserIdFilter(searchParams.get('createdById'));
 
   return {
     page,
@@ -154,6 +163,7 @@ export function parseOrdersQueryParams(
           : undefined,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
+    createdById,
   };
 }
 
@@ -179,6 +189,10 @@ export function buildOrdersQueryString(query: NormalizedOrdersQuery): string {
     baseSearchParams.set('hasShipment', String(query.hasShipment));
   }
 
+  if (query.createdById) {
+    baseSearchParams.set('createdById', query.createdById);
+  }
+
   return buildDateRangeSearchParams(baseSearchParams, query).toString();
 }
 
@@ -199,6 +213,7 @@ export function normalizeOrdersListQuery(
     hasShipment: input.hasShipment,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
+    createdById: parseUserIdFilter(input.createdById),
   };
 }
 

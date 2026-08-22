@@ -24,6 +24,7 @@ import {
 } from '@/lib/filters/date-range';
 import { toast } from '@/lib/stores/toast.store';
 import { useAuthStore } from '@/features/auth/store/auth.store';
+import { ordersApi } from '../api/orders-api';
 import { useOrdersList } from '../hooks/useOrdersList';
 import {
   ALL_SHIPMENT_STATUS_FILTER,
@@ -31,16 +32,28 @@ import {
   parseShipmentStatusFilter,
   type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
-import { ORDER_SHIPMENT_STATUSES, type OrderSummary } from '../types/order.types';
+import {
+  ORDER_SHIPMENT_STATUSES,
+  type OrderSummary,
+  type OrderUser,
+} from '../types/order.types';
 import { CreateOrderForm } from './CreateOrderForm';
 import { OrdersTable } from './OrdersTable';
 import { UpdateOrderForm } from './UpdateOrderForm';
+
+const ALL_AGENTS_FILTER = 'ALL';
+
+function formatAgentFilterLabel(agent: OrderUser) {
+  return `${agent.name} (${agent.role === 'ADMIN' ? 'Admin' : 'Sales'})`;
+}
 
 export function OrdersPageContent() {
   const authUser = useAuthStore((state) => state.user);
   const [searchTerm, setSearchTerm] = useState('');
   const [shipmentStatusFilter, setShipmentStatusFilter] =
     useState<ShipmentStatusFilter>(ALL_SHIPMENT_STATUS_FILTER);
+  const [agentFilter, setAgentFilter] = useState<string | null>(null);
+  const [orderAgents, setOrderAgents] = useState<OrderUser[]>([]);
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
@@ -54,12 +67,39 @@ export function OrdersPageContent() {
     () => buildTimestampRangeQuery(dateFilter),
     [dateFilter],
   );
+  const selectedAgentFilter =
+    agentFilter ?? (authUser?.role === 'SALES' ? authUser.userId : ALL_AGENTS_FILTER);
+  const createdById =
+    selectedAgentFilter === ALL_AGENTS_FILTER ? undefined : selectedAgentFilter;
+  const agentOptions = useMemo(() => {
+    const agents = new Map<string, OrderUser>();
+
+    for (const agent of orderAgents) {
+      agents.set(agent.id, agent);
+    }
+
+    if (
+      authUser &&
+      (authUser.role === 'ADMIN' || authUser.role === 'SALES') &&
+      !agents.has(authUser.userId)
+    ) {
+      agents.set(authUser.userId, {
+        id: authUser.userId,
+        name: authUser.name,
+        email: authUser.email,
+        role: authUser.role,
+      });
+    }
+
+    return Array.from(agents.values());
+  }, [authUser, orderAgents]);
   const { ordersResponse, isLoading, error } = useOrdersList({
     page,
     search: activeSearch,
     shipmentStatus: shipmentStatusFilter,
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
+    createdById,
     refreshKey,
   });
 
@@ -70,6 +110,11 @@ export function OrdersPageContent() {
 
   const handleShipmentStatusChange = (value: ShipmentStatusFilter) => {
     setShipmentStatusFilter(value);
+    startTransition(() => setPage(1));
+  };
+
+  const handleAgentFilterChange = (value: string) => {
+    setAgentFilter(value);
     startTransition(() => setPage(1));
   };
 
@@ -117,6 +162,34 @@ export function OrdersPageContent() {
     };
   }, [isCreateModalOpen, selectedOrderId]);
 
+  useEffect(() => {
+    if (authUser?.role !== 'ADMIN' && authUser?.role !== 'SALES') {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadOrderAgents = async () => {
+      try {
+        const agents = await ordersApi.listAgents();
+
+        if (isMounted) {
+          setOrderAgents(agents);
+        }
+      } catch {
+        if (isMounted) {
+          setOrderAgents([]);
+        }
+      }
+    };
+
+    void loadOrderAgents();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authUser?.role]);
+
   return (
     <>
       <section className="grid gap-6">
@@ -131,6 +204,25 @@ export function OrdersPageContent() {
                   onChange={setDateFilter}
                   variant="inline"
                 />
+
+                <label className="grid gap-2">
+                  <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                    Agent filter
+                  </span>
+                  <Select
+                    value={selectedAgentFilter}
+                    aria-label="Agent filter"
+                    className="h-11 min-w-[220px]"
+                    onChange={(event) => handleAgentFilterChange(event.target.value)}
+                  >
+                    <option value={ALL_AGENTS_FILTER}>All agents</option>
+                    {agentOptions.map((agent) => (
+                      <option key={agent.id} value={agent.id}>
+                        {formatAgentFilterLabel(agent)}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
 
                 <Button
                   size="lg"
@@ -185,6 +277,7 @@ export function OrdersPageContent() {
               onPageChange={setPage}
               onEdit={handleEditStart}
               role={authUser?.role}
+              currentUserId={authUser?.userId}
             />
           </CardContent>
         </Card>

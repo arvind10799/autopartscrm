@@ -147,6 +147,7 @@ export interface OrdersListQuery {
   hasShipment?: boolean;
   createdFrom?: string;
   createdTo?: string;
+  createdById?: string;
 }
 
 export interface CreateOrderInput {

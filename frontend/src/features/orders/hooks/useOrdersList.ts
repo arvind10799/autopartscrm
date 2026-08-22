@@ -20,6 +20,7 @@ type UseOrdersListOptions = {
   hasShipment?: boolean;
   createdFrom?: string;
   createdTo?: string;
+  createdById?: string;
   refreshKey: number;
 };
 
@@ -36,6 +37,7 @@ export function useOrdersList({
   hasShipment,
   createdFrom,
   createdTo,
+  createdById,
   refreshKey,
 }: UseOrdersListOptions): UseOrdersListResult {
   const [ordersResponse, setOrdersResponse] = useState<OrdersListResponse>(() =>
@@ -56,6 +58,7 @@ export function useOrdersList({
       hasShipment,
       createdFrom,
       createdTo,
+      createdById,
     });
 
     const loadOrders = async () => {
@@ -95,6 +98,7 @@ export function useOrdersList({
   }, [
     createdFrom,
     createdTo,
+    createdById,
     hasShipment,
     page,
     refreshKey,

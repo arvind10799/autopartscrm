@@ -48,6 +48,12 @@ export class OrdersController {
     return this.ordersService.getNextOrderNumber();
   }
 
+  @Roles(Role.ADMIN, Role.SALES)
+  @Get('agents')
+  findOrderAgents() {
+    return this.ordersService.findOrderAgents();
+  }
+
   @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
   @Get(':id')
   findOne(

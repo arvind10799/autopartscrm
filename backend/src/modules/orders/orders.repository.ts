@@ -226,6 +226,11 @@ export class OrdersRepository {
     const where: Prisma.OrderWhereInput = this.buildOrderAccessWhere(user);
     const orderNumber = queryOrdersDto.orderNumber?.trim();
     const search = queryOrdersDto.search?.trim();
+    const createdById = queryOrdersDto.createdById?.trim();
+
+    if (createdById) {
+      where.createdById = createdById;
+    }
 
     if (orderNumber) {
       where.orderNumber = {
@@ -344,7 +349,7 @@ export class OrdersRepository {
     const order = await this.prismaService.order.findFirst({
       where: {
         id,
-        ...this.buildOrderAccessWhere(user),
+        ...this.buildOrderAccessWhere(user, { restrictSalesToOwn: true }),
       },
       select: orderEditableSelect,
     });
@@ -354,6 +359,30 @@ export class OrdersRepository {
     }
 
     return order;
+  }
+
+  findOrderAgents() {
+    return this.prismaService.user.findMany({
+      where: {
+        role: {
+          in: [Role.ADMIN, Role.SALES],
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+      orderBy: [
+        {
+          role: 'asc',
+        },
+        {
+          name: 'asc',
+        },
+      ],
+    });
   }
 
   async findSummaryById(id: string, user: AuthenticatedUser) {
@@ -485,8 +514,9 @@ export class OrdersRepository {
 
   private buildOrderAccessWhere(
     user: AuthenticatedUser,
+    options: { restrictSalesToOwn?: boolean } = {},
   ): Prisma.OrderWhereInput {
-    if (user.role === Role.SALES) {
+    if (user.role === Role.SALES && options.restrictSalesToOwn) {
       return {
         createdById: user.userId,
       };

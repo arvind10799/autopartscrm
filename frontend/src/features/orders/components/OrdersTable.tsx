@@ -18,6 +18,7 @@ function getFirstName(name: string) {
 function buildColumns(
   onEdit: (orderId: string) => void,
   role: UserRole | null | undefined,
+  currentUserId?: string | null,
 ): ColumnDef<OrderSummary>[] {
   const columns: ColumnDef<OrderSummary>[] = [
     {
@@ -106,21 +107,29 @@ function buildColumns(
       meta: {
         className: 'w-[15%]',
       },
-      cell: ({ row }) => (
-        <div className="flex items-center justify-end gap-1">
-          <Button className="h-8 px-2" variant="outline" size="sm" onClick={() => onEdit(row.original.id)}>
-            <PencilLine className="h-4 w-4" />
-            <span className="hidden xl:inline">Edit</span>
-          </Button>
-          <Link
-            href={`/orders/${row.original.id}`}
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'h-8 px-2')}
-          >
-            View
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const canEdit =
+          role === 'ADMIN' ||
+          (role === 'SALES' && row.original.createdBy.id === currentUserId);
+
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {canEdit ? (
+              <Button className="h-8 px-2" variant="outline" size="sm" onClick={() => onEdit(row.original.id)}>
+                <PencilLine className="h-4 w-4" />
+                <span className="hidden xl:inline">Edit</span>
+              </Button>
+            ) : null}
+            <Link
+              href={`/orders/${row.original.id}`}
+              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'h-8 px-2')}
+            >
+              View
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        );
+      },
     },
   );
 
@@ -147,6 +156,7 @@ export function OrdersTable({
   onPageChange,
   onEdit,
   role,
+  currentUserId,
 }: {
   orders: OrderSummary[];
   meta: PaginationMeta;
@@ -156,9 +166,10 @@ export function OrdersTable({
   onPageChange: (page: number) => void;
   onEdit: (orderId: string) => void;
   role?: UserRole | null;
+  currentUserId?: string | null;
 }) {
   const totalPages = meta.totalPages;
-  const columns = buildColumns(onEdit, role);
+  const columns = buildColumns(onEdit, role, currentUserId);
 
   return (
     <DataTable

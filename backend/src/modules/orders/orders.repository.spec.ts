@@ -52,7 +52,7 @@ describe('OrdersRepository', () => {
     await expect(repository.getNextOrderNumber()).resolves.toBe('MAP06162601');
   });
 
-  it('filters order list by creator for sales users', async () => {
+  it('does not restrict order list for sales users without an agent filter', async () => {
     prismaService.order.findMany.mockReturnValue('findManyPromise');
     prismaService.order.count.mockReturnValue('countPromise');
     prismaService.$transaction.mockResolvedValue([[], 0]);
@@ -62,15 +62,32 @@ describe('OrdersRepository', () => {
     expect(prismaService.$transaction).toHaveBeenCalledTimes(1);
     expect(prismaService.order.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          createdById: salesUser.userId,
-        }),
+        where: {},
       }),
     );
     expect(prismaService.order.count).toHaveBeenCalledWith({
-      where: expect.objectContaining({
-        createdById: salesUser.userId,
+      where: {},
+    });
+  });
+
+  it('filters order list by selected creator', async () => {
+    prismaService.order.findMany.mockReturnValue('findManyPromise');
+    prismaService.order.count.mockReturnValue('countPromise');
+    prismaService.$transaction.mockResolvedValue([[], 0]);
+
+    await repository.findAll({ createdById: 'other-sales-user-id' }, salesUser);
+
+    expect(prismaService.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          createdById: 'other-sales-user-id',
+        },
       }),
+    );
+    expect(prismaService.order.count).toHaveBeenCalledWith({
+      where: {
+        createdById: 'other-sales-user-id',
+      },
     });
   });
 
@@ -106,7 +123,7 @@ describe('OrdersRepository', () => {
     );
   });
 
-  it('restricts order detail lookup to the sales owner', async () => {
+  it('allows sales users to view order details across agents', async () => {
     prismaService.order.findFirst.mockResolvedValue({
       id: 'order-id',
     });
@@ -117,7 +134,6 @@ describe('OrdersRepository', () => {
       expect.objectContaining({
         where: {
           id: 'order-id',
-          createdById: salesUser.userId,
         },
       }),
     );

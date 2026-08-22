@@ -255,6 +255,8 @@ const orderUserSchema = z.object({
   role: userRoleSchema,
 });
 
+export const orderAgentsSchema = z.array(orderUserSchema);
+
 const orderNoteSchema = z.object({
   id: z.string(),
   content: z.string(),

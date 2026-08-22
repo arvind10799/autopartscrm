@@ -8,6 +8,7 @@ import { isValidOrderId, normalizeOrdersListQuery } from '../lib/orders.helpers'
 import {
   createOrderSchema,
   nextOrderNumberSchema,
+  orderAgentsSchema,
   orderDetailSchema,
   ordersListSchema,
   orderSummarySchema,
@@ -20,6 +21,7 @@ import type {
   OrdersListQuery,
   OrdersListResponse,
   OrderSummary,
+  OrderUser,
   UpdateOrderInput,
 } from '../types/order.types';
 
@@ -57,6 +59,17 @@ export const ordersApi = {
     return parseApiData(response, nextOrderNumberSchema, {
       emptyMessage: response.data.message || 'Next order number response was empty.',
       invalidMessage: 'Next order number response payload was invalid.',
+    });
+  },
+
+  async listAgents(): Promise<OrderUser[]> {
+    const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
+      '/api/orders/agents',
+    );
+
+    return parseApiData(response, orderAgentsSchema, {
+      emptyMessage: response.data.message || 'Order agents response was empty.',
+      invalidMessage: 'Order agents response payload was invalid.',
     });
   },
 

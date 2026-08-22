@@ -48,12 +48,14 @@ export class OrdersCacheService {
     const normalizedQuery = {
       createdFrom: queryOrdersDto.createdFrom ?? null,
       createdTo: queryOrdersDto.createdTo ?? null,
+      createdById: queryOrdersDto.createdById?.trim() ?? null,
       hasShipment: queryOrdersDto.hasShipment ?? null,
       limit: queryOrdersDto.limit ?? 20,
       orderNumber: queryOrdersDto.orderNumber?.trim() ?? null,
       page: queryOrdersDto.page ?? 1,
       role: user.role,
       search: queryOrdersDto.search?.trim() ?? null,
+      shipmentStatus: queryOrdersDto.shipmentStatus ?? null,
       status: queryOrdersDto.status ?? null,
       userId: user.userId,
     };
