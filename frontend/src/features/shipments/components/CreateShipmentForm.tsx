@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, Truck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -109,24 +109,6 @@ export function CreateShipmentForm({
   return (
     <form className="space-y-5" onSubmit={onSubmit}>
       <input type="hidden" {...form.register('orderId')} />
-
-      <div className="rounded-[1.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(59,130,246,0.10),rgba(255,255,255,0.92))] p-4 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-primary/10 p-2.5 text-primary">
-            <Truck className="h-5 w-5" />
-          </div>
-          <div className="space-y-1">
-            <p className="font-semibold text-foreground">
-              {currentShipment
-                ? 'Update shipment workflow'
-                : 'Create a new shipment'}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Choose the workflow status now. BOL and freight carrier are captured once it is shipped.
-            </p>
-          </div>
-        </div>
-      </div>
 
       <div className="space-y-2">
         <Label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">

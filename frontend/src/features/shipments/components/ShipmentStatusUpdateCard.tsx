@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -41,9 +40,6 @@ export function ShipmentStatusUpdateCard({
     <Card>
       <CardHeader>
         <CardTitle className="text-2xl">Status update</CardTitle>
-        <CardDescription>
-          Update shipment progress with optimistic feedback while the backend request is in flight.
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {nextStatuses.length > 0 ? (

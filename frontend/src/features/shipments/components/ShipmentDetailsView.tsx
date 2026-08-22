@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, History } from 'lucide-react';
 import { DetailPageSkeleton } from '@/components/feedback/page-skeletons';
+import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import {
   Card,
@@ -13,6 +14,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
+import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
+import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
+import { formatDateTime } from '@/features/orders/lib/order-formatters';
+import type { OrderNote } from '@/features/orders/types/order.types';
 import { useShipmentDetail } from '../hooks/useShipmentDetail';
 import { useShipmentTimeline } from '../hooks/useShipmentTimeline';
 import {
@@ -20,12 +25,9 @@ import {
   getAllowedNextShipmentStatuses,
   getDefaultNextShipmentStatus,
 } from '../lib/shipments.helpers';
-import { formatShipmentDateTime } from '../lib/shipment-formatters';
-import type { ShipmentStatus } from '../types/shipment.types';
+import type { ShipmentDetail, ShipmentStatus } from '../types/shipment.types';
 import { ShipmentDetailGrid } from './ShipmentDetailGrid';
-import { ShipmentOperationsSummaryCard } from './ShipmentOperationsSummaryCard';
 import { ShipmentStatusUpdateCard } from './ShipmentStatusUpdateCard';
-import { ShipmentStatusBadge } from './ShipmentStatusBadge';
 import { ShipmentTimeline } from './ShipmentTimeline';
 
 export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
@@ -43,6 +45,12 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     isLoading: isTimelineLoading,
     error: timelineError,
   } = useShipmentTimeline(shipmentId);
+  const [orderRefreshKey, setOrderRefreshKey] = useState(0);
+  const {
+    order: invoiceOrder,
+    isLoading: isInvoiceOrderLoading,
+    error: invoiceOrderError,
+  } = useOrderDetailWithRefresh(shipment?.orderId ?? '', orderRefreshKey);
   const [selectedStatus, setSelectedStatus] = useState<ShipmentStatus | ''>('');
   const [proNumber, setProNumber] = useState('');
 
@@ -94,6 +102,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     }
 
     await updateStatus(selectedStatus, proNumber);
+    setOrderRefreshKey((currentValue) => currentValue + 1);
   };
 
   const handleStatusChange = (status: ShipmentStatus) => {
@@ -104,86 +113,36 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
 
   return (
     <section className="grid gap-6">
-      <Card>
-        <CardHeader className="space-y-4">
-          <Link
-            href="/shipments"
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-fit px-0')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to shipments
-          </Link>
-
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <CardTitle className="break-words text-3xl sm:text-[2rem]">
-                  {shipment.bolNumber ?? 'BOL pending'}
-                </CardTitle>
-                <ShipmentStatusBadge status={shipment.currentStatus} />
-              </div>
-              <CardDescription>
-                {shipment.proNumber ? `PRO ${shipment.proNumber}` : 'PRO pending'} for
-                order {shipment.order.orderNumber} with{' '}
-                {shipment.carrierName ?? 'a pending carrier assignment'}.
-              </CardDescription>
-            </div>
-
-            <div className="rounded-2xl border border-border/70 bg-secondary/35 px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Current status
-              </p>
-              <p className="mt-2 font-[var(--font-heading)] text-2xl font-semibold text-foreground sm:text-[1.75rem]">
-                {formatShipmentStatusOptionLabel(shipment.currentStatus)}
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      <div className="grid gap-4 lg:grid-cols-3">
+      {invoiceOrder ? (
+        <InvoiceActions
+          order={invoiceOrder}
+          onInvoiceCreated={() =>
+            setOrderRefreshKey((currentValue) => currentValue + 1)
+          }
+          backLink={{
+            href: '/shipments',
+            label: 'Back to shipments',
+          }}
+        />
+      ) : (
         <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Carrier</CardDescription>
-            <CardTitle className="text-2xl">
-              {shipment.carrierName ?? 'Pending'}
-            </CardTitle>
+          <CardHeader className="space-y-3">
+            <Link
+              href="/shipments"
+              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-fit px-0')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to shipments
+            </Link>
+            <CardTitle className="text-2xl">Invoice Management</CardTitle>
+            <CardDescription>
+              {isInvoiceOrderLoading
+                ? 'Loading invoice management...'
+                : invoiceOrderError ?? 'Invoice management is unavailable.'}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Assigned carrier for this shipment.
-            </p>
-          </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Tracking events</CardDescription>
-            <CardTitle className="text-2xl tabular-nums sm:text-[1.75rem]">
-              {shipment.counts.events}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Event volume captured for this shipment timeline.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Last updated</CardDescription>
-            <CardTitle className="text-2xl">
-              {formatShipmentDateTime(shipment.updatedAt)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Most recent backend status or shipment data change.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="grid gap-6">
@@ -215,9 +174,86 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             onSubmit={handleStatusSubmit}
           />
 
-          <ShipmentOperationsSummaryCard shipment={shipment} />
+          <ShipmentStatusHistoryCard
+            shipment={shipment}
+            notes={invoiceOrder?.notes ?? []}
+            isLoading={isInvoiceOrderLoading}
+          />
         </div>
       </div>
     </section>
   );
+}
+
+function ShipmentStatusHistoryCard({
+  shipment,
+  notes,
+  isLoading,
+}: {
+  shipment: ShipmentDetail;
+  notes: OrderNote[];
+  isLoading: boolean;
+}) {
+  const statusNotes = notes
+    .filter(isShipmentStatusHistoryNote)
+    .sort(
+      (firstNote, secondNote) =>
+        new Date(secondNote.createdAt).getTime() -
+        new Date(firstNote.createdAt).getTime(),
+    );
+  const latestNote = statusNotes[0];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-2xl">
+          <History className="h-5 w-5 text-primary" />
+          Last Status Update
+        </CardTitle>
+        <CardDescription>
+          {latestNote
+            ? `${latestNote.author.name} · ${formatDateTime(latestNote.createdAt)}`
+            : isLoading
+              ? 'Loading status history...'
+              : `Current status: ${formatShipmentStatusOptionLabel(
+                  shipment.currentStatus,
+                )}`}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {statusNotes.length > 0 ? (
+          <div className="space-y-3">
+            {statusNotes.slice(0, 6).map((note) => (
+              <div
+                key={note.id}
+                className="rounded-2xl border border-border/70 bg-secondary/20 p-4"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="warning">Shipment status</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {note.author.name} | {formatDateTime(note.createdAt)}
+                  </span>
+                </div>
+                <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">
+                  {formatShipmentStatusHistoryBody(note.content)}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
+            No shipment status history has been recorded yet.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function isShipmentStatusHistoryNote(note: OrderNote): boolean {
+  return note.content.startsWith('Shipment status updated:');
+}
+
+function formatShipmentStatusHistoryBody(content: string): string {
+  return content.replace(/^Shipment status updated:\s*/i, '').trim();
 }

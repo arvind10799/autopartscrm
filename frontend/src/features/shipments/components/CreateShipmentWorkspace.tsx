@@ -229,7 +229,7 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
         'The order remains in Shipment orders until it is marked shipped with a BOL.',
       );
     }
-    router.push('/shipments/create');
+    setRefreshKey((currentValue) => currentValue + 1);
   };
 
   if (isLoading) {
