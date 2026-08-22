@@ -14,6 +14,10 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_SHIPMENT_STATUSES = [
   'PENDING',
+  'LOCATING',
+  'PRE_PROCESSING',
+  'PURCHASE',
+  'SHIPPED',
   'IN_TRANSIT',
   'DELIVERED',
   'DELAYED',

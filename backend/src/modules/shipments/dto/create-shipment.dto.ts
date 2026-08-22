@@ -1,25 +1,35 @@
 import { Transform } from 'class-transformer';
 import {
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
+import { ShipmentStatus } from '../../../common/enums/shipment-status.enum';
 import {
-  trimString,
   trimToUndefined,
 } from '../../../common/utils/transform.util';
 
 export class CreateShipmentDto {
-  @Transform(({ value }) => trimString(value))
+  @Transform(({ value }) => trimToUndefined(value))
+  @ValidateIf(
+    (dto: CreateShipmentDto) =>
+      dto.status === ShipmentStatus.SHIPPED || dto.bolNumber !== undefined,
+  )
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  bolNumber: string;
+  bolNumber?: string;
 
   @IsUUID()
   orderId: string;
+
+  @IsOptional()
+  @IsEnum(ShipmentStatus)
+  status?: ShipmentStatus;
 
   @Transform(({ value }) => trimToUndefined(value))
   @IsOptional()

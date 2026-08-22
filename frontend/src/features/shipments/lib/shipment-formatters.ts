@@ -10,6 +10,10 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
 
 const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   PENDING: 'Pending',
+  LOCATING: 'Locating',
+  PRE_PROCESSING: 'Pre Processing',
+  PURCHASE: 'Purchase',
+  SHIPPED: 'Shipped',
   IN_TRANSIT: 'In transit',
   DELIVERED: 'Delivered',
   DELAYED: 'Delayed',

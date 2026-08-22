@@ -7,6 +7,10 @@ const shipmentStatusTones: Record<
   'neutral' | 'info' | 'warning' | 'success' | 'danger'
 > = {
   PENDING: 'neutral',
+  LOCATING: 'info',
+  PRE_PROCESSING: 'warning',
+  PURCHASE: 'warning',
+  SHIPPED: 'info',
   IN_TRANSIT: 'info',
   DELIVERED: 'success',
   DELAYED: 'warning',

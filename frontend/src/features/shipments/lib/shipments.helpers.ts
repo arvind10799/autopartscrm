@@ -47,9 +47,13 @@ const searchTermSchema = z
   .transform((value) => (value.length > 0 ? value : undefined));
 
 const SHIPMENT_STATUS_TRANSITIONS: Record<ShipmentStatus, ShipmentStatus[]> = {
-  PENDING: ['IN_TRANSIT', 'CANCELLED'],
+  PENDING: ['LOCATING', 'CANCELLED'],
+  LOCATING: ['PRE_PROCESSING', 'CANCELLED'],
+  PRE_PROCESSING: ['PURCHASE', 'CANCELLED'],
+  PURCHASE: ['SHIPPED', 'CANCELLED'],
+  SHIPPED: ['IN_TRANSIT', 'DELAYED', 'DELIVERED', 'CANCELLED'],
   IN_TRANSIT: ['DELAYED', 'DELIVERED', 'CANCELLED'],
-  DELAYED: ['IN_TRANSIT', 'CANCELLED'],
+  DELAYED: ['SHIPPED', 'IN_TRANSIT', 'CANCELLED'],
   DELIVERED: [],
   CANCELLED: [],
 };
@@ -72,7 +76,11 @@ export function createEmptyShipmentsResponse(
 }
 
 export function formatShipmentStatusOptionLabel(status: ShipmentStatus): string {
-  return status.charAt(0) + status.slice(1).toLowerCase().replace('_', ' ');
+  return status
+    .toLowerCase()
+    .split('_')
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
 }
 
 export function isShipmentStatus(value: string): value is ShipmentStatus {
@@ -205,7 +213,9 @@ export function applyOptimisticShipmentStatus(
 ): ShipmentDetail {
   const now = new Date().toISOString();
   const shippedAt =
-    nextStatus === 'IN_TRANSIT' || nextStatus === 'DELIVERED'
+    nextStatus === 'SHIPPED' ||
+    nextStatus === 'IN_TRANSIT' ||
+    nextStatus === 'DELIVERED'
       ? shipment.shippedAt ?? now
       : shipment.shippedAt;
 

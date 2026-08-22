@@ -20,7 +20,7 @@ export function ShipmentDetailGrid({ shipment }: { shipment: ShipmentDetail }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
-        <DetailBlock label="BOL number" value={shipment.bolNumber} />
+        <DetailBlock label="BOL number" value={shipment.bolNumber ?? 'BOL pending'} />
         <DetailBlock
           label="PRO number"
           value={shipment.proNumber ?? 'Pending until in transit'}

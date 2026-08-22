@@ -118,7 +118,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-3">
                 <CardTitle className="break-words text-3xl sm:text-[2rem]">
-                  {shipment.bolNumber}
+                  {shipment.bolNumber ?? 'BOL pending'}
                 </CardTitle>
                 <ShipmentStatusBadge status={shipment.currentStatus} />
               </div>

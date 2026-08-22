@@ -145,7 +145,7 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
       );
       toast.success(
         'Shipment status updated',
-        `Shipment ${previousShipment.bolNumber} is now ${nextStatus.toLowerCase()}.`,
+        `Shipment ${previousShipment.bolNumber ?? previousShipment.order.orderNumber} is now ${nextStatus.toLowerCase()}.`,
       );
     } catch (error) {
       if (!statusRequestTracker.isCurrentRequest(requestId)) {

@@ -50,17 +50,22 @@ export class ShipmentsRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(createShipmentDto: CreateShipmentDto) {
+    const status = (createShipmentDto.status ??
+      PrismaShipmentStatus.PENDING) as PrismaShipmentStatus;
+
     try {
       return await this.prismaService.shipment.create({
         data: {
-          bolNumber: createShipmentDto.bolNumber.trim(),
+          bolNumber: createShipmentDto.bolNumber?.trim(),
           order: {
             connect: {
               id: createShipmentDto.orderId,
             },
           },
           carrierName: createShipmentDto.carrierName?.trim(),
-          status: PrismaShipmentStatus.PENDING,
+          status,
+          shippedAt:
+            status === PrismaShipmentStatus.SHIPPED ? new Date() : undefined,
         },
         select: shipmentSummarySelect,
       });

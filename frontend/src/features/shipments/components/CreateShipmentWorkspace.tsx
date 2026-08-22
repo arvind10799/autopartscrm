@@ -30,6 +30,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import {
   buildTimestampRangeQuery,
   createDefaultDateRangeFilterState,
@@ -40,6 +41,12 @@ import { notesApi } from '@/features/notes/api/notes-api';
 import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
 import { useOrdersList } from '@/features/orders/hooks/useOrdersList';
 import {
+  ALL_SHIPMENT_STATUS_FILTER,
+  formatShipmentStatusOptionLabel,
+  parseShipmentStatusFilter,
+  type ShipmentStatusFilter,
+} from '@/features/orders/lib/orders.helpers';
+import {
   formatCurrency,
   formatDate,
   formatDateTime,
@@ -49,13 +56,23 @@ import {
 import type {
   OrderDetail,
   OrderNote,
+  OrderShipmentStatus,
 } from '@/features/orders/types/order.types';
 import { CreateShipmentForm } from './CreateShipmentForm';
 import { ShipmentEligibleOrdersTable } from './ShipmentEligibleOrdersTable';
 
+const SHIPMENT_ORDER_STATUS_FILTERS = [
+  'PENDING',
+  'LOCATING',
+  'PRE_PROCESSING',
+  'PURCHASE',
+] as const satisfies readonly OrderShipmentStatus[];
+
 export function CreateShipmentWorkspace() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  const [shipmentStatusFilter, setShipmentStatusFilter] =
+    useState<ShipmentStatusFilter>(ALL_SHIPMENT_STATUS_FILTER);
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
@@ -71,7 +88,9 @@ export function CreateShipmentWorkspace() {
   const { ordersResponse, isLoading, error } = useOrdersList({
     page,
     search: activeSearch,
-    hasShipment: false,
+    shipmentStatus: shipmentStatusFilter,
+    hasShipment:
+      shipmentStatusFilter === ALL_SHIPMENT_STATUS_FILTER ? false : undefined,
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
     refreshKey,
@@ -94,6 +113,11 @@ export function CreateShipmentWorkspace() {
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
+    startTransition(() => setPage(1));
+  };
+
+  const handleShipmentStatusChange = (value: ShipmentStatusFilter) => {
+    setShipmentStatusFilter(value);
     startTransition(() => setPage(1));
   };
 
@@ -121,14 +145,35 @@ export function CreateShipmentWorkspace() {
             </div>
           </div>
 
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(event) => handleSearchChange(event.target.value)}
-              className="pl-9"
-              placeholder="Search by order number, customer, part, or sales agent"
-            />
+          <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchTerm}
+                onChange={(event) => handleSearchChange(event.target.value)}
+                className="pl-9"
+                placeholder="Search by order number, customer, part, or sales agent"
+              />
+            </div>
+
+            <Select
+              value={shipmentStatusFilter}
+              aria-label="Shipping status filter"
+              onChange={(event) =>
+                handleShipmentStatusChange(
+                  parseShipmentStatusFilter(event.target.value),
+                )
+              }
+            >
+              <option value={ALL_SHIPMENT_STATUS_FILTER}>
+                All shipping statuses
+              </option>
+              {SHIPMENT_ORDER_STATUS_FILTERS.map((status) => (
+                <option key={status} value={status}>
+                  {formatShipmentStatusOptionLabel(status)}
+                </option>
+              ))}
+            </Select>
           </div>
         </CardHeader>
 
@@ -220,6 +265,8 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
     );
   }
 
+  const shipmentStatusNotes = buildShipmentStatusNotes(order.notes);
+
   return (
     <section className="grid gap-6">
       <InvoiceActions
@@ -245,7 +292,8 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
                 Dispatch this order
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-5">
+            <CardContent className="space-y-5 p-5">
+              <ShipmentStatusHistoryPanel notes={shipmentStatusNotes} />
               <CreateShipmentForm
                 selectedOrder={order}
                 onCreated={handleShipmentCreated}
@@ -536,8 +584,20 @@ export function ShipmentOrderDetailsPanel({
                   className="rounded-2xl border border-border/70 bg-secondary/20 p-4"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={isHistoryNote(note) ? 'info' : 'secondary'}>
-                      {isHistoryNote(note) ? 'Edit history' : 'Note'}
+                    <Badge
+                      variant={
+                        isShipmentStatusHistoryNote(note)
+                          ? 'warning'
+                          : isHistoryNote(note)
+                            ? 'info'
+                            : 'secondary'
+                      }
+                    >
+                      {isShipmentStatusHistoryNote(note)
+                        ? 'Shipment status'
+                        : isHistoryNote(note)
+                          ? 'Edit history'
+                          : 'Note'}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {note.author.name} | {formatDateTime(note.createdAt)}
@@ -658,6 +718,71 @@ function MetricCard({
   );
 }
 
+function ShipmentStatusHistoryPanel({ notes }: { notes: OrderNote[] }) {
+  const latestNote = notes[0];
+
+  return (
+    <div className="rounded-2xl border border-border/70 bg-secondary/20 p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <History className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-foreground">
+            Last Status Update
+          </p>
+          {latestNote ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {latestNote.author.name} · {formatDateTime(latestNote.createdAt)}
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              No shipment status updates yet.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {notes.length > 0 ? (
+        <div className="mt-4 space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Status update history
+          </p>
+          <div className="space-y-2">
+            {notes.slice(0, 4).map((note) => (
+              <div
+                key={note.id}
+                className="rounded-xl border border-border/60 bg-white/80 px-3 py-2"
+              >
+                <p className="whitespace-pre-wrap text-xs font-medium text-foreground">
+                  {formatShipmentStatusHistoryBody(note.content)}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {note.author.name} · {formatDateTime(note.createdAt)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function buildShipmentStatusNotes(notes: OrderNote[]): OrderNote[] {
+  return notes
+    .filter(isShipmentStatusHistoryNote)
+    .sort(
+      (firstNote, secondNote) =>
+        new Date(secondNote.createdAt).getTime() -
+        new Date(firstNote.createdAt).getTime(),
+    );
+}
+
+function formatShipmentStatusHistoryBody(content: string): string {
+  return content.replace(/^Shipment status updated:\s*/i, '').trim();
+}
+
 function formatNullableCurrency(value: number | null, currency = 'USD'): string {
   return value === null ? 'Not provided' : formatCurrency(value, currency);
 }
@@ -680,4 +805,8 @@ function formatPaidAmount(order: OrderDetail): string {
 
 function isHistoryNote(note: OrderNote): boolean {
   return note.content.startsWith('Order updated:');
+}
+
+function isShipmentStatusHistoryNote(note: OrderNote): boolean {
+  return note.content.startsWith('Shipment status updated:');
 }

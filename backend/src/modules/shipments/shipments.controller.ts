@@ -9,8 +9,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UuidParamDto } from '../../common/dto/uuid-param.dto';
 import { Role } from '../../common/enums/role.enum';
+import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/role.guard';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
@@ -25,8 +27,11 @@ export class ShipmentsController {
   constructor(private readonly shipmentsService: ShipmentsService) {}
 
   @Post()
-  create(@Body() createShipmentDto: CreateShipmentDto) {
-    return this.shipmentsService.create(createShipmentDto);
+  create(
+    @Body() createShipmentDto: CreateShipmentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.shipmentsService.create(createShipmentDto, user);
   }
 
   @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
@@ -45,10 +50,12 @@ export class ShipmentsController {
   updateStatus(
     @Param() params: UuidParamDto,
     @Body() updateShipmentStatusDto: UpdateShipmentStatusDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.shipmentsService.updateStatus(
       params.id,
       updateShipmentStatusDto,
+      user,
     );
   }
 }

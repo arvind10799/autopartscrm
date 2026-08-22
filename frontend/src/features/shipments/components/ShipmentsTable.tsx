@@ -23,7 +23,7 @@ const columns: ColumnDef<ShipmentSummary>[] = [
           href={`/shipments/${row.original.id}`}
           className="font-semibold text-primary transition hover:text-primary/80"
         >
-          {row.original.bolNumber}
+          {row.original.bolNumber ?? 'BOL pending'}
         </Link>
         <p className="text-xs text-muted-foreground">
           Updated {formatShipmentDateTime(row.original.updatedAt)}

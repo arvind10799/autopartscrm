@@ -7,18 +7,29 @@ import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { getErrorMessage } from '@/lib/utils/error';
 import type { OrderSummary } from '@/features/orders/types/order.types';
 import { shipmentsApi } from '../api/shipments-api';
+import { formatShipmentStatusOptionLabel } from '../lib/shipments.helpers';
 import {
   createShipmentSchema,
   type CreateShipmentFormValues,
 } from '../schemas/shipment.schema';
-import type { ShipmentSummary } from '../types/shipment.types';
+import type { ShipmentStatus, ShipmentSummary } from '../types/shipment.types';
+
+const CREATE_SHIPMENT_STATUSES: ShipmentStatus[] = [
+  'PENDING',
+  'LOCATING',
+  'PRE_PROCESSING',
+  'PURCHASE',
+  'SHIPPED',
+];
 
 const defaultValues: CreateShipmentFormValues = {
   bolNumber: '',
   orderId: '',
+  status: 'PENDING',
   carrierName: '',
 };
 
@@ -37,6 +48,8 @@ export function CreateShipmentForm({
     resolver: zodResolver(createShipmentSchema),
     defaultValues,
   });
+  const selectedStatus = form.watch('status');
+  const showShippingFields = selectedStatus === 'SHIPPED';
 
   useEffect(() => {
     form.reset({
@@ -45,11 +58,23 @@ export function CreateShipmentForm({
     });
   }, [form, selectedOrder]);
 
+  useEffect(() => {
+    if (showShippingFields) {
+      return;
+    }
+
+    form.setValue('bolNumber', '');
+    form.setValue('carrierName', '');
+  }, [form, showShippingFields]);
+
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
 
     try {
-      const createdShipment = await shipmentsApi.create(values);
+      const createdShipment = await shipmentsApi.create({
+        ...values,
+        status: values.status ?? 'PENDING',
+      });
       onCreated(createdShipment);
       form.reset({
         ...defaultValues,
@@ -77,7 +102,7 @@ export function CreateShipmentForm({
           <div className="space-y-1">
             <p className="font-semibold text-foreground">Create a new shipment</p>
             <p className="text-sm text-muted-foreground">
-              Assign the BOL now. PRO is captured when the shipment moves in transit.
+              Choose the workflow status now. BOL and freight carrier are captured once it is shipped.
             </p>
           </div>
         </div>
@@ -98,43 +123,72 @@ export function CreateShipmentForm({
 
       <div className="space-y-2">
         <Label
-          htmlFor="bolNumber"
+          htmlFor="shipmentStatus"
           className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
         >
-          BOL number
+          Status
         </Label>
-        <Input
-          id="bolNumber"
-          placeholder="BOL-2026-001"
+        <Select
+          id="shipmentStatus"
           className="h-11 rounded-xl"
-          {...form.register('bolNumber')}
-        />
-        {form.formState.errors.bolNumber ? (
+          {...form.register('status')}
+        >
+          {CREATE_SHIPMENT_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {formatShipmentStatusOptionLabel(status)}
+            </option>
+          ))}
+        </Select>
+        {form.formState.errors.status ? (
           <p className="text-xs text-destructive">
-            {form.formState.errors.bolNumber.message}
+            {form.formState.errors.status.message}
           </p>
         ) : null}
       </div>
 
-      <div className="space-y-2">
-        <Label
-          htmlFor="carrierName"
-          className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
-        >
-          Carrier name <span className="text-muted-foreground">(optional)</span>
-        </Label>
-        <Input
-          id="carrierName"
-          placeholder="FedEx Freight"
-          className="h-11 rounded-xl"
-          {...form.register('carrierName')}
-        />
-        {form.formState.errors.carrierName ? (
-          <p className="text-xs text-destructive">
-            {form.formState.errors.carrierName.message}
-          </p>
-        ) : null}
-      </div>
+      {showShippingFields ? (
+        <>
+          <div className="space-y-2">
+            <Label
+              htmlFor="bolNumber"
+              className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              BOL number
+            </Label>
+            <Input
+              id="bolNumber"
+              placeholder="BOL-2026-001"
+              className="h-11 rounded-xl"
+              {...form.register('bolNumber')}
+            />
+            {form.formState.errors.bolNumber ? (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.bolNumber.message}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="space-y-2">
+            <Label
+              htmlFor="carrierName"
+              className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              Freight carrier <span className="text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              id="carrierName"
+              placeholder="FedEx Freight"
+              className="h-11 rounded-xl"
+              {...form.register('carrierName')}
+            />
+            {form.formState.errors.carrierName ? (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.carrierName.message}
+              </p>
+            ) : null}
+          </div>
+        </>
+      ) : null}
 
       {formError ? (
         <div className="rounded-[1.35rem] border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

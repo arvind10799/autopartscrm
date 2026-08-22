@@ -32,6 +32,10 @@ enum OrderPaymentMethod {
 
 enum ShipmentStatus {
   PENDING
+  LOCATING
+  PRE_PROCESSING
+  PURCHASE
+  SHIPPED
   IN_TRANSIT
   DELIVERED
   DELAYED
@@ -204,7 +208,7 @@ model InvoiceAuditEvent {
 
 model Shipment {
   id          String         @id @default(uuid()) @db.Uuid
-  bolNumber   String         @unique @db.VarChar(50)
+  bolNumber   String?        @unique @db.VarChar(50)
   proNumber   String?        @unique @db.VarChar(50)
   carrierName String?        @db.VarChar(120)
   status      ShipmentStatus @default(PENDING)

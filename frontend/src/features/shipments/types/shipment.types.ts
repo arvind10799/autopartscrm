@@ -2,6 +2,10 @@ import type { OrderStatus } from '@/features/orders/types/order.types';
 
 export const SHIPMENT_STATUSES = [
   'PENDING',
+  'LOCATING',
+  'PRE_PROCESSING',
+  'PURCHASE',
+  'SHIPPED',
   'IN_TRANSIT',
   'DELIVERED',
   'DELAYED',
@@ -26,7 +30,7 @@ export interface ShipmentCounts {
 
 export interface ShipmentSummary {
   id: string;
-  bolNumber: string;
+  bolNumber: string | null;
   proNumber: string | null;
   carrierName: string | null;
   currentStatus: ShipmentStatus;
@@ -54,7 +58,7 @@ export interface ShipmentTimelineEvent {
 export interface ShipmentTimeline {
   shipment: {
     id: string;
-    bolNumber: string;
+    bolNumber: string | null;
     proNumber: string | null;
     carrierName: string | null;
     currentStatus: ShipmentStatus;

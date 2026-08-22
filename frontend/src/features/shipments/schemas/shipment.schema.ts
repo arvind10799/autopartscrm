@@ -32,7 +32,7 @@ const shipmentPaginationMetaSchema = z.object({
 
 const shipmentBackendSummarySchema = z.object({
   id: entityIdSchema,
-  bolNumber: z.string(),
+  bolNumber: z.string().nullable(),
   proNumber: z.string().nullable(),
   carrierName: z.string().nullable(),
   status: shipmentStatusSchema,
@@ -83,7 +83,7 @@ const shipmentTimelineEventSchema = z.object({
 const shipmentTimelineShipmentSchema = z
   .object({
     id: entityIdSchema,
-    bolNumber: z.string(),
+    bolNumber: z.string().nullable(),
     proNumber: z.string().nullable(),
     carrierName: z.string().nullable(),
     status: shipmentStatusSchema,
@@ -135,17 +135,31 @@ export const createShipmentSchema = z.object({
   bolNumber: z
     .string()
     .trim()
-    .min(1, 'BOL number is required.')
-    .max(50, 'BOL number must be 50 characters or fewer.'),
+    .max(50, 'BOL number must be 50 characters or fewer.')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
   orderId: z
     .string()
     .uuid('Please select a valid order.'),
+  status: shipmentStatusSchema.default('PENDING'),
   carrierName: z
     .string()
     .trim()
     .max(120, 'Carrier name must be 120 characters or fewer.')
     .optional()
     .transform((val) => (val === '' ? undefined : val)),
+}).superRefine((value, context) => {
+  if (value.status !== 'SHIPPED') {
+    return;
+  }
+
+  if (!value.bolNumber) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'BOL number is required when shipment status is shipped.',
+      path: ['bolNumber'],
+    });
+  }
 });
 
 export type CreateShipmentFormValues = z.input<typeof createShipmentSchema>;

@@ -1,8 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ShipmentStatus as PrismaShipmentStatus } from '@prisma/client';
+import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
+import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { CACHE_NAMESPACE_ORDERS_LIST } from '../../infrastructure/redis/redis.constants';
 import { RedisCacheService } from '../../infrastructure/redis/redis-cache.service';
+import { NotesService } from '../notes/notes.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { QueryShipmentsDto } from './dto/query-shipments.dto';
@@ -14,7 +17,25 @@ const ALLOWED_STATUS_TRANSITIONS: Record<
   PrismaShipmentStatus[]
 > = {
   [PrismaShipmentStatus.PENDING]: [
+    PrismaShipmentStatus.LOCATING,
+    PrismaShipmentStatus.CANCELLED,
+  ],
+  [PrismaShipmentStatus.LOCATING]: [
+    PrismaShipmentStatus.PRE_PROCESSING,
+    PrismaShipmentStatus.CANCELLED,
+  ],
+  [PrismaShipmentStatus.PRE_PROCESSING]: [
+    PrismaShipmentStatus.PURCHASE,
+    PrismaShipmentStatus.CANCELLED,
+  ],
+  [PrismaShipmentStatus.PURCHASE]: [
+    PrismaShipmentStatus.SHIPPED,
+    PrismaShipmentStatus.CANCELLED,
+  ],
+  [PrismaShipmentStatus.SHIPPED]: [
     PrismaShipmentStatus.IN_TRANSIT,
+    PrismaShipmentStatus.DELAYED,
+    PrismaShipmentStatus.DELIVERED,
     PrismaShipmentStatus.CANCELLED,
   ],
   [PrismaShipmentStatus.IN_TRANSIT]: [
@@ -23,6 +44,7 @@ const ALLOWED_STATUS_TRANSITIONS: Record<
     PrismaShipmentStatus.CANCELLED,
   ],
   [PrismaShipmentStatus.DELAYED]: [
+    PrismaShipmentStatus.SHIPPED,
     PrismaShipmentStatus.IN_TRANSIT,
     PrismaShipmentStatus.CANCELLED,
   ],
@@ -37,12 +59,20 @@ export class ShipmentsService {
     private readonly prismaService: PrismaService,
     private readonly redisCacheService: RedisCacheService,
     private readonly notificationsService: NotificationsService,
+    private readonly notesService: NotesService,
   ) {}
 
-  async create(createShipmentDto: CreateShipmentDto) {
+  async create(createShipmentDto: CreateShipmentDto, user: AuthenticatedUser) {
     await this.ensureOrderCanCreateShipment(createShipmentDto.orderId);
 
     const shipment = await this.shipmentsRepository.create(createShipmentDto);
+    await this.addOrderStatusHistoryNote(
+      createShipmentDto.orderId,
+      user,
+      `Shipment status updated:\nStatus: ${formatShipmentStatusLabel(
+        shipment.status,
+      )}\nShipment: ${shipment.bolNumber ?? 'BOL pending'}`,
+    );
 
     await this.redisCacheService.bumpNamespaceVersion(
       CACHE_NAMESPACE_ORDERS_LIST,
@@ -63,6 +93,7 @@ export class ShipmentsService {
   async updateStatus(
     id: string,
     updateShipmentStatusDto: UpdateShipmentStatusDto,
+    user: AuthenticatedUser,
   ) {
     const existingShipment = await this.shipmentsRepository.findOne(id);
     const currentStatus = existingShipment.status;
@@ -93,13 +124,23 @@ export class ShipmentsService {
           ? updateShipmentStatusDto.proNumber
           : undefined,
       shippedAt:
-        nextStatus === PrismaShipmentStatus.IN_TRANSIT &&
+        (nextStatus === PrismaShipmentStatus.SHIPPED ||
+          nextStatus === PrismaShipmentStatus.IN_TRANSIT) &&
         !existingShipment.shippedAt
           ? new Date()
           : undefined,
       deliveredAt:
         nextStatus === PrismaShipmentStatus.DELIVERED ? new Date() : undefined,
     });
+    await this.addOrderStatusHistoryNote(
+      shipment.orderId,
+      user,
+      `Shipment status updated:\nStatus: ${formatShipmentStatusLabel(
+        currentStatus,
+      )} -> ${formatShipmentStatusLabel(nextStatus)}\nShipment: ${
+        shipment.bolNumber ?? 'BOL pending'
+      }${shipment.proNumber ? `\nPRO: ${shipment.proNumber}` : ''}`,
+    );
     await this.notificationsService.notifyShipmentStatusUpdated(
       id,
       currentStatus,
@@ -169,4 +210,35 @@ export class ShipmentsService {
       );
     }
   }
+
+  private async addOrderStatusHistoryNote(
+    orderId: string,
+    user: AuthenticatedUser,
+    content: string,
+  ) {
+    await this.notesService.create(
+      {
+        content,
+        entityId: orderId,
+        entityType: NoteEntityType.ORDER,
+      },
+      user,
+    );
+  }
+}
+
+function formatShipmentStatusLabel(status: PrismaShipmentStatus): string {
+  const statusLabels: Record<PrismaShipmentStatus, string> = {
+    [PrismaShipmentStatus.PENDING]: 'Pending',
+    [PrismaShipmentStatus.LOCATING]: 'Locating',
+    [PrismaShipmentStatus.PRE_PROCESSING]: 'Pre Processing',
+    [PrismaShipmentStatus.PURCHASE]: 'Purchase',
+    [PrismaShipmentStatus.SHIPPED]: 'Shipped',
+    [PrismaShipmentStatus.IN_TRANSIT]: 'In Transit',
+    [PrismaShipmentStatus.DELAYED]: 'Delayed',
+    [PrismaShipmentStatus.DELIVERED]: 'Delivered',
+    [PrismaShipmentStatus.CANCELLED]: 'Cancelled',
+  };
+
+  return statusLabels[status];
 }
