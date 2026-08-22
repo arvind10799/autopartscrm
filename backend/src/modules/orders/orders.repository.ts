@@ -227,6 +227,7 @@ export class OrdersRepository {
     const orderNumber = queryOrdersDto.orderNumber?.trim();
     const search = queryOrdersDto.search?.trim();
     const createdById = queryOrdersDto.createdById?.trim();
+    const phoneSearchTerms = search ? this.buildPhoneSearchTerms(search) : [];
 
     if (createdById) {
       where.createdById = createdById;
@@ -294,12 +295,12 @@ export class OrdersRepository {
             mode: 'insensitive',
           },
         },
-        {
+        ...phoneSearchTerms.map((phoneSearchTerm) => ({
           customerPhone: {
-            contains: search,
-            mode: 'insensitive',
+            contains: phoneSearchTerm,
+            mode: 'insensitive' as const,
           },
-        },
+        })),
         {
           createdBy: {
             name: {
@@ -541,6 +542,21 @@ export class OrdersRepository {
     }
 
     return undefined;
+  }
+
+  private buildPhoneSearchTerms(search: string): string[] {
+    const digits = search.replace(/\D/g, '');
+    const normalizedDigits =
+      digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+    const terms = new Set<string>([search]);
+
+    if (normalizedDigits.length === 10) {
+      terms.add(
+        `(${normalizedDigits.slice(0, 3)}) ${normalizedDigits.slice(3, 6)}-${normalizedDigits.slice(6)}`,
+      );
+    }
+
+    return Array.from(terms);
   }
 
   private buildOrderNumberDateSegment(date: Date): string {

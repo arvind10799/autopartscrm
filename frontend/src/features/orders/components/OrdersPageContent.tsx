@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
 import {
   buildTimestampRangeQuery,
   createDefaultDateRangeFilterState,
@@ -42,6 +43,7 @@ import { OrdersTable } from './OrdersTable';
 import { UpdateOrderForm } from './UpdateOrderForm';
 
 const ALL_AGENTS_FILTER = 'ALL';
+const PHONE_LIKE_SEARCH_PATTERN = /^[\d\s()+.-]+$/;
 
 function formatAgentFilterLabel(agent: OrderUser) {
   return `${agent.name} (${agent.role === 'ADMIN' ? 'Admin' : 'Sales'})`;
@@ -104,7 +106,13 @@ export function OrdersPageContent() {
   });
 
   const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
+    const digitCount = value.replace(/\D/g, '').length;
+    const nextSearchTerm =
+      digitCount === 10 && PHONE_LIKE_SEARCH_PATTERN.test(value)
+        ? formatUsPhoneNumber(value)
+        : value;
+
+    setSearchTerm(nextSearchTerm);
     startTransition(() => setPage(1));
   };
 
