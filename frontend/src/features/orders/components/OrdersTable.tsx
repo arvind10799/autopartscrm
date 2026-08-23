@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils/cn';
 import type { UserRole } from '@/features/auth/types/auth.types';
 import { formatCurrency } from '../lib/order-formatters';
 import type { PaginationMeta, OrderSummary } from '../types/order.types';
-import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
+import { ShippingStatusCell } from '@/features/shipments/components/ShippingStatusCell';
 
 function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
@@ -94,12 +94,15 @@ function buildColumns(
       meta: {
         className: 'w-[12%]',
       },
-      cell: ({ row }) =>
-        row.original.latestShipmentStatus ? (
-          <ShipmentStatusBadge status={row.original.latestShipmentStatus} />
-        ) : (
-          <span className="text-xs text-muted-foreground">No shipment</span>
-        ),
+      cell: ({ row }) => (
+        <ShippingStatusCell
+          status={row.original.latestShipmentStatus}
+          orderDate={row.original.intakeDetails?.orderDate}
+          fallbackDate={row.original.createdAt}
+          bolNumber={row.original.latestShipment?.bolNumber}
+          proNumber={row.original.latestShipment?.proNumber}
+        />
+      ),
     },
     {
       id: 'actions',

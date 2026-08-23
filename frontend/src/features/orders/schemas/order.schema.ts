@@ -317,7 +317,7 @@ const orderBackendSummarySchema = z.object({
   status: orderStatusSchema,
   paymentMethod: orderPaymentMethodSchema.nullable(),
   intakeDetails: orderIntakeDetailsSchema
-    .pick({ partialPayment: true })
+    .pick({ orderDate: true, partialPayment: true })
     .nullable()
     .optional(),
   createdAt: z.string(),
@@ -327,6 +327,8 @@ const orderBackendSummarySchema = z.object({
     .array(
       z.object({
         id: z.string(),
+        bolNumber: z.string().nullable(),
+        proNumber: z.string().nullable(),
         status: orderShipmentStatusSchema,
         createdAt: z.string(),
         updatedAt: z.string(),
@@ -359,9 +361,13 @@ function normalizeOrderSummary(order: z.infer<typeof orderBackendSummarySchema>)
     status: order.status,
     paymentMethod: order.paymentMethod,
     intakeDetails: order.intakeDetails
-      ? { partialPayment: order.intakeDetails.partialPayment ?? null }
+      ? {
+          orderDate: order.intakeDetails.orderDate ?? null,
+          partialPayment: order.intakeDetails.partialPayment ?? null,
+        }
       : null,
     latestShipmentStatus: order.shipments[0]?.status ?? null,
+    latestShipment: order.shipments[0] ?? null,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     customerEmail: order.customerEmail,

@@ -20,6 +20,8 @@ export interface ShipmentOrderSummary {
   customerName: string;
   status: OrderStatus;
   totalSaleAmount?: number;
+  orderDate: string | null;
+  createdAt: string;
 }
 
 export interface ShipmentCounts {

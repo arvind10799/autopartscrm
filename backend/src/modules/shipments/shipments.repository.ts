@@ -30,6 +30,8 @@ const shipmentSummarySelect = {
       customerName: true,
       status: true,
       totalSaleAmount: true,
+      intakeDetails: true,
+      createdAt: true,
     },
   },
   _count: {

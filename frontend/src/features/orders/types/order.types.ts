@@ -88,8 +88,12 @@ export interface OrderSummary {
   currency: OrderCurrency;
   status: OrderStatus;
   paymentMethod: OrderPaymentMethod | null;
-  intakeDetails: Pick<OrderIntakeDetails, 'partialPayment'> | null;
+  intakeDetails: Pick<OrderIntakeDetails, 'orderDate' | 'partialPayment'> | null;
   latestShipmentStatus: OrderShipmentStatus | null;
+  latestShipment: Pick<
+    OrderShipment,
+    'id' | 'bolNumber' | 'proNumber' | 'status' | 'createdAt' | 'updatedAt'
+  > | null;
   createdAt: string;
   updatedAt: string;
   customerEmail: string | null;

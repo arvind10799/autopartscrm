@@ -11,7 +11,7 @@ import type {
   ShipmentPaginationMeta,
   ShipmentSummary,
 } from '../types/shipment.types';
-import { ShipmentStatusBadge } from './ShipmentStatusBadge';
+import { ShippingStatusCell } from './ShippingStatusCell';
 
 const columns: ColumnDef<ShipmentSummary>[] = [
   {
@@ -57,7 +57,15 @@ const columns: ColumnDef<ShipmentSummary>[] = [
   {
     accessorKey: 'currentStatus',
     header: 'Current status',
-    cell: ({ row }) => <ShipmentStatusBadge status={row.original.currentStatus} />,
+    cell: ({ row }) => (
+      <ShippingStatusCell
+        status={row.original.currentStatus}
+        orderDate={row.original.order.orderDate}
+        fallbackDate={row.original.order.createdAt}
+        bolNumber={row.original.bolNumber}
+        proNumber={row.original.proNumber}
+      />
+    ),
   },
   {
     id: 'counts',

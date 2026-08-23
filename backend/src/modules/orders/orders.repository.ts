@@ -63,6 +63,8 @@ const orderListSelect = {
     },
     select: {
       id: true,
+      bolNumber: true,
+      proNumber: true,
       status: true,
       createdAt: true,
       updatedAt: true,

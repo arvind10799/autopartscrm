@@ -13,7 +13,22 @@ const shipmentOrderSummarySchema = z.object({
   customerName: z.string(),
   status: orderStatusSchema,
   totalSaleAmount: z.coerce.number().optional(),
-});
+  intakeDetails: z
+    .object({
+      orderDate: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+  createdAt: isoDateTimeSchema,
+}).transform((order) => ({
+  id: order.id,
+  orderNumber: order.orderNumber,
+  customerName: order.customerName,
+  status: order.status,
+  totalSaleAmount: order.totalSaleAmount,
+  orderDate: order.intakeDetails?.orderDate ?? null,
+  createdAt: order.createdAt,
+}));
 
 const shipmentCountsSchema = z.object({
   costs: z.number().int().min(0),
