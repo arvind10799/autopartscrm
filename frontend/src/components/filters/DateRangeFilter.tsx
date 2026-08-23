@@ -22,10 +22,12 @@ export function DateRangeFilter({
   value,
   onChange,
   variant = 'card',
+  showPresetLabel = true,
 }: {
   value: DateRangeFilterState;
   onChange: (value: DateRangeFilterState) => void;
   variant?: 'card' | 'inline';
+  showPresetLabel?: boolean;
 }) {
   const isCustom = value.preset === 'CUSTOM';
   const isInline = variant === 'inline';
@@ -70,10 +72,12 @@ export function DateRangeFilter({
                 : 'grid gap-3 xl:min-w-[14rem]'
           }
         >
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              {isInline ? 'Date filter' : 'Range'}
-            </label>
+          <div className={showPresetLabel ? 'space-y-1.5' : ''}>
+            {showPresetLabel ? (
+              <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                {isInline ? 'Date filter' : 'Range'}
+              </label>
+            ) : null}
             <Select
               className="h-11 rounded-xl"
               aria-label="Created date preset"

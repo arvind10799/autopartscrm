@@ -135,6 +135,7 @@ export function ShipmentsPageContent() {
                   value={dateFilter}
                   onChange={handleDateFilterChange}
                   variant="inline"
+                  showPresetLabel={false}
                 />
               </div>
             </div>
