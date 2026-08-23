@@ -105,7 +105,7 @@ export function ShipmentsPageContent() {
               </CardDescription>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_minmax(22rem,28rem)] lg:items-start">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -130,7 +130,7 @@ export function ShipmentsPageContent() {
                 ))}
               </Select>
 
-              <div className="lg:col-span-2">
+              <div className="min-w-0">
                 <DateRangeFilter
                   value={dateFilter}
                   onChange={handleDateFilterChange}

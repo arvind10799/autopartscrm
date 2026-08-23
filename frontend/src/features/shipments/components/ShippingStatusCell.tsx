@@ -116,23 +116,40 @@ function isAgingMuted(status: ShipmentStatus | null | undefined) {
   return !status || AGING_STATUSES.has(status);
 }
 
+function getStatusTextClass(status: ShipmentStatus | null | undefined) {
+  const statusTextClasses: Record<ShipmentStatus, string> = {
+    PENDING: 'text-slate-600',
+    LOCATING: 'text-sky-700',
+    PRE_PROCESSING: 'text-amber-700',
+    PURCHASE: 'text-orange-700',
+    SHIPPED: 'text-blue-700',
+    IN_TRANSIT: 'text-indigo-700',
+    DELIVERED: 'text-emerald-700',
+    DELAYED: 'text-amber-700',
+    CANCELLED: 'text-rose-700',
+  };
+
+  return status ? statusTextClasses[status] : 'text-slate-600';
+}
+
 export function ShippingStatusCell(props: ShippingStatusCellProps) {
   const primaryLine = getPrimaryLine(props);
   const secondaryLine = getSecondaryLine(props.status);
+  const statusTextClass = getStatusTextClass(props.status);
 
   return (
     <div className={cn('min-w-0 space-y-0.5', props.className)}>
       <p
         className={cn(
           'truncate text-xs font-semibold leading-4',
-          isAgingMuted(props.status) ? 'text-muted-foreground' : 'text-foreground',
+          isAgingMuted(props.status) ? 'text-muted-foreground' : statusTextClass,
         )}
         title={primaryLine}
       >
         {primaryLine}
       </p>
       {secondaryLine ? (
-        <p className="truncate text-sm font-semibold leading-5 text-foreground">
+        <p className={cn('truncate text-sm font-semibold leading-5', statusTextClass)}>
           {secondaryLine}
         </p>
       ) : null}

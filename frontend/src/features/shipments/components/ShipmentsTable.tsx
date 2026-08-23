@@ -15,6 +15,23 @@ import { ShippingStatusCell } from './ShippingStatusCell';
 
 const columns: ColumnDef<ShipmentSummary>[] = [
   {
+    accessorKey: 'order.orderNumber',
+    header: 'Order',
+    cell: ({ row }) => (
+      <div className="space-y-1">
+        <Link
+          href={`/shipments/${row.original.id}`}
+          className="font-semibold text-primary transition hover:text-primary/80"
+        >
+          {row.original.order.orderNumber}
+        </Link>
+        <p className="truncate text-xs text-muted-foreground">
+          {row.original.order.customerName}
+        </p>
+      </div>
+    ),
+  },
+  {
     accessorKey: 'bolNumber',
     header: 'BOL',
     cell: ({ row }) => (
@@ -65,15 +82,6 @@ const columns: ColumnDef<ShipmentSummary>[] = [
         bolNumber={row.original.bolNumber}
         proNumber={row.original.proNumber}
       />
-    ),
-  },
-  {
-    id: 'counts',
-    header: 'Tracking',
-    cell: ({ row }) => (
-      <p className="text-sm text-muted-foreground">
-        {row.original.counts.events} events | {row.original.counts.notes} notes
-      </p>
     ),
   },
   {

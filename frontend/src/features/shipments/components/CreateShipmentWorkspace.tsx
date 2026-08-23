@@ -221,6 +221,8 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
           : 'Shipment created',
         'The shipped order is now available in the Shipment table.',
       );
+      router.push('/shipments');
+      return;
     } else {
       toast.success(
         completedOrder
