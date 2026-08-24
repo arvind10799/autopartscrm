@@ -131,6 +131,39 @@ describe('OrdersRepository', () => {
     );
   });
 
+  it('treats orders without shipments as pending shipment orders', async () => {
+    prismaService.order.findMany.mockReturnValue('findManyPromise');
+    prismaService.order.count.mockReturnValue('countPromise');
+    prismaService.$transaction.mockResolvedValue([[], 0]);
+
+    await repository.findAll({ shipmentStatus: 'PENDING' }, adminUser);
+
+    expect(prismaService.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: [
+            {
+              OR: [
+                {
+                  shipments: {
+                    none: {},
+                  },
+                },
+                {
+                  shipments: {
+                    some: {
+                      status: 'PENDING',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+  });
+
   it('does not add creator filter for admin users', async () => {
     prismaService.order.findMany.mockReturnValue('findManyPromise');
     prismaService.order.count.mockReturnValue('countPromise');

@@ -255,11 +255,33 @@ export class OrdersRepository {
     }
 
     if (queryOrdersDto.shipmentStatus) {
-      where.shipments = {
-        some: {
-          status: queryOrdersDto.shipmentStatus,
-        },
-      };
+      if (queryOrdersDto.shipmentStatus === PrismaShipmentStatus.PENDING) {
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : []),
+          {
+            OR: [
+              {
+                shipments: {
+                  none: {},
+                },
+              },
+              {
+                shipments: {
+                  some: {
+                    status: PrismaShipmentStatus.PENDING,
+                  },
+                },
+              },
+            ],
+          },
+        ];
+      } else {
+        where.shipments = {
+          some: {
+            status: queryOrdersDto.shipmentStatus,
+          },
+        };
+      }
     }
 
     const hasShipmentFilter = this.normalizeHasShipmentFilter(
