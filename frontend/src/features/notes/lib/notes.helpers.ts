@@ -3,6 +3,7 @@ import { formatOrderStatus } from '@/features/orders/lib/order-formatters';
 import type { OrderSummary } from '@/features/orders/types/order.types';
 import { formatShipmentStatus } from '@/features/shipments/lib/shipment-formatters';
 import type { ShipmentSummary } from '@/features/shipments/types/shipment.types';
+import { formatPacificDateTime } from '@/lib/utils/pacific-date';
 import type { NoteFormValues } from '../schemas/note.schema';
 import type {
   CreateNoteInput,
@@ -11,11 +12,6 @@ import type {
   NoteEntityType,
   NoteRecord,
 } from '../types/note.types';
-
-const noteDateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
 
 export function buildDefaultNoteFormValues(
   entityType: NoteEntityType = 'ORDER',
@@ -146,13 +142,7 @@ export function resolveNextNoteEntityId(
 }
 
 export function formatNoteTimestamp(value: string): string {
-  const parsedDate = new Date(value);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'Unknown time';
-  }
-
-  return noteDateTimeFormatter.format(parsedDate);
+  return formatPacificDateTime(value);
 }
 
 export function getNoteEntityReference(note: NoteRecord) {

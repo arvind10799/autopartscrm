@@ -1,4 +1,8 @@
 import type { OrderPaymentMethod, OrderStatus } from '../types/order.types';
+import {
+  formatPacificDateOnly,
+  formatPacificDateTime,
+} from '@/lib/utils/pacific-date';
 
 const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
 
@@ -19,15 +23,6 @@ function getCurrencyFormatter(currency: string) {
   currencyFormatterCache.set(normalizedCurrency, formatter);
   return formatter;
 }
-
-const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
-
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-});
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   DRAFT: 'Draft',
@@ -59,18 +54,9 @@ export function formatOrderPaymentMethod(paymentMethod: OrderPaymentMethod): str
 }
 
 export function formatDateTime(value: string): string {
-  return dateTimeFormatter.format(parseStoredDate(value));
+  return formatPacificDateTime(value);
 }
 
 export function formatDate(value: string): string {
-  return dateFormatter.format(parseStoredDate(value));
-}
-
-function parseStoredDate(value: string): Date {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [year, month, day] = value.split('-').map(Number);
-    return new Date(year, month - 1, day);
-  }
-
-  return new Date(value);
+  return formatPacificDateOnly(value, value);
 }

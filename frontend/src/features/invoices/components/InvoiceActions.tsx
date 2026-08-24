@@ -20,6 +20,12 @@ import type { OrderDetail } from '@/features/orders/types/order.types';
 import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
 import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
+import {
+  formatPacificDateOnly,
+  formatPacificDateTime,
+  getPacificTodayDateInputValue,
+  parseStoredDate,
+} from '@/lib/utils/pacific-date';
 
 type InvoiceDraft = {
   invoiceNumber: string;
@@ -1526,12 +1532,12 @@ function formatDateInputValue(value: string | null): string {
     return '';
   }
 
-  const date = new Date(value);
+  const date = parseStoredDate(value);
   if (Number.isNaN(date.getTime())) {
     return value.slice(0, 10);
   }
 
-  return date.toISOString().slice(0, 10);
+  return getPacificTodayDateInputValue(date);
 }
 
 function parseWarrantyLines(value?: string | null): string[] {
@@ -1586,12 +1592,13 @@ function formatInvoiceDate(value: string): string {
     return '';
   }
 
-  const date = new Date(value);
+  const date = parseStoredDate(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
   return date.toLocaleDateString('en-US', {
+    timeZone: 'America/Los_Angeles',
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -1603,31 +1610,20 @@ function formatSignatureDate(value: string): string {
     return '';
   }
 
-  const date = new Date(value);
+  const date = parseStoredDate(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return date.toLocaleDateString('en-US');
+  return formatPacificDateOnly(value, value);
 }
 
 function formatDisplayDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  return formatPacificDateTime(value, value);
 }
 
 function formatPdtDateTime(value: string): string {
-  const date = new Date(value);
+  const date = parseStoredDate(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }

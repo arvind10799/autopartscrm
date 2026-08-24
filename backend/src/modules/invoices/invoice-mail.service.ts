@@ -283,6 +283,7 @@ export class InvoiceMailService {
     }
 
     return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Los_Angeles',
       month: '2-digit',
       day: '2-digit',
       year: 'numeric',
@@ -777,6 +778,7 @@ export class InvoiceMailService {
 
     return value
       .toLocaleDateString('en-US', {
+        timeZone: 'America/Los_Angeles',
         day: '2-digit',
         month: 'long',
         year: 'numeric',
@@ -785,7 +787,9 @@ export class InvoiceMailService {
   }
 
   private formatShortDate(value: Date): string {
-    return value.toLocaleDateString('en-US');
+    return value.toLocaleDateString('en-US', {
+      timeZone: 'America/Los_Angeles',
+    });
   }
 
   private normalizeMultilineText(value: string): string {

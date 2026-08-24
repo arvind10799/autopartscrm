@@ -1,9 +1,6 @@
-const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
+import { formatPacificDateTime } from '@/lib/utils/pacific-date';
 
-const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
 
 function getCurrencyFormatter(currency: string) {
   const normalizedCurrency = currency.trim().toUpperCase() || 'USD';
@@ -33,5 +30,5 @@ export function formatCostCurrency(value: number, currency = 'USD'): string {
 }
 
 export function formatCostDateTime(value: string): string {
-  return dateTimeFormatter.format(new Date(value));
+  return formatPacificDateTime(value);
 }

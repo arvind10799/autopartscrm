@@ -1,6 +1,10 @@
 'use client';
 
 import { cn } from '@/lib/utils/cn';
+import {
+  getPacificTodayDateInputValue,
+  parseStoredDate,
+} from '@/lib/utils/pacific-date';
 import { formatShipmentStatus } from '../lib/shipment-formatters';
 import type { ShipmentStatus } from '../types/shipment.types';
 
@@ -22,49 +26,44 @@ const AGING_STATUSES = new Set<ShipmentStatus>([
   'PURCHASE',
 ]);
 
-function parseDateStart(value: string | null | undefined): Date | null {
+function getPacificDateKey(value: string | null | undefined): string | null {
   if (!value) {
     return null;
   }
 
-  const dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-
-  if (dateOnlyMatch) {
-    return new Date(
-      Number(dateOnlyMatch[1]),
-      Number(dateOnlyMatch[2]) - 1,
-      Number(dateOnlyMatch[3]),
-    );
-  }
-
-  const parsedDate = new Date(value);
+  const parsedDate = parseStoredDate(value);
 
   if (Number.isNaN(parsedDate.getTime())) {
     return null;
   }
 
-  return new Date(
-    parsedDate.getFullYear(),
-    parsedDate.getMonth(),
-    parsedDate.getDate(),
-  );
+  return getPacificTodayDateInputValue(parsedDate);
+}
+
+function dateKeyToUtcStart(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+
+  return Date.UTC(year, month - 1, day);
 }
 
 function formatAgingDays(
   orderDate: string | null | undefined,
   fallbackDate: string | null | undefined,
 ) {
-  const startDate = parseDateStart(orderDate) ?? parseDateStart(fallbackDate);
+  const startDateKey =
+    getPacificDateKey(orderDate) ?? getPacificDateKey(fallbackDate);
 
-  if (!startDate) {
+  if (!startDateKey) {
     return 'Aging pending';
   }
 
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayDateKey = getPacificTodayDateInputValue();
   const days = Math.max(
     0,
-    Math.floor((todayStart.getTime() - startDate.getTime()) / MS_PER_DAY),
+    Math.floor(
+      (dateKeyToUtcStart(todayDateKey) - dateKeyToUtcStart(startDateKey)) /
+        MS_PER_DAY,
+    ),
   );
 
   return `${days} aging ${days === 1 ? 'day' : 'days'}`;

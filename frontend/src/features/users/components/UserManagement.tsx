@@ -33,6 +33,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Select } from '@/components/ui/select';
 import { HttpError } from '@/lib/api/http-error';
 import { toast } from '@/lib/stores/toast.store';
+import { formatPacificDateOnly } from '@/lib/utils/pacific-date';
 import { usersApi } from '../api/users-api';
 import {
   createUserSchema,
@@ -730,13 +731,5 @@ function getInitials(name: string) {
 }
 
 function formatUserDate(value: string) {
-  const parsedDate = new Date(value);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'Unknown';
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-  }).format(parsedDate);
+  return formatPacificDateOnly(value, 'Unknown');
 }

@@ -36,6 +36,10 @@ import {
   buildTimestampRangeQuery,
   createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
+import {
+  formatPacificShortDateTime,
+  getPacificTodayDateInputValue,
+} from '@/lib/utils/pacific-date';
 import { ordersApi } from '@/features/orders/api/orders-api';
 import { shipmentsApi } from '@/features/shipments/api/shipments-api';
 import type { OrderSummary } from '@/features/orders/types/order.types';
@@ -209,33 +213,21 @@ function formatCompactCurrency(value: number) {
 }
 
 function formatShortDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return 'Date unavailable';
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date);
+  return formatPacificShortDateTime(value);
 }
 
 function isToday(value: string) {
   const date = new Date(value);
-  const today = new Date();
 
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  );
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  return getDayKey(date) === getPacificTodayDateInputValue();
 }
 
 function getDayKey(date: Date) {
-  return date.toISOString().slice(0, 10);
+  return getPacificTodayDateInputValue(date);
 }
 
 function formatPercent(value: number) {
@@ -363,7 +355,10 @@ function buildSalesDashboardInsights(data: DashboardData) {
 
     return {
       key,
-      label: new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
+      label: new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Los_Angeles',
+        weekday: 'short',
+      }).format(date),
       leads: dayLeads,
       orders: dayOrders.length,
       revenue: dayOrders.reduce((sum, order) => sum + order.totalSaleAmount, 0),

@@ -2,11 +2,7 @@ import type {
   ShipmentStatus,
   TrackingTimelineStatus,
 } from '../types/shipment.types';
-
-const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
+import { formatPacificDateTime } from '@/lib/utils/pacific-date';
 
 const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   PENDING: 'Pending',
@@ -46,11 +42,5 @@ export function formatShipmentDateTime(
     return fallback;
   }
 
-  const parsedDate = new Date(value);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return fallback;
-  }
-
-  return dateTimeFormatter.format(parsedDate);
+  return formatPacificDateTime(value, fallback);
 }
