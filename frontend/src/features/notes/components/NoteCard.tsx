@@ -17,7 +17,7 @@ export function NoteCard({ note }: { note: NoteRecord }) {
   const authorInitial = note.author.name.trim().charAt(0).toUpperCase() || 'U';
 
   return (
-    <Card className="rounded-3xl border-border/60 bg-white/95 shadow-sm shadow-slate-950/5">
+    <Card className="rounded-3xl border-border/60 bg-card/95 shadow-sm shadow-slate-950/5">
       <CardHeader className="p-4 pb-2">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-sm">
@@ -51,7 +51,7 @@ export function NoteCard({ note }: { note: NoteRecord }) {
           {note.message}
         </p>
 
-        <div className="rounded-2xl border border-border/60 bg-white/80 px-3 py-2">
+        <div className="rounded-2xl border border-border/60 bg-secondary/40 px-3 py-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Linked record
           </p>

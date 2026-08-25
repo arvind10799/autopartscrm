@@ -523,7 +523,7 @@ export function DashboardContent() {
                   <Link
                     key={shipment.id}
                     href={`/shipments/${shipment.id}`}
-                    className="flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-4 py-3 transition hover:bg-slate-50"
+                    className="flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-4 py-3 transition hover:bg-secondary/70"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
@@ -564,18 +564,18 @@ function SalesDashboardContent({
 
   return (
     <section className="space-y-6">
-      <Card className="overflow-hidden border-primary/15 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.16),_transparent_32%),linear-gradient(135deg,_#ffffff,_#eef6ff_55%,_#f8fbff)] shadow-xl">
+      <Card className="overflow-hidden border-primary/15 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.16),_transparent_32%),linear-gradient(135deg,_#ffffff,_#eef6ff_55%,_#f8fbff)] shadow-xl dark:bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.18),_transparent_34%),linear-gradient(135deg,_hsl(var(--card)),_hsl(var(--secondary))_58%,_hsl(var(--card)))]">
         <CardContent className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1.35fr_0.9fr]">
           <div className="space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-primary shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-card/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-primary shadow-sm">
               <Target className="h-3.5 w-3.5" />
               Sales Command Center
             </div>
             <div className="max-w-2xl space-y-2">
-              <h2 className="font-[var(--font-heading)] text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
+              <h2 className="font-[var(--font-heading)] text-3xl font-semibold tracking-[-0.04em] text-foreground sm:text-4xl">
                 Good day, {userName.split(' ')[0] || 'there'}.
               </h2>
-              <p className="text-sm leading-6 text-slate-600">
+              <p className="text-sm leading-6 text-muted-foreground">
                 Your dashboard now highlights pipeline health, priority follow-ups,
                 shipment alerts, and revenue signals in one focused workspace.
               </p>
@@ -588,26 +588,26 @@ function SalesDashboardContent({
                 </Button>
               </Link>
               <Link href="/orders">
-                <Button size="sm" variant="outline" className="rounded-full bg-white/80">
+                <Button size="sm" variant="outline" className="rounded-full bg-card/80">
                   <FileText className="h-4 w-4" />
                   Create Order
                 </Button>
               </Link>
               <Link href="/leads?converted=false">
-                <Button size="sm" variant="ghost" className="rounded-full bg-white/60">
+                <Button size="sm" variant="ghost" className="rounded-full bg-card/60">
                   View Open Leads
                 </Button>
               </Link>
               <Link href="/orders">
-                <Button size="sm" variant="ghost" className="rounded-full bg-white/60">
+                <Button size="sm" variant="ghost" className="rounded-full bg-card/60">
                   View My Orders
                 </Button>
               </Link>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm backdrop-blur">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <div className="rounded-2xl border border-border/80 bg-card/80 p-4 shadow-sm backdrop-blur">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
               <CalendarDays className="h-4 w-4 text-primary" />
               Dashboard Date Filter
             </div>
@@ -674,10 +674,10 @@ function SalesDashboardContent({
             {insights.pipeline.map((item) => (
               <div key={item.status} className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-slate-800">{item.label}</span>
+                  <span className="font-medium text-foreground">{item.label}</span>
                   <span className="text-muted-foreground">{item.count}</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-2 overflow-hidden rounded-full bg-secondary">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-primary to-cyan-400"
                     style={{ width: `${safePercentage(item.count, topPipelineCount)}%` }}
@@ -760,11 +760,11 @@ function SalesDashboardContent({
 
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2">
+    <div className="rounded-xl border border-border/80 bg-secondary/60 px-3 py-2">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 text-lg font-semibold tracking-[-0.03em] text-slate-950">
+      <p className="mt-1 text-lg font-semibold tracking-[-0.03em] text-foreground">
         {value}
       </p>
     </div>
@@ -785,21 +785,21 @@ function FocusStatCard({
   tone: 'blue' | 'amber' | 'emerald' | 'violet';
 }) {
   const tones = {
-    blue: 'from-blue-500/14 to-cyan-400/10 text-blue-700 ring-blue-100',
-    amber: 'from-amber-500/16 to-orange-400/10 text-amber-700 ring-amber-100',
-    emerald: 'from-emerald-500/16 to-teal-400/10 text-emerald-700 ring-emerald-100',
-    violet: 'from-violet-500/16 to-fuchsia-400/10 text-violet-700 ring-violet-100',
+    blue: 'from-blue-500/14 to-cyan-400/10 text-blue-700 ring-blue-100 dark:text-blue-300 dark:ring-blue-500/20',
+    amber: 'from-amber-500/16 to-orange-400/10 text-amber-700 ring-amber-100 dark:text-amber-300 dark:ring-amber-500/20',
+    emerald: 'from-emerald-500/16 to-teal-400/10 text-emerald-700 ring-emerald-100 dark:text-emerald-300 dark:ring-emerald-500/20',
+    violet: 'from-violet-500/16 to-fuchsia-400/10 text-violet-700 ring-violet-100 dark:text-violet-300 dark:ring-violet-500/20',
   };
 
   return (
-    <Card className="overflow-hidden border-slate-200/80 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+    <Card className="overflow-hidden border-border/80 bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               {label}
             </p>
-            <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+            <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-foreground">
               {value}
             </p>
           </div>
@@ -827,20 +827,20 @@ function RevenueSnapshotCard({
   tone: 'emerald' | 'amber' | 'rose';
 }) {
   const tones = {
-    emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
-    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
-    rose: 'bg-rose-50 text-rose-700 ring-rose-100',
+    emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
+    rose: 'bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
   };
 
   return (
-    <Card className="bg-white/95 shadow-sm">
+    <Card className="bg-card/95 shadow-sm">
       <CardContent className="flex items-center gap-4 p-5">
         <div className={`rounded-2xl p-3 ring-1 ${tones[tone]}`}>{icon}</div>
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             {label}
           </p>
-          <p className="mt-1 truncate text-2xl font-semibold tracking-[-0.04em] text-slate-950">
+          <p className="mt-1 truncate text-2xl font-semibold tracking-[-0.04em] text-foreground">
             {value}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
@@ -860,12 +860,12 @@ function ConversionMeter({
   hint: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4">
+    <div className="rounded-2xl border border-border bg-gradient-to-br from-card to-secondary/45 p-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-900">{label}</p>
+        <p className="text-sm font-semibold text-foreground">{label}</p>
         <Badge variant="success">{formatPercent(value)}</Badge>
       </div>
-      <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
+      <div className="mt-4 h-3 overflow-hidden rounded-full bg-secondary">
         <div
           className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500"
           style={{ width: `${value}%` }}
@@ -910,7 +910,7 @@ function TrendBars({
 
           return (
             <div key={item.key} className="flex h-full flex-col justify-end gap-2">
-              <div className="flex h-32 items-end justify-center gap-1 rounded-xl bg-slate-50 px-2 py-2">
+              <div className="flex h-32 items-end justify-center gap-1 rounded-xl bg-secondary/60 px-2 py-2">
                 <span
                   className="w-2 rounded-full bg-primary"
                   style={{ height: `${leadHeight}%` }}
@@ -960,11 +960,11 @@ function PriorityList({ leads }: { leads: LeadSummary[] }) {
             <Link
               key={lead.id}
               href="/leads"
-              className="block rounded-xl border border-border/70 bg-white px-4 py-3 transition hover:border-primary/25 hover:bg-blue-50/40"
+              className="block rounded-xl border border-border/70 bg-card px-4 py-3 transition hover:border-primary/25 hover:bg-secondary/70"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-950">
+                  <p className="truncate text-sm font-semibold text-foreground">
                     {lead.customerName}
                   </p>
                   <p className="mt-1 truncate text-xs text-muted-foreground">
@@ -1016,12 +1016,12 @@ function RecentActivityTimeline({
             <Link
               key={activity.id}
               href={activity.href}
-              className="group grid grid-cols-[auto_1fr] gap-3 rounded-xl px-2 py-3 transition hover:bg-slate-50"
+              className="group grid grid-cols-[auto_1fr] gap-3 rounded-xl px-2 py-3 transition hover:bg-secondary/70"
             >
               <span className="mt-1 h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_0_4px_rgba(37,99,235,0.12)]" />
               <span className="min-w-0">
                 <span className="flex items-center justify-between gap-3">
-                  <span className="truncate text-sm font-semibold text-slate-950">
+                  <span className="truncate text-sm font-semibold text-foreground">
                     {activity.title}
                   </span>
                   <Badge variant={activity.variant} className="shrink-0 text-[10px]">
@@ -1065,10 +1065,10 @@ function ShipmentAlerts({ shipments }: { shipments: ShipmentSummary[] }) {
             <Link
               key={shipment.id}
               href={`/shipments/${shipment.id}`}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-white px-4 py-3 transition hover:border-primary/25 hover:bg-blue-50/40"
+              className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 transition hover:border-primary/25 hover:bg-secondary/70"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-950">
+                <p className="truncate text-sm font-semibold text-foreground">
                   {shipment.order.orderNumber}
                 </p>
                 <p className="mt-1 truncate text-xs text-muted-foreground">
@@ -1086,7 +1086,7 @@ function ShipmentAlerts({ shipments }: { shipments: ShipmentSummary[] }) {
 
 function EmptyPanel({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center text-sm text-muted-foreground">
+    <div className="rounded-xl border border-dashed border-border bg-secondary/50 px-4 py-8 text-center text-sm text-muted-foreground">
       {message}
     </div>
   );

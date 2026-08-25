@@ -39,7 +39,7 @@ export function NotesList({
 
   if (error && !hasNotes) {
     return (
-      <Card className="border-border/70 bg-white/90 shadow-sm">
+      <Card className="border-border/70 bg-card/90 shadow-sm">
         <CardHeader>
           <CardTitle className="text-3xl">Notes unavailable</CardTitle>
           <CardDescription>{error}</CardDescription>
@@ -56,7 +56,7 @@ export function NotesList({
 
   if (!hasNotes) {
     return (
-      <Card className="overflow-hidden border-border/70 bg-white/90 shadow-sm">
+      <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
         <CardHeader>
           <CardDescription>{selectedEntitySubtitle}</CardDescription>
           <CardTitle className="text-2xl sm:text-[1.75rem]">{selectedEntityTitle}</CardTitle>
@@ -73,8 +73,8 @@ export function NotesList({
   }
 
   return (
-    <Card className="overflow-hidden border-border/70 bg-white/95 shadow-sm">
-      <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.05),rgba(255,255,255,0.98))] px-5 py-4">
+    <Card className="overflow-hidden border-border/70 bg-card/95 shadow-sm">
+      <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.05),rgba(255,255,255,0.98))] px-5 py-4 dark:bg-[linear-gradient(135deg,rgba(96,165,250,0.08),rgba(15,23,42,0.96))]">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <CardDescription>{selectedEntitySubtitle}</CardDescription>
@@ -93,7 +93,7 @@ export function NotesList({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.06),transparent_35%),linear-gradient(180deg,rgba(248,250,252,0.9),rgba(255,255,255,0.96))] p-4 sm:p-5">
+      <CardContent className="space-y-3 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.06),transparent_35%),linear-gradient(180deg,rgba(248,250,252,0.9),rgba(255,255,255,0.96))] p-4 dark:bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.1),transparent_35%),linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.92))] sm:p-5">
         {error ? (
           <div className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between">
             <span>{error}</span>

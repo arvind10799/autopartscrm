@@ -44,9 +44,12 @@ import {
 import type { UserRecord } from '../types/user.types';
 
 const roleBadgeVariants: Record<UserRecord['role'], string> = {
-  ADMIN: 'bg-violet-100 text-violet-700 border-violet-200',
-  SALES: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  SHIPPING: 'bg-sky-100 text-sky-700 border-sky-200',
+  ADMIN:
+    'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/25',
+  SALES:
+    'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/25',
+  SHIPPING:
+    'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/25',
 };
 
 const roleLabels: Record<UserRecord['role'], string> = {
@@ -241,9 +244,9 @@ export function UserManagement() {
   return (
     <>
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <Card className="border-slate-200/80 bg-white shadow-sm">
+        <Card className="border-border/80 bg-card shadow-sm">
           <CardHeader className="space-y-3 pb-6">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-violet-600">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
               <UserPlus className="h-3.5 w-3.5" />
               Add User
             </span>
@@ -256,13 +259,13 @@ export function UserManagement() {
 
           <CardContent className="space-y-6">
             <form className="space-y-5" onSubmit={onSubmit}>
-              <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+              <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-200">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-200">
                   <Users className="h-4 w-4" />
                 </div>
                 <div>
                   <p className="font-medium">Sales and shipping access</p>
-                  <p className="mt-1 text-emerald-700/80">
+                  <p className="mt-1 text-emerald-700/80 dark:text-emerald-200/80">
                     Choose the right role for each new team member before they
                     sign in.
                   </p>
@@ -330,14 +333,14 @@ export function UserManagement() {
               </div>
 
               {formError ? (
-                <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-300">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   {formError}
                 </div>
               ) : null}
 
               {successMessage ? (
-                <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-600">
+                <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-600 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
                   {successMessage}
                 </div>
@@ -365,9 +368,9 @@ export function UserManagement() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200/80 bg-white shadow-sm">
+        <Card className="border-border/80 bg-card shadow-sm">
           <CardHeader className="space-y-3 pb-6">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-600 dark:bg-sky-500/10 dark:text-sky-300">
               <Users className="h-3.5 w-3.5" />
               Team
             </span>
@@ -380,18 +383,18 @@ export function UserManagement() {
 
           <CardContent>
             {isLoadingUsers ? (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Loader2 className="mb-3 h-6 w-6 animate-spin" />
                 <p className="text-sm">Loading users...</p>
               </div>
             ) : users.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Users className="mb-3 h-8 w-8 opacity-40" />
                 <p className="text-sm">No users found.</p>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-slate-200">
-                <div className="grid grid-cols-[1.1fr_1.4fr_0.9fr_0.7fr_44px] bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              <div className="overflow-hidden rounded-2xl border border-border">
+                <div className="grid grid-cols-[1.1fr_1.4fr_0.9fr_0.7fr_44px] bg-secondary/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   <span>Name</span>
                   <span>Email</span>
                   <span>Role</span>
@@ -399,23 +402,23 @@ export function UserManagement() {
                   <span className="sr-only">View Details</span>
                 </div>
 
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-border/70">
                   {users.map((user) => (
                     <button
                       key={user.id}
                       type="button"
-                      className="grid w-full cursor-pointer grid-cols-[1.1fr_1.4fr_0.9fr_0.7fr_44px] items-center gap-3 px-4 py-3.5 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="grid w-full cursor-pointer grid-cols-[1.1fr_1.4fr_0.9fr_0.7fr_44px] items-center gap-3 px-4 py-3.5 text-left transition hover:bg-secondary/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => setSelectedUser(user)}
                     >
                       <span className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-semibold text-slate-600">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-semibold text-slate-600 dark:from-slate-800 dark:to-slate-700 dark:text-slate-200">
                           {getInitials(user.name)}
                         </span>
-                        <span className="truncate text-sm font-medium text-slate-900">
+                        <span className="truncate text-sm font-medium text-foreground">
                           {user.name}
                         </span>
                       </span>
-                      <span className="truncate text-sm text-slate-500">
+                      <span className="truncate text-sm text-muted-foreground">
                         {user.email}
                       </span>
                       <span>
@@ -424,7 +427,7 @@ export function UserManagement() {
                       <span>
                         <Badge variant="success">Active</Badge>
                       </span>
-                      <span className="flex justify-end text-slate-400">
+                      <span className="flex justify-end text-muted-foreground">
                         <Eye className="h-4 w-4" aria-hidden="true" />
                       </span>
                     </button>
@@ -442,7 +445,7 @@ export function UserManagement() {
           onClick={() => setSelectedUser(null)}
         >
           <div
-            className="w-full max-w-2xl rounded-[1.75rem] border border-border/70 bg-white shadow-2xl"
+            className="w-full max-w-2xl rounded-[1.75rem] border border-border/70 bg-card shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-border/70 px-6 py-5">
@@ -538,7 +541,7 @@ export function UserManagement() {
                   </div>
 
                   {passwordError ? (
-                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-300">
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                       {passwordError}
                     </div>
@@ -572,9 +575,9 @@ export function UserManagement() {
                 </form>
               </section>
 
-              <section className="rounded-2xl border border-border/70 bg-white/70 p-5">
+              <section className="rounded-2xl border border-border/70 bg-secondary/20 p-5">
                 <div className="mb-5 flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
                     <UserCog className="h-5 w-5" />
                   </span>
                   <div>
@@ -618,7 +621,7 @@ export function UserManagement() {
                 </div>
 
                 {accountError ? (
-                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-300">
                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                     {accountError}
                   </div>
@@ -640,7 +643,7 @@ export function UserManagement() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10 dark:hover:text-red-200"
                     onClick={handleDeleteUser}
                     disabled={
                       selectedUser.role === 'ADMIN' ||
@@ -658,14 +661,14 @@ export function UserManagement() {
                 </div>
 
                 {selectedUser.role === 'ADMIN' ? (
-                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-700">
+                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-700 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-300">
                     <Shield className="mt-0.5 h-4 w-4 shrink-0" />
                     Admin protection is active: role changes and deletion are disabled.
                   </div>
                 ) : null}
               </section>
 
-              <section className="rounded-2xl border border-dashed border-border/70 bg-white/70 p-5">
+              <section className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-5">
                 <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <Lock className="h-4 w-4" />
                   Future actions

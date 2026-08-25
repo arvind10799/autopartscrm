@@ -50,7 +50,7 @@ export function TableCardSkeleton({
         ) : null}
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="overflow-hidden rounded-2xl border border-sky-100/80 bg-white/80 shadow-sm shadow-sky-950/5">
+        <div className="overflow-hidden rounded-2xl border border-sky-100/80 bg-card/80 shadow-sm shadow-sky-950/5 dark:border-slate-800">
           <div className="grid gap-3 border-b border-border/60 bg-secondary/55 px-4 py-4 md:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => (
               <Skeleton
@@ -135,7 +135,7 @@ export function DetailPageSkeleton() {
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={index}
-                className="rounded-2xl border border-border/70 bg-white/80 p-4"
+                className="rounded-2xl border border-border/70 bg-card/80 p-4"
               >
                 <Skeleton className={`h-3 w-24 ${premiumSkeletonClassName}`} />
                 <Skeleton className={`mt-3 h-5 w-4/5 ${premiumSkeletonClassName}`} />

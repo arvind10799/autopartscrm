@@ -21,12 +21,12 @@ const variantStyles: Record<
     Icon: CheckCircle2,
   },
   error: {
-    card: 'border-destructive/25 bg-white/95 text-foreground',
+    card: 'border-destructive/25 bg-card/95 text-foreground',
     icon: 'text-destructive',
     Icon: AlertCircle,
   },
   info: {
-    card: 'border-border/80 bg-white/95 text-foreground',
+    card: 'border-border/80 bg-card/95 text-foreground',
     icon: 'text-primary',
     Icon: Info,
   },
