@@ -37,7 +37,7 @@ export function DateRangeFilter({
       className={
         isInline
           ? 'w-full'
-          : 'rounded-[1.35rem] border border-border/70 bg-white/90 p-4 shadow-sm'
+          : 'rounded-[1.35rem] border border-border/70 bg-card/90 p-4 shadow-sm'
       }
     >
       <div

@@ -99,7 +99,7 @@ export function AppShell({
 
   return (
     <div
-      className="min-h-screen bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(246,248,252,0.98))]"
+      className="min-h-screen bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(246,248,252,0.98))] transition-colors duration-300 dark:bg-[linear-gradient(180deg,rgba(2,6,23,0.72),rgba(15,23,42,0.98))]"
       style={
         {
           '--app-shell-max-width': APP_SHELL_MAX_WIDTH,

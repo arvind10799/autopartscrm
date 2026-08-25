@@ -69,7 +69,7 @@ export function DataTable<TData>({
       : '';
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm">
       {layout === 'scroll' ? (
         <div className="border-b border-border/70 bg-secondary/35 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:hidden">
           Swipe horizontally to view all table columns
@@ -179,7 +179,7 @@ export function DataTable<TData>({
       </div>
 
       {footer ? (
-        <div className="border-t border-border/70 bg-white px-4 py-4">
+        <div className="border-t border-border/70 bg-card px-4 py-4">
           {footer}
         </div>
       ) : null}

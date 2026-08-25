@@ -11,6 +11,7 @@ import { useAuthStore } from '@/features/auth/store/auth.store';
 import type { AuthUser } from '@/features/auth/types/auth.types';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { APP_SHELL_MAX_WIDTH } from './shell.constants';
+import { ThemeToggle } from './ThemeToggle';
 
 export function AppHeader({
   user,
@@ -40,7 +41,7 @@ export function AppHeader({
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border/70 bg-[rgba(249,250,252,0.88)] backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-b border-border/70 bg-[rgba(249,250,252,0.88)] backdrop-blur-xl transition-colors duration-300 dark:bg-[rgba(2,6,23,0.82)]">
       <div
         className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8"
         style={{ maxWidth: APP_SHELL_MAX_WIDTH }}
@@ -81,6 +82,8 @@ export function AppHeader({
           </Badge>
 
           <NotificationBell />
+
+          <ThemeToggle />
 
           <Button variant="outline" size="sm" onClick={handleLogout} disabled={isPending}>
             <LogOut className="h-4 w-4" />

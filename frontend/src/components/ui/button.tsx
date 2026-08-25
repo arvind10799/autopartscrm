@@ -26,7 +26,7 @@ export function buttonVariants({
 function getVariantClasses(variant: NonNullable<ButtonProps['variant']>) {
   switch (variant) {
     case 'outline':
-      return 'border border-border bg-white text-foreground shadow-sm hover:bg-secondary';
+      return 'border border-border bg-card text-foreground shadow-sm hover:bg-secondary';
     case 'ghost':
       return 'bg-transparent text-foreground hover:bg-secondary';
     default:

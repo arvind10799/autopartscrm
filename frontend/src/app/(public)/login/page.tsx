@@ -35,7 +35,7 @@ export default function LoginPage() {
 
 function LoginPageFallback() {
   return (
-    <Card className="border-border/70 bg-white/90">
+    <Card className="border-border/70 bg-card/90">
       <CardContent className="space-y-4 p-6">
         <div className="h-4 w-28 animate-pulse rounded-full bg-secondary" />
         <div className="h-10 w-44 animate-pulse rounded-2xl bg-secondary" />

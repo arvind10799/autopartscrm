@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
 import { APP_DESCRIPTION } from '@/lib/constants/app';
 import { clientEnv } from '@/lib/config/env.client';
+import { ThemeInitScript } from '@/lib/theme/theme-init-script';
 import { Providers } from './providers';
 import './globals.css';
 
@@ -17,7 +18,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeInitScript />
+      </head>
       <body
         style={
           {
@@ -28,6 +32,7 @@ export default function RootLayout({
           } as CSSProperties
         }
         className="font-[var(--font-body)]"
+        suppressHydrationWarning
       >
         <Providers>{children}</Providers>
       </body>

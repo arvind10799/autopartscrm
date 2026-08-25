@@ -68,7 +68,7 @@ export function LoginForm() {
   });
 
   return (
-    <Card className="w-full max-w-xl border-border/70 bg-white/95">
+    <Card className="w-full max-w-xl border-border/70 bg-card/95">
       <CardHeader className="space-y-4">
         <span className="inline-flex w-fit items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
           <ShieldCheck className="h-3.5 w-3.5" />
