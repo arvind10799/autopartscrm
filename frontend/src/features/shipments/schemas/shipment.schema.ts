@@ -6,6 +6,10 @@ const orderStatusSchema = z.enum(ORDER_STATUSES);
 const shipmentStatusSchema = z.enum(SHIPMENT_STATUSES);
 const entityIdSchema = z.string().uuid();
 const isoDateTimeSchema = z.string().datetime({ offset: true });
+const optionalAmountInputSchema = z.preprocess(
+  (value) => (value === '' || value === null ? undefined : value),
+  z.coerce.number().min(0).optional(),
+);
 
 const shipmentOrderSummarySchema = z.object({
   id: entityIdSchema,
@@ -13,6 +17,7 @@ const shipmentOrderSummarySchema = z.object({
   customerName: z.string(),
   status: orderStatusSchema,
   totalSaleAmount: z.coerce.number().optional(),
+  currency: z.string().optional().default('USD'),
   intakeDetails: z
     .object({
       orderDate: z.string().nullable().optional(),
@@ -26,9 +31,23 @@ const shipmentOrderSummarySchema = z.object({
   customerName: order.customerName,
   status: order.status,
   totalSaleAmount: order.totalSaleAmount,
+  currency: order.currency,
   orderDate: order.intakeDetails?.orderDate ?? null,
   createdAt: order.createdAt,
 }));
+
+const shipmentCostSummarySchema = z.object({
+  id: entityIdSchema,
+  shipmentId: entityIdSchema,
+  purchaseAmount: z.coerce.number(),
+  shippingAmount: z.coerce.number(),
+  additionalAmount: z.coerce.number(),
+  grossProfit: z.coerce.number(),
+  currency: z.string().optional().default('USD'),
+  notes: z.string().nullable(),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema,
+});
 
 const shipmentCountsSchema = z.object({
   costs: z.number().int().min(0),
@@ -57,6 +76,7 @@ const shipmentBackendSummarySchema = z.object({
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
   order: shipmentOrderSummarySchema,
+  costs: z.array(shipmentCostSummarySchema).optional().default([]),
   _count: shipmentCountsSchema,
 });
 
@@ -75,12 +95,12 @@ function normalizeShipmentSummary(
     createdAt: shipment.createdAt,
     updatedAt: shipment.updatedAt,
     order: shipment.order,
+    costs: shipment.costs,
     counts: shipment._count,
   };
 }
 
 const shipmentBackendDetailSchema = shipmentBackendSummarySchema.extend({
-  costs: z.array(z.unknown()).optional(),
   events: z.array(z.unknown()).optional(),
   notes: z.array(z.unknown()).optional(),
 });
@@ -156,6 +176,15 @@ export const updateShipmentStatusSchema = z.object({
     .max(120, 'Carrier name must be 120 characters or fewer.')
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
+  purchaseAmount: optionalAmountInputSchema,
+  shippingAmount: optionalAmountInputSchema,
+  additionalAmount: optionalAmountInputSchema,
+  costNotes: z
+    .string()
+    .trim()
+    .max(1000, 'Cost reason must be 1,000 characters or fewer.')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
 });
 
 export const createShipmentSchema = z.object({
@@ -175,16 +204,45 @@ export const createShipmentSchema = z.object({
     .max(120, 'Carrier name must be 120 characters or fewer.')
     .optional()
     .transform((val) => (val === '' ? undefined : val)),
+  purchaseAmount: optionalAmountInputSchema,
+  shippingAmount: optionalAmountInputSchema,
+  additionalAmount: optionalAmountInputSchema,
+  costNotes: z
+    .string()
+    .trim()
+    .max(1000, 'Cost reason must be 1,000 characters or fewer.')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
 }).superRefine((value, context) => {
-  if (value.status !== 'SHIPPED') {
-    return;
+  if ((value.status === 'PURCHASE' || value.status === 'SHIPPED') && value.purchaseAmount === undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Part purchased cost is required for purchase status.',
+      path: ['purchaseAmount'],
+    });
   }
 
-  if (!value.bolNumber) {
+  if (value.status === 'SHIPPED' && !value.bolNumber) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'BOL number is required when shipment status is shipped.',
       path: ['bolNumber'],
+    });
+  }
+
+  if (value.status === 'SHIPPED' && value.shippingAmount === undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Actual shipping cost is required when shipment status is shipped.',
+      path: ['shippingAmount'],
+    });
+  }
+
+  if ((value.additionalAmount ?? 0) > 0 && !value.costNotes) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Additional cost reason is required.',
+      path: ['costNotes'],
     });
   }
 });

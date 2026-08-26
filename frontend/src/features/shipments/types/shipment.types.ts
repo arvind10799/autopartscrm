@@ -20,8 +20,22 @@ export interface ShipmentOrderSummary {
   customerName: string;
   status: OrderStatus;
   totalSaleAmount?: number;
+  currency: string;
   orderDate: string | null;
   createdAt: string;
+}
+
+export interface ShipmentCostSummary {
+  id: string;
+  shipmentId: string;
+  purchaseAmount: number;
+  shippingAmount: number;
+  additionalAmount: number;
+  grossProfit: number;
+  currency: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ShipmentCounts {
@@ -42,6 +56,7 @@ export interface ShipmentSummary {
   createdAt: string;
   updatedAt: string;
   order: ShipmentOrderSummary;
+  costs: ShipmentCostSummary[];
   counts: ShipmentCounts;
 }
 
@@ -120,4 +135,8 @@ export interface UpdateShipmentStatusInput {
   bolNumber?: string;
   proNumber?: string;
   carrierName?: string;
+  purchaseAmount?: number;
+  shippingAmount?: number;
+  additionalAmount?: number;
+  costNotes?: string;
 }

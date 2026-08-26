@@ -248,5 +248,9 @@ export function toUpdateShipmentStatusPayload(
     bolNumber: payload.bolNumber,
     proNumber: payload.proNumber,
     carrierName: payload.carrierName,
+    purchaseAmount: payload.purchaseAmount,
+    shippingAmount: payload.shippingAmount,
+    additionalAmount: payload.additionalAmount,
+    costNotes: payload.costNotes,
   };
 }

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/card';
 import { notesApi } from '@/features/notes/api/notes-api';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
+import { GrossProfitSummaryCard } from '@/features/shipments/components/GrossProfitSummaryCard';
 import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
 import { formatShipmentStatus } from '@/features/shipments/lib/shipment-formatters';
 import { toast } from '@/lib/stores/toast.store';
@@ -132,12 +133,19 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   const editHistoryTimeline = buildEditHistoryTimeline(order.notes);
   const statusTimeline = buildStatusTimeline(order);
   const shipmentTimeline = buildShipmentTimeline(order.shipments);
+  const latestShipmentCost = order.shipments[0]?.costs?.[0] ?? null;
 
   return (
     <section className="space-y-6">
       <InvoiceActions
         order={order}
         onInvoiceCreated={() => setRefreshKey((currentValue) => currentValue + 1)}
+      />
+
+      <GrossProfitSummaryCard
+        totalSaleAmount={order.totalSaleAmount}
+        currency={order.currency}
+        cost={latestShipmentCost}
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)] xl:grid-cols-[minmax(0,7fr)_minmax(340px,3fr)]">

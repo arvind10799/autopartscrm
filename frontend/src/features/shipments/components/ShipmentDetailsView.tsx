@@ -26,6 +26,7 @@ import {
   getDefaultNextShipmentStatus,
 } from '../lib/shipments.helpers';
 import type { ShipmentDetail, ShipmentStatus } from '../types/shipment.types';
+import { GrossProfitSummaryCard } from './GrossProfitSummaryCard';
 import { ShipmentDetailGrid } from './ShipmentDetailGrid';
 import { ShipmentStatusUpdateCard } from './ShipmentStatusUpdateCard';
 import { ShipmentTimeline } from './ShipmentTimeline';
@@ -53,6 +54,8 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   } = useOrderDetailWithRefresh(shipment?.orderId ?? '', orderRefreshKey);
   const [selectedStatus, setSelectedStatus] = useState<ShipmentStatus | ''>('');
   const [proNumber, setProNumber] = useState('');
+  const [additionalAmount, setAdditionalAmount] = useState('');
+  const [additionalCostReason, setAdditionalCostReason] = useState('');
 
   useEffect(() => {
     if (!shipment) {
@@ -63,6 +66,8 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
 
     setSelectedStatus(getDefaultNextShipmentStatus(shipment.currentStatus) ?? '');
     setProNumber('');
+    setAdditionalAmount('');
+    setAdditionalCostReason('');
   }, [shipment]);
 
   if (isLoading) {
@@ -95,13 +100,21 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   }
 
   const nextStatuses = getAllowedNextShipmentStatuses(shipment.currentStatus);
+  const shipmentCost = shipment.costs[0] ?? null;
 
   const handleStatusSubmit = async () => {
     if (!selectedStatus) {
       return;
     }
 
-    await updateStatus(selectedStatus, proNumber);
+    await updateStatus(selectedStatus, {
+      proNumber,
+      additionalAmount:
+        additionalAmount.trim().length > 0
+          ? Number(additionalAmount)
+          : undefined,
+      costNotes: additionalCostReason,
+    });
     setOrderRefreshKey((currentValue) => currentValue + 1);
   };
 
@@ -109,6 +122,8 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     clearStatusError();
     setSelectedStatus(status);
     setProNumber('');
+    setAdditionalAmount('');
+    setAdditionalCostReason('');
   };
 
   return (
@@ -146,6 +161,12 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="grid gap-6">
+          <GrossProfitSummaryCard
+            totalSaleAmount={shipment.order.totalSaleAmount ?? 0}
+            currency={shipment.order.currency}
+            cost={shipmentCost}
+          />
+
           <ShipmentDetailGrid shipment={shipment} />
 
           <ShipmentTimeline
@@ -163,13 +184,24 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             isUpdatingStatus={isUpdatingStatus}
             statusError={statusError}
             proNumber={proNumber}
+            additionalAmount={additionalAmount}
+            additionalCostReason={additionalCostReason}
             requiresProNumber={
               selectedStatus === 'IN_TRANSIT' && !shipment.proNumber
             }
+            showAdditionalCostFields={selectedStatus === 'DELIVERED'}
             onStatusChange={handleStatusChange}
             onProNumberChange={(value) => {
               clearStatusError();
               setProNumber(value);
+            }}
+            onAdditionalAmountChange={(value) => {
+              clearStatusError();
+              setAdditionalAmount(value);
+            }}
+            onAdditionalCostReasonChange={(value) => {
+              clearStatusError();
+              setAdditionalCostReason(value);
             }}
             onSubmit={handleStatusSubmit}
           />

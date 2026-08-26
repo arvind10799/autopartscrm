@@ -1,5 +1,12 @@
-import { Transform } from 'class-transformer';
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { ShipmentStatus } from '../../../common/enums/shipment-status.enum';
 import { trimToUndefined } from '../../../common/utils/transform.util';
 
@@ -24,4 +31,28 @@ export class UpdateShipmentStatusDto {
   @IsString()
   @MaxLength(120)
   carrierName?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  purchaseAmount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  shippingAmount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  additionalAmount?: number;
+
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  costNotes?: string;
 }

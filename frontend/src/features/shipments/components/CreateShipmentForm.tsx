@@ -34,6 +34,10 @@ const defaultValues: CreateShipmentFormValues = {
   orderId: '',
   status: 'PENDING',
   carrierName: '',
+  purchaseAmount: '',
+  shippingAmount: '',
+  additionalAmount: '',
+  costNotes: '',
 };
 
 export function CreateShipmentForm({
@@ -55,8 +59,12 @@ export function CreateShipmentForm({
   });
   const selectedStatus = form.watch('status');
   const showShippingFields = selectedStatus === 'SHIPPED';
+  const showPurchaseCostField =
+    selectedStatus === 'PURCHASE' || selectedStatus === 'SHIPPED';
+  const showActualShippingCostField = selectedStatus === 'SHIPPED';
 
   useEffect(() => {
+    const currentCost = currentShipment?.costs?.[0] ?? null;
     const currentStatus =
       currentShipment && isShipmentStatus(currentShipment.status)
         ? currentShipment.status
@@ -68,6 +76,19 @@ export function CreateShipmentForm({
       status: currentStatus,
       bolNumber: currentShipment?.bolNumber ?? '',
       carrierName: currentShipment?.carrierName ?? '',
+      purchaseAmount:
+        currentCost?.purchaseAmount !== undefined
+          ? currentCost.purchaseAmount.toFixed(2)
+          : '',
+      shippingAmount:
+        currentCost?.shippingAmount !== undefined
+          ? currentCost.shippingAmount.toFixed(2)
+          : '',
+      additionalAmount:
+        currentCost?.additionalAmount !== undefined
+          ? currentCost.additionalAmount.toFixed(2)
+          : '',
+      costNotes: currentCost?.notes ?? '',
     });
   }, [currentShipment, form, selectedOrder.id]);
 
@@ -80,14 +101,30 @@ export function CreateShipmentForm({
     form.setValue('carrierName', '');
   }, [form, showShippingFields]);
 
+  useEffect(() => {
+    if (showPurchaseCostField) {
+      return;
+    }
+
+    form.setValue('purchaseAmount', '');
+  }, [form, showPurchaseCostField]);
+
+  useEffect(() => {
+    if (showActualShippingCostField) {
+      return;
+    }
+
+    form.setValue('shippingAmount', '');
+  }, [form, showActualShippingCostField]);
+
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
 
     try {
-      const payload = {
+      const payload = createShipmentSchema.parse({
         ...values,
         status: values.status ?? 'PENDING',
-      };
+      });
       const savedShipment = currentShipment
         ? await shipmentsApi.updateStatus(currentShipment.id, payload)
         : await shipmentsApi.create(payload);
@@ -190,6 +227,64 @@ export function CreateShipmentForm({
             ) : null}
           </div>
         </>
+      ) : null}
+
+      {showPurchaseCostField ? (
+        <div className="space-y-2">
+          <Label
+            htmlFor="purchaseAmount"
+            className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+          >
+            Part purchased cost
+          </Label>
+          <Input
+            id="purchaseAmount"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+            className="h-11 rounded-xl"
+            {...form.register('purchaseAmount')}
+          />
+          {form.formState.errors.purchaseAmount ? (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.purchaseAmount.message}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Internal GP cost only. This does not change invoice shipping charges.
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {showActualShippingCostField ? (
+        <div className="space-y-2">
+          <Label
+            htmlFor="shippingAmount"
+            className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+          >
+            Actual shipping cost
+          </Label>
+          <Input
+            id="shippingAmount"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+            className="h-11 rounded-xl"
+            {...form.register('shippingAmount')}
+          />
+          {form.formState.errors.shippingAmount ? (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.shippingAmount.message}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Actual freight cost for GP calculation, separate from customer shipping charges.
+            </p>
+          )}
+        </div>
       ) : null}
 
       {formError ? (

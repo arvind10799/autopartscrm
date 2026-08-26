@@ -65,9 +65,27 @@ const orderListSelect = {
       id: true,
       bolNumber: true,
       proNumber: true,
+      carrierName: true,
       status: true,
+      shippedAt: true,
+      deliveredAt: true,
       createdAt: true,
       updatedAt: true,
+      costs: {
+        take: 1,
+        select: {
+          id: true,
+          shipmentId: true,
+          purchaseAmount: true,
+          shippingAmount: true,
+          additionalAmount: true,
+          grossProfit: true,
+          currency: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
     },
   },
   notes: {
@@ -110,6 +128,23 @@ const orderDetailInclude = {
   shipments: {
     orderBy: {
       createdAt: 'desc',
+    },
+    include: {
+      costs: {
+        take: 1,
+        select: {
+          id: true,
+          shipmentId: true,
+          purchaseAmount: true,
+          shippingAmount: true,
+          additionalAmount: true,
+          grossProfit: true,
+          currency: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
     },
   },
   notes: {

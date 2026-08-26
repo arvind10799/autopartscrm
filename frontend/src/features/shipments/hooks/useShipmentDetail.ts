@@ -24,7 +24,14 @@ type UseShipmentDetailResult = {
   isUpdatingStatus: boolean;
   statusError: string | null;
   clearStatusError: () => void;
-  updateStatus: (status: ShipmentStatus, proNumber?: string) => Promise<void>;
+  updateStatus: (
+    status: ShipmentStatus,
+    options?: {
+      proNumber?: string;
+      additionalAmount?: number;
+      costNotes?: string;
+    },
+  ) => Promise<void>;
 };
 
 export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
@@ -84,7 +91,14 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
     setStatusError(null);
   };
 
-  const updateStatus = async (nextStatus: ShipmentStatus, proNumber?: string) => {
+  const updateStatus = async (
+    nextStatus: ShipmentStatus,
+    options: {
+      proNumber?: string;
+      additionalAmount?: number;
+      costNotes?: string;
+    } = {},
+  ) => {
     if (!shipment || isUpdatingStatus) {
       return;
     }
@@ -106,7 +120,8 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
       return;
     }
 
-    const normalizedProNumber = proNumber?.trim();
+    const normalizedProNumber = options.proNumber?.trim();
+    const normalizedCostNotes = options.costNotes?.trim();
 
     if (
       nextStatus === 'IN_TRANSIT' &&
@@ -132,6 +147,8 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
       const updatedShipment = await shipmentsApi.updateStatus(previousShipment.id, {
         status: nextStatus,
         proNumber: normalizedProNumber,
+        additionalAmount: options.additionalAmount,
+        costNotes: normalizedCostNotes || undefined,
       });
 
       if (!statusRequestTracker.isCurrentRequest(requestId)) {

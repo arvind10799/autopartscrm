@@ -265,6 +265,19 @@ const orderNoteSchema = z.object({
   author: orderUserSchema,
 });
 
+const orderShipmentCostSchema = z.object({
+  id: z.string(),
+  shipmentId: z.string(),
+  purchaseAmount: numericAmountSchema,
+  shippingAmount: numericAmountSchema,
+  additionalAmount: numericAmountSchema,
+  grossProfit: numericAmountSchema,
+  currency: orderCurrencySchema.optional().default('USD'),
+  notes: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 const orderShipmentSchema = z.object({
   id: z.string(),
   bolNumber: z.string().nullable(),
@@ -275,6 +288,7 @@ const orderShipmentSchema = z.object({
   deliveredAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  costs: z.array(orderShipmentCostSchema).optional().default([]),
 });
 
 const orderIntakeDetailsSchema = z.object({
@@ -330,8 +344,12 @@ const orderBackendSummarySchema = z.object({
         bolNumber: z.string().nullable(),
         proNumber: z.string().nullable(),
         status: orderShipmentStatusSchema,
+        carrierName: z.string().nullable().optional(),
+        shippedAt: z.string().nullable().optional(),
+        deliveredAt: z.string().nullable().optional(),
         createdAt: z.string(),
         updatedAt: z.string(),
+        costs: z.array(orderShipmentCostSchema).optional().default([]),
       }),
     )
     .max(1)
@@ -367,7 +385,16 @@ function normalizeOrderSummary(order: z.infer<typeof orderBackendSummarySchema>)
         }
       : null,
     latestShipmentStatus: order.shipments[0]?.status ?? null,
-    latestShipment: order.shipments[0] ?? null,
+    latestShipment: order.shipments[0]
+      ? {
+          id: order.shipments[0].id,
+          bolNumber: order.shipments[0].bolNumber,
+          proNumber: order.shipments[0].proNumber,
+          status: order.shipments[0].status,
+          createdAt: order.shipments[0].createdAt,
+          updatedAt: order.shipments[0].updatedAt,
+        }
+      : null,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     customerEmail: order.customerEmail,

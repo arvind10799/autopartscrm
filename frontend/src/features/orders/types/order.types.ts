@@ -116,6 +116,20 @@ export interface OrderShipment {
   deliveredAt: string | null;
   createdAt: string;
   updatedAt: string;
+  costs: OrderShipmentCost[];
+}
+
+export interface OrderShipmentCost {
+  id: string;
+  shipmentId: string;
+  purchaseAmount: number;
+  shippingAmount: number;
+  additionalAmount: number;
+  grossProfit: number;
+  currency: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OrderNote {
