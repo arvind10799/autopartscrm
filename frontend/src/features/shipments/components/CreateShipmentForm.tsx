@@ -29,10 +29,12 @@ const CREATE_SHIPMENT_STATUSES: ShipmentStatus[] = [
   'SHIPPED',
 ];
 
+const DEFAULT_SHIPMENT_STATUS: ShipmentStatus = 'PENDING';
+
 const defaultValues: CreateShipmentFormValues = {
   bolNumber: '',
   orderId: '',
-  status: 'PENDING',
+  status: DEFAULT_SHIPMENT_STATUS,
   carrierName: '',
   purchaseAmount: '',
   shippingAmount: '',
@@ -64,32 +66,7 @@ export function CreateShipmentForm({
   const showActualShippingCostField = selectedStatus === 'SHIPPED';
 
   useEffect(() => {
-    const currentCost = currentShipment?.costs?.[0] ?? null;
-    const currentStatus =
-      currentShipment && isShipmentStatus(currentShipment.status)
-        ? currentShipment.status
-        : defaultValues.status;
-
-    form.reset({
-      ...defaultValues,
-      orderId: selectedOrder.id,
-      status: currentStatus,
-      bolNumber: currentShipment?.bolNumber ?? '',
-      carrierName: currentShipment?.carrierName ?? '',
-      purchaseAmount:
-        currentCost?.purchaseAmount !== undefined
-          ? currentCost.purchaseAmount.toFixed(2)
-          : '',
-      shippingAmount:
-        currentCost?.shippingAmount !== undefined
-          ? currentCost.shippingAmount.toFixed(2)
-          : '',
-      additionalAmount:
-        currentCost?.additionalAmount !== undefined
-          ? currentCost.additionalAmount.toFixed(2)
-          : '',
-      costNotes: currentCost?.notes ?? '',
-    });
+    form.reset(buildShipmentFormValues(selectedOrder.id, currentShipment));
   }, [currentShipment, form, selectedOrder.id]);
 
   useEffect(() => {
@@ -128,11 +105,8 @@ export function CreateShipmentForm({
       const savedShipment = currentShipment
         ? await shipmentsApi.updateStatus(currentShipment.id, payload)
         : await shipmentsApi.create(payload);
+      form.reset(buildShipmentFormValues(selectedOrder.id, savedShipment));
       onCreated(savedShipment);
-      form.reset({
-        ...defaultValues,
-        orderId: selectedOrder.id,
-      });
     } catch (error) {
       setFormError(
         getErrorMessage(
@@ -310,4 +284,46 @@ export function CreateShipmentForm({
       </Button>
     </form>
   );
+}
+
+type ShipmentFormSource = {
+  bolNumber?: string | null;
+  carrierName?: string | null;
+  status?: string;
+  currentStatus?: ShipmentStatus;
+  costs?: Array<{
+    purchaseAmount: number;
+    shippingAmount: number;
+    additionalAmount: number;
+    notes: string | null;
+  }>;
+} | null;
+
+function buildShipmentFormValues(
+  orderId: string,
+  shipment: ShipmentFormSource,
+): CreateShipmentFormValues {
+  const cost = shipment?.costs?.[0] ?? null;
+  const rawStatus =
+    shipment?.currentStatus ?? shipment?.status ?? DEFAULT_SHIPMENT_STATUS;
+  const status = isShipmentStatus(rawStatus)
+    ? rawStatus
+    : DEFAULT_SHIPMENT_STATUS;
+
+  return {
+    ...defaultValues,
+    orderId,
+    status,
+    bolNumber: shipment?.bolNumber ?? '',
+    carrierName: shipment?.carrierName ?? '',
+    purchaseAmount:
+      cost?.purchaseAmount !== undefined ? cost.purchaseAmount.toFixed(2) : '',
+    shippingAmount:
+      cost?.shippingAmount !== undefined ? cost.shippingAmount.toFixed(2) : '',
+    additionalAmount:
+      cost?.additionalAmount !== undefined
+        ? cost.additionalAmount.toFixed(2)
+        : '',
+    costNotes: cost?.notes ?? '',
+  };
 }
