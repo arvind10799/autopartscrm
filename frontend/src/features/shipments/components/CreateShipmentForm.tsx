@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,7 +54,20 @@ export function CreateShipmentForm({
   onCreated: (shipment: ShipmentSummary) => void;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
+  const [savedShipmentSnapshot, setSavedShipmentSnapshot] =
+    useState<ShipmentSummary | null>(null);
   const currentShipment = selectedOrder.shipments?.[0] ?? null;
+  const shipmentForForm = useMemo(
+    () =>
+      mergeShipmentFormSourceWithSnapshot(
+        currentShipment,
+        savedShipmentSnapshot,
+      ),
+    [currentShipment, savedShipmentSnapshot],
+  );
+  const currentCost = shipmentForForm?.costs?.[0] ?? null;
+  const hasSavedPurchaseCost =
+    currentCost?.purchaseAmount !== undefined && currentCost.purchaseAmount > 0;
   const form = useForm<CreateShipmentFormValues>({
     resolver: zodResolver(createShipmentSchema),
     defaultValues,
@@ -63,11 +76,14 @@ export function CreateShipmentForm({
   const showShippingFields = selectedStatus === 'SHIPPED';
   const showPurchaseCostField =
     selectedStatus === 'PURCHASE' || selectedStatus === 'SHIPPED';
+  const showPurchaseCostInput =
+    showPurchaseCostField &&
+    !(selectedStatus === 'SHIPPED' && hasSavedPurchaseCost);
   const showActualShippingCostField = selectedStatus === 'SHIPPED';
 
   useEffect(() => {
-    form.reset(buildShipmentFormValues(selectedOrder.id, currentShipment));
-  }, [currentShipment, form, selectedOrder.id]);
+    form.reset(buildShipmentFormValues(selectedOrder.id, shipmentForForm));
+  }, [form, selectedOrder.id, shipmentForForm]);
 
   useEffect(() => {
     if (showShippingFields) {
@@ -77,14 +93,6 @@ export function CreateShipmentForm({
     form.setValue('bolNumber', '');
     form.setValue('carrierName', '');
   }, [form, showShippingFields]);
-
-  useEffect(() => {
-    if (showPurchaseCostField) {
-      return;
-    }
-
-    form.setValue('purchaseAmount', '');
-  }, [form, showPurchaseCostField]);
 
   useEffect(() => {
     if (showActualShippingCostField) {
@@ -100,11 +108,15 @@ export function CreateShipmentForm({
     try {
       const payload = createShipmentSchema.parse({
         ...values,
+        purchaseAmount:
+          values.purchaseAmount ||
+          (hasSavedPurchaseCost ? currentCost.purchaseAmount : undefined),
         status: values.status ?? 'PENDING',
       });
       const savedShipment = currentShipment
         ? await shipmentsApi.updateStatus(currentShipment.id, payload)
         : await shipmentsApi.create(payload);
+      setSavedShipmentSnapshot(savedShipment);
       form.reset(buildShipmentFormValues(selectedOrder.id, savedShipment));
       onCreated(savedShipment);
     } catch (error) {
@@ -203,7 +215,7 @@ export function CreateShipmentForm({
         </>
       ) : null}
 
-      {showPurchaseCostField ? (
+      {showPurchaseCostInput ? (
         <div className="space-y-2">
           <Label
             htmlFor="purchaseAmount"
@@ -229,6 +241,17 @@ export function CreateShipmentForm({
               Internal GP cost only. This does not change invoice shipping charges.
             </p>
           )}
+        </div>
+      ) : null}
+
+      {selectedStatus === 'SHIPPED' && hasSavedPurchaseCost ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
+            Part purchased cost saved
+          </p>
+          <p className="mt-1 font-semibold">
+            {currentCost.purchaseAmount.toFixed(2)}
+          </p>
         </div>
       ) : null}
 
@@ -287,6 +310,7 @@ export function CreateShipmentForm({
 }
 
 type ShipmentFormSource = {
+  id?: string;
   bolNumber?: string | null;
   carrierName?: string | null;
   status?: string;
@@ -298,6 +322,24 @@ type ShipmentFormSource = {
     notes: string | null;
   }>;
 } | null;
+
+function mergeShipmentFormSourceWithSnapshot(
+  shipment: ShipmentFormSource,
+  snapshot: ShipmentSummary | null,
+): ShipmentFormSource {
+  if (!shipment) {
+    return snapshot;
+  }
+
+  if (!snapshot || shipment.id !== snapshot.id || shipment.costs?.length) {
+    return shipment;
+  }
+
+  return {
+    ...shipment,
+    costs: snapshot.costs,
+  };
+}
 
 function buildShipmentFormValues(
   orderId: string,

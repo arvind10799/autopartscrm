@@ -291,8 +291,9 @@ export class ShipmentsService {
       return;
     }
 
-    const purchaseAmount = new Prisma.Decimal(
-      payload.purchaseAmount ?? existingCost?.purchaseAmount ?? 0,
+    const purchaseAmount = this.resolveCostAmount(
+      payload.purchaseAmount,
+      existingCost?.purchaseAmount,
     );
     const shippingAmount = new Prisma.Decimal(
       payload.shippingAmount ?? existingCost?.shippingAmount ?? 0,
@@ -339,6 +340,21 @@ export class ShipmentsService {
       payload.additionalAmount !== undefined ||
       payload.costNotes !== undefined
     );
+  }
+
+  private resolveCostAmount(
+    nextAmount: number | undefined,
+    existingAmount: Prisma.Decimal | undefined,
+  ): Prisma.Decimal {
+    if (
+      existingAmount &&
+      existingAmount.greaterThan(0) &&
+      (nextAmount === undefined || nextAmount === 0)
+    ) {
+      return existingAmount;
+    }
+
+    return new Prisma.Decimal(nextAmount ?? existingAmount ?? 0);
   }
 
   private formatCostNoteLines(
