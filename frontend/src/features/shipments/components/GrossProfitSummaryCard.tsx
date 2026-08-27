@@ -73,6 +73,7 @@ export function GrossProfitSummaryCard({
   onAdditionalCostAdded?: () => void | Promise<void>;
   onCostUpdated?: () => void | Promise<void>;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingBaseCost, setIsEditingBaseCost] = useState(false);
   const [editingAdditionalCost, setEditingAdditionalCost] =
@@ -243,8 +244,8 @@ export function GrossProfitSummaryCard({
 
   return (
     <Card className="overflow-hidden border-border/70 shadow-sm">
-      <CardHeader className="space-y-3 pb-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <CardHeader className={isExpanded ? 'space-y-3 pb-3' : 'pb-4'}>
+        <div className="flex items-center justify-between gap-3">
           <div>
             <CardDescription>GP calculation</CardDescription>
             <CardTitle className="text-xl sm:text-2xl">
@@ -253,6 +254,23 @@ export function GrossProfitSummaryCard({
               </span>
             </CardTitle>
           </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded((currentValue) => !currentValue)}
+          >
+            {isExpanded ? 'Hide details' : 'View details'}
+            <ChevronDown
+              className={`h-4 w-4 transition ${isExpanded ? 'rotate-180' : ''}`}
+            />
+          </Button>
+        </div>
+      </CardHeader>
+
+      {isExpanded ? (
+        <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
             {canOpenBaseEditForm ? (
               <Button
@@ -282,115 +300,114 @@ export function GrossProfitSummaryCard({
               </Button>
             ) : null}
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid gap-2 sm:grid-cols-5">
-          <GpMetric
-            label="Sale"
-            value={formatCurrency(totalSaleAmount, displayCurrency)}
-          />
-          <GpMetric
-            label="Part cost"
-            value={formatCurrency(purchaseAmount, displayCurrency)}
-          />
-          <GpMetric
-            label="Shipping cost"
-            value={formatCurrency(shippingAmount, displayCurrency)}
-          />
-          <GpMetric
-            label="Additional"
-            value={formatCurrency(additionalAmount, displayCurrency)}
-          />
-          <GpMetric
-            label="Total costs"
-            value={formatCurrency(totalCosts, displayCurrency)}
-          />
-        </div>
 
-        <p className="rounded-xl border border-dashed border-border/70 bg-secondary/15 px-3 py-2 text-xs text-muted-foreground">
-          Formula: sale - part cost - actual shipping cost - additional costs.
-        </p>
-
-        {additionalCosts.length > 0 ? (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Additional cost history
-            </p>
-            <div className="grid gap-2">
-              {additionalCosts.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="grid gap-2 rounded-xl border border-border/70 bg-secondary/20 px-3 py-2 text-sm sm:grid-cols-[8rem_1fr_auto_auto]"
-                >
-                  <span className="font-semibold text-foreground">
-                    {formatCurrency(entry.amount, displayCurrency)}
-                  </span>
-                  <span className="text-muted-foreground">{entry.reason}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {entry.createdBy.name} · {formatDateTime(entry.createdAt)}
-                  </span>
-                  {canEditAdditionalCosts ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => openAdditionalCostEditForm(entry)}
-                    >
-                      <Edit3 className="h-4 w-4" />
-                      Edit
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+          <div className="grid gap-2 sm:grid-cols-5">
+            <GpMetric
+              label="Sale"
+              value={formatCurrency(totalSaleAmount, displayCurrency)}
+            />
+            <GpMetric
+              label="Part cost"
+              value={formatCurrency(purchaseAmount, displayCurrency)}
+            />
+            <GpMetric
+              label="Shipping cost"
+              value={formatCurrency(shippingAmount, displayCurrency)}
+            />
+            <GpMetric
+              label="Additional"
+              value={formatCurrency(additionalAmount, displayCurrency)}
+            />
+            <GpMetric
+              label="Total costs"
+              value={formatCurrency(totalCosts, displayCurrency)}
+            />
           </div>
-        ) : null}
 
-        <details className="group rounded-xl border border-border/70 bg-secondary/10">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 marker:hidden">
-            <div>
+          <p className="rounded-xl border border-dashed border-border/70 bg-secondary/15 px-3 py-2 text-xs text-muted-foreground">
+            Formula: sale - part cost - actual shipping cost - additional costs.
+          </p>
+
+          {additionalCosts.length > 0 ? (
+            <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                GP Edit History
+                Additional cost history
               </p>
-              <p className="text-xs text-muted-foreground">
-                {costHistories.length} recorded change
-                {costHistories.length === 1 ? '' : 's'}
-              </p>
-            </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
-          </summary>
-          <div className="border-t border-border/70 px-3 py-2">
-            {costHistories.length > 0 ? (
-              <div className="space-y-2">
-                {costHistories.map((entry) => (
+              <div className="grid gap-2">
+                {additionalCosts.map((entry) => (
                   <div
                     key={entry.id}
-                    className="rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm"
+                    className="grid gap-2 rounded-xl border border-border/70 bg-secondary/20 px-3 py-2 text-sm sm:grid-cols-[8rem_1fr_auto_auto]"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-semibold text-foreground">
-                        {entry.summary}
-                      </p>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDateTime(entry.createdAt)}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      By {entry.createdBy.name}
-                    </p>
-                    <HistoryChangeList changes={entry.changes} />
+                    <span className="font-semibold text-foreground">
+                      {formatCurrency(entry.amount, displayCurrency)}
+                    </span>
+                    <span className="text-muted-foreground">{entry.reason}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {entry.createdBy.name} · {formatDateTime(entry.createdAt)}
+                    </span>
+                    {canEditAdditionalCosts ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => openAdditionalCostEditForm(entry)}
+                      >
+                        <Edit3 className="h-4 w-4" />
+                        Edit
+                      </Button>
+                    ) : null}
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="rounded-lg border border-dashed border-border/70 bg-background/50 px-3 py-2 text-sm text-muted-foreground">
-                No GP cost changes have been recorded yet.
-              </p>
-            )}
-          </div>
-        </details>
-      </CardContent>
+            </div>
+          ) : null}
+
+          <details className="group rounded-xl border border-border/70 bg-secondary/10">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 marker:hidden">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  GP Edit History
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {costHistories.length} recorded change
+                  {costHistories.length === 1 ? '' : 's'}
+                </p>
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
+            </summary>
+            <div className="border-t border-border/70 px-3 py-2">
+              {costHistories.length > 0 ? (
+                <div className="space-y-2">
+                  {costHistories.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-semibold text-foreground">
+                          {entry.summary}
+                        </p>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDateTime(entry.createdAt)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        By {entry.createdBy.name}
+                      </p>
+                      <HistoryChangeList changes={entry.changes} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-lg border border-dashed border-border/70 bg-background/50 px-3 py-2 text-sm text-muted-foreground">
+                  No GP cost changes have been recorded yet.
+                </p>
+              )}
+            </div>
+          </details>
+        </CardContent>
+      ) : null}
 
       {isEditingBaseCost ? (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 py-6 backdrop-blur-sm sm:py-10">
