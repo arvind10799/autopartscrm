@@ -7,11 +7,14 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/role.enum';
+import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/role.guard';
 import { CostsService } from './costs.service';
+import { CreateAdditionalCostDto } from './dto/create-additional-cost.dto';
 import { CreateCostDto } from './dto/create-cost.dto';
 import { ShipmentIdParamDto } from './dto/shipment-id-param.dto';
 import { UpdateCostDto } from './dto/update-cost.dto';
@@ -31,6 +34,20 @@ export class CostsController {
   @Get('shipment/:shipmentId')
   findByShipmentId(@Param() params: ShipmentIdParamDto) {
     return this.costsService.findByShipmentId(params.shipmentId);
+  }
+
+  @Roles(Role.ADMIN, Role.SHIPPING)
+  @Post('shipment/:shipmentId/additional')
+  createAdditionalCost(
+    @Param() params: ShipmentIdParamDto,
+    @Body() createAdditionalCostDto: CreateAdditionalCostDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.costsService.createAdditionalCost(
+      params.shipmentId,
+      createAdditionalCostDto,
+      user,
+    );
   }
 
   @Roles(Role.ADMIN, Role.SHIPPING)

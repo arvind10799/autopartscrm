@@ -278,6 +278,15 @@ const orderShipmentCostSchema = z.object({
   updatedAt: z.string(),
 });
 
+const orderShipmentAdditionalCostSchema = z.object({
+  id: z.string(),
+  shipmentId: z.string(),
+  amount: numericAmountSchema,
+  reason: z.string(),
+  createdAt: z.string(),
+  createdBy: orderUserSchema,
+});
+
 const orderShipmentSchema = z.object({
   id: z.string(),
   bolNumber: z.string().nullable(),
@@ -289,6 +298,7 @@ const orderShipmentSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   costs: z.array(orderShipmentCostSchema).optional().default([]),
+  additionalCosts: z.array(orderShipmentAdditionalCostSchema).optional().default([]),
 });
 
 const orderIntakeDetailsSchema = z.object({
@@ -350,6 +360,10 @@ const orderBackendSummarySchema = z.object({
         createdAt: z.string(),
         updatedAt: z.string(),
         costs: z.array(orderShipmentCostSchema).optional().default([]),
+        additionalCosts: z
+          .array(orderShipmentAdditionalCostSchema)
+          .optional()
+          .default([]),
       }),
     )
     .max(1)

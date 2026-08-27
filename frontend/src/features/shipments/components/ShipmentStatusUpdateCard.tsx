@@ -21,14 +21,9 @@ export function ShipmentStatusUpdateCard({
   isUpdatingStatus,
   statusError,
   proNumber,
-  additionalAmount,
-  additionalCostReason,
   requiresProNumber,
-  showAdditionalCostFields,
   onStatusChange,
   onProNumberChange,
-  onAdditionalAmountChange,
-  onAdditionalCostReasonChange,
   onSubmit,
 }: {
   nextStatuses: ShipmentStatus[];
@@ -36,19 +31,11 @@ export function ShipmentStatusUpdateCard({
   isUpdatingStatus: boolean;
   statusError: string | null;
   proNumber: string;
-  additionalAmount: string;
-  additionalCostReason: string;
   requiresProNumber: boolean;
-  showAdditionalCostFields: boolean;
   onStatusChange: (status: ShipmentStatus) => void;
   onProNumberChange: (proNumber: string) => void;
-  onAdditionalAmountChange: (amount: string) => void;
-  onAdditionalCostReasonChange: (reason: string) => void;
   onSubmit: () => Promise<void>;
 }) {
-  const requiresAdditionalCostReason =
-    showAdditionalCostFields && Number(additionalAmount || 0) > 0;
-
   return (
     <Card>
       <CardHeader>
@@ -94,52 +81,12 @@ export function ShipmentStatusUpdateCard({
               </div>
             ) : null}
 
-            {showAdditionalCostFields ? (
-              <>
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    Additional cost
-                  </p>
-                  <Input
-                    value={additionalAmount}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    onChange={(event) =>
-                      onAdditionalAmountChange(event.target.value)
-                    }
-                    disabled={isUpdatingStatus}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    Additional cost reason
-                  </p>
-                  <Input
-                    value={additionalCostReason}
-                    onChange={(event) =>
-                      onAdditionalCostReasonChange(event.target.value)
-                    }
-                    disabled={isUpdatingStatus}
-                    placeholder="Liftgate, storage, re-delivery, or other reason"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Required only when additional cost is greater than zero.
-                  </p>
-                </div>
-              </>
-            ) : null}
-
             <Button
               className="w-full"
               disabled={
                 !selectedStatus ||
                 isUpdatingStatus ||
-                (requiresProNumber && proNumber.trim().length === 0) ||
-                (requiresAdditionalCostReason &&
-                  additionalCostReason.trim().length === 0)
+                (requiresProNumber && proNumber.trim().length === 0)
               }
               onClick={() => void onSubmit()}
             >

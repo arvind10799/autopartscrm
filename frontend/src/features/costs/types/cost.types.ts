@@ -1,4 +1,5 @@
 import type { ShipmentStatus } from '@/features/shipments/types/shipment.types';
+import type { UserRole } from '@/features/auth/types/auth.types';
 
 export interface ShipmentCostContext {
   id: string;
@@ -24,6 +25,25 @@ export interface ShipmentCostRecord {
   createdAt: string;
   updatedAt: string;
   shipment: ShipmentCostContext;
+}
+
+export interface ShipmentAdditionalCostRecord {
+  id: string;
+  shipmentId: string;
+  amount: number;
+  reason: string;
+  createdAt: string;
+  createdBy: {
+    id: string;
+    name: string;
+    email: string;
+    role: UserRole;
+  };
+}
+
+export interface CreateShipmentAdditionalCostInput {
+  amount: number;
+  reason: string;
 }
 
 export interface CreateShipmentCostInput {

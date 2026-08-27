@@ -50,6 +50,26 @@ const shipmentSummarySelect = {
       updatedAt: true,
     },
   },
+  additionalCosts: {
+    orderBy: {
+      createdAt: 'desc',
+    },
+    select: {
+      id: true,
+      shipmentId: true,
+      amount: true,
+      reason: true,
+      createdAt: true,
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      },
+    },
+  },
   _count: {
     select: {
       costs: true,

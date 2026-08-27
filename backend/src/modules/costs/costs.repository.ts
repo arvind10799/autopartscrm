@@ -136,4 +136,47 @@ export class CostsRepository {
       handlePrismaError(error, 'Shipment cost');
     }
   }
+
+  async createAdditionalCost(
+    shipmentId: string,
+    payload: {
+      amount: number;
+      reason: string;
+      createdById: string;
+    },
+  ) {
+    try {
+      return await this.prismaService.shipmentAdditionalCost.create({
+        data: {
+          shipmentId,
+          amount: payload.amount,
+          reason: payload.reason.trim(),
+          createdById: payload.createdById,
+        },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      handlePrismaError(error, 'Shipment additional cost');
+    }
+  }
+
+  async sumAdditionalCostsByShipmentId(shipmentId: string) {
+    const result = await this.prismaService.shipmentAdditionalCost.aggregate({
+      where: { shipmentId },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    return result._sum.amount ?? new Prisma.Decimal(0);
+  }
 }

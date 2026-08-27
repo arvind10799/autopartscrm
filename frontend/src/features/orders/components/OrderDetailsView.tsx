@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { notesApi } from '@/features/notes/api/notes-api';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { GrossProfitSummaryCard } from '@/features/shipments/components/GrossProfitSummaryCard';
 import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
@@ -57,6 +58,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   const [noteMessage, setNoteMessage] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const authUser = useAuthStore((state) => state.user);
   const { order, isLoading, error } = useOrderDetailWithRefresh(orderId, refreshKey);
 
   const handleAddNoteSubmit = async () => {
@@ -133,7 +135,10 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   const editHistoryTimeline = buildEditHistoryTimeline(order.notes);
   const statusTimeline = buildStatusTimeline(order);
   const shipmentTimeline = buildShipmentTimeline(order.shipments);
+  const latestShipment = order.shipments[0] ?? null;
   const latestShipmentCost = order.shipments[0]?.costs?.[0] ?? null;
+  const canAddAdditionalCost =
+    authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
 
   return (
     <section className="space-y-6">
@@ -143,9 +148,15 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
       />
 
       <GrossProfitSummaryCard
+        shipmentId={latestShipment?.id}
         totalSaleAmount={order.totalSaleAmount}
         currency={order.currency}
         cost={latestShipmentCost}
+        additionalCosts={latestShipment?.additionalCosts ?? []}
+        canAddAdditionalCost={canAddAdditionalCost}
+        onAdditionalCostAdded={() =>
+          setRefreshKey((currentValue) => currentValue + 1)
+        }
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)] xl:grid-cols-[minmax(0,7fr)_minmax(340px,3fr)]">

@@ -49,6 +49,20 @@ const shipmentCostSummarySchema = z.object({
   updatedAt: isoDateTimeSchema,
 });
 
+const shipmentAdditionalCostSummarySchema = z.object({
+  id: entityIdSchema,
+  shipmentId: entityIdSchema,
+  amount: z.coerce.number(),
+  reason: z.string(),
+  createdAt: isoDateTimeSchema,
+  createdBy: z.object({
+    id: entityIdSchema,
+    name: z.string(),
+    email: z.string(),
+    role: z.string(),
+  }),
+});
+
 const shipmentCountsSchema = z.object({
   costs: z.number().int().min(0),
   events: z.number().int().min(0),
@@ -77,6 +91,10 @@ const shipmentBackendSummarySchema = z.object({
   updatedAt: isoDateTimeSchema,
   order: shipmentOrderSummarySchema,
   costs: z.array(shipmentCostSummarySchema).optional().default([]),
+  additionalCosts: z
+    .array(shipmentAdditionalCostSummarySchema)
+    .optional()
+    .default([]),
   _count: shipmentCountsSchema,
 });
 
@@ -96,6 +114,7 @@ function normalizeShipmentSummary(
     updatedAt: shipment.updatedAt,
     order: shipment.order,
     costs: shipment.costs,
+    additionalCosts: shipment.additionalCosts,
     counts: shipment._count,
   };
 }

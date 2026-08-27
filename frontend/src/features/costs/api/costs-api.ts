@@ -6,10 +6,14 @@ import { parseApiData } from '@/lib/api/parse-api-data';
 import { HttpError } from '@/lib/api/http-error';
 import { isValidShipmentId } from '@/features/shipments/lib/shipments.helpers';
 import {
+  createShipmentAdditionalCostSchema,
   shipmentCostSchema,
+  shipmentAdditionalCostSchema,
 } from '../schemas/cost.schema';
 import type {
+  CreateShipmentAdditionalCostInput,
   CreateShipmentCostInput,
+  ShipmentAdditionalCostRecord,
   ShipmentCostRecord,
   UpdateShipmentCostInput,
 } from '../types/cost.types';
@@ -58,6 +62,26 @@ export const costsApi = {
     return parseApiData(response, shipmentCostSchema, {
       emptyMessage: response.data.message || 'Update cost response was empty.',
       invalidMessage: 'Update cost response payload was invalid.',
+    });
+  },
+
+  async createAdditionalCost(
+    shipmentId: string,
+    payload: CreateShipmentAdditionalCostInput,
+  ): Promise<ShipmentAdditionalCostRecord> {
+    if (!isValidShipmentId(shipmentId)) {
+      throw new HttpError('Shipment identifier is invalid.', 400);
+    }
+
+    const requestPayload = createShipmentAdditionalCostSchema.parse(payload);
+    const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
+      `/api/costs/shipment/${shipmentId}/additional`,
+      requestPayload,
+    );
+
+    return parseApiData(response, shipmentAdditionalCostSchema, {
+      emptyMessage: response.data.message || 'Additional cost response was empty.',
+      invalidMessage: 'Additional cost response payload was invalid.',
     });
   },
 };

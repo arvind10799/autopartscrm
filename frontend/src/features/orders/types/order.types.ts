@@ -117,6 +117,7 @@ export interface OrderShipment {
   createdAt: string;
   updatedAt: string;
   costs: OrderShipmentCost[];
+  additionalCosts: OrderShipmentAdditionalCost[];
 }
 
 export interface OrderShipmentCost {
@@ -130,6 +131,15 @@ export interface OrderShipmentCost {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OrderShipmentAdditionalCost {
+  id: string;
+  shipmentId: string;
+  amount: number;
+  reason: string;
+  createdAt: string;
+  createdBy: OrderUser;
 }
 
 export interface OrderNote {

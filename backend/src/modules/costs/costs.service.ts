@@ -6,6 +6,8 @@ import {
 import { Prisma, ShipmentStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { CreateAdditionalCostDto } from './dto/create-additional-cost.dto';
 import { CreateCostDto } from './dto/create-cost.dto';
 import { UpdateCostDto } from './dto/update-cost.dto';
 import { CostsRepository } from './costs.repository';
@@ -68,6 +70,47 @@ export class CostsService {
     );
 
     return cost;
+  }
+
+  async createAdditionalCost(
+    shipmentId: string,
+    createAdditionalCostDto: CreateAdditionalCostDto,
+    user: AuthenticatedUser,
+  ) {
+    const shipment = await this.getShipmentWithOrder(shipmentId);
+    this.ensureShipmentCostEditable(shipment.status);
+
+    const additionalCost = await this.costsRepository.createAdditionalCost(
+      shipmentId,
+      {
+        amount: createAdditionalCostDto.amount,
+        reason: createAdditionalCostDto.reason,
+        createdById: user.userId,
+      },
+    );
+    const additionalAmount =
+      await this.costsRepository.sumAdditionalCostsByShipmentId(shipmentId);
+    const existingAmounts =
+      await this.costsRepository.findAmountsByShipmentId(shipmentId);
+    const grossProfit = this.calculateGrossProfit(
+      shipment.order.totalSaleAmount,
+      {
+        purchaseAmount: Number(existingAmounts.purchaseAmount),
+        shippingAmount: Number(existingAmounts.shippingAmount),
+        additionalAmount: Number(additionalAmount),
+      },
+    );
+
+    await this.costsRepository.updateByShipmentId(shipmentId, {
+      additionalAmount: Number(additionalAmount),
+      grossProfit,
+    });
+    await this.notificationsService.notifyShipmentActivity(
+      shipmentId,
+      'Additional shipment cost was added.',
+    );
+
+    return additionalCost;
   }
 
   private async getShipmentWithOrder(shipmentId: string) {

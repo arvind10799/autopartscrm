@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
 import { formatDateTime } from '@/features/orders/lib/order-formatters';
 import type { OrderNote } from '@/features/orders/types/order.types';
@@ -39,6 +40,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     isUpdatingStatus,
     statusError,
     clearStatusError,
+    refreshShipment,
     updateStatus,
   } = useShipmentDetail(shipmentId);
   const {
@@ -46,6 +48,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     isLoading: isTimelineLoading,
     error: timelineError,
   } = useShipmentTimeline(shipmentId);
+  const authUser = useAuthStore((state) => state.user);
   const [orderRefreshKey, setOrderRefreshKey] = useState(0);
   const {
     order: invoiceOrder,
@@ -54,8 +57,6 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   } = useOrderDetailWithRefresh(shipment?.orderId ?? '', orderRefreshKey);
   const [selectedStatus, setSelectedStatus] = useState<ShipmentStatus | ''>('');
   const [proNumber, setProNumber] = useState('');
-  const [additionalAmount, setAdditionalAmount] = useState('');
-  const [additionalCostReason, setAdditionalCostReason] = useState('');
 
   useEffect(() => {
     if (!shipment) {
@@ -66,8 +67,6 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
 
     setSelectedStatus(getDefaultNextShipmentStatus(shipment.currentStatus) ?? '');
     setProNumber('');
-    setAdditionalAmount('');
-    setAdditionalCostReason('');
   }, [shipment]);
 
   if (isLoading) {
@@ -101,20 +100,15 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
 
   const nextStatuses = getAllowedNextShipmentStatuses(shipment.currentStatus);
   const shipmentCost = shipment.costs[0] ?? null;
+  const canAddAdditionalCost =
+    authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
 
   const handleStatusSubmit = async () => {
     if (!selectedStatus) {
       return;
     }
 
-    await updateStatus(selectedStatus, {
-      proNumber,
-      additionalAmount:
-        additionalAmount.trim().length > 0
-          ? Number(additionalAmount)
-          : undefined,
-      costNotes: additionalCostReason,
-    });
+    await updateStatus(selectedStatus, proNumber);
     setOrderRefreshKey((currentValue) => currentValue + 1);
   };
 
@@ -122,8 +116,6 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     clearStatusError();
     setSelectedStatus(status);
     setProNumber('');
-    setAdditionalAmount('');
-    setAdditionalCostReason('');
   };
 
   return (
@@ -162,9 +154,16 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="grid gap-6">
           <GrossProfitSummaryCard
+            shipmentId={shipment.id}
             totalSaleAmount={shipment.order.totalSaleAmount ?? 0}
             currency={shipment.order.currency}
             cost={shipmentCost}
+            additionalCosts={shipment.additionalCosts}
+            canAddAdditionalCost={canAddAdditionalCost}
+            onAdditionalCostAdded={async () => {
+              await refreshShipment();
+              setOrderRefreshKey((currentValue) => currentValue + 1);
+            }}
           />
 
           <ShipmentDetailGrid shipment={shipment} />
@@ -184,24 +183,13 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             isUpdatingStatus={isUpdatingStatus}
             statusError={statusError}
             proNumber={proNumber}
-            additionalAmount={additionalAmount}
-            additionalCostReason={additionalCostReason}
             requiresProNumber={
               selectedStatus === 'IN_TRANSIT' && !shipment.proNumber
             }
-            showAdditionalCostFields={selectedStatus === 'DELIVERED'}
             onStatusChange={handleStatusChange}
             onProNumberChange={(value) => {
               clearStatusError();
               setProNumber(value);
-            }}
-            onAdditionalAmountChange={(value) => {
-              clearStatusError();
-              setAdditionalAmount(value);
-            }}
-            onAdditionalCostReasonChange={(value) => {
-              clearStatusError();
-              setAdditionalCostReason(value);
             }}
             onSubmit={handleStatusSubmit}
           />

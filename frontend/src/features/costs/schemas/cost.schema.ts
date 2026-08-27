@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { SHIPMENT_STATUSES } from '@/features/shipments/types/shipment.types';
+import { USER_ROLES } from '@/features/auth/types/auth.types';
 
 const shipmentStatusSchema = z.enum(SHIPMENT_STATUSES);
 const entityIdSchema = z.string().uuid();
@@ -26,6 +27,15 @@ const amountInputSchema = z
   .min(1, 'Amount is required.')
   .regex(/^\d+(\.\d{1,2})?$/, 'Enter a valid amount with up to 2 decimals.')
   .transform((value) => Number(value));
+const positiveAmountSchema = z
+  .coerce
+  .number()
+  .finite('Enter a valid amount.')
+  .min(0.01, 'Amount must be greater than 0.')
+  .refine(
+    (value) => Number.isInteger(value * 100),
+    'Amount can include at most 2 decimal places.',
+  );
 
 const shipmentCostBackendSchema = z.object({
   id: entityIdSchema,
@@ -71,6 +81,29 @@ export const shipmentCostSchema = shipmentCostBackendSchema.transform((cost) => 
   },
 }));
 
+export const shipmentAdditionalCostSchema = z.object({
+  id: entityIdSchema,
+  shipmentId: entityIdSchema,
+  amount: z.coerce.number(),
+  reason: z.string(),
+  createdAt: isoDateTimeSchema,
+  createdBy: z.object({
+    id: entityIdSchema,
+    name: z.string(),
+    email: z.string(),
+    role: z.enum(USER_ROLES),
+  }),
+});
+
+export const createShipmentAdditionalCostSchema = z.object({
+  amount: positiveAmountSchema,
+  reason: z
+    .string()
+    .trim()
+    .min(1, 'Reason is required.')
+    .max(1000, 'Reason must be 1,000 characters or fewer.'),
+});
+
 export const createShipmentCostSchema = z.object({
   shipmentId: entityIdSchema,
   purchaseAmount: amountSchema,
@@ -96,3 +129,6 @@ export const shipmentCostFormSchema = z
 export type ShipmentCostFormValues = z.input<typeof shipmentCostFormSchema>;
 export type CreateShipmentCostData = z.output<typeof createShipmentCostSchema>;
 export type UpdateShipmentCostData = z.output<typeof updateShipmentCostSchema>;
+export type CreateShipmentAdditionalCostData = z.output<
+  typeof createShipmentAdditionalCostSchema
+>;

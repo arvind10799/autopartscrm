@@ -24,14 +24,8 @@ type UseShipmentDetailResult = {
   isUpdatingStatus: boolean;
   statusError: string | null;
   clearStatusError: () => void;
-  updateStatus: (
-    status: ShipmentStatus,
-    options?: {
-      proNumber?: string;
-      additionalAmount?: number;
-      costNotes?: string;
-    },
-  ) => Promise<void>;
+  refreshShipment: () => Promise<void>;
+  updateStatus: (status: ShipmentStatus, proNumber?: string) => Promise<void>;
 };
 
 export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
@@ -43,62 +37,58 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
   const detailRequestTracker = useRequestTracker();
   const statusRequestTracker = useRequestTracker();
 
-  useEffect(() => {
+  const loadShipment = async (showLoading = true) => {
     const requestId = detailRequestTracker.beginRequest();
     const normalizedShipmentId = shipmentId.trim();
 
-    const loadShipment = async () => {
-      if (!normalizedShipmentId || !isValidShipmentId(normalizedShipmentId)) {
-        setShipment(null);
-        setError('Shipment identifier is invalid.');
-        setStatusError(null);
-        setIsUpdatingStatus(false);
-        setIsLoading(false);
+    if (!normalizedShipmentId || !isValidShipmentId(normalizedShipmentId)) {
+      setShipment(null);
+      setError('Shipment identifier is invalid.');
+      setStatusError(null);
+      setIsUpdatingStatus(false);
+      setIsLoading(false);
+      return;
+    }
+
+    if (showLoading) {
+      setIsLoading(true);
+    }
+    setError(null);
+    setStatusError(null);
+
+    try {
+      const response = await shipmentsApi.getById(normalizedShipmentId);
+
+      if (!detailRequestTracker.isCurrentRequest(requestId)) {
         return;
       }
 
-      setIsLoading(true);
-      setError(null);
-      setStatusError(null);
-
-      try {
-        const response = await shipmentsApi.getById(normalizedShipmentId);
-
-        if (!detailRequestTracker.isCurrentRequest(requestId)) {
-          return;
-        }
-
-        setShipment(response);
-      } catch (error) {
-        if (!detailRequestTracker.isCurrentRequest(requestId)) {
-          return;
-        }
-
-        setShipment(null);
-
-        setError(getErrorMessage(error, 'Unable to load this shipment right now.'));
-      } finally {
-        if (detailRequestTracker.isCurrentRequest(requestId)) {
-          setIsLoading(false);
-        }
+      setShipment(response);
+    } catch (error) {
+      if (!detailRequestTracker.isCurrentRequest(requestId)) {
+        return;
       }
-    };
 
+      setShipment(null);
+
+      setError(getErrorMessage(error, 'Unable to load this shipment right now.'));
+    } finally {
+      if (detailRequestTracker.isCurrentRequest(requestId)) {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
     void loadShipment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailRequestTracker, shipmentId]);
 
   const clearStatusError = () => {
     setStatusError(null);
   };
 
-  const updateStatus = async (
-    nextStatus: ShipmentStatus,
-    options: {
-      proNumber?: string;
-      additionalAmount?: number;
-      costNotes?: string;
-    } = {},
-  ) => {
+  const updateStatus = async (nextStatus: ShipmentStatus, proNumber?: string) => {
     if (!shipment || isUpdatingStatus) {
       return;
     }
@@ -120,8 +110,7 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
       return;
     }
 
-    const normalizedProNumber = options.proNumber?.trim();
-    const normalizedCostNotes = options.costNotes?.trim();
+    const normalizedProNumber = proNumber?.trim();
 
     if (
       nextStatus === 'IN_TRANSIT' &&
@@ -147,8 +136,6 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
       const updatedShipment = await shipmentsApi.updateStatus(previousShipment.id, {
         status: nextStatus,
         proNumber: normalizedProNumber,
-        additionalAmount: options.additionalAmount,
-        costNotes: normalizedCostNotes || undefined,
       });
 
       if (!statusRequestTracker.isCurrentRequest(requestId)) {
@@ -190,6 +177,7 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
     isUpdatingStatus,
     statusError,
     clearStatusError,
+    refreshShipment: () => loadShipment(false),
     updateStatus,
   };
 }
