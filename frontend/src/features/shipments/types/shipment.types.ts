@@ -52,6 +52,21 @@ export interface ShipmentAdditionalCostSummary {
   };
 }
 
+export interface ShipmentCostHistorySummary {
+  id: string;
+  shipmentId: string;
+  action: string;
+  summary: string;
+  changes?: unknown;
+  createdAt: string;
+  createdBy: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
 export interface ShipmentCounts {
   costs: number;
   events: number;
@@ -72,6 +87,7 @@ export interface ShipmentSummary {
   order: ShipmentOrderSummary;
   costs: ShipmentCostSummary[];
   additionalCosts: ShipmentAdditionalCostSummary[];
+  costHistories: ShipmentCostHistorySummary[];
   counts: ShipmentCounts;
 }
 

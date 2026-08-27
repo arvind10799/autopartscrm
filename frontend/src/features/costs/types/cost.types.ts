@@ -46,6 +46,11 @@ export interface CreateShipmentAdditionalCostInput {
   reason: string;
 }
 
+export interface UpdateShipmentAdditionalCostInput {
+  amount: number;
+  reason: string;
+}
+
 export interface CreateShipmentCostInput {
   shipmentId: string;
   purchaseAmount: number;

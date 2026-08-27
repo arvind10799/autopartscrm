@@ -104,6 +104,9 @@ export const createShipmentAdditionalCostSchema = z.object({
     .max(1000, 'Reason must be 1,000 characters or fewer.'),
 });
 
+export const updateShipmentAdditionalCostSchema =
+  createShipmentAdditionalCostSchema;
+
 export const createShipmentCostSchema = z.object({
   shipmentId: entityIdSchema,
   purchaseAmount: amountSchema,
@@ -131,4 +134,7 @@ export type CreateShipmentCostData = z.output<typeof createShipmentCostSchema>;
 export type UpdateShipmentCostData = z.output<typeof updateShipmentCostSchema>;
 export type CreateShipmentAdditionalCostData = z.output<
   typeof createShipmentAdditionalCostSchema
+>;
+export type UpdateShipmentAdditionalCostData = z.output<
+  typeof updateShipmentAdditionalCostSchema
 >;

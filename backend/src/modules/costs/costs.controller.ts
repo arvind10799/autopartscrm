@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
@@ -26,8 +27,11 @@ export class CostsController {
 
   @Roles(Role.ADMIN, Role.SHIPPING)
   @Post()
-  create(@Body() createCostDto: CreateCostDto) {
-    return this.costsService.create(createCostDto);
+  create(
+    @Body() createCostDto: CreateCostDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.costsService.create(createCostDto, user);
   }
 
   @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
@@ -55,10 +59,29 @@ export class CostsController {
   updateByShipmentId(
     @Param() params: ShipmentIdParamDto,
     @Body() updateCostDto: UpdateCostDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.costsService.updateByShipmentId(
       params.shipmentId,
       updateCostDto,
+      user,
+    );
+  }
+
+  @Roles(Role.ADMIN, Role.SHIPPING)
+  @Patch('shipment/:shipmentId/additional/:additionalCostId')
+  updateAdditionalCost(
+    @Param() params: ShipmentIdParamDto,
+    @Param('additionalCostId', new ParseUUIDPipe())
+    additionalCostId: string,
+    @Body() updateAdditionalCostDto: CreateAdditionalCostDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.costsService.updateAdditionalCost(
+      params.shipmentId,
+      additionalCostId,
+      updateAdditionalCostDto,
+      user,
     );
   }
 }

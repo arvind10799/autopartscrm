@@ -54,7 +54,7 @@ export function ShipmentCostForm({
   onShipmentChange: (shipmentId: string) => void;
   onSubmit: ReturnType<UseFormReturn<ShipmentCostFormValues>['handleSubmit']>;
 }) {
-  const isReadOnly = !canEdit || isDelivered;
+  const isReadOnly = !canEdit;
 
   return (
     <Card>
@@ -193,7 +193,9 @@ export function ShipmentCostForm({
 
           {isDelivered ? (
             <div className="rounded-2xl border border-amber-200/80 bg-amber-50/70 px-4 py-3 text-sm text-amber-900">
-              Delivered shipments are locked from further cost edits by the backend.
+              {canEdit
+                ? 'Delivered shipment cost edits are available to Admin and Shipping users.'
+                : 'Delivered shipments are locked from purchase and shipping cost edits.'}
             </div>
           ) : null}
 

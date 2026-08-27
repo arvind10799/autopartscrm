@@ -139,6 +139,8 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   const latestShipmentCost = order.shipments[0]?.costs?.[0] ?? null;
   const canAddAdditionalCost =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
+  const canEditGpCosts =
+    authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
 
   return (
     <section className="space-y-6">
@@ -153,10 +155,14 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
         currency={order.currency}
         cost={latestShipmentCost}
         additionalCosts={latestShipment?.additionalCosts ?? []}
+        costHistories={latestShipment?.costHistories ?? []}
         canAddAdditionalCost={canAddAdditionalCost}
+        canEditBaseCost={canEditGpCosts}
+        canEditAdditionalCosts={canEditGpCosts}
         onAdditionalCostAdded={() =>
           setRefreshKey((currentValue) => currentValue + 1)
         }
+        onCostUpdated={() => setRefreshKey((currentValue) => currentValue + 1)}
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)] xl:grid-cols-[minmax(0,7fr)_minmax(340px,3fr)]">

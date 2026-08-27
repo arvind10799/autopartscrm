@@ -287,6 +287,16 @@ const orderShipmentAdditionalCostSchema = z.object({
   createdBy: orderUserSchema,
 });
 
+const orderShipmentCostHistorySchema = z.object({
+  id: z.string(),
+  shipmentId: z.string(),
+  action: z.string(),
+  summary: z.string(),
+  changes: z.unknown().nullable(),
+  createdAt: z.string(),
+  createdBy: orderUserSchema,
+});
+
 const orderShipmentSchema = z.object({
   id: z.string(),
   bolNumber: z.string().nullable(),
@@ -299,6 +309,7 @@ const orderShipmentSchema = z.object({
   updatedAt: z.string(),
   costs: z.array(orderShipmentCostSchema).optional().default([]),
   additionalCosts: z.array(orderShipmentAdditionalCostSchema).optional().default([]),
+  costHistories: z.array(orderShipmentCostHistorySchema).optional().default([]),
 });
 
 const orderIntakeDetailsSchema = z.object({
@@ -362,6 +373,10 @@ const orderBackendSummarySchema = z.object({
         costs: z.array(orderShipmentCostSchema).optional().default([]),
         additionalCosts: z
           .array(orderShipmentAdditionalCostSchema)
+          .optional()
+          .default([]),
+        costHistories: z
+          .array(orderShipmentCostHistorySchema)
           .optional()
           .default([]),
       }),

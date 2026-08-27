@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, ShipmentStatus } from '@prisma/client';
+import { Role } from '../../common/enums/role.enum';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
@@ -20,8 +21,9 @@ export class CostsService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async create(createCostDto: CreateCostDto) {
+  async create(createCostDto: CreateCostDto, user: AuthenticatedUser) {
     const shipment = await this.getShipmentWithOrder(createCostDto.shipmentId);
+    this.ensureBaseShipmentCostEditable(shipment.status, user);
     await this.ensureShipmentCostDoesNotExist(createCostDto.shipmentId);
 
     const cost = await this.costsRepository.create({
@@ -30,6 +32,17 @@ export class CostsService {
         shipment.order.totalSaleAmount,
         this.resolveCostAmounts(createCostDto),
       ),
+    });
+    await this.recordCostHistory(createCostDto.shipmentId, {
+      action: 'GP_COST_CREATED',
+      summary: 'GP cost record was created.',
+      changes: [
+        this.buildChange('Part cost', null, createCostDto.purchaseAmount),
+        this.buildChange('Actual shipping cost', null, createCostDto.shippingAmount ?? 0),
+        this.buildChange('Additional costs', null, createCostDto.additionalAmount ?? 0),
+        this.buildChange('Currency', null, createCostDto.currency?.trim().toUpperCase() ?? 'USD'),
+      ],
+      user,
     });
     await this.notificationsService.notifyShipmentActivity(
       createCostDto.shipmentId,
@@ -43,7 +56,11 @@ export class CostsService {
     return this.costsRepository.findByShipmentId(shipmentId);
   }
 
-  async updateByShipmentId(shipmentId: string, updateCostDto: UpdateCostDto) {
+  async updateByShipmentId(
+    shipmentId: string,
+    updateCostDto: UpdateCostDto,
+    user: AuthenticatedUser,
+  ) {
     if (Object.values(updateCostDto).every((value) => value === undefined)) {
       throw new BadRequestException(
         'At least one shipment cost field must be provided for update.',
@@ -51,11 +68,12 @@ export class CostsService {
     }
 
     const shipment = await this.getShipmentWithOrder(shipmentId);
-    this.ensureShipmentCostEditable(shipment.status);
+    this.ensureBaseShipmentCostEditable(shipment.status, user);
     const existingAmounts =
       await this.costsRepository.findAmountsByShipmentId(shipmentId);
 
     const nextAmounts = this.resolveCostAmounts(updateCostDto, existingAmounts);
+    const changes = this.buildBaseCostChanges(existingAmounts, updateCostDto);
 
     const cost = await this.costsRepository.updateByShipmentId(shipmentId, {
       ...updateCostDto,
@@ -64,6 +82,16 @@ export class CostsService {
         nextAmounts,
       ),
     });
+    if (changes.length > 0) {
+      await this.recordCostHistory(shipmentId, {
+        action: 'GP_COST_UPDATED',
+        summary: `GP costs updated: ${changes
+          .map((change) => change.label)
+          .join(', ')}.`,
+        changes,
+        user,
+      });
+    }
     await this.notificationsService.notifyShipmentActivity(
       shipmentId,
       'Shipment cost was updated.',
@@ -77,8 +105,7 @@ export class CostsService {
     createAdditionalCostDto: CreateAdditionalCostDto,
     user: AuthenticatedUser,
   ) {
-    const shipment = await this.getShipmentWithOrder(shipmentId);
-    this.ensureShipmentCostEditable(shipment.status);
+    await this.getShipmentWithOrder(shipmentId);
 
     const additionalCost = await this.costsRepository.createAdditionalCost(
       shipmentId,
@@ -88,26 +115,75 @@ export class CostsService {
         createdById: user.userId,
       },
     );
-    const additionalAmount =
-      await this.costsRepository.sumAdditionalCostsByShipmentId(shipmentId);
-    const existingAmounts =
-      await this.costsRepository.findAmountsByShipmentId(shipmentId);
-    const grossProfit = this.calculateGrossProfit(
-      shipment.order.totalSaleAmount,
-      {
-        purchaseAmount: Number(existingAmounts.purchaseAmount),
-        shippingAmount: Number(existingAmounts.shippingAmount),
-        additionalAmount: Number(additionalAmount),
-      },
-    );
-
-    await this.costsRepository.updateByShipmentId(shipmentId, {
-      additionalAmount: Number(additionalAmount),
-      grossProfit,
+    await this.recordCostHistory(shipmentId, {
+      action: 'ADDITIONAL_COST_ADDED',
+      summary: `Additional cost added: ${this.formatMoneyLike(
+        createAdditionalCostDto.amount,
+      )}.`,
+      changes: [
+        this.buildChange('Additional cost', null, createAdditionalCostDto.amount),
+        this.buildChange('Reason', null, createAdditionalCostDto.reason),
+      ],
+      user,
     });
+    await this.recalculateShipmentCostTotals(shipmentId);
     await this.notificationsService.notifyShipmentActivity(
       shipmentId,
       'Additional shipment cost was added.',
+    );
+
+    return additionalCost;
+  }
+
+  async updateAdditionalCost(
+    shipmentId: string,
+    additionalCostId: string,
+    updateAdditionalCostDto: CreateAdditionalCostDto,
+    user: AuthenticatedUser,
+  ) {
+    await this.getShipmentWithOrder(shipmentId);
+    const existingAdditionalCost =
+      await this.costsRepository.findAdditionalCostById(additionalCostId);
+
+    if (existingAdditionalCost.shipmentId !== shipmentId) {
+      throw new NotFoundException('Shipment additional cost was not found.');
+    }
+
+    const additionalCost = await this.costsRepository.updateAdditionalCost(
+      additionalCostId,
+      {
+        amount: updateAdditionalCostDto.amount,
+        reason: updateAdditionalCostDto.reason,
+      },
+    );
+    const changes = [
+      this.buildChange(
+        'Additional cost',
+        existingAdditionalCost.amount,
+        updateAdditionalCostDto.amount,
+      ),
+      this.buildChange(
+        'Reason',
+        existingAdditionalCost.reason,
+        updateAdditionalCostDto.reason,
+      ),
+    ].filter((change) => change.oldValue !== change.newValue);
+
+    if (changes.length > 0) {
+      await this.recordCostHistory(shipmentId, {
+        action: 'ADDITIONAL_COST_UPDATED',
+        summary: `Additional cost updated: ${changes
+          .map((change) => change.label)
+          .join(', ')}.`,
+        changes,
+        user,
+      });
+    }
+
+    await this.recalculateShipmentCostTotals(shipmentId);
+    await this.notificationsService.notifyShipmentActivity(
+      shipmentId,
+      'Additional shipment cost was updated.',
     );
 
     return additionalCost;
@@ -147,12 +223,40 @@ export class CostsService {
     }
   }
 
-  private ensureShipmentCostEditable(status: ShipmentStatus): void {
-    if (status === ShipmentStatus.DELIVERED) {
+  private ensureBaseShipmentCostEditable(
+    status: ShipmentStatus,
+    user: AuthenticatedUser,
+  ): void {
+    if (
+      status === ShipmentStatus.DELIVERED &&
+      user.role !== Role.ADMIN &&
+      user.role !== Role.SHIPPING
+    ) {
       throw new BadRequestException(
         'Shipment cost cannot be edited after the shipment is delivered.',
       );
     }
+  }
+
+  private async recalculateShipmentCostTotals(shipmentId: string) {
+    const shipment = await this.getShipmentWithOrder(shipmentId);
+    const additionalAmount =
+      await this.costsRepository.sumAdditionalCostsByShipmentId(shipmentId);
+    const existingAmounts =
+      await this.costsRepository.findAmountsByShipmentId(shipmentId);
+    const grossProfit = this.calculateGrossProfit(
+      shipment.order.totalSaleAmount,
+      {
+        purchaseAmount: Number(existingAmounts.purchaseAmount),
+        shippingAmount: Number(existingAmounts.shippingAmount),
+        additionalAmount: Number(additionalAmount),
+      },
+    );
+
+    await this.costsRepository.updateByShipmentId(shipmentId, {
+      additionalAmount: Number(additionalAmount),
+      grossProfit,
+    });
   }
 
   private resolveCostAmounts(
@@ -164,6 +268,7 @@ export class CostsService {
       purchaseAmount: Prisma.Decimal;
       shippingAmount: Prisma.Decimal;
       additionalAmount: Prisma.Decimal;
+      currency?: string;
     },
   ): {
     purchaseAmount: number;
@@ -192,5 +297,117 @@ export class CostsService {
       .sub(costs.purchaseAmount)
       .sub(costs.shippingAmount)
       .sub(costs.additionalAmount);
+  }
+
+  private buildBaseCostChanges(
+    existingAmounts: {
+      purchaseAmount: Prisma.Decimal;
+      shippingAmount: Prisma.Decimal;
+      additionalAmount: Prisma.Decimal;
+      currency: string;
+    },
+    updateCostDto: UpdateCostDto,
+  ) {
+    return [
+      updateCostDto.purchaseAmount === undefined
+        ? null
+        : this.buildChange(
+            'Part cost',
+            existingAmounts.purchaseAmount,
+            updateCostDto.purchaseAmount,
+          ),
+      updateCostDto.shippingAmount === undefined
+        ? null
+        : this.buildChange(
+            'Actual shipping cost',
+            existingAmounts.shippingAmount,
+            updateCostDto.shippingAmount,
+          ),
+      updateCostDto.additionalAmount === undefined
+        ? null
+        : this.buildChange(
+            'Additional costs',
+            existingAmounts.additionalAmount,
+            updateCostDto.additionalAmount,
+          ),
+      updateCostDto.currency === undefined
+        ? null
+        : this.buildChange(
+            'Currency',
+            existingAmounts.currency,
+            updateCostDto.currency.trim().toUpperCase(),
+          ),
+    ].filter(this.isMeaningfulHistoryChange);
+  }
+
+  private buildChange(
+    label: string,
+    oldValue: Prisma.Decimal | number | string | null | undefined,
+    newValue: Prisma.Decimal | number | string | null | undefined,
+  ) {
+    return {
+      label,
+      oldValue: this.formatHistoryValue(oldValue),
+      newValue: this.formatHistoryValue(newValue),
+    };
+  }
+
+  private isMeaningfulHistoryChange(
+    change: {
+      label: string;
+      oldValue: string | null;
+      newValue: string | null;
+    } | null,
+  ): change is {
+    label: string;
+    oldValue: string | null;
+    newValue: string | null;
+  } {
+    return change !== null && change.oldValue !== change.newValue;
+  }
+
+  private formatHistoryValue(
+    value: Prisma.Decimal | number | string | null | undefined,
+  ): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    if (value instanceof Prisma.Decimal) {
+      return this.formatMoneyLike(Number(value));
+    }
+
+    if (typeof value === 'number') {
+      return this.formatMoneyLike(value);
+    }
+
+    return value.trim();
+  }
+
+  private formatMoneyLike(value: number): string {
+    return Number(value).toFixed(2);
+  }
+
+  private recordCostHistory(
+    shipmentId: string,
+    payload: {
+      action: string;
+      summary: string;
+      changes: Array<{
+        label: string;
+        oldValue: string | null;
+        newValue: string | null;
+      }>;
+      user: AuthenticatedUser;
+    },
+  ) {
+    return this.costsRepository.createCostHistory(shipmentId, {
+      action: payload.action,
+      summary: payload.summary,
+      changes: {
+        fields: payload.changes,
+      },
+      createdById: payload.user.userId,
+    });
   }
 }

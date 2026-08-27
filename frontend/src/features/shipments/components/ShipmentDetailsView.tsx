@@ -102,6 +102,8 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   const shipmentCost = shipment.costs[0] ?? null;
   const canAddAdditionalCost =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
+  const canEditGpCosts =
+    authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
 
   const handleStatusSubmit = async () => {
     if (!selectedStatus) {
@@ -159,8 +161,15 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             currency={shipment.order.currency}
             cost={shipmentCost}
             additionalCosts={shipment.additionalCosts}
+            costHistories={shipment.costHistories}
             canAddAdditionalCost={canAddAdditionalCost}
+            canEditBaseCost={canEditGpCosts}
+            canEditAdditionalCosts={canEditGpCosts}
             onAdditionalCostAdded={async () => {
+              await refreshShipment();
+              setOrderRefreshKey((currentValue) => currentValue + 1);
+            }}
+            onCostUpdated={async () => {
               await refreshShipment();
               setOrderRefreshKey((currentValue) => currentValue + 1);
             }}

@@ -70,6 +70,28 @@ const shipmentSummarySelect = {
       },
     },
   },
+  costHistories: {
+    orderBy: {
+      createdAt: 'desc',
+    },
+    take: 25,
+    select: {
+      id: true,
+      shipmentId: true,
+      action: true,
+      summary: true,
+      changes: true,
+      createdAt: true,
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      },
+    },
+  },
   _count: {
     select: {
       costs: true,

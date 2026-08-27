@@ -14,6 +14,7 @@ const shipmentCostAmountSelect = {
   purchaseAmount: true,
   shippingAmount: true,
   additionalAmount: true,
+  currency: true,
 } satisfies Prisma.ShipmentCostSelect;
 
 const shipmentCostInclude = {
@@ -167,6 +168,85 @@ export class CostsRepository {
     } catch (error) {
       handlePrismaError(error, 'Shipment additional cost');
     }
+  }
+
+  async findAdditionalCostById(additionalCostId: string) {
+    const additionalCost =
+      await this.prismaService.shipmentAdditionalCost.findUnique({
+        where: { id: additionalCostId },
+        select: {
+          id: true,
+          shipmentId: true,
+          amount: true,
+          reason: true,
+        },
+      });
+
+    if (!additionalCost) {
+      throw new NotFoundException('Shipment additional cost was not found.');
+    }
+
+    return additionalCost;
+  }
+
+  async updateAdditionalCost(
+    additionalCostId: string,
+    payload: {
+      amount: number;
+      reason: string;
+    },
+  ) {
+    try {
+      return await this.prismaService.shipmentAdditionalCost.update({
+        where: { id: additionalCostId },
+        data: {
+          amount: payload.amount,
+          reason: payload.reason.trim(),
+        },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      handlePrismaError(error, 'Shipment additional cost');
+    }
+  }
+
+  async createCostHistory(
+    shipmentId: string,
+    payload: {
+      action: string;
+      summary: string;
+      changes?: Prisma.InputJsonValue;
+      createdById: string;
+    },
+  ) {
+    return this.prismaService.shipmentCostHistory.create({
+      data: {
+        shipmentId,
+        action: payload.action,
+        summary: payload.summary,
+        changes: payload.changes ?? Prisma.JsonNull,
+        createdById: payload.createdById,
+      },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
   }
 
   async sumAdditionalCostsByShipmentId(shipmentId: string) {
