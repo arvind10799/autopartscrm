@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { formatUsPhoneNumber, hasCompleteUsPhoneNumber } from '@/lib/forms/phone-format';
+import { isFuturePacificDate } from '@/lib/utils/pacific-date';
 
 const optionalInvoiceTextSchema = (maxLength: number, message: string) =>
   z.preprocess(
@@ -202,7 +203,14 @@ export const createInvoiceSchema = z
       .trim()
       .min(1, 'Invoice number is required.')
       .max(50, 'Invoice number must be 50 characters or fewer.'),
-    invoiceDate: z.string().trim().min(1, 'Invoice date is required.'),
+    invoiceDate: z
+      .string()
+      .trim()
+      .min(1, 'Invoice date is required.')
+      .refine(
+        (value) => !isFuturePacificDate(value),
+        'Invoice date cannot be in the future.',
+      ),
     salesAssistant: optionalInvoiceTextSchema(
       120,
       'Sales assistant must be 120 characters or fewer.',

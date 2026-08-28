@@ -727,7 +727,13 @@ function InvoiceFormModal({
           >
             <InvoiceFormSection title="Invoice Information">
               <InvoiceInput label="Invoice Number" value={draft.invoiceNumber} onChange={(value) => updateField('invoiceNumber', value)} />
-              <InvoiceInput label="Invoice Date" type="date" value={draft.invoiceDate} onChange={(value) => updateField('invoiceDate', value)} />
+              <InvoiceInput
+                label="Invoice Date"
+                type="date"
+                max={getPacificTodayDateInputValue()}
+                value={draft.invoiceDate}
+                onChange={(value) => updateField('invoiceDate', value)}
+              />
               <InvoiceInput label="Sales Assistant" value={draft.salesAssistant} onChange={(value) => updateField('salesAssistant', value)} />
               <InvoiceSelect
                 label="Photo ID"

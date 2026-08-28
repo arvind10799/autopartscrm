@@ -10,14 +10,25 @@ import { formatShipmentDateTime } from '../lib/shipment-formatters';
 import type { ShipmentDetail } from '../types/shipment.types';
 import { ShipmentStatusBadge } from './ShipmentStatusBadge';
 
-export function ShipmentDetailGrid({ shipment }: { shipment: ShipmentDetail }) {
+export function ShipmentDetailGrid({
+  shipment,
+  action,
+}: {
+  shipment: ShipmentDetail;
+  action?: ReactNode;
+}) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-3xl">Shipment details</CardTitle>
-        <CardDescription>
-          Review BOL, PRO, carrier, and related order context for this shipment.
-        </CardDescription>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="text-3xl">Shipment details</CardTitle>
+            <CardDescription>
+              Review BOL, PRO, carrier, and related order context for this shipment.
+            </CardDescription>
+          </div>
+          {action ? <div className="shrink-0">{action}</div> : null}
+        </div>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <DetailBlock label="BOL number" value={shipment.bolNumber ?? 'BOL pending'} />

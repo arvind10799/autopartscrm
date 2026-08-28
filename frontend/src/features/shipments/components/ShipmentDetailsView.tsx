@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
+  Eye,
   History,
   LoaderCircle,
   MessageSquarePlus,
+  X,
 } from 'lucide-react';
 import { DetailPageSkeleton } from '@/components/feedback/page-skeletons';
 import { Badge } from '@/components/ui/badge';
@@ -24,8 +26,14 @@ import { useAuthStore } from '@/features/auth/store/auth.store';
 import { notesApi } from '@/features/notes/api/notes-api';
 import type { NoteRecord } from '@/features/notes/types/note.types';
 import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
-import { formatDateTime } from '@/features/orders/lib/order-formatters';
-import type { OrderNote } from '@/features/orders/types/order.types';
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatOrderPaymentMethod,
+  formatOrderStatus,
+} from '@/features/orders/lib/order-formatters';
+import type { OrderDetail, OrderNote } from '@/features/orders/types/order.types';
 import { useShipmentDetail } from '../hooks/useShipmentDetail';
 import {
   formatShipmentStatusOptionLabel,
@@ -57,6 +65,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   } = useOrderDetailWithRefresh(shipment?.orderId ?? '', orderRefreshKey);
   const [selectedStatus, setSelectedStatus] = useState<ShipmentStatus | ''>('');
   const [proNumber, setProNumber] = useState('');
+  const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!shipment) {
@@ -175,7 +184,21 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             }}
           />
 
-          <ShipmentDetailGrid shipment={shipment} />
+          <ShipmentDetailGrid
+            shipment={shipment}
+            action={
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!invoiceOrder}
+                onClick={() => setIsOrderDetailsOpen(true)}
+              >
+                <Eye className="h-4 w-4" />
+                View full order details
+              </Button>
+            }
+          />
 
           <ShipmentNotesHistoryCard
             shipment={shipment}
@@ -209,8 +232,210 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
           />
         </div>
       </div>
+
+      {isOrderDetailsOpen && invoiceOrder ? (
+        <FullOrderDetailsModal
+          order={invoiceOrder}
+          onClose={() => setIsOrderDetailsOpen(false)}
+        />
+      ) : null}
     </section>
   );
+}
+
+function FullOrderDetailsModal({
+  order,
+  onClose,
+}: {
+  order: OrderDetail;
+  onClose: () => void;
+}) {
+  const intake = order.intakeDetails;
+  const paidAmount = intake.partialPayment ?? 0;
+  const remainingAmount = Math.max(order.totalSaleAmount - paidAmount, 0);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-8"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-5xl rounded-[2rem] border border-white/70 bg-white p-5 shadow-2xl shadow-slate-950/20 dark:border-slate-800 dark:bg-slate-950"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-border/70 pb-4">
+          <div>
+            <h2 className="font-[var(--font-heading)] text-2xl font-semibold text-foreground">
+              Full Order Details
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {order.orderNumber} · {order.customerName}
+            </p>
+          </div>
+          <Button type="button" variant="outline" onClick={onClose}>
+            <X className="h-4 w-4" />
+            Close
+          </Button>
+        </div>
+
+        <div className="grid max-h-[78vh] gap-4 overflow-auto pr-1 lg:grid-cols-2">
+          <CompactOrderSection title="Customer / Contact">
+            <CompactDetail label="Customer" value={order.customerName} />
+            <CompactDetail label="Phone" value={order.customerPhone ?? 'Not provided'} />
+            <CompactDetail label="Email" value={order.customerEmail ?? 'Not provided'} wide />
+          </CompactOrderSection>
+
+          <CompactOrderSection title="Order / Payment">
+            <CompactDetail label="Order number" value={order.orderNumber} />
+            <CompactDetail
+              label="Order date"
+              value={intake.orderDate ? formatDate(intake.orderDate) : 'Not provided'}
+            />
+            <CompactDetail
+              label="Advisor"
+              value={intake.advisorName ?? order.createdBy.name}
+            />
+            <CompactDetail label="Status" value={formatOrderStatus(order.status)} />
+            <CompactDetail
+              label="Payment method"
+              value={
+                order.paymentMethod
+                  ? formatOrderPaymentMethod(order.paymentMethod)
+                  : 'Not required'
+              }
+            />
+            <CompactDetail
+              label="Total"
+              value={formatCurrency(order.totalSaleAmount, order.currency)}
+            />
+            <CompactDetail
+              label="Paid"
+              value={formatCurrency(paidAmount, order.currency)}
+            />
+            <CompactDetail
+              label="Remaining amount"
+              value={formatCurrency(remainingAmount, order.currency)}
+            />
+          </CompactOrderSection>
+
+          <CompactOrderSection title="Vehicle / Part">
+            <CompactDetail label="Part" value={order.partDescription} wide />
+            <CompactDetail label="Make" value={formatNullableText(intake.vehicleMake)} />
+            <CompactDetail label="Model" value={formatNullableText(intake.vehicleModel)} />
+            <CompactDetail label="Year" value={formatNullableText(intake.vehicleYear)} />
+            <CompactDetail label="Variant" value={formatNullableText(intake.vehicleVariant)} />
+            <CompactDetail label="VIN" value={formatNullableText(intake.vehicleVin)} />
+            <CompactDetail
+              label="Miles offered"
+              value={formatNullableText(intake.milesOffered)}
+            />
+            <CompactDetail
+              label="Part description"
+              value={formatNullableText(intake.vehicleNotes)}
+              wide
+            />
+          </CompactOrderSection>
+
+          <CompactOrderSection title="Billing / Shipping">
+            <CompactDetail
+              label="Billing address"
+              value={formatNullableText(intake.billingAddress)}
+              wide
+            />
+            <CompactDetail label="Billing person" value={formatNullableText(intake.billingPerson)} />
+            <CompactDetail label="Billing phone" value={formatNullableText(intake.billingPhone)} />
+            <CompactDetail
+              label="Shipping address"
+              value={
+                <ShippingAddressValue
+                  businessName={intake.companyName}
+                  shippingAddress={intake.shippingAddress}
+                />
+              }
+              wide
+            />
+            <CompactDetail label="Shipping person" value={formatNullableText(intake.shippingPerson)} />
+            <CompactDetail label="Shipping phone" value={formatNullableText(intake.shippingPhone)} />
+          </CompactOrderSection>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompactOrderSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-3xl border border-border/70 bg-secondary/15 p-4">
+      <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {title}
+      </h3>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">{children}</div>
+    </section>
+  );
+}
+
+function CompactDetail({
+  label,
+  value,
+  wide = false,
+}: {
+  label: string;
+  value: ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-2xl border border-border/70 bg-background/80 p-3',
+        wide && 'sm:col-span-2',
+      )}
+    >
+      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </p>
+      <div className="mt-1.5 break-words text-sm leading-6 text-foreground">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function ShippingAddressValue({
+  businessName,
+  shippingAddress,
+}: {
+  businessName?: string | null;
+  shippingAddress?: string | null;
+}) {
+  const trimmedBusinessName = businessName?.trim();
+  const trimmedShippingAddress = shippingAddress?.trim();
+
+  if (!trimmedBusinessName && !trimmedShippingAddress) {
+    return 'Not provided';
+  }
+
+  return (
+    <div className="space-y-1">
+      {trimmedBusinessName ? (
+        <p className="font-semibold text-foreground">{trimmedBusinessName}</p>
+      ) : null}
+      {trimmedShippingAddress ? (
+        <p className="whitespace-pre-wrap text-foreground">
+          {trimmedShippingAddress}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function formatNullableText(value?: string | null): string {
+  return value?.trim() ? value : 'Not provided';
 }
 
 function ShipmentNotesHistoryCard({
