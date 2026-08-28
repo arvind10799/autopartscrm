@@ -91,12 +91,12 @@ export class InvoiceMailService {
 
     await this.sendMail({
       to: invoice.customerEmail,
-      subject: `Invoice ${invoice.invoiceNumber} from MEE Auto Parts`,
+      subject: `Invoice ${invoice.invoiceNumber} from MEE AUTO PARTS`,
       html: this.buildSignatureRequestHtml(invoice, signingUrl),
       text: [
         `Hi ${invoice.customerName},`,
         '',
-        'Thank you for your order with MEE Auto Parts.',
+        'Thank you for your order with MEE AUTO PARTS.',
         '',
         `Your invoice ${invoice.invoiceNumber} is ready for review. Please open the invoice using the link below and complete the required signature.`,
         '',
@@ -109,7 +109,7 @@ export class InvoiceMailService {
         `Expiry Date: ${this.formatSignatureRequestExpiry(invoice.signatureTokenExpiresAt)}`,
         '',
         'Thank you,',
-        'MEE Auto Parts',
+        'MEE AUTO PARTS',
         'support@meeautoparts.com',
         '(888) 338-9652',
       ].join('\n'),
@@ -128,7 +128,7 @@ export class InvoiceMailService {
         <p>Thank you.</p>
         <p>Your signed invoice has been received.</p>
         <p>A copy of the signed invoice is attached.</p>
-        <p>MEE Auto Parts</p>
+        <p>MEE AUTO PARTS</p>
       `,
       text: [
         'Thank you.',
@@ -137,7 +137,7 @@ export class InvoiceMailService {
         '',
         'A copy of the signed invoice is attached.',
         '',
-        'MEE Auto Parts',
+        'MEE AUTO PARTS',
       ].join('\n'),
       attachments: [
         {
@@ -168,7 +168,7 @@ export class InvoiceMailService {
     await this.transporter.sendMail({
       from: this.configService.get<string>(
         'MAIL_FROM',
-        'MEE Auto Parts Billing <billing@meeautoparts.com>',
+        'MEE AUTO PARTS Billing <billing@meeautoparts.com>',
       ),
       ...options,
     });
@@ -207,7 +207,7 @@ export class InvoiceMailService {
         <head>
           <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Invoice from MEE Auto Parts</title>
+          <title>Invoice from MEE AUTO PARTS</title>
         </head>
         <body style="margin:0;padding:0;background:#fdeaea;font-family:Arial,Helvetica,sans-serif;color:#101828;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fdeaea;margin:0;padding:46px 16px;">
@@ -216,14 +216,14 @@ export class InvoiceMailService {
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:575px;margin:0 auto;">
                   <tr>
                     <td align="center" style="padding:0 0 20px;">
-                      <img src="${safeLogoUrl}" width="140" alt="MEE Auto Parts" style="display:block;border:0;outline:none;text-decoration:none;width:140px;height:auto;" />
+                      <img src="${safeLogoUrl}" width="140" alt="MEE AUTO PARTS" style="display:block;border:0;outline:none;text-decoration:none;width:140px;height:auto;" />
                     </td>
                   </tr>
                   <tr>
                     <td style="background:#ffffff;padding:36px 48px 0;">
                       <p style="margin:0 0 22px;font-size:16px;line-height:1.5;color:#101828;">Hi ${safeCustomerName},</p>
                       <p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#101828;">
-                        Thank you for your order with <strong>MEE Auto Parts</strong>.
+                        Thank you for your order with <strong>MEE AUTO PARTS</strong>.
                       </p>
                       <p style="margin:0 0 26px;font-size:16px;line-height:1.5;color:#101828;">
                         Your invoice <strong>${safeInvoiceNumber}</strong> is ready for review. Please open the invoice using the button below and complete the required signature.
@@ -256,7 +256,7 @@ export class InvoiceMailService {
                   </tr>
                   <tr>
                     <td align="center" style="background:#f8fafc;padding:18px 28px;color:#667085;font-size:12px;line-height:1.5;">
-                      MEE Auto Parts &nbsp;|&nbsp; support@meeautoparts.com &nbsp;|&nbsp; (888) 338-9652
+                      MEE AUTO PARTS &nbsp;|&nbsp; support@meeautoparts.com &nbsp;|&nbsp; (888) 338-9652
                     </td>
                   </tr>
                 </table>
@@ -498,7 +498,7 @@ export class InvoiceMailService {
     y = this.drawWarrantySection(document, x, y + 12, 'Installation & Returns', [
       'Installation: Engines and transmissions must be installed within 15 days from the day of delivery by a licensed professional at a licensed repair facility, following manufacturer guidelines.',
       'All parts must be installed within 15 days of delivery. Failure to complete the installation within this timeframe will void any warranty claims.',
-      'Defective Parts: MEE Auto Parts will exchange defective parts or issue a refund only if the part is out of stock.',
+      'Defective Parts: MEE AUTO PARTS will exchange defective parts or issue a refund only if the part is out of stock.',
       'Returns: Parts must be returned in their original condition.',
     ]);
     y = this.drawWarrantySection(

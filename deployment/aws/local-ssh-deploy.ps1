@@ -77,7 +77,7 @@ try {
     SMTP_PORT = Get-EnvironmentValueOrDefault "SMTP_PORT" "587"
     SMTP_USER = Get-EnvironmentValueOrDefault "SMTP_USER" ""
     SMTP_PASS = Get-EnvironmentValueOrDefault "SMTP_PASS" ""
-    MAIL_FROM = Get-EnvironmentValueOrDefault "MAIL_FROM" "MEE Auto Parts Billing <billing@meeautoparts.com>"
+    MAIL_FROM = Get-EnvironmentValueOrDefault "MAIL_FROM" "MEE AUTO PARTS Billing <billing@meeautoparts.com>"
     RINGCENTRAL_CLIENT_ID = Get-EnvironmentValueOrDefault "RINGCENTRAL_CLIENT_ID" ""
     RINGCENTRAL_CLIENT_SECRET = Get-EnvironmentValueOrDefault "RINGCENTRAL_CLIENT_SECRET" ""
     RINGCENTRAL_JWT = Get-EnvironmentValueOrDefault "RINGCENTRAL_JWT" ""
