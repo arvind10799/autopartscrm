@@ -251,8 +251,14 @@ function FullOrderDetailsModal({
   onClose: () => void;
 }) {
   const intake = order.intakeDetails;
-  const paidAmount = intake.partialPayment ?? 0;
-  const remainingAmount = Math.max(order.totalSaleAmount - paidAmount, 0);
+  const paidAmount =
+    order.status === 'CONFIRMED'
+      ? order.totalSaleAmount
+      : intake.partialPayment ?? 0;
+  const remainingAmount =
+    order.status === 'CONFIRMED'
+      ? 0
+      : Math.max(order.totalSaleAmount - paidAmount, 0);
 
   return (
     <div
