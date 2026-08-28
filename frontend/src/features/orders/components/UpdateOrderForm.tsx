@@ -324,15 +324,9 @@ export function UpdateOrderForm({
             </EditorSection>
 
             <EditorSection title="Billing and shipping">
-              {[
-                ['billingPerson', 'Billing person'],
-                ['shippingPerson', 'Shipping person'],
-                ['companyName', 'Company name'],
-              ].map(([field, label]) => (
-                <EditorField key={field} label={label} id={field}>
-                  <Input id={field} {...form.register(field as keyof UpdateOrderFormValues)} />
-                </EditorField>
-              ))}
+              <EditorField label="Billing person" id="billingPerson">
+                <Input id="billingPerson" {...form.register('billingPerson')} />
+              </EditorField>
               <EditorField label="Billing phone" id="billingPhone">
                 <Input
                   id="billingPhone"
@@ -342,22 +336,65 @@ export function UpdateOrderForm({
                   onChange={handleBillingPhoneChange}
                 />
               </EditorField>
-              <EditorField label="Shipping phone" id="shippingPhone">
-                <Input
-                  id="shippingPhone"
-                  type="tel"
-                  maxLength={14}
-                  {...shippingPhoneInput}
-                  onChange={handleShippingPhoneChange}
-                />
-              </EditorField>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="billingAddress">Billing address</Label>
                 <Textarea id="billingAddress" rows={2} {...form.register('billingAddress')} />
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="shippingAddress">Shipping address</Label>
-                <Textarea id="shippingAddress" rows={2} {...form.register('shippingAddress')} />
+
+              <div className="space-y-3 rounded-2xl border border-border/60 bg-secondary/20 p-3.5 sm:col-span-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  Shipping
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <EditorField label="Person" id="shippingPerson">
+                    <Input id="shippingPerson" {...form.register('shippingPerson')} />
+                  </EditorField>
+                  <EditorField label="Phone" id="shippingPhone">
+                    <Input
+                      id="shippingPhone"
+                      type="tel"
+                      maxLength={14}
+                      {...shippingPhoneInput}
+                      onChange={handleShippingPhoneChange}
+                    />
+                  </EditorField>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    Address
+                  </Label>
+                  <div className="grid gap-3 rounded-2xl border border-border/60 bg-white/60 p-3 dark:bg-slate-950/40">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="shippingAddress"
+                      className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                    >
+                      Business address
+                    </Label>
+                    <Textarea
+                      id="shippingAddress"
+                      rows={3}
+                      className="min-h-[88px] rounded-xl"
+                      placeholder="Enter business address"
+                      {...form.register('shippingAddress')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="companyName"
+                      className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                    >
+                      Business name
+                    </Label>
+                    <Input
+                      id="companyName"
+                      className="h-11 rounded-xl"
+                      placeholder="Enter business name"
+                      {...form.register('companyName')}
+                    />
+                  </div>
+                  </div>
+                </div>
               </div>
             </EditorSection>
 

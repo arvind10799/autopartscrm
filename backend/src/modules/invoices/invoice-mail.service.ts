@@ -17,6 +17,7 @@ type MailInvoice = {
 };
 
 type SignedMailInvoice = MailInvoice & {
+  invoiceDate: Date;
   salesAssistant?: string | null;
   contactNumber?: string | null;
   billingAddress?: string | null;
@@ -572,7 +573,13 @@ export class InvoiceMailService {
 
     if (showMeta) {
       this.drawMetaLine(document, 'Invoice Number', invoice.invoiceNumber, 382, 78);
-      this.drawMetaLine(document, 'Invoice Date', this.formatDate(new Date()), 382, 102);
+      this.drawMetaLine(
+        document,
+        'Invoice Date',
+        this.formatDate(invoice.invoiceDate),
+        382,
+        102,
+      );
       this.drawMetaLine(document, 'Sale Assistant', invoice.salesAssistant ?? '', 382, 126);
     }
   }
@@ -776,9 +783,13 @@ export class InvoiceMailService {
       return '';
     }
 
-    return value
+    const dateOnlyValue = new Date(
+      Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
+    );
+
+    return dateOnlyValue
       .toLocaleDateString('en-US', {
-        timeZone: 'America/Los_Angeles',
+        timeZone: 'UTC',
         day: '2-digit',
         month: 'long',
         year: 'numeric',

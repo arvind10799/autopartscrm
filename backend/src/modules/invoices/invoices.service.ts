@@ -12,6 +12,7 @@ import { Prisma } from '@prisma/client';
 import { createHash, randomBytes } from 'crypto';
 import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { getPacificTodayDateInputValue } from '../../common/utils/pacific-date.util';
 import { NotesService } from '../notes/notes.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { SignInvoiceDto } from './dto/sign-invoice.dto';
@@ -89,7 +90,7 @@ export class InvoicesService {
 
     return {
       invoiceNumber: order.orderNumber,
-      invoiceDate: this.formatDateInputValue(new Date()),
+      invoiceDate: getPacificTodayDateInputValue(),
       salesAssistant,
       customerName: order.customerName,
       contactNumber:
@@ -472,6 +473,7 @@ export class InvoicesService {
       await this.invoiceMailService.sendSignedConfirmation(
         {
           invoiceNumber: signedInvoice.invoiceNumber,
+          invoiceDate: signedInvoice.invoiceDate,
           customerName: signedInvoice.customerName,
           customerEmail,
           signedAt,
@@ -731,6 +733,9 @@ export class InvoicesService {
       signatureLastSentAt?: Date | null;
       signedAt?: Date | null;
       signatureIpAddress?: string | null;
+      invoiceDate?: Date;
+      paymentDate?: Date | null;
+      signatureDate?: Date | null;
       createdAt?: Date;
       updatedAt?: Date;
     },
@@ -742,6 +747,23 @@ export class InvoicesService {
 
     return {
       ...safeInvoice,
+      ...(invoice.invoiceDate
+        ? { invoiceDate: this.formatDateOnlyValue(invoice.invoiceDate) }
+        : {}),
+      ...(invoice.paymentDate !== undefined
+        ? {
+            paymentDate: invoice.paymentDate
+              ? this.formatDateOnlyValue(invoice.paymentDate)
+              : null,
+          }
+        : {}),
+      ...(invoice.signatureDate !== undefined
+        ? {
+            signatureDate: invoice.signatureDate
+              ? this.formatDateOnlyValue(invoice.signatureDate)
+              : null,
+          }
+        : {}),
       currency: this.normalizeCurrency(invoice.order?.currency),
       auditTrail: this.buildAuditTrail(invoice),
     };
@@ -1065,6 +1087,23 @@ export class InvoicesService {
   }
 
   private parseDate(value: string): Date {
+    const trimmedValue = value.trim();
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+      const [year, month, day] = trimmedValue.split('-').map(Number);
+      const parsedDate = new Date(Date.UTC(year, month - 1, day, 12));
+
+      if (
+        parsedDate.getUTCFullYear() !== year ||
+        parsedDate.getUTCMonth() !== month - 1 ||
+        parsedDate.getUTCDate() !== day
+      ) {
+        throw new BadRequestException('Date value is invalid.');
+      }
+
+      return parsedDate;
+    }
+
     const parsedDate = new Date(value);
 
     if (Number.isNaN(parsedDate.getTime())) {
@@ -1074,10 +1113,10 @@ export class InvoicesService {
     return parsedDate;
   }
 
-  private formatDateInputValue(date: Date): string {
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+  private formatDateOnlyValue(date: Date): string {
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
 
-    return `${date.getFullYear()}-${month}-${day}`;
+    return `${date.getUTCFullYear()}-${month}-${day}`;
   }
 }
