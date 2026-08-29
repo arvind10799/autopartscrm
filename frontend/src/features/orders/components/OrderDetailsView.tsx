@@ -35,6 +35,7 @@ import {
   formatDateTime,
   formatOrderPaymentMethod,
   formatOrderStatus,
+  formatRelativeTime,
 } from '../lib/order-formatters';
 import type {
   OrderDetail,
@@ -658,9 +659,10 @@ function TimelineItem({ entry }: { entry: TimelineEntry }) {
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">
             {entry.actorName}
-          </p>
-          <p className="text-[11px] text-muted-foreground">
-            {formatDateTime(entry.timestamp)}
+            <span className="mx-1.5 text-muted-foreground">|</span>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
+            </span>
           </p>
         </div>
         <Badge

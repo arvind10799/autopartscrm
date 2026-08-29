@@ -57,6 +57,50 @@ export function formatDateTime(value: string): string {
   return formatPacificDateTime(value);
 }
 
+export function formatRelativeTime(value: string): string {
+  const timestamp = new Date(value).getTime();
+
+  if (Number.isNaN(timestamp)) {
+    return '';
+  }
+
+  const elapsedSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - timestamp) / 1000),
+  );
+
+  if (elapsedSeconds < 60) {
+    return `${elapsedSeconds} sec ago`;
+  }
+
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} ${elapsedMinutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+
+  if (elapsedHours < 24) {
+    return `${elapsedHours} ${elapsedHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+
+  if (elapsedDays < 30) {
+    return `${elapsedDays} ${elapsedDays === 1 ? 'day' : 'days'} ago`;
+  }
+
+  const elapsedMonths = Math.floor(elapsedDays / 30);
+
+  if (elapsedMonths < 12) {
+    return `${elapsedMonths} ${elapsedMonths === 1 ? 'month' : 'months'} ago`;
+  }
+
+  const elapsedYears = Math.floor(elapsedMonths / 12);
+  return `${elapsedYears} ${elapsedYears === 1 ? 'year' : 'years'} ago`;
+}
+
 export function formatDate(value: string): string {
   return formatPacificDateOnly(value, value);
 }

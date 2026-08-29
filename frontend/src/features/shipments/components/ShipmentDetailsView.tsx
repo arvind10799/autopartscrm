@@ -32,6 +32,7 @@ import {
   formatDateTime,
   formatOrderPaymentMethod,
   formatOrderStatus,
+  formatRelativeTime,
 } from '@/features/orders/lib/order-formatters';
 import type { OrderDetail, OrderNote } from '@/features/orders/types/order.types';
 import { useShipmentDetail } from '../hooks/useShipmentDetail';
@@ -706,9 +707,10 @@ function ShipmentNotesHistoryCard({
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground">
                       {entry.authorName}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {formatDateTime(entry.timestamp)}
+                      <span className="mx-1.5 text-muted-foreground">|</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
+                      </span>
                     </p>
                   </div>
                   <Badge
