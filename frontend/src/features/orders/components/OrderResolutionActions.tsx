@@ -13,11 +13,7 @@ import {
   formatCurrency,
   formatDateTime,
 } from '../lib/order-formatters';
-import type {
-  OrderDetail,
-  OrderRefundType,
-  OrderStatus,
-} from '../types/order.types';
+import type { OrderDetail, OrderRefundType } from '../types/order.types';
 
 type ResolutionOrder = Pick<
   OrderDetail,
@@ -305,14 +301,14 @@ export function OrderResolutionDetails({
             {details.refundType === 'PARTIAL' ? (
               <>
                 <p className="mt-1 text-muted-foreground">
-                  Deduction Amount/Charges:{' '}
+                  Refunded amount:{' '}
                   {formatCurrency(
                     details.refundDeductionAmount ?? 0,
                     order.currency,
                   )}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
-                  Reason for Deduction: {details.refundDeductionReason ?? 'Not provided'}
+                  Refund reason: {details.refundDeductionReason ?? 'Not provided'}
                 </p>
               </>
             ) : (
@@ -330,28 +326,4 @@ export function OrderResolutionDetails({
       </div>
     </div>
   );
-}
-
-export function getRefundAdjustedSaleAmount(order: ResolutionOrder): number {
-  if (order.status !== 'REFUNDED') {
-    return order.totalSaleAmount;
-  }
-
-  if (order.intakeDetails.refundType === 'PARTIAL') {
-    return order.intakeDetails.refundDeductionAmount ?? 0;
-  }
-
-  return 0;
-}
-
-export function getRefundAdjustedGrossProfitOverride(
-  order: ResolutionOrder,
-): number | undefined {
-  return order.status === 'REFUNDED' && order.intakeDetails.refundType !== 'PARTIAL'
-    ? 0
-    : undefined;
-}
-
-export function isResolvedOrderStatus(status: OrderStatus): boolean {
-  return status === 'CANCELLED' || status === 'REFUNDED';
 }

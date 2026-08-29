@@ -25,13 +25,12 @@ import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { notesApi } from '@/features/notes/api/notes-api';
 import {
-  getRefundAdjustedGrossProfitOverride,
-  getRefundAdjustedSaleAmount,
   OrderResolutionActions,
   OrderResolutionDetails,
 } from '@/features/orders/components/OrderResolutionActions';
 import type { NoteRecord } from '@/features/notes/types/note.types';
 import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
+import { getOrderFinancialSummary } from '@/features/orders/lib/order-financials';
 import {
   formatCurrency,
   formatDate,
@@ -146,12 +145,9 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
   const canEditGpCosts =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
-  const gpSaleAmount = invoiceOrder
-    ? getRefundAdjustedSaleAmount(invoiceOrder)
-    : shipment.order.totalSaleAmount ?? 0;
-  const gpOverride = invoiceOrder
-    ? getRefundAdjustedGrossProfitOverride(invoiceOrder)
-    : undefined;
+  const shipmentFinancialSummary = invoiceOrder
+    ? getOrderFinancialSummary(invoiceOrder)
+    : null;
 
   const handleStatusSubmit = async () => {
     if (isOrderResolvedForShipment) {
@@ -209,11 +205,15 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
         <div className="grid gap-6">
           <GrossProfitSummaryCard
             shipmentId={shipment.id}
-            totalSaleAmount={gpSaleAmount}
+            totalSaleAmount={
+              shipmentFinancialSummary?.gpSaleBasis ??
+              shipment.order.totalSaleAmount ??
+              0
+            }
             currency={shipment.order.currency}
             cost={shipmentCost}
             saleMetricLabel={invoiceOrder?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
-            grossProfitOverride={gpOverride}
+            grossProfitOverride={shipmentFinancialSummary?.grossProfitOverride}
             refundDetails={
               invoiceOrder?.status === 'REFUNDED'
                 ? {
@@ -322,15 +322,7 @@ function FullOrderDetailsModal({
   onClose: () => void;
 }) {
   const intake = order.intakeDetails;
-  const isResolvedOrder = order.status === 'CANCELLED' || order.status === 'REFUNDED';
-  const paidAmount =
-    order.status === 'CONFIRMED'
-      ? order.totalSaleAmount
-      : intake.partialPayment ?? 0;
-  const remainingAmount =
-    order.status === 'CONFIRMED' || isResolvedOrder
-      ? 0
-      : Math.max(order.totalSaleAmount - paidAmount, 0);
+  const financialSummary = getOrderFinancialSummary(order);
 
   return (
     <div
@@ -388,11 +380,11 @@ function FullOrderDetailsModal({
             />
             <CompactDetail
               label="Paid"
-              value={formatCurrency(paidAmount, order.currency)}
+              value={formatCurrency(financialSummary.retainedPaidAmount, order.currency)}
             />
             <CompactDetail
               label="Remaining amount"
-              value={formatCurrency(remainingAmount, order.currency)}
+              value={formatCurrency(financialSummary.remainingAmount, order.currency)}
             />
           </CompactOrderSection>
 

@@ -358,14 +358,14 @@ export function GrossProfitSummaryCard({
               {refundDetails?.refundType === 'PARTIAL' ? (
                 <div className="mt-1 space-y-1 text-xs">
                   <p>
-                    Deduction Amount/Charges:{' '}
+                    Refunded amount:{' '}
                     {formatCurrency(
                       refundDetails.refundDeductionAmount ?? 0,
                       displayCurrency,
                     )}
                   </p>
                   <p className="whitespace-pre-wrap">
-                    Reason for Deduction:{' '}
+                    Refund reason:{' '}
                     {refundDetails.refundDeductionReason ?? 'Not provided'}
                   </p>
                 </div>

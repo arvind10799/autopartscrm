@@ -59,6 +59,7 @@ import {
   formatOrderStatus,
   formatRelativeTime,
 } from '@/features/orders/lib/order-formatters';
+import { getOrderFinancialSummary } from '@/features/orders/lib/order-financials';
 import type {
   OrderDetail,
   OrderNote,
@@ -838,11 +839,10 @@ function formatNullableText(value: string | null): string {
 }
 
 function formatPaidAmount(order: OrderDetail): string {
-  if (order.status === 'CONFIRMED') {
-    return formatCurrency(order.totalSaleAmount, order.currency);
-  }
-
-  return formatNullableCurrency(order.intakeDetails.partialPayment, order.currency);
+  return formatCurrency(
+    getOrderFinancialSummary(order).retainedPaidAmount,
+    order.currency,
+  );
 }
 
 function isHistoryNote(note: OrderNote): boolean {

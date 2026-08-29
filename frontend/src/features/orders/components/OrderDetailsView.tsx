@@ -29,9 +29,8 @@ import { formatShipmentStatus } from '@/features/shipments/lib/shipment-formatte
 import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
 import { useOrderDetailWithRefresh } from '../hooks/useOrderDetail';
+import { getOrderFinancialSummary } from '../lib/order-financials';
 import {
-  getRefundAdjustedGrossProfitOverride,
-  getRefundAdjustedSaleAmount,
   OrderResolutionDetails,
 } from './OrderResolutionActions';
 import {
@@ -129,15 +128,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   }
 
   const intake = order.intakeDetails;
-  const isResolvedOrder = order.status === 'CANCELLED' || order.status === 'REFUNDED';
-  const paidNowAmount =
-    order.status === 'CONFIRMED'
-      ? order.totalSaleAmount
-      : intake.partialPayment ?? 0;
-  const balanceAmount =
-    order.status === 'CONFIRMED' || isResolvedOrder
-      ? 0
-      : Math.max(order.totalSaleAmount - paidNowAmount, 0);
+  const financialSummary = getOrderFinancialSummary(order);
   const notesTimeline = buildNoteTimeline(order.notes);
   const editHistoryTimeline = buildEditHistoryTimeline(order.notes);
   const statusTimeline = buildStatusTimeline(order);
@@ -148,8 +139,6 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
   const canEditGpCosts =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
-  const gpSaleAmount = getRefundAdjustedSaleAmount(order);
-  const gpOverride = getRefundAdjustedGrossProfitOverride(order);
 
   return (
     <section className="space-y-6">
@@ -160,11 +149,11 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
       <GrossProfitSummaryCard
         shipmentId={latestShipment?.id}
-        totalSaleAmount={gpSaleAmount}
+        totalSaleAmount={financialSummary.gpSaleBasis}
         currency={order.currency}
         cost={latestShipmentCost}
         saleMetricLabel={order.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
-        grossProfitOverride={gpOverride}
+        grossProfitOverride={financialSummary.grossProfitOverride}
         refundDetails={
           order.status === 'REFUNDED'
             ? {
@@ -310,11 +299,11 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 />
                 <DetailBlock
                   label="Paid"
-                  value={formatCurrency(paidNowAmount, order.currency)}
+                  value={formatCurrency(financialSummary.retainedPaidAmount, order.currency)}
                 />
                 <DetailBlock
                   label="Remaining amount"
-                  value={formatCurrency(balanceAmount, order.currency)}
+                  value={formatCurrency(financialSummary.remainingAmount, order.currency)}
                 />
                 <DetailBlock
                   label="Payment method"
