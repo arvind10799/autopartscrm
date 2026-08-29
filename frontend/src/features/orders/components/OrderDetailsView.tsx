@@ -165,17 +165,17 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
         onCostUpdated={() => setRefreshKey((currentValue) => currentValue + 1)}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)] xl:grid-cols-[minmax(0,7fr)_minmax(340px,3fr)]">
-        <div className="space-y-5">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] xl:grid-cols-[minmax(0,1.08fr)_minmax(430px,0.92fr)]">
+        <div className="space-y-4">
           <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-2xl sm:text-[1.75rem]">Order details</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl sm:text-2xl">Order details</CardTitle>
               <CardDescription>
                 Compact order, customer, vehicle, pricing, billing, and shipping details.
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-4">
               <DetailSection title="Basic Order Info">
                 <DetailBlock label="Order number" value={order.orderNumber} />
                 <DetailBlock
@@ -309,14 +309,14 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <Card className="lg:max-h-[calc(100vh-3rem)] lg:overflow-hidden">
-            <CardHeader className="space-y-4 pb-4">
+            <CardHeader className="space-y-3 pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2 text-2xl">
+                  <CardTitle className="flex items-center gap-2 text-xl">
                     <History className="h-5 w-5 text-primary" />
                     Notes & Edit History
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-xs">
                     Newest activity stays visible while reviewing order details.
                   </CardDescription>
                 </div>
@@ -333,10 +333,10 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-5 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto">
+            <CardContent className="space-y-4 lg:max-h-[calc(100vh-10.5rem)] lg:overflow-y-auto">
               {isAddNoteOpen ? (
                 <form
-                  className="space-y-3 rounded-2xl border border-border/70 bg-secondary/20 p-4"
+                  className="space-y-2.5 rounded-2xl border border-border/70 bg-secondary/20 p-3"
                   onSubmit={(event) => {
                     event.preventDefault();
                     void handleAddNoteSubmit();
@@ -351,7 +351,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                   <textarea
                     id="order-detail-note"
                     value={noteMessage}
-                    rows={4}
+                    rows={3}
                     onChange={(event) => setNoteMessage(event.target.value)}
                     placeholder="Add a customer update, handoff, or follow-up note."
                     className={cn(
@@ -544,9 +544,9 @@ function DetailSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3">
-      <h3 className="text-xl font-semibold text-foreground">{title}</h3>
-      <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">{children}</div>
+    <section className="space-y-2.5">
+      <h3 className="text-base font-semibold text-foreground">{title}</h3>
+      <div className="grid gap-2.5 sm:grid-cols-2 2xl:grid-cols-3">{children}</div>
     </section>
   );
 }
@@ -559,12 +559,12 @@ function CollapsibleDetailSection({
   children: React.ReactNode;
 }) {
   return (
-    <details className="group rounded-2xl border border-border/70 bg-white/70 shadow-sm">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xl font-semibold text-foreground marker:hidden">
+    <details className="group rounded-2xl border border-border/70 bg-background/70 shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 text-base font-semibold text-foreground marker:hidden">
         {title}
         <ChevronDown className="h-5 w-5 text-muted-foreground transition group-open:rotate-180" />
       </summary>
-      <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid gap-2.5 px-3.5 pb-3.5 sm:grid-cols-2 2xl:grid-cols-3">
         {children}
       </div>
     </details>
@@ -579,11 +579,11 @@ function DetailBlock({
   value: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-secondary/20 p-3">
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+    <div className="rounded-xl border border-border/70 bg-secondary/20 p-2.5">
+      <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>
-      <div className="mt-1.5 whitespace-pre-wrap text-sm leading-6 text-foreground">
+      <div className="mt-1 whitespace-pre-wrap text-sm leading-5 text-foreground">
         {value}
       </div>
     </div>
@@ -626,22 +626,22 @@ function TimelineGroup({
   emptyMessage: string;
 }) {
   return (
-    <section className="space-y-3">
+    <section className="space-y-2.5">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {title}
         </h3>
         <Badge variant="outline">{entries.length}</Badge>
       </div>
 
       {entries.length > 0 ? (
-        <ol className="space-y-3">
+        <ol className="space-y-2.5">
           {entries.map((entry) => (
             <TimelineItem key={entry.id} entry={entry} />
           ))}
         </ol>
       ) : (
-        <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
           {emptyMessage}
         </div>
       )}
@@ -651,7 +651,7 @@ function TimelineGroup({
 
 function TimelineItem({ entry }: { entry: TimelineEntry }) {
   return (
-    <li className="relative rounded-2xl border border-border/70 bg-white/80 p-4 shadow-sm">
+    <li className="relative rounded-xl border border-border/70 bg-background/85 p-3 shadow-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={entry.badgeVariant ?? 'secondary'}>
           {entry.action}
@@ -660,8 +660,8 @@ function TimelineItem({ entry }: { entry: TimelineEntry }) {
           {formatDateTime(entry.timestamp)}
         </span>
       </div>
-      <p className="mt-2 text-sm font-semibold text-foreground">{entry.actorName}</p>
-      <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+      <p className="mt-1.5 text-sm font-semibold text-foreground">{entry.actorName}</p>
+      <div className="mt-1.5 whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
         {entry.body}
       </div>
     </li>
