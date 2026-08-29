@@ -74,6 +74,8 @@ export interface InvoiceRecord {
   status: string;
   pdfStorageKey: string | null;
   auditTrail?: InvoiceAuditTrail | null;
+  hasAuditTrail?: boolean;
+  hasPhotoIdDocument?: boolean;
   createdAt: string;
   updatedAt: string;
 }

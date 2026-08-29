@@ -84,9 +84,11 @@ export function InvoiceActions({
   const [isCloningInvoice, setIsCloningInvoice] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isPhotoIdOpen, setIsPhotoIdOpen] = useState(false);
+  const [invoiceForPdf, setInvoiceForPdf] = useState<InvoiceRecord | null>(null);
   const [draft, setDraft] = useState<InvoiceDraft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(false);
+  const [isLoadingInvoiceDetails, setIsLoadingInvoiceDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSignatureActionRunning, setIsSignatureActionRunning] = useState(false);
@@ -97,34 +99,10 @@ export function InvoiceActions({
 
   useEffect(() => {
     setInvoice(order.invoice);
-  }, [order.invoice]);
-
-  useEffect(() => {
-    if (!order.invoice) {
-      return;
-    }
-
-    let isCurrent = true;
-
-    invoicesApi
-      .getByOrderId(order.id)
-      .then((hydratedInvoice) => {
-        if (isCurrent) {
-          setInvoice(hydratedInvoice);
-        }
-      })
-      .catch(() => {
-        if (isCurrent) {
-          setInvoice(order.invoice);
-        }
-      });
-
-    return () => {
-      isCurrent = false;
-    };
+    setInvoiceForPdf(null);
   }, [order.id, order.invoice]);
 
-  const printableInvoice = invoice ?? (draft ? draftToInvoicePreview(order.id, draft) : null);
+  const printableInvoice = invoiceForPdf ?? (draft ? draftToInvoicePreview(order.id, draft) : null);
 
   const totalAmount = useMemo(() => {
     if (!draft) {
@@ -133,6 +111,80 @@ export function InvoiceActions({
 
     return calculateInvoiceTotal(draft);
   }, [draft]);
+
+  const loadFullInvoice = async () => {
+    if (invoice && isInvoiceFullyLoaded(invoice)) {
+      return invoice;
+    }
+
+    setIsLoadingInvoiceDetails(true);
+
+    try {
+      const hydratedInvoice = await invoicesApi.getByOrderId(order.id);
+      setInvoice(hydratedInvoice);
+      return hydratedInvoice;
+    } finally {
+      setIsLoadingInvoiceDetails(false);
+    }
+  };
+
+  const openInvoiceView = async () => {
+    if (!invoice) {
+      return;
+    }
+
+    try {
+      await loadFullInvoice();
+      setIsViewOpen(true);
+    } catch (caughtError) {
+      toast.error(
+        'Unable to open invoice',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    }
+  };
+
+  const openPhotoIdView = async () => {
+    try {
+      const hydratedInvoice = await loadFullInvoice();
+
+      if (!hydratedInvoice.photoIdDocument) {
+        toast.error('Photo ID unavailable', 'The uploaded Photo ID could not be loaded.');
+        return;
+      }
+
+      setIsPhotoIdOpen(true);
+    } catch (caughtError) {
+      toast.error(
+        'Unable to open Photo ID',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    }
+  };
+
+  const handleDownloadPhotoId = async () => {
+    try {
+      const hydratedInvoice = await loadFullInvoice();
+
+      if (!hydratedInvoice.photoIdDocument) {
+        toast.error('Photo ID unavailable', 'The uploaded Photo ID could not be loaded.');
+        return;
+      }
+
+      downloadPhotoIdDocument(hydratedInvoice);
+    } catch (caughtError) {
+      toast.error(
+        'Unable to download Photo ID',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    }
+  };
 
   const openGenerateModal = async () => {
     if (order.status === 'PARTIALLY_PAID') {
@@ -214,6 +266,7 @@ export function InvoiceActions({
           ? await invoicesApi.update(order.id, payload)
           : await invoicesApi.create(order.id, payload);
       setInvoice(savedInvoice);
+      setInvoiceForPdf(savedInvoice);
       setIsGenerateOpen(false);
       setIsEditingInvoice(false);
       setIsCloningInvoice(false);
@@ -276,17 +329,20 @@ export function InvoiceActions({
   };
 
   const handleDownloadInvoice = async () => {
-    if (!printableInvoiceRef.current) {
-      toast.error('Invoice not ready', 'Open or generate the invoice and try again.');
-      return;
-    }
-
     setIsDownloading(true);
 
     try {
+      const hydratedInvoice = await loadFullInvoice();
+      setInvoiceForPdf(hydratedInvoice);
+      await waitForNextPaint();
+
+      if (!printableInvoiceRef.current) {
+        throw new Error('Invoice preview is still preparing. Please try again.');
+      }
+
       await downloadInvoicePdf(
         printableInvoiceRef.current,
-        `${printableInvoice?.invoiceNumber ?? order.orderNumber}-invoice`,
+        `${hydratedInvoice.invoiceNumber ?? order.orderNumber}-invoice`,
       );
     } catch (caughtError) {
       toast.error(
@@ -334,8 +390,18 @@ export function InvoiceActions({
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   {invoice.status === 'SIGNED' ? 'Signed' : 'Invoiced'}
                 </Badge>
-                <Button type="button" size="sm" variant="outline" onClick={() => setIsViewOpen(true)}>
-                  <Eye className="h-4 w-4" />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isLoadingInvoiceDetails}
+                  onClick={() => void openInvoiceView()}
+                >
+                  {isLoadingInvoiceDetails ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                   {invoice.status === 'SIGNED' ? 'View Signed Invoice' : 'View Invoice'}
                 </Button>
                 <Button type="button" size="sm" disabled={isDownloading} onClick={() => void handleDownloadInvoice()}>
@@ -350,22 +416,28 @@ export function InvoiceActions({
                       ? 'Download Signed Invoice'
                       : 'Download Invoice (PDF)'}
                 </Button>
-                {invoice.photoIdDocument ? (
+                {hasInvoicePhotoId(invoice) ? (
                   <>
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => setIsPhotoIdOpen(true)}
+                      disabled={isLoadingInvoiceDetails}
+                      onClick={() => void openPhotoIdView()}
                     >
-                      <Eye className="h-4 w-4" />
+                      {isLoadingInvoiceDetails ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                       View Photo ID
                     </Button>
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => downloadPhotoIdDocument(invoice)}
+                      disabled={isLoadingInvoiceDetails}
+                      onClick={() => void handleDownloadPhotoId()}
                     >
                       <Download className="h-4 w-4" />
                       Download Photo ID
@@ -411,7 +483,10 @@ export function InvoiceActions({
                   </>
                 ) : null}
               </div>
-              <InvoiceAuditTrailPanel invoice={invoice} />
+              <InvoiceAuditTrailPanel
+                invoice={invoice}
+                onLoadFullInvoice={loadFullInvoice}
+              />
             </>
           ) : canManageInvoice ? (
             <Button type="button" size="sm" onClick={openGenerateModal} disabled={isLoadingDefaults}>
@@ -472,8 +547,15 @@ export function InvoiceActions({
   );
 }
 
-function InvoiceAuditTrailPanel({ invoice }: { invoice: InvoiceRecord }) {
+function InvoiceAuditTrailPanel({
+  invoice,
+  onLoadFullInvoice,
+}: {
+  invoice: InvoiceRecord;
+  onLoadFullInvoice: () => Promise<InvoiceRecord>;
+}) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuditLoading, setIsAuditLoading] = useState(false);
   const [isAuditDownloading, setIsAuditDownloading] = useState(false);
   const auditTrail = invoice.auditTrail;
   const timestamps = auditTrail?.timestamps ?? [];
@@ -485,7 +567,8 @@ function InvoiceAuditTrailPanel({ invoice }: { invoice: InvoiceRecord }) {
     setIsAuditDownloading(true);
 
     try {
-      await downloadAuditTrailPdf(invoice);
+      const hydratedInvoice = await onLoadFullInvoice();
+      await downloadAuditTrailPdf(hydratedInvoice);
     } catch (caughtError) {
       toast.error(
         'Unable to download audit trail',
@@ -498,17 +581,45 @@ function InvoiceAuditTrailPanel({ invoice }: { invoice: InvoiceRecord }) {
     }
   };
 
+  const handleToggleAuditTrail = async () => {
+    const nextIsOpen = !isOpen;
+    setIsOpen(nextIsOpen);
+
+    if (!nextIsOpen || isInvoiceFullyLoaded(invoice)) {
+      return;
+    }
+
+    setIsAuditLoading(true);
+
+    try {
+      await onLoadFullInvoice();
+    } catch (caughtError) {
+      toast.error(
+        'Unable to load audit trail',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    } finally {
+      setIsAuditLoading(false);
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70">
       <div className="flex flex-wrap items-center justify-between gap-3 p-3">
         <button
           type="button"
           className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left outline-none transition hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-primary/30"
-          onClick={() => setIsOpen((currentValue) => !currentValue)}
+          onClick={() => void handleToggleAuditTrail()}
           aria-expanded={isOpen}
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <ShieldCheck className="h-4 w-4" />
+            {isAuditLoading ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <ShieldCheck className="h-4 w-4" />
+            )}
           </span>
           <span className="min-w-0">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -517,6 +628,8 @@ function InvoiceAuditTrailPanel({ invoice }: { invoice: InvoiceRecord }) {
             <p className="truncate text-xs text-slate-500">
               {latestEvent
                 ? `Latest: ${latestEvent.title} - ${formatPdtDateTime(latestEvent.occurredAt)}`
+                : invoice.hasAuditTrail
+                  ? 'Open to load the saved legal activity log.'
                 : 'Legal activity log shown in PDT timezone.'}
             </p>
           </span>
@@ -529,7 +642,7 @@ function InvoiceAuditTrailPanel({ invoice }: { invoice: InvoiceRecord }) {
         </button>
         <div className="flex shrink-0 items-center gap-2">
           <Badge variant="secondary" className="rounded-full text-[11px]">
-            {events.length} events
+            {events.length > 0 ? `${events.length} events` : invoice.hasAuditTrail ? 'Saved events' : '0 events'}
           </Badge>
           <Button
             type="button"
@@ -1527,6 +1640,22 @@ function calculateInvoiceTotal(draft: InvoiceDraft): number {
 function toAmount(value: string): number {
   const parsedValue = Number(value);
   return Number.isFinite(parsedValue) ? parsedValue : 0;
+}
+
+function isInvoiceFullyLoaded(invoice: InvoiceRecord): boolean {
+  return invoice.auditTrail !== undefined && invoice.auditTrail !== null;
+}
+
+function hasInvoicePhotoId(invoice: InvoiceRecord): boolean {
+  return Boolean(invoice.photoIdDocument || invoice.hasPhotoIdDocument);
+}
+
+function waitForNextPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
 }
 
 function formatNumberInput(value: number): string {

@@ -94,8 +94,32 @@ export class OrdersService {
     );
   }
 
-  findOne(id: string, user: AuthenticatedUser) {
-    return this.ordersRepository.findOne(id, user);
+  async findOne(id: string, user: AuthenticatedUser) {
+    const order = await this.ordersRepository.findOne(id, user);
+    const invoice = order.invoice;
+
+    if (!invoice) {
+      return order;
+    }
+
+    const { _count, ...invoiceSummary } = invoice;
+
+    return {
+      ...order,
+      invoice: {
+        ...invoiceSummary,
+        currency: order.currency === 'CAD' ? 'CAD' : 'USD',
+        customerSignatureImage: null,
+        photoIdDocument: null,
+        auditTrail: null,
+        hasAuditTrail:
+          _count.auditEvents > 0 ||
+          Boolean(invoice.signatureRequestedAt || invoice.signedAt),
+        hasPhotoIdDocument: Boolean(
+          invoice.photoIdFileName || invoice.photoIdUploadedAt,
+        ),
+      },
+    };
   }
 
   findOrderAgents() {
