@@ -48,6 +48,7 @@ import {
   ALL_SHIPMENT_STATUS_FILTER,
   formatShipmentStatusOptionLabel,
   parseShipmentStatusFilter,
+  REFUNDED_SHIPMENT_STATUS_FILTER,
   type ShipmentStatusFilter,
 } from '@/features/orders/lib/orders.helpers';
 import {
@@ -72,7 +73,9 @@ const SHIPMENT_ORDER_STATUS_FILTERS = [
   'LOCATING',
   'PRE_PROCESSING',
   'PURCHASE',
-] as const satisfies readonly OrderShipmentStatus[];
+  'CANCELLED',
+  REFUNDED_SHIPMENT_STATUS_FILTER,
+] as const satisfies readonly (OrderShipmentStatus | typeof REFUNDED_SHIPMENT_STATUS_FILTER)[];
 
 export function CreateShipmentWorkspace() {
   const router = useRouter();
@@ -284,6 +287,8 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
   }
 
   const shipmentStatusNotes = buildShipmentStatusNotes(order.notes);
+  const isOrderResolvedForShipment =
+    order.status === 'CANCELLED' || order.status === 'REFUNDED';
 
   return (
     <section className="grid gap-6">
@@ -312,10 +317,17 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
             </CardHeader>
             <CardContent className="space-y-5 p-5">
               <ShipmentStatusHistoryPanel notes={shipmentStatusNotes} />
-              <CreateShipmentForm
-                selectedOrder={order}
-                onCreated={handleShipmentCreated}
-              />
+              {isOrderResolvedForShipment ? (
+                <div className="rounded-2xl border border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
+                  Status updates are disabled because this order is{' '}
+                  {formatOrderStatus(order.status)}.
+                </div>
+              ) : (
+                <CreateShipmentForm
+                  selectedOrder={order}
+                  onCreated={handleShipmentCreated}
+                />
+              )}
             </CardContent>
           </Card>
         </div>

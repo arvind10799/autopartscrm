@@ -22,11 +22,13 @@ import {
 export const ORDER_PAGE_SIZE = 10;
 export const ALL_ORDER_STATUS_FILTER = 'ALL' as const;
 export const ALL_SHIPMENT_STATUS_FILTER = 'ALL' as const;
+export const REFUNDED_SHIPMENT_STATUS_FILTER = 'REFUNDED' as const;
 
 export type OrderStatusFilter = typeof ALL_ORDER_STATUS_FILTER | OrderStatus;
 export type ShipmentStatusFilter =
   | typeof ALL_SHIPMENT_STATUS_FILTER
-  | OrderShipmentStatus;
+  | OrderShipmentStatus
+  | typeof REFUNDED_SHIPMENT_STATUS_FILTER;
 
 const orderStatusSchema = z.enum(ORDER_STATUSES);
 const shipmentStatusSchema = z.enum(ORDER_SHIPMENT_STATUSES);
@@ -78,7 +80,7 @@ export function formatOrderStatusOptionLabel(status: OrderStatus): string {
 }
 
 export function formatShipmentStatusOptionLabel(
-  status: OrderShipmentStatus,
+  status: OrderShipmentStatus | typeof REFUNDED_SHIPMENT_STATUS_FILTER,
 ): string {
   return status
     .toLowerCase()
@@ -117,6 +119,10 @@ export function parseOrderStatusFilter(value: string): OrderStatusFilter {
 }
 
 export function parseShipmentStatusFilter(value: string): ShipmentStatusFilter {
+  if (value === REFUNDED_SHIPMENT_STATUS_FILTER) {
+    return REFUNDED_SHIPMENT_STATUS_FILTER;
+  }
+
   return isShipmentStatus(value) ? value : ALL_SHIPMENT_STATUS_FILTER;
 }
 

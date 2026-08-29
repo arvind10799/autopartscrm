@@ -16,16 +16,19 @@ import type {
 
 export const SHIPMENT_PAGE_SIZE = 10;
 export const ALL_SHIPMENT_STATUS_FILTER = 'ALL' as const;
+export const REFUNDED_SHIPMENT_STATUS_FILTER = 'REFUNDED' as const;
 
 export type ShipmentStatusFilter =
   | typeof ALL_SHIPMENT_STATUS_FILTER
-  | ShipmentStatus;
+  | ShipmentStatus
+  | typeof REFUNDED_SHIPMENT_STATUS_FILTER;
 
 type ShipmentsListQueryInput = {
   page?: unknown;
   limit?: unknown;
   search?: unknown;
   status?: unknown;
+  orderStatus?: unknown;
   createdFrom?: unknown;
   createdTo?: unknown;
 };
@@ -75,7 +78,9 @@ export function createEmptyShipmentsResponse(
   };
 }
 
-export function formatShipmentStatusOptionLabel(status: ShipmentStatus): string {
+export function formatShipmentStatusOptionLabel(
+  status: ShipmentStatus | typeof REFUNDED_SHIPMENT_STATUS_FILTER,
+): string {
   return status
     .toLowerCase()
     .split('_')
@@ -88,6 +93,10 @@ export function isShipmentStatus(value: string): value is ShipmentStatus {
 }
 
 export function parseShipmentStatusFilter(value: string): ShipmentStatusFilter {
+  if (value === REFUNDED_SHIPMENT_STATUS_FILTER) {
+    return REFUNDED_SHIPMENT_STATUS_FILTER;
+  }
+
   return isShipmentStatus(value) ? value : ALL_SHIPMENT_STATUS_FILTER;
 }
 
@@ -103,6 +112,7 @@ export function parseShipmentsQueryParams(
     limit: searchParams.get('limit'),
     search: searchParams.get('search'),
     status: searchParams.get('status'),
+    orderStatus: searchParams.get('orderStatus'),
     ...readTimestampRangeQueryFromSearchParams(searchParams),
   });
 }
@@ -125,12 +135,22 @@ export function normalizeShipmentsListQuery(
     typeof input.status === 'string' && isShipmentStatus(input.status)
       ? input.status
       : undefined;
+  const orderStatus =
+    input.status === REFUNDED_SHIPMENT_STATUS_FILTER
+      ? REFUNDED_SHIPMENT_STATUS_FILTER
+      : input.status === 'CANCELLED'
+        ? 'CANCELLED'
+        : input.orderStatus === REFUNDED_SHIPMENT_STATUS_FILTER ||
+            input.orderStatus === 'CANCELLED'
+          ? input.orderStatus
+          : undefined;
 
   return {
     page,
     limit,
     search,
-    status,
+    status: orderStatus ? undefined : status,
+    orderStatus,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
   };
@@ -148,6 +168,10 @@ export function buildShipmentsQueryString(query: ShipmentsListQuery): string {
 
   if (query.status) {
     baseSearchParams.set('status', query.status);
+  }
+
+  if (query.orderStatus) {
+    baseSearchParams.set('orderStatus', query.orderStatus);
   }
 
   return buildDateRangeSearchParams(baseSearchParams, query).toString();

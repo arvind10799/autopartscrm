@@ -34,6 +34,7 @@ import {
   formatShipmentStatusOptionLabel,
   parseOrderStatusFilter,
   parseShipmentStatusFilter,
+  REFUNDED_SHIPMENT_STATUS_FILTER,
   type OrderStatusFilter,
   type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
@@ -49,6 +50,10 @@ import { UpdateOrderForm } from './UpdateOrderForm';
 
 const ALL_AGENTS_FILTER = 'ALL';
 const PHONE_LIKE_SEARCH_PATTERN = /^[\d\s()+.-]+$/;
+const ORDER_SHIPMENT_STATUS_FILTERS = [
+  ...ORDER_SHIPMENT_STATUSES,
+  REFUNDED_SHIPMENT_STATUS_FILTER,
+] as const;
 
 function formatAgentFilterLabel(agent: OrderUser) {
   return `${agent.name} (${agent.role === 'ADMIN' ? 'Admin' : 'Sales'})`;
@@ -296,7 +301,7 @@ export function OrdersPageContent() {
                 <option value={ALL_SHIPMENT_STATUS_FILTER}>
                   All shipping statuses
                 </option>
-                {ORDER_SHIPMENT_STATUSES.map((status) => (
+                {ORDER_SHIPMENT_STATUS_FILTERS.map((status) => (
                   <option key={status} value={status}>
                     {formatShipmentStatusOptionLabel(status)}
                   </option>

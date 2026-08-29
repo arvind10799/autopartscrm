@@ -22,6 +22,7 @@ import {
   ALL_SHIPMENT_STATUS_FILTER,
   formatShipmentStatusOptionLabel,
   parseShipmentStatusFilter,
+  REFUNDED_SHIPMENT_STATUS_FILTER,
   type ShipmentStatusFilter,
 } from '../lib/shipments.helpers';
 import type { ShipmentStatus } from '../types/shipment.types';
@@ -33,7 +34,8 @@ const OPERATIONAL_SHIPMENT_STATUS_FILTERS = [
   'DELAYED',
   'DELIVERED',
   'CANCELLED',
-] as const satisfies readonly ShipmentStatus[];
+  REFUNDED_SHIPMENT_STATUS_FILTER,
+] as const satisfies readonly (ShipmentStatus | typeof REFUNDED_SHIPMENT_STATUS_FILTER)[];
 
 export function ShipmentsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');

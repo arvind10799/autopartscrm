@@ -1,9 +1,9 @@
 import { StatusBadge } from '@/components/ui/status-badge';
-import { formatShipmentStatus } from '../lib/shipment-formatters';
-import type { ShipmentStatus } from '../types/shipment.types';
+import { formatShipmentStatusDisplay } from '../lib/shipment-formatters';
+import type { ShipmentStatusDisplay } from '../types/shipment.types';
 
 const shipmentStatusTones: Record<
-  ShipmentStatus,
+  ShipmentStatusDisplay,
   'neutral' | 'info' | 'warning' | 'success' | 'danger'
 > = {
   PENDING: 'neutral',
@@ -15,12 +15,13 @@ const shipmentStatusTones: Record<
   DELIVERED: 'success',
   DELAYED: 'warning',
   CANCELLED: 'danger',
+  REFUNDED: 'warning',
 };
 
-export function ShipmentStatusBadge({ status }: { status: ShipmentStatus }) {
+export function ShipmentStatusBadge({ status }: { status: ShipmentStatusDisplay }) {
   return (
     <StatusBadge
-      label={formatShipmentStatus(status)}
+      label={formatShipmentStatusDisplay(status)}
       tone={shipmentStatusTones[status]}
     />
   );

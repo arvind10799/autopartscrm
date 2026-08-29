@@ -133,6 +133,14 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   }
 
   const nextStatuses = getShipmentDetailNextStatuses(shipment.currentStatus);
+  const resolvedOrderStatus = invoiceOrder?.status ?? shipment.order.status;
+  const isOrderResolvedForShipment =
+    resolvedOrderStatus === 'CANCELLED' || resolvedOrderStatus === 'REFUNDED';
+  const statusLockedReason = isOrderResolvedForShipment
+    ? `Status updates are disabled because this order is ${formatOrderStatus(
+        resolvedOrderStatus,
+      )}.`
+    : null;
   const shipmentCost = shipment.costs[0] ?? null;
   const canAddAdditionalCost =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
@@ -146,6 +154,10 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     : undefined;
 
   const handleStatusSubmit = async () => {
+    if (isOrderResolvedForShipment) {
+      return;
+    }
+
     if (!selectedStatus) {
       return;
     }
@@ -202,6 +214,18 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             cost={shipmentCost}
             saleMetricLabel={invoiceOrder?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
             grossProfitOverride={gpOverride}
+            refundDetails={
+              invoiceOrder?.status === 'REFUNDED'
+                ? {
+                    refundType: invoiceOrder.intakeDetails.refundType,
+                    refundDeductionAmount:
+                      invoiceOrder.intakeDetails.refundDeductionAmount,
+                    refundDeductionReason:
+                      invoiceOrder.intakeDetails.refundDeductionReason,
+                    refundedAt: invoiceOrder.intakeDetails.refundedAt,
+                  }
+                : null
+            }
             additionalCosts={shipment.additionalCosts}
             costHistories={shipment.costHistories}
             canAddAdditionalCost={canAddAdditionalCost}
@@ -263,6 +287,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             requiresProNumber={
               selectedStatus === 'IN_TRANSIT' && !shipment.proNumber
             }
+            lockedReason={statusLockedReason}
             onStatusChange={handleStatusChange}
             onProNumberChange={(value) => {
               clearStatusError();

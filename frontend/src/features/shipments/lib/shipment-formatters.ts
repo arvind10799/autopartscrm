@@ -1,4 +1,5 @@
 import type {
+  ShipmentStatusDisplay,
   ShipmentStatus,
   TrackingTimelineStatus,
 } from '../types/shipment.types';
@@ -16,6 +17,11 @@ const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   CANCELLED: 'Cancelled',
 };
 
+const SHIPMENT_STATUS_DISPLAY_LABELS: Record<ShipmentStatusDisplay, string> = {
+  ...SHIPMENT_STATUS_LABELS,
+  REFUNDED: 'Refunded',
+};
+
 const TRACKING_TIMELINE_STATUS_LABELS: Record<TrackingTimelineStatus, string> = {
   CREATED: 'Created',
   PICKED: 'Picked',
@@ -26,6 +32,10 @@ const TRACKING_TIMELINE_STATUS_LABELS: Record<TrackingTimelineStatus, string> = 
 
 export function formatShipmentStatus(status: ShipmentStatus): string {
   return SHIPMENT_STATUS_LABELS[status];
+}
+
+export function formatShipmentStatusDisplay(status: ShipmentStatusDisplay): string {
+  return SHIPMENT_STATUS_DISPLAY_LABELS[status];
 }
 
 export function formatTrackingTimelineStatus(

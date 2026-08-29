@@ -10,6 +10,7 @@ import {
   createEmptyOrdersResponse,
   normalizeOrdersListQuery,
   ORDER_PAGE_SIZE,
+  REFUNDED_SHIPMENT_STATUS_FILTER,
   type OrderStatusFilter,
   type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
@@ -53,13 +54,24 @@ export function useOrdersList({
 
   useEffect(() => {
     const requestId = requestTracker.beginRequest();
+    const isResolutionShipmentFilter =
+      shipmentStatus === 'CANCELLED' ||
+      shipmentStatus === REFUNDED_SHIPMENT_STATUS_FILTER;
+    const resolvedOrderStatus =
+      status === ALL_ORDER_STATUS_FILTER || status === undefined
+        ? isResolutionShipmentFilter
+          ? shipmentStatus
+          : undefined
+        : status;
     const normalizedQuery = normalizeOrdersListQuery({
       page: Number.isInteger(page) && page > 0 ? page : 1,
       limit: ORDER_PAGE_SIZE,
       search,
-      status: status === ALL_ORDER_STATUS_FILTER ? undefined : status,
+      status: resolvedOrderStatus,
       shipmentStatus:
-        shipmentStatus === ALL_SHIPMENT_STATUS_FILTER ? undefined : shipmentStatus,
+        shipmentStatus === ALL_SHIPMENT_STATUS_FILTER || isResolutionShipmentFilter
+          ? undefined
+          : shipmentStatus,
       hasShipment,
       createdFrom,
       createdTo,

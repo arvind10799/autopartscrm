@@ -97,6 +97,7 @@ function buildColumns(
       cell: ({ row }) => (
         <ShippingStatusCell
           status={row.original.latestShipmentStatus}
+          orderStatus={row.original.status}
           orderDate={row.original.intakeDetails?.orderDate}
           fallbackDate={row.original.createdAt}
           bolNumber={row.original.latestShipment?.bolNumber}

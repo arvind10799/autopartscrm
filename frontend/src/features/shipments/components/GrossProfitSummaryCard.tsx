@@ -48,6 +48,13 @@ type ShipmentCostHistoryLike = {
   };
 };
 
+type RefundDetailsLike = {
+  refundType: 'FULL' | 'PARTIAL' | null;
+  refundDeductionAmount: number | null;
+  refundDeductionReason: string | null;
+  refundedAt: string | null;
+};
+
 export function GrossProfitSummaryCard({
   shipmentId,
   totalSaleAmount,
@@ -55,6 +62,7 @@ export function GrossProfitSummaryCard({
   cost,
   saleMetricLabel = 'Sale',
   grossProfitOverride,
+  refundDetails,
   additionalCosts = [],
   costHistories = [],
   canAddAdditionalCost = false,
@@ -69,6 +77,7 @@ export function GrossProfitSummaryCard({
   cost: ShipmentCostLike;
   saleMetricLabel?: string;
   grossProfitOverride?: number;
+  refundDetails?: RefundDetailsLike | null;
   additionalCosts?: ShipmentAdditionalCostLike[];
   costHistories?: ShipmentCostHistoryLike[];
   canAddAdditionalCost?: boolean;
@@ -106,6 +115,7 @@ export function GrossProfitSummaryCard({
   const canOpenForm = canAddAdditionalCost && Boolean(shipmentId) && Boolean(cost);
   const canOpenBaseEditForm =
     canEditBaseCost && Boolean(shipmentId) && Boolean(cost);
+  const hasRefundDetails = Boolean(refundDetails?.refundType);
 
   const resetAdditionalCostForm = () => {
     setAmount('');
@@ -257,6 +267,11 @@ export function GrossProfitSummaryCard({
                 {formatCurrency(grossProfit, displayCurrency)}
               </span>
             </CardTitle>
+            {hasRefundDetails ? (
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">
+                Refunded
+              </p>
+            ) : null}
           </div>
           <Button
             type="button"
@@ -331,6 +346,41 @@ export function GrossProfitSummaryCard({
           <p className="rounded-xl border border-dashed border-border/70 bg-secondary/15 px-3 py-2 text-xs text-muted-foreground">
             Formula: sale - part cost - actual shipping cost - additional costs.
           </p>
+
+          {hasRefundDetails ? (
+            <div className="rounded-xl border border-violet-200 bg-violet-50/80 px-3 py-2 text-sm text-violet-950 dark:border-violet-900/60 dark:bg-violet-950/20 dark:text-violet-100">
+              <p className="font-semibold">
+                Refund details:{' '}
+                {refundDetails?.refundType === 'PARTIAL'
+                  ? 'Partial refund'
+                  : 'Full refund'}
+              </p>
+              {refundDetails?.refundType === 'PARTIAL' ? (
+                <div className="mt-1 space-y-1 text-xs">
+                  <p>
+                    Deduction Amount/Charges:{' '}
+                    {formatCurrency(
+                      refundDetails.refundDeductionAmount ?? 0,
+                      displayCurrency,
+                    )}
+                  </p>
+                  <p className="whitespace-pre-wrap">
+                    Reason for Deduction:{' '}
+                    {refundDetails.refundDeductionReason ?? 'Not provided'}
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-1 text-xs">
+                  Complete order amount refunded. GP is locked at $0.00.
+                </p>
+              )}
+              {refundDetails?.refundedAt ? (
+                <p className="mt-1 text-[11px] text-violet-800 dark:text-violet-200">
+                  Refunded {formatDateTime(refundDetails.refundedAt)}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {additionalCosts.length > 0 ? (
             <div className="space-y-2">

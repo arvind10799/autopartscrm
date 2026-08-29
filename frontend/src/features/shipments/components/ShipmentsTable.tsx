@@ -77,6 +77,7 @@ const columns: ColumnDef<ShipmentSummary>[] = [
     cell: ({ row }) => (
       <ShippingStatusCell
         status={row.original.currentStatus}
+        orderStatus={row.original.order.status}
         orderDate={row.original.order.orderDate}
         fallbackDate={row.original.order.createdAt}
         bolNumber={row.original.bolNumber}

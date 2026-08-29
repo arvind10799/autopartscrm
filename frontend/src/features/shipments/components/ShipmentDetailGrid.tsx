@@ -17,6 +17,11 @@ export function ShipmentDetailGrid({
   shipment: ShipmentDetail;
   action?: ReactNode;
 }) {
+  const displayStatus =
+    shipment.order.status === 'REFUNDED' || shipment.order.status === 'CANCELLED'
+      ? shipment.order.status
+      : shipment.currentStatus;
+
   return (
     <Card>
       <CardHeader className="space-y-3 pb-3">
@@ -42,7 +47,7 @@ export function ShipmentDetailGrid({
         />
         <DetailBlock
           label="Current status"
-          value={<ShipmentStatusBadge status={shipment.currentStatus} />}
+          value={<ShipmentStatusBadge status={displayStatus} />}
         />
         <DetailBlock label="Order number" value={shipment.order.orderNumber} />
         <DetailBlock label="Customer" value={shipment.order.customerName} />

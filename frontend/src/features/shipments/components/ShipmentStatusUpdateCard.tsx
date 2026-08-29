@@ -22,6 +22,7 @@ export function ShipmentStatusUpdateCard({
   statusError,
   proNumber,
   requiresProNumber,
+  lockedReason,
   onStatusChange,
   onProNumberChange,
   onSubmit,
@@ -32,6 +33,7 @@ export function ShipmentStatusUpdateCard({
   statusError: string | null;
   proNumber: string;
   requiresProNumber: boolean;
+  lockedReason?: string | null;
   onStatusChange: (status: ShipmentStatus) => void;
   onProNumberChange: (proNumber: string) => void;
   onSubmit: () => Promise<void>;
@@ -42,7 +44,11 @@ export function ShipmentStatusUpdateCard({
         <CardTitle className="text-2xl">Status update</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {nextStatuses.length > 0 ? (
+        {lockedReason ? (
+          <div className="rounded-2xl border border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
+            {lockedReason}
+          </div>
+        ) : nextStatuses.length > 0 ? (
           <>
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">

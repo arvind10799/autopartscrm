@@ -165,6 +165,16 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
         cost={latestShipmentCost}
         saleMetricLabel={order.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
         grossProfitOverride={gpOverride}
+        refundDetails={
+          order.status === 'REFUNDED'
+            ? {
+                refundType: order.intakeDetails.refundType,
+                refundDeductionAmount: order.intakeDetails.refundDeductionAmount,
+                refundDeductionReason: order.intakeDetails.refundDeductionReason,
+                refundedAt: order.intakeDetails.refundedAt,
+              }
+            : null
+        }
         additionalCosts={latestShipment?.additionalCosts ?? []}
         costHistories={latestShipment?.costHistories ?? []}
         canAddAdditionalCost={canAddAdditionalCost}
@@ -263,6 +273,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                     <ShippingStatusValue
                       shipmentCount={order.counts.shipments}
                       status={order.latestShipmentStatus}
+                      orderStatus={order.status}
                     />
                   }
                 />
@@ -537,11 +548,17 @@ function formatNullableText(value: string | null): string {
 
 function ShippingStatusValue({
   status,
+  orderStatus,
   shipmentCount,
 }: {
   status: OrderShipmentStatus | null;
+  orderStatus: OrderDetail['status'];
   shipmentCount: number;
 }) {
+  if (orderStatus === 'CANCELLED' || orderStatus === 'REFUNDED') {
+    return <ShipmentStatusBadge status={orderStatus} />;
+  }
+
   if (!status || shipmentCount === 0) {
     return <span className="text-sm text-muted-foreground">Shipment is not created yet</span>;
   }

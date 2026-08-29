@@ -1,5 +1,6 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
+import { OrderStatus } from '../../../common/enums/order-status.enum';
 import { ShipmentStatus } from '../../../common/enums/shipment-status.enum';
 
 export class QueryShipmentsDto extends PaginationQueryDto {
@@ -10,4 +11,8 @@ export class QueryShipmentsDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(ShipmentStatus)
   status?: ShipmentStatus;
+
+  @IsOptional()
+  @IsEnum(OrderStatus)
+  orderStatus?: OrderStatus;
 }

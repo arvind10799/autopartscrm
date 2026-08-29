@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ShipmentStatus as PrismaShipmentStatus } from '@prisma/client';
+import {
+  OrderStatus as PrismaOrderStatus,
+  Prisma,
+  ShipmentStatus as PrismaShipmentStatus,
+} from '@prisma/client';
 import {
   buildCreatedAtFilter,
 } from '../../common/utils/date-range.util';
@@ -159,6 +163,15 @@ export class ShipmentsRepository {
     } else {
       where.status = {
         in: OPERATIONAL_SHIPMENT_STATUSES,
+      };
+    }
+
+    if (
+      queryShipmentsDto.orderStatus === PrismaOrderStatus.CANCELLED ||
+      queryShipmentsDto.orderStatus === PrismaOrderStatus.REFUNDED
+    ) {
+      where.order = {
+        status: queryShipmentsDto.orderStatus,
       };
     }
 

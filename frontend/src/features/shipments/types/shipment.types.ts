@@ -13,6 +13,7 @@ export const SHIPMENT_STATUSES = [
 ] as const;
 
 export type ShipmentStatus = (typeof SHIPMENT_STATUSES)[number];
+export type ShipmentStatusDisplay = ShipmentStatus | 'REFUNDED';
 
 export interface ShipmentOrderSummary {
   id: string;
@@ -157,6 +158,7 @@ export interface ShipmentsListQuery {
   limit: number;
   search?: string;
   status?: ShipmentStatus;
+  orderStatus?: Extract<OrderStatus, 'CANCELLED' | 'REFUNDED'>;
   createdFrom?: string;
   createdTo?: string;
 }

@@ -44,10 +44,9 @@ export function OrderResolutionActions({
   const [deductionAmount, setDeductionAmount] = useState('');
   const [deductionReason, setDeductionReason] = useState('');
 
-  const canResolve =
-    (authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING') &&
-    order.status !== 'CANCELLED' &&
-    order.status !== 'REFUNDED';
+  const canUseActions = authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
+  const canCancel = canUseActions && order.status !== 'CANCELLED' && order.status !== 'REFUNDED';
+  const canRefund = canUseActions && order.status !== 'REFUNDED';
 
   if (authUser?.role !== 'ADMIN' && authUser?.role !== 'SHIPPING') {
     return null;
@@ -121,7 +120,7 @@ export function OrderResolutionActions({
           type="button"
           variant="outline"
           size="sm"
-          disabled={!canResolve || isSubmitting}
+          disabled={!canCancel || isSubmitting}
           onClick={() => setActiveAction('cancel')}
         >
           <Ban className="h-4 w-4" />
@@ -131,7 +130,7 @@ export function OrderResolutionActions({
           type="button"
           variant="outline"
           size="sm"
-          disabled={!canResolve || isSubmitting}
+          disabled={!canRefund || isSubmitting}
           onClick={() => setActiveAction('refund')}
         >
           <RotateCcw className="h-4 w-4" />
