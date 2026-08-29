@@ -205,16 +205,24 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
           <ShipmentDetailGrid
             shipment={shipment}
             action={
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!invoiceOrder}
-                onClick={() => setIsOrderDetailsOpen(true)}
-              >
-                <Eye className="h-4 w-4" />
-                View full order details
-              </Button>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!invoiceOrder}
+                  onClick={() => setIsOrderDetailsOpen(true)}
+                >
+                  <Eye className="h-4 w-4" />
+                  View full order details
+                </Button>
+                <Button type="button" variant="outline" size="sm" disabled>
+                  Cancellation
+                </Button>
+                <Button type="button" variant="outline" size="sm" disabled>
+                  Refund
+                </Button>
+              </div>
             }
           />
 

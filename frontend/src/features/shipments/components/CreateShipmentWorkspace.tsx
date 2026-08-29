@@ -52,6 +52,7 @@ import {
   formatDateTime,
   formatOrderPaymentMethod,
   formatOrderStatus,
+  formatRelativeTime,
 } from '@/features/orders/lib/order-formatters';
 import type {
   OrderDetail,
@@ -366,21 +367,21 @@ export function ShipmentOrderDetailsPanel({
   const intake = order.intakeDetails;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <Card className="overflow-hidden border-border/70 shadow-sm">
-        <CardHeader className="bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(255,255,255,0.98))]">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="space-y-2">
-              <CardDescription>Selected order</CardDescription>
-              <CardTitle className="text-2xl sm:text-[1.75rem]">
+        <CardHeader className="bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(255,255,255,0.98))] p-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0 space-y-1">
+              <CardDescription className="text-xs">Selected order</CardDescription>
+              <CardTitle className="truncate text-xl">
                 {order.orderNumber}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="line-clamp-2 text-xs text-muted-foreground">
                 {order.customerName} ordered {order.partDescription}.
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[25rem]">
+            <div className="grid gap-2 sm:grid-cols-3 xl:min-w-[22rem]">
               <MetricCard label="Status" value={formatOrderStatus(order.status)} />
               <MetricCard
                 label="Sale value"
@@ -392,7 +393,7 @@ export function ShipmentOrderDetailsPanel({
         </CardHeader>
       </Card>
 
-      <div className="grid gap-5 2xl:grid-cols-2">
+      <div className="grid gap-3 2xl:grid-cols-2">
         <DetailGroup title="Order and customer" icon={<FileStack className="h-4 w-4 text-primary" />}>
           <DetailGrid>
             <DetailBlock label="Order number" value={order.orderNumber} />
@@ -514,12 +515,14 @@ export function ShipmentOrderDetailsPanel({
         </DetailGroup>
       </div>
 
+      <PlaceholderActionButtons />
+
       <Card className="border-border/70 shadow-sm">
-        <CardHeader className="pb-3">
+        <CardHeader className="p-4 pb-2">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
-              <CardTitle className="text-xl">Notes and edit history</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg">Notes and edit history</CardTitle>
+              <CardDescription className="text-xs">
                 Shipping can review and add customer notes before dispatch.
               </CardDescription>
             </div>
@@ -535,10 +538,10 @@ export function ShipmentOrderDetailsPanel({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 p-4 pt-2">
           {isAddNoteOpen ? (
             <form
-              className="space-y-3 rounded-2xl border border-border/70 bg-secondary/20 p-4"
+              className="space-y-2.5 rounded-xl border border-border/70 bg-secondary/20 p-3"
               onSubmit={(event) => {
                 event.preventDefault();
                 void handleAddNoteSubmit();
@@ -553,7 +556,7 @@ export function ShipmentOrderDetailsPanel({
               <textarea
                 id="shipment-workspace-order-note"
                 value={noteMessage}
-                rows={4}
+                rows={3}
                 onChange={(event) => setNoteMessage(event.target.value)}
                 placeholder="Add a shipping handoff, customer update, or dispatch note."
                 className={`w-full rounded-2xl border bg-white/90 px-4 py-3 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -590,13 +593,20 @@ export function ShipmentOrderDetailsPanel({
           ) : null}
 
           {order.notes.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {order.notes.map((note) => (
                 <div
                   key={note.id}
-                  className="rounded-2xl border border-border/70 bg-secondary/20 p-4"
+                  className="rounded-xl border border-border/70 bg-background/85 px-3 py-2.5 shadow-sm"
                 >
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="min-w-0 truncate text-sm font-semibold text-foreground">
+                      {note.author.name}
+                      <span className="mx-1.5 text-muted-foreground">|</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {formatDateTime(note.createdAt)} ({formatRelativeTime(note.createdAt)})
+                      </span>
+                    </p>
                     <Badge
                       variant={
                         isShipmentStatusHistoryNote(note)
@@ -612,11 +622,8 @@ export function ShipmentOrderDetailsPanel({
                           ? 'Edit history'
                           : 'Note'}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {note.author.name} | {formatDateTime(note.createdAt)}
-                    </span>
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
                     {note.content}
                   </p>
                 </div>
@@ -644,19 +651,19 @@ function DetailGroup({
 }) {
   return (
     <Card className="border-border/70 shadow-sm">
-      <CardHeader className="pb-3">
+      <CardHeader className="p-3 pb-2">
         <div className="flex items-center gap-2">
           {icon}
-          <CardTitle className="text-xl">{title}</CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
         </div>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="p-3 pt-0">{children}</CardContent>
     </Card>
   );
 }
 
 function DetailGrid({ children }: { children: ReactNode }) {
-  return <div className="grid gap-3 md:grid-cols-2">{children}</div>;
+  return <div className="grid gap-2 md:grid-cols-2">{children}</div>;
 }
 
 function DetailBlock({
@@ -672,18 +679,34 @@ function DetailBlock({
 }) {
   return (
     <div className={`min-w-0 ${className ?? ''}`}>
-      <div className="h-full min-w-0 rounded-2xl border border-border/70 bg-secondary/20 p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="h-full min-w-0 rounded-xl border border-border/70 bg-secondary/20 px-3 py-2.5">
+        <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           {label}
         </p>
         <div
-          className={`mt-2 min-w-0 whitespace-pre-wrap text-sm text-foreground ${
+          className={`mt-1 min-w-0 whitespace-pre-wrap text-sm leading-5 text-foreground ${
             breakAnywhere ? 'break-all' : 'break-words'
           }`}
         >
           {value}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PlaceholderActionButtons() {
+  return (
+    <div className="flex flex-wrap gap-2 rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-3">
+      <Button type="button" variant="outline" size="sm" disabled>
+        Cancellation
+      </Button>
+      <Button type="button" variant="outline" size="sm" disabled>
+        Refund
+      </Button>
+      <span className="self-center text-xs text-muted-foreground">
+        Actions visible for now; functionality will be added later.
+      </span>
     </div>
   );
 }
@@ -722,11 +745,11 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/70 bg-white/85 px-3.5 py-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+    <div className="rounded-xl border border-white/70 bg-white/85 px-3 py-2 shadow-sm">
+      <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
+      <p className="mt-0.5 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }
