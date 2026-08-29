@@ -423,7 +423,7 @@ function buildNoteTimeline(notes: OrderNote[]): TimelineEntry[] {
       id: note.id,
       timestamp: note.createdAt,
       actorName: note.author.name,
-      action: 'ADDED note',
+      action: 'Note',
       body: note.content,
       badgeVariant: 'secondary' as const,
     }))
@@ -626,16 +626,18 @@ function TimelineGroup({
   emptyMessage: string;
 }) {
   return (
-    <section className="space-y-2.5">
+    <section className="space-y-2">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {title}
         </h3>
-        <Badge variant="outline">{entries.length}</Badge>
+        <Badge variant="outline" className="h-5 px-2 text-[11px]">
+          {entries.length}
+        </Badge>
       </div>
 
       {entries.length > 0 ? (
-        <ol className="space-y-2.5">
+        <ol className="space-y-2">
           {entries.map((entry) => (
             <TimelineItem key={entry.id} entry={entry} />
           ))}
@@ -651,17 +653,24 @@ function TimelineGroup({
 
 function TimelineItem({ entry }: { entry: TimelineEntry }) {
   return (
-    <li className="relative rounded-xl border border-border/70 bg-background/85 p-3 shadow-sm">
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={entry.badgeVariant ?? 'secondary'}>
+    <li className="relative rounded-xl border border-border/70 bg-background/85 px-3 py-2.5 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {entry.actorName}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            {formatDateTime(entry.timestamp)}
+          </p>
+        </div>
+        <Badge
+          variant={entry.badgeVariant ?? 'secondary'}
+          className="h-5 shrink-0 rounded-full px-2 text-[11px]"
+        >
           {entry.action}
         </Badge>
-        <span className="text-xs text-muted-foreground">
-          {formatDateTime(entry.timestamp)}
-        </span>
       </div>
-      <p className="mt-1.5 text-sm font-semibold text-foreground">{entry.actorName}</p>
-      <div className="mt-1.5 whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
+      <div className="mt-2 whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
         {entry.body}
       </div>
     </li>

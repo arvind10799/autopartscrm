@@ -45,6 +45,23 @@ import { GrossProfitSummaryCard } from './GrossProfitSummaryCard';
 import { ShipmentDetailGrid } from './ShipmentDetailGrid';
 import { ShipmentStatusUpdateCard } from './ShipmentStatusUpdateCard';
 
+type ShipmentActivityEntry = {
+  id: string;
+  timestamp: string;
+  authorName: string;
+  label: string;
+  badgeVariant:
+    | 'default'
+    | 'secondary'
+    | 'outline'
+    | 'neutral'
+    | 'success'
+    | 'warning'
+    | 'danger'
+    | 'info';
+  body: ReactNode;
+};
+
 export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   const {
     shipment,
@@ -460,8 +477,7 @@ function ShipmentNotesHistoryCard({
   const [noteMessage, setNoteMessage] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = useState(false);
-  const statusNotes = orderNotes.filter(isShipmentStatusHistoryNote);
-  const timelineEntries = [
+  const timelineEntries: ShipmentActivityEntry[] = [
     ...notes.map((note) => ({
       id: note.id,
       timestamp: note.createdAt,
@@ -470,13 +486,51 @@ function ShipmentNotesHistoryCard({
       badgeVariant: 'secondary' as const,
       body: note.message,
     })),
-    ...statusNotes.map((note) => ({
+    ...orderNotes
+      .filter(isPlainOrderNote)
+      .map((note) => ({
+        id: note.id,
+        timestamp: note.createdAt,
+        authorName: note.author.name,
+        label: 'Order note',
+        badgeVariant: 'neutral' as const,
+        body: note.content,
+      })),
+    ...orderNotes
+      .filter(isOrderUpdateNote)
+      .map((note) => ({
+        id: note.id,
+        timestamp: note.createdAt,
+        authorName: note.author.name,
+        label: 'Order edit',
+        badgeVariant: 'info' as const,
+        body: formatOrderHistoryBody(note.content),
+      })),
+    ...orderNotes
+      .filter(isOrderStatusHistoryNote)
+      .map((note) => ({
+        id: note.id,
+        timestamp: note.createdAt,
+        authorName: note.author.name,
+        label: 'Order status',
+        badgeVariant: 'warning' as const,
+        body: formatOrderHistoryBody(note.content),
+      })),
+    ...orderNotes.filter(isShipmentStatusHistoryNote).map((note) => ({
       id: note.id,
       timestamp: note.createdAt,
       authorName: note.author.name,
-      label: 'Edit history',
+      label: 'Status change',
       badgeVariant: 'warning' as const,
       body: formatShipmentStatusHistoryBody(note.content),
+    })),
+    ...shipment.costHistories.map((history) => ({
+      id: history.id,
+      timestamp: history.createdAt,
+      authorName: history.createdBy.name,
+      label: 'GP edit',
+      badgeVariant: 'success' as const,
+      body: history.summary,
     })),
   ].sort(
     (firstEntry, secondEntry) =>
@@ -552,15 +606,15 @@ function ShipmentNotesHistoryCard({
 
   return (
     <Card>
-      <CardHeader className="space-y-4 pb-4">
+      <CardHeader className="space-y-3 pb-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2 text-2xl">
+            <CardTitle className="flex items-center gap-2 text-xl">
               <History className="h-5 w-5 text-primary" />
               Notes & Edit History
             </CardTitle>
-            <CardDescription>
-              Shipment notes and status history for this shipment workspace.
+            <CardDescription className="text-xs">
+              All order notes, shipment notes, edit history, status updates, and GP changes.
             </CardDescription>
           </div>
           <Button
@@ -576,10 +630,10 @@ function ShipmentNotesHistoryCard({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {isAddNoteOpen ? (
           <form
-            className="space-y-3 rounded-2xl border border-border/70 bg-secondary/20 p-4"
+            className="space-y-2.5 rounded-2xl border border-border/70 bg-secondary/20 p-3"
             onSubmit={(event) => {
               event.preventDefault();
               void handleAddNoteSubmit();
@@ -594,7 +648,7 @@ function ShipmentNotesHistoryCard({
             <textarea
               id="shipment-detail-note"
               value={noteMessage}
-              rows={4}
+              rows={3}
               onChange={(event) => setNoteMessage(event.target.value)}
               placeholder="Add a shipping update, carrier note, or handoff detail."
               className={cn(
@@ -639,22 +693,32 @@ function ShipmentNotesHistoryCard({
 
         {isLoadingNotes || isOrderNotesLoading ? (
           <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
-            Loading shipment notes and edit history...
+            Loading notes and edit history...
           </div>
         ) : timelineEntries.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {timelineEntries.map((entry) => (
               <div
                 key={entry.id}
-                className="rounded-2xl border border-border/70 bg-secondary/20 p-4"
+                className="rounded-xl border border-border/70 bg-background/85 px-3 py-2.5 shadow-sm"
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={entry.badgeVariant}>{entry.label}</Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {entry.authorName} | {formatDateTime(entry.timestamp)}
-                  </span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {entry.authorName}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {formatDateTime(entry.timestamp)}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={entry.badgeVariant}
+                    className="h-5 shrink-0 rounded-full px-2 text-[11px]"
+                  >
+                    {entry.label}
+                  </Badge>
                 </div>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground">
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
                   {entry.body}
                 </p>
               </div>
@@ -662,7 +726,7 @@ function ShipmentNotesHistoryCard({
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
-            No shipment notes or edit history has been recorded yet.
+            No notes or edit history has been recorded yet.
           </div>
         )}
       </CardContent>
@@ -737,6 +801,30 @@ function ShipmentStatusHistoryCard({
 
 function isShipmentStatusHistoryNote(note: OrderNote): boolean {
   return note.content.startsWith('Shipment status updated:');
+}
+
+function isOrderUpdateNote(note: OrderNote): boolean {
+  return note.content.startsWith('Order updated:');
+}
+
+function isOrderStatusHistoryNote(note: OrderNote): boolean {
+  return (
+    !isShipmentStatusHistoryNote(note) &&
+    !isOrderUpdateNote(note) &&
+    /status\s*(changed|:)|\bstatus\b.*->/i.test(note.content)
+  );
+}
+
+function isPlainOrderNote(note: OrderNote): boolean {
+  return (
+    !isShipmentStatusHistoryNote(note) &&
+    !isOrderUpdateNote(note) &&
+    !isOrderStatusHistoryNote(note)
+  );
+}
+
+function formatOrderHistoryBody(content: string): string {
+  return content.replace(/^Order updated:\s*/i, '').trim();
 }
 
 function formatShipmentStatusHistoryBody(content: string): string {
