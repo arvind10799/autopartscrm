@@ -13,8 +13,10 @@ import { NotesService } from '../notes/notes.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersCacheService } from './orders-cache.service';
 import { OrdersRepository } from './orders.repository';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
+import { RefundOrderDto, RefundType } from './dto/refund-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
@@ -213,6 +215,105 @@ export class OrdersService {
     if (hasFieldChanges) {
       await this.notificationsService.notifyOrderUpdated(id, user);
     }
+
+    return this.ordersRepository.findSummaryById(id, user);
+  }
+
+  async cancel(
+    id: string,
+    cancelOrderDto: CancelOrderDto,
+    user: AuthenticatedUser,
+  ) {
+    await this.ordersRepository.findEditableById(id, user);
+
+    const cancellationReason = cancelOrderDto.cancellationReason.trim();
+    if (!cancellationReason) {
+      throw new BadRequestException('Cancellation reason is required.');
+    }
+
+    await this.ordersRepository.update(id, {
+      status: OrderStatus.CANCELLED,
+      cancellationReason,
+      cancelledAt: new Date().toISOString(),
+    });
+
+    await this.notesService.create(
+      {
+        content: `Order cancelled:\n- Cancellation reason: ${cancellationReason}`,
+        entityType: NoteEntityType.ORDER,
+        entityId: id,
+      },
+      user,
+    );
+
+    await this.afterMutation(id, 'updated');
+    await this.notificationsService.notifyOrderUpdated(id, user);
+
+    return this.ordersRepository.findSummaryById(id, user);
+  }
+
+  async refund(
+    id: string,
+    refundOrderDto: RefundOrderDto,
+    user: AuthenticatedUser,
+  ) {
+    const existingOrder = await this.ordersRepository.findEditableById(id, user);
+    const refundType = refundOrderDto.refundType;
+    const refundUpdate: {
+      refundType: RefundType;
+      refundDeductionAmount?: number | null;
+      refundDeductionReason?: string | null;
+    } = { refundType };
+
+    if (refundType === RefundType.PARTIAL) {
+      const deductionAmount = refundOrderDto.refundDeductionAmount;
+      const deductionReason = refundOrderDto.refundDeductionReason?.trim();
+
+      if (deductionAmount === undefined || deductionAmount <= 0) {
+        throw new BadRequestException(
+          'Deduction amount is required for partial refunds.',
+        );
+      }
+
+      if (deductionAmount > Number(existingOrder.totalSaleAmount)) {
+        throw new BadRequestException(
+          'Deduction amount cannot be greater than the total order amount.',
+        );
+      }
+
+      if (!deductionReason) {
+        throw new BadRequestException(
+          'Reason for deduction is required for partial refunds.',
+        );
+      }
+
+      refundUpdate.refundDeductionAmount = deductionAmount;
+      refundUpdate.refundDeductionReason = deductionReason;
+    } else {
+      refundUpdate.refundDeductionAmount = null;
+      refundUpdate.refundDeductionReason = null;
+    }
+
+    await this.ordersRepository.update(id, {
+      status: OrderStatus.REFUNDED,
+      refundedAt: new Date().toISOString(),
+      ...refundUpdate,
+    });
+
+    await this.notesService.create(
+      {
+        content:
+          refundType === RefundType.FULL
+            ? 'Order refunded:\n- Refund type: Full refund\n- GP adjusted to $0.00'
+            : `Order refunded:\n- Refund type: Partial refund\n- Deduction amount: ${refundUpdate.refundDeductionAmount}\n- Reason for deduction: ${refundUpdate.refundDeductionReason}`,
+        entityType: NoteEntityType.ORDER,
+        entityId: id,
+      },
+      user,
+    );
+
+    await this.afterMutation(id, 'updated');
+    await this.notificationsService.notifyOrderUpdated(id, user);
 
     return this.ordersRepository.findSummaryById(id, user);
   }
@@ -503,6 +604,12 @@ export class OrdersService {
     shippingCharges: 'Shipping charges',
     profit: 'Profit',
     partialPayment: 'Paid',
+    cancellationReason: 'Cancellation reason',
+    cancelledAt: 'Cancelled at',
+    refundType: 'Refund type',
+    refundDeductionAmount: 'Refund deduction amount',
+    refundDeductionReason: 'Refund deduction reason',
+    refundedAt: 'Refunded at',
   };
 
   private async afterMutation(

@@ -5,6 +5,7 @@ import { isFuturePacificDate } from '@/lib/utils/pacific-date';
 import {
   ORDER_PAYMENT_METHODS,
   ORDER_CURRENCIES,
+  ORDER_REFUND_TYPES,
   ORDER_SHIPMENT_STATUSES,
   ORDER_STATUSES,
 } from '../types/order.types';
@@ -13,6 +14,7 @@ const userRoleSchema = z.enum(['ADMIN', 'SALES', 'SHIPPING']);
 const orderStatusSchema = z.enum(ORDER_STATUSES);
 const orderPaymentMethodSchema = z.enum(ORDER_PAYMENT_METHODS);
 const orderCurrencySchema = z.enum(ORDER_CURRENCIES);
+const orderRefundTypeSchema = z.enum(ORDER_REFUND_TYPES);
 const orderShipmentStatusSchema = z.enum(ORDER_SHIPMENT_STATUSES);
 const numericAmountSchema = z.coerce.number().finite();
 const optionalStringAmountSchema = z.preprocess(
@@ -336,6 +338,12 @@ const orderIntakeDetailsSchema = z.object({
   shippingCharges: numericAmountSchema.nullable().optional(),
   profit: numericAmountSchema.nullable().optional(),
   partialPayment: numericAmountSchema.nullable().optional(),
+  cancellationReason: z.string().nullable().optional(),
+  cancelledAt: z.string().nullable().optional(),
+  refundType: orderRefundTypeSchema.nullable().optional(),
+  refundDeductionAmount: numericAmountSchema.nullable().optional(),
+  refundDeductionReason: z.string().nullable().optional(),
+  refundedAt: z.string().nullable().optional(),
 });
 
 const orderBackendSummarySchema = z.object({
@@ -464,6 +472,12 @@ function normalizeOrderIntakeDetails(
     shippingCharges: details?.shippingCharges ?? null,
     profit: details?.profit ?? null,
     partialPayment: details?.partialPayment ?? null,
+    cancellationReason: details?.cancellationReason ?? null,
+    cancelledAt: details?.cancelledAt ?? null,
+    refundType: details?.refundType ?? null,
+    refundDeductionAmount: details?.refundDeductionAmount ?? null,
+    refundDeductionReason: details?.refundDeductionReason ?? null,
+    refundedAt: details?.refundedAt ?? null,
   };
 }
 
@@ -1013,9 +1027,50 @@ export const updateOrderFormSchema = z.object({
     .optional(),
 }).pipe(updateOrderSchema);
 
+export const cancelOrderSchema = z.object({
+  cancellationReason: createRequiredTextSchema(
+    1000,
+    'Cancellation reason is required.',
+    'Cancellation reason must be 1000 characters or fewer.',
+  ),
+});
+
+export const refundOrderSchema = z
+  .object({
+    refundType: orderRefundTypeSchema,
+    refundDeductionAmount: optionalNumericValueSchema,
+    refundDeductionReason: createOptionalTextSchema(
+      1000,
+      'Reason for deduction must be 1000 characters or fewer.',
+    ),
+  })
+  .superRefine((value, context) => {
+    if (value.refundType !== 'PARTIAL') {
+      return;
+    }
+
+    if (value.refundDeductionAmount === undefined || value.refundDeductionAmount <= 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Deduction amount is required for partial refunds.',
+        path: ['refundDeductionAmount'],
+      });
+    }
+
+    if (!value.refundDeductionReason) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Reason for deduction is required for partial refunds.',
+        path: ['refundDeductionReason'],
+      });
+    }
+  });
+
 export type CreateOrderFormValues = z.input<typeof createOrderFormSchema>;
 export type CreateOrderFormData = z.output<typeof createOrderFormSchema>;
 export type CreateOrderPayload = z.infer<typeof createOrderSchema>;
 export type UpdateOrderFormValues = z.input<typeof updateOrderFormSchema>;
 export type UpdateOrderPayload = z.infer<typeof updateOrderSchema>;
+export type CancelOrderPayload = z.infer<typeof cancelOrderSchema>;
+export type RefundOrderPayload = z.infer<typeof refundOrderSchema>;
 export type OrderStatusValue = z.infer<typeof orderStatusSchema>;

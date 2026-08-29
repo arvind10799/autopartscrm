@@ -53,6 +53,8 @@ export function GrossProfitSummaryCard({
   totalSaleAmount,
   currency,
   cost,
+  saleMetricLabel = 'Sale',
+  grossProfitOverride,
   additionalCosts = [],
   costHistories = [],
   canAddAdditionalCost = false,
@@ -65,6 +67,8 @@ export function GrossProfitSummaryCard({
   totalSaleAmount: number;
   currency: string;
   cost: ShipmentCostLike;
+  saleMetricLabel?: string;
+  grossProfitOverride?: number;
   additionalCosts?: ShipmentAdditionalCostLike[];
   costHistories?: ShipmentCostHistoryLike[];
   canAddAdditionalCost?: boolean;
@@ -96,7 +100,7 @@ export function GrossProfitSummaryCard({
     [additionalCosts, cost?.additionalAmount],
   );
   const totalCosts = purchaseAmount + shippingAmount + additionalAmount;
-  const grossProfit = totalSaleAmount - totalCosts;
+  const grossProfit = grossProfitOverride ?? totalSaleAmount - totalCosts;
   const grossProfitTone =
     grossProfit >= 0 ? 'text-emerald-600' : 'text-destructive';
   const canOpenForm = canAddAdditionalCost && Boolean(shipmentId) && Boolean(cost);
@@ -303,7 +307,7 @@ export function GrossProfitSummaryCard({
 
           <div className="grid gap-2 sm:grid-cols-5">
             <GpMetric
-              label="Sale"
+              label={saleMetricLabel}
               value={formatCurrency(totalSaleAmount, displayCurrency)}
             />
             <GpMetric

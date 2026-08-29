@@ -24,6 +24,12 @@ import { cn } from '@/lib/utils/cn';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { notesApi } from '@/features/notes/api/notes-api';
+import {
+  getRefundAdjustedGrossProfitOverride,
+  getRefundAdjustedSaleAmount,
+  OrderResolutionActions,
+  OrderResolutionDetails,
+} from '@/features/orders/components/OrderResolutionActions';
 import type { NoteRecord } from '@/features/notes/types/note.types';
 import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
 import {
@@ -39,12 +45,13 @@ import { useShipmentDetail } from '../hooks/useShipmentDetail';
 import {
   formatShipmentStatusOptionLabel,
   getAllowedNextShipmentStatuses,
-  getDefaultNextShipmentStatus,
 } from '../lib/shipments.helpers';
 import type { ShipmentDetail, ShipmentStatus } from '../types/shipment.types';
 import { GrossProfitSummaryCard } from './GrossProfitSummaryCard';
 import { ShipmentDetailGrid } from './ShipmentDetailGrid';
 import { ShipmentStatusUpdateCard } from './ShipmentStatusUpdateCard';
+
+const SHIPMENT_DETAIL_ALLOWED_NEXT_STATUSES = ['IN_TRANSIT', 'DELIVERED'] as const;
 
 type ShipmentActivityEntry = {
   id: string;
@@ -92,7 +99,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
       return;
     }
 
-    setSelectedStatus(getDefaultNextShipmentStatus(shipment.currentStatus) ?? '');
+    setSelectedStatus(getShipmentDetailNextStatuses(shipment.currentStatus)[0] ?? '');
     setProNumber('');
   }, [shipment]);
 
@@ -125,12 +132,18 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     );
   }
 
-  const nextStatuses = getAllowedNextShipmentStatuses(shipment.currentStatus);
+  const nextStatuses = getShipmentDetailNextStatuses(shipment.currentStatus);
   const shipmentCost = shipment.costs[0] ?? null;
   const canAddAdditionalCost =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
   const canEditGpCosts =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
+  const gpSaleAmount = invoiceOrder
+    ? getRefundAdjustedSaleAmount(invoiceOrder)
+    : shipment.order.totalSaleAmount ?? 0;
+  const gpOverride = invoiceOrder
+    ? getRefundAdjustedGrossProfitOverride(invoiceOrder)
+    : undefined;
 
   const handleStatusSubmit = async () => {
     if (!selectedStatus) {
@@ -184,9 +197,11 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
         <div className="grid gap-6">
           <GrossProfitSummaryCard
             shipmentId={shipment.id}
-            totalSaleAmount={shipment.order.totalSaleAmount ?? 0}
+            totalSaleAmount={gpSaleAmount}
             currency={shipment.order.currency}
             cost={shipmentCost}
+            saleMetricLabel={invoiceOrder?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+            grossProfitOverride={gpOverride}
             additionalCosts={shipment.additionalCosts}
             costHistories={shipment.costHistories}
             canAddAdditionalCost={canAddAdditionalCost}
@@ -216,15 +231,20 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
                   <Eye className="h-4 w-4" />
                   View full order details
                 </Button>
-                <Button type="button" variant="outline" size="sm" disabled>
-                  Cancellation
-                </Button>
-                <Button type="button" variant="outline" size="sm" disabled>
-                  Refund
-                </Button>
+                {invoiceOrder ? (
+                  <OrderResolutionActions
+                    order={invoiceOrder}
+                    onResolved={async () => {
+                      await refreshShipment();
+                      setOrderRefreshKey((currentValue) => currentValue + 1);
+                    }}
+                  />
+                ) : null}
               </div>
             }
           />
+
+          {invoiceOrder ? <OrderResolutionDetails order={invoiceOrder} /> : null}
 
           <ShipmentNotesHistoryCard
             shipment={shipment}
@@ -277,12 +297,13 @@ function FullOrderDetailsModal({
   onClose: () => void;
 }) {
   const intake = order.intakeDetails;
+  const isResolvedOrder = order.status === 'CANCELLED' || order.status === 'REFUNDED';
   const paidAmount =
     order.status === 'CONFIRMED'
       ? order.totalSaleAmount
       : intake.partialPayment ?? 0;
   const remainingAmount =
-    order.status === 'CONFIRMED'
+    order.status === 'CONFIRMED' || isResolvedOrder
       ? 0
       : Math.max(order.totalSaleAmount - paidAmount, 0);
 
@@ -389,6 +410,8 @@ function FullOrderDetailsModal({
             <CompactDetail label="Shipping person" value={formatNullableText(intake.shippingPerson)} />
             <CompactDetail label="Shipping phone" value={formatNullableText(intake.shippingPhone)} />
           </CompactOrderSection>
+
+          <OrderResolutionDetails order={order} className="lg:col-span-2" />
         </div>
       </div>
     </div>
@@ -468,6 +491,16 @@ function ShippingAddressValue({
 
 function formatNullableText(value?: string | null): string {
   return value?.trim() ? value : 'Not provided';
+}
+
+function getShipmentDetailNextStatuses(
+  status: ShipmentStatus,
+): ShipmentStatus[] {
+  return getAllowedNextShipmentStatuses(status).filter((nextStatus) =>
+    SHIPMENT_DETAIL_ALLOWED_NEXT_STATUSES.includes(
+      nextStatus as (typeof SHIPMENT_DETAIL_ALLOWED_NEXT_STATUSES)[number],
+    ),
+  );
 }
 
 function ShipmentNotesHistoryCard({

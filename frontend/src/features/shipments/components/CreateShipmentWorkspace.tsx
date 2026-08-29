@@ -38,6 +38,10 @@ import {
 import { toast } from '@/lib/stores/toast.store';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { notesApi } from '@/features/notes/api/notes-api';
+import {
+  OrderResolutionActions,
+  OrderResolutionDetails,
+} from '@/features/orders/components/OrderResolutionActions';
 import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
 import { useOrdersList } from '@/features/orders/hooks/useOrdersList';
 import {
@@ -515,7 +519,13 @@ export function ShipmentOrderDetailsPanel({
         </DetailGroup>
       </div>
 
-      <PlaceholderActionButtons />
+      <OrderResolutionDetails order={order} />
+
+      <OrderResolutionActions
+        order={order}
+        onResolved={onRefresh}
+        className="rounded-2xl border border-border/70 bg-secondary/10 p-3"
+      />
 
       <Card className="border-border/70 shadow-sm">
         <CardHeader className="p-4 pb-2">
@@ -691,22 +701,6 @@ function DetailBlock({
           {value}
         </div>
       </div>
-    </div>
-  );
-}
-
-function PlaceholderActionButtons() {
-  return (
-    <div className="flex flex-wrap gap-2 rounded-2xl border border-dashed border-border/70 bg-secondary/10 p-3">
-      <Button type="button" variant="outline" size="sm" disabled>
-        Cancellation
-      </Button>
-      <Button type="button" variant="outline" size="sm" disabled>
-        Refund
-      </Button>
-      <span className="self-center text-xs text-muted-foreground">
-        Actions visible for now; functionality will be added later.
-      </span>
     </div>
   );
 }

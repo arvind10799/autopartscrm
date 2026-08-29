@@ -17,11 +17,21 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
+type OrderResolutionUpdate = {
+  cancellationReason?: string | null;
+  cancelledAt?: string | null;
+  refundType?: string | null;
+  refundDeductionAmount?: number | null;
+  refundDeductionReason?: string | null;
+  refundedAt?: string | null;
+};
+
 type CreateOrderPayload = CreateOrderDto & {
   totalSaleAmount: Prisma.Decimal;
 };
 
-type UpdateOrderPayload = Omit<UpdateOrderDto, 'note'> & {
+type UpdateOrderPayload = Omit<UpdateOrderDto, 'note'> &
+  OrderResolutionUpdate & {
   totalSaleAmount?: Prisma.Decimal;
 };
 
@@ -729,6 +739,12 @@ export class OrdersRepository {
       'shippingCharges',
       'profit',
       'partialPayment',
+      'cancellationReason',
+      'cancelledAt',
+      'refundType',
+      'refundDeductionAmount',
+      'refundDeductionReason',
+      'refundedAt',
     ] as const;
     const updates: Prisma.JsonObject = {};
 

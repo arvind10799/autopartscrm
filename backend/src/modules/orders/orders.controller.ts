@@ -15,8 +15,10 @@ import { Role } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/role.guard';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
+import { RefundOrderDto } from './dto/refund-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrdersService } from './orders.service';
 
@@ -61,6 +63,26 @@ export class OrdersController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.ordersService.findOne(params.id, user);
+  }
+
+  @Roles(Role.ADMIN, Role.SHIPPING)
+  @Patch(':id/cancellation')
+  cancel(
+    @Param() params: UuidParamDto,
+    @Body() cancelOrderDto: CancelOrderDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.ordersService.cancel(params.id, cancelOrderDto, user);
+  }
+
+  @Roles(Role.ADMIN, Role.SHIPPING)
+  @Patch(':id/refund')
+  refund(
+    @Param() params: UuidParamDto,
+    @Body() refundOrderDto: RefundOrderDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.ordersService.refund(params.id, refundOrderDto, user);
   }
 
   @Patch(':id')

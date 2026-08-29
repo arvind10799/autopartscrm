@@ -28,12 +28,17 @@ import { useAuthStore } from '@/features/auth/store/auth.store';
 import { ordersApi } from '../api/orders-api';
 import { useOrdersList } from '../hooks/useOrdersList';
 import {
+  ALL_ORDER_STATUS_FILTER,
   ALL_SHIPMENT_STATUS_FILTER,
+  formatOrderStatusOptionLabel,
   formatShipmentStatusOptionLabel,
+  parseOrderStatusFilter,
   parseShipmentStatusFilter,
+  type OrderStatusFilter,
   type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
 import {
+  ORDER_STATUSES,
   ORDER_SHIPMENT_STATUSES,
   type OrderSummary,
   type OrderUser,
@@ -52,6 +57,8 @@ function formatAgentFilterLabel(agent: OrderUser) {
 export function OrdersPageContent() {
   const authUser = useAuthStore((state) => state.user);
   const [searchTerm, setSearchTerm] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] =
+    useState<OrderStatusFilter>(ALL_ORDER_STATUS_FILTER);
   const [shipmentStatusFilter, setShipmentStatusFilter] =
     useState<ShipmentStatusFilter>(ALL_SHIPMENT_STATUS_FILTER);
   const [agentFilter, setAgentFilter] = useState<string | null>(null);
@@ -98,6 +105,8 @@ export function OrdersPageContent() {
   const { ordersResponse, isLoading, error } = useOrdersList({
     page,
     search: activeSearch,
+    status:
+      orderStatusFilter === ALL_ORDER_STATUS_FILTER ? undefined : orderStatusFilter,
     shipmentStatus: shipmentStatusFilter,
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
@@ -121,6 +130,11 @@ export function OrdersPageContent() {
     startTransition(() => setPage(1));
   };
 
+  const handleOrderStatusChange = (value: OrderStatusFilter) => {
+    setOrderStatusFilter(value);
+    startTransition(() => setPage(1));
+  };
+
   const handleAgentFilterChange = (value: string) => {
     setAgentFilter(value);
     startTransition(() => setPage(1));
@@ -128,6 +142,7 @@ export function OrdersPageContent() {
 
   const handleCreated = (order: OrderSummary) => {
     setSearchTerm('');
+    setOrderStatusFilter(ALL_ORDER_STATUS_FILTER);
     setShipmentStatusFilter(ALL_SHIPMENT_STATUS_FILTER);
     setSelectedOrderId(null);
     setIsCreateModalOpen(false);
@@ -243,7 +258,7 @@ export function OrdersPageContent() {
               </div>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
+            <div className="grid gap-3 xl:grid-cols-[1fr_210px_220px]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -253,6 +268,21 @@ export function OrdersPageContent() {
                   placeholder="Search by order number, customer, phone, email, or part"
                 />
               </div>
+
+              <Select
+                value={orderStatusFilter}
+                aria-label="Order status filter"
+                onChange={(event) =>
+                  handleOrderStatusChange(parseOrderStatusFilter(event.target.value))
+                }
+              >
+                <option value={ALL_ORDER_STATUS_FILTER}>All order statuses</option>
+                {ORDER_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {formatOrderStatusOptionLabel(status)}
+                  </option>
+                ))}
+              </Select>
 
               <Select
                 value={shipmentStatusFilter}

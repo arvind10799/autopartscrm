@@ -13,6 +13,7 @@ const statusTones: Record<
   SHIPPED: 'info',
   DELIVERED: 'success',
   CANCELLED: 'danger',
+  REFUNDED: 'warning',
 };
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {

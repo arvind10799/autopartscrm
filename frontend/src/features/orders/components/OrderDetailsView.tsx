@@ -30,6 +30,11 @@ import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
 import { useOrderDetailWithRefresh } from '../hooks/useOrderDetail';
 import {
+  getRefundAdjustedGrossProfitOverride,
+  getRefundAdjustedSaleAmount,
+  OrderResolutionDetails,
+} from './OrderResolutionActions';
+import {
   formatCurrency,
   formatDate,
   formatDateTime,
@@ -124,12 +129,13 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   }
 
   const intake = order.intakeDetails;
+  const isResolvedOrder = order.status === 'CANCELLED' || order.status === 'REFUNDED';
   const paidNowAmount =
     order.status === 'CONFIRMED'
       ? order.totalSaleAmount
       : intake.partialPayment ?? 0;
   const balanceAmount =
-    order.status === 'CONFIRMED'
+    order.status === 'CONFIRMED' || isResolvedOrder
       ? 0
       : Math.max(order.totalSaleAmount - paidNowAmount, 0);
   const notesTimeline = buildNoteTimeline(order.notes);
@@ -142,6 +148,8 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
   const canEditGpCosts =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
+  const gpSaleAmount = getRefundAdjustedSaleAmount(order);
+  const gpOverride = getRefundAdjustedGrossProfitOverride(order);
 
   return (
     <section className="space-y-6">
@@ -152,9 +160,11 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
       <GrossProfitSummaryCard
         shipmentId={latestShipment?.id}
-        totalSaleAmount={order.totalSaleAmount}
+        totalSaleAmount={gpSaleAmount}
         currency={order.currency}
         cost={latestShipmentCost}
+        saleMetricLabel={order.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+        grossProfitOverride={gpOverride}
         additionalCosts={latestShipment?.additionalCosts ?? []}
         costHistories={latestShipment?.costHistories ?? []}
         canAddAdditionalCost={canAddAdditionalCost}
@@ -304,6 +314,8 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                   }
                 />
               </DetailSection>
+
+              <OrderResolutionDetails order={order} />
             </CardContent>
           </Card>
         </div>

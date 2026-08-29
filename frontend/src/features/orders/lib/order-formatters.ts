@@ -32,6 +32,7 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   SHIPPED: 'Shipped',
   DELIVERED: 'Delivered',
   CANCELLED: 'Cancelled',
+  REFUNDED: 'Refunded',
 };
 
 const ORDER_PAYMENT_METHOD_LABELS: Record<OrderPaymentMethod, string> = {

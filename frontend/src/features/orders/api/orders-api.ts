@@ -7,14 +7,17 @@ import { HttpError } from '@/lib/api/http-error';
 import { isValidOrderId, normalizeOrdersListQuery } from '../lib/orders.helpers';
 import {
   createOrderSchema,
+  cancelOrderSchema,
   nextOrderNumberSchema,
   orderAgentsSchema,
   orderDetailSchema,
   ordersListSchema,
   orderSummarySchema,
+  refundOrderSchema,
   updateOrderSchema,
 } from '../schemas/order.schema';
 import type {
+  CancelOrderInput,
   CreateOrderInput,
   OrderDetail,
   NextOrderNumber,
@@ -22,6 +25,7 @@ import type {
   OrdersListResponse,
   OrderSummary,
   OrderUser,
+  RefundOrderInput,
   UpdateOrderInput,
 } from '../types/order.types';
 
@@ -102,6 +106,40 @@ export const ordersApi = {
     return parseApiData(response, orderSummarySchema, {
       emptyMessage: response.data.message || 'Update order response was empty.',
       invalidMessage: 'Update order response payload was invalid.',
+    });
+  },
+
+  async cancel(orderId: string, payload: CancelOrderInput): Promise<OrderSummary> {
+    if (!isValidOrderId(orderId)) {
+      throw new HttpError('Order identifier is invalid.', 400);
+    }
+
+    const requestPayload = cancelOrderSchema.parse(payload);
+    const response = await axiosBrowser.patch<ApiEnvelope<unknown>>(
+      `/api/orders/${orderId}/cancellation`,
+      requestPayload,
+    );
+
+    return parseApiData(response, orderSummarySchema, {
+      emptyMessage: response.data.message || 'Cancel order response was empty.',
+      invalidMessage: 'Cancel order response payload was invalid.',
+    });
+  },
+
+  async refund(orderId: string, payload: RefundOrderInput): Promise<OrderSummary> {
+    if (!isValidOrderId(orderId)) {
+      throw new HttpError('Order identifier is invalid.', 400);
+    }
+
+    const requestPayload = refundOrderSchema.parse(payload);
+    const response = await axiosBrowser.patch<ApiEnvelope<unknown>>(
+      `/api/orders/${orderId}/refund`,
+      requestPayload,
+    );
+
+    return parseApiData(response, orderSummarySchema, {
+      emptyMessage: response.data.message || 'Refund order response was empty.',
+      invalidMessage: 'Refund order response payload was invalid.',
     });
   },
 };

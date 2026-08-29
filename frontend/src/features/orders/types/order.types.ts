@@ -8,9 +8,12 @@ export const ORDER_STATUSES = [
   'SHIPPED',
   'DELIVERED',
   'CANCELLED',
+  'REFUNDED',
 ] as const;
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
+export const ORDER_REFUND_TYPES = ['FULL', 'PARTIAL'] as const;
+export type OrderRefundType = (typeof ORDER_REFUND_TYPES)[number];
 
 export const ORDER_SHIPMENT_STATUSES = [
   'PENDING',
@@ -75,6 +78,12 @@ export interface OrderIntakeDetails {
   shippingCharges: number | null;
   profit: number | null;
   partialPayment: number | null;
+  cancellationReason: string | null;
+  cancelledAt: string | null;
+  refundType: OrderRefundType | null;
+  refundDeductionAmount: number | null;
+  refundDeductionReason: string | null;
+  refundedAt: string | null;
 }
 
 export interface OrderSummary {
@@ -272,4 +281,14 @@ export interface UpdateOrderInput {
   profit?: number;
   partialPayment?: number;
   note?: string;
+}
+
+export interface CancelOrderInput {
+  cancellationReason: string;
+}
+
+export interface RefundOrderInput {
+  refundType: OrderRefundType;
+  refundDeductionAmount?: number;
+  refundDeductionReason?: string;
 }
