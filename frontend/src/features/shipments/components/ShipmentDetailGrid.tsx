@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -28,9 +27,6 @@ export function ShipmentDetailGrid({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="text-2xl">Shipment details</CardTitle>
-            <CardDescription className="text-sm">
-              Review BOL, PRO, carrier, and related order context for this shipment.
-            </CardDescription>
           </div>
           {action ? <div className="shrink-0">{action}</div> : null}
         </div>
