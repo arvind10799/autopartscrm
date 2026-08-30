@@ -9,6 +9,7 @@ import { useAuthStore } from '@/features/auth/store/auth.store';
 import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
 import { ordersApi } from '../api/orders-api';
+import { getOrderFinancialSummary } from '../lib/order-financials';
 import {
   formatCurrency,
   formatDateTime,
@@ -17,7 +18,13 @@ import type { OrderDetail, OrderRefundType } from '../types/order.types';
 
 type ResolutionOrder = Pick<
   OrderDetail,
-  'id' | 'orderNumber' | 'status' | 'currency' | 'totalSaleAmount' | 'intakeDetails'
+  | 'id'
+  | 'orderNumber'
+  | 'status'
+  | 'currency'
+  | 'totalSaleAmount'
+  | 'paymentMethod'
+  | 'intakeDetails'
 >;
 
 type OrderResolutionActionsProps = {
@@ -266,6 +273,7 @@ export function OrderResolutionDetails({
   className?: string;
 }) {
   const details = order.intakeDetails;
+  const financialSummary = getOrderFinancialSummary(order);
   const isCancelled = order.status === 'CANCELLED' || Boolean(details.cancellationReason);
   const isRefunded = order.status === 'REFUNDED' || Boolean(details.refundType);
 
@@ -301,14 +309,18 @@ export function OrderResolutionDetails({
             {details.refundType === 'PARTIAL' ? (
               <>
                 <p className="mt-1 text-muted-foreground">
-                  Refunded amount:{' '}
+                  Customer refunded amount:{' '}
+                  {formatCurrency(financialSummary.refundedAmount, order.currency)}
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  Deduction Amount:{' '}
                   {formatCurrency(
                     details.refundDeductionAmount ?? 0,
                     order.currency,
                   )}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
-                  Refund reason: {details.refundDeductionReason ?? 'Not provided'}
+                  Reason for Deduction: {details.refundDeductionReason ?? 'Not provided'}
                 </p>
               </>
             ) : (

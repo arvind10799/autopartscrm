@@ -160,6 +160,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 refundType: order.intakeDetails.refundType,
                 refundDeductionAmount: order.intakeDetails.refundDeductionAmount,
                 refundDeductionReason: order.intakeDetails.refundDeductionReason,
+                customerRefundedAmount: financialSummary.refundedAmount,
                 refundedAt: order.intakeDetails.refundedAt,
               }
             : null

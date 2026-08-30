@@ -7,6 +7,7 @@ type OrderFinancialInput = Pick<
 
 export type OrderFinancialSummary = {
   originalPaidAmount: number;
+  refundDeductionAmount: number;
   refundedAmount: number;
   retainedPaidAmount: number;
   remainingAmount: number;
@@ -49,10 +50,12 @@ export function getRefundedAmount(order: OrderFinancialInput): number {
   const originalPaidAmount = getOriginalPaidAmount(order);
 
   if (order.intakeDetails.refundType === 'PARTIAL') {
-    return Math.min(
+    const deductionAmount = Math.min(
       clampCurrencyAmount(order.intakeDetails.refundDeductionAmount ?? 0),
       originalPaidAmount,
     );
+
+    return Math.max(originalPaidAmount - deductionAmount, 0);
   }
 
   return originalPaidAmount;
@@ -62,19 +65,32 @@ export function getOrderFinancialSummary(
   order: OrderFinancialInput,
 ): OrderFinancialSummary {
   const originalPaidAmount = getOriginalPaidAmount(order);
+  const refundDeductionAmount =
+    order.status === 'REFUNDED' && order.intakeDetails.refundType === 'PARTIAL'
+      ? Math.min(
+          clampCurrencyAmount(order.intakeDetails.refundDeductionAmount ?? 0),
+          originalPaidAmount,
+        )
+      : 0;
   const refundedAmount = getRefundedAmount(order);
-  const retainedPaidAmount = Math.max(originalPaidAmount - refundedAmount, 0);
+  const retainedPaidAmount =
+    order.status === 'REFUNDED' && order.intakeDetails.refundType === 'PARTIAL'
+      ? refundDeductionAmount
+      : Math.max(originalPaidAmount - refundedAmount, 0);
   const isResolvedOrder = order.status === 'CANCELLED' || order.status === 'REFUNDED';
   const remainingAmount = isResolvedOrder
     ? 0
     : Math.max(order.totalSaleAmount - originalPaidAmount, 0);
   const gpSaleBasis =
-    order.status === 'REFUNDED'
-      ? Math.max(order.totalSaleAmount - refundedAmount, 0)
+    order.status === 'REFUNDED' && order.intakeDetails.refundType === 'PARTIAL'
+      ? refundDeductionAmount
+      : order.status === 'REFUNDED'
+        ? 0
       : order.totalSaleAmount;
 
   return {
     originalPaidAmount,
+    refundDeductionAmount,
     refundedAmount,
     retainedPaidAmount,
     remainingAmount,

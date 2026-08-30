@@ -222,6 +222,8 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
                       invoiceOrder.intakeDetails.refundDeductionAmount,
                     refundDeductionReason:
                       invoiceOrder.intakeDetails.refundDeductionReason,
+                    customerRefundedAmount:
+                      shipmentFinancialSummary?.refundedAmount ?? 0,
                     refundedAt: invoiceOrder.intakeDetails.refundedAt,
                   }
                 : null

@@ -52,6 +52,7 @@ type RefundDetailsLike = {
   refundType: 'FULL' | 'PARTIAL' | null;
   refundDeductionAmount: number | null;
   refundDeductionReason: string | null;
+  customerRefundedAmount?: number | null;
   refundedAt: string | null;
 };
 
@@ -344,7 +345,12 @@ export function GrossProfitSummaryCard({
           </div>
 
           <p className="rounded-xl border border-dashed border-border/70 bg-secondary/15 px-3 py-2 text-xs text-muted-foreground">
-            Formula: sale - part cost - actual shipping cost - additional costs.
+            Formula:{' '}
+            {refundDetails?.refundType === 'PARTIAL'
+              ? 'deduction amount - part cost - actual shipping cost - additional costs.'
+              : refundDetails?.refundType === 'FULL'
+                ? 'full refund keeps GP locked at $0.00.'
+                : 'sale - part cost - actual shipping cost - additional costs.'}
           </p>
 
           {hasRefundDetails ? (
@@ -358,14 +364,21 @@ export function GrossProfitSummaryCard({
               {refundDetails?.refundType === 'PARTIAL' ? (
                 <div className="mt-1 space-y-1 text-xs">
                   <p>
-                    Refunded amount:{' '}
+                    Customer refunded amount:{' '}
+                    {formatCurrency(
+                      refundDetails.customerRefundedAmount ?? 0,
+                      displayCurrency,
+                    )}
+                  </p>
+                  <p>
+                    Deduction Amount:{' '}
                     {formatCurrency(
                       refundDetails.refundDeductionAmount ?? 0,
                       displayCurrency,
                     )}
                   </p>
                   <p className="whitespace-pre-wrap">
-                    Refund reason:{' '}
+                    Reason for Deduction:{' '}
                     {refundDetails.refundDeductionReason ?? 'Not provided'}
                   </p>
                 </div>
