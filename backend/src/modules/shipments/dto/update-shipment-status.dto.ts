@@ -24,6 +24,12 @@ export class UpdateShipmentStatusDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
+  pickupNumber?: string;
+
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
   proNumber?: string;
 
   @Transform(({ value }) => trimToUndefined(value))

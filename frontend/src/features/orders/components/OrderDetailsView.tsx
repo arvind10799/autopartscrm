@@ -129,7 +129,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
   const intake = order.intakeDetails;
   const financialSummary = getOrderFinancialSummary(order);
-  const notesTimeline = buildNoteTimeline(order.notes);
+  const notesTimeline = buildNoteTimeline(order);
   const editHistoryTimeline = buildEditHistoryTimeline(order.notes);
   const statusTimeline = buildStatusTimeline(order);
   const shipmentTimeline = buildShipmentTimeline(order.shipments);
@@ -150,6 +150,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
       <GrossProfitSummaryCard
         shipmentId={latestShipment?.id}
         totalSaleAmount={financialSummary.gpSaleBasis}
+        originalSaleAmount={order.totalSaleAmount}
         currency={order.currency}
         cost={latestShipmentCost}
         saleMetricLabel={order.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
@@ -430,15 +431,15 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   );
 }
 
-function buildNoteTimeline(notes: OrderNote[]): TimelineEntry[] {
-  return notes
+function buildNoteTimeline(order: OrderDetail): TimelineEntry[] {
+  return order.notes
     .filter((note) => !isHistoryNote(note) && !isStatusHistoryNote(note))
     .map((note) => ({
       id: note.id,
       timestamp: note.createdAt,
       actorName: note.author.name,
       action: 'Note',
-      body: note.content,
+      body: formatOrderNoteBody(note.content, order),
       badgeVariant: 'secondary' as const,
     }))
     .sort(compareTimelineEntriesDesc);
@@ -522,6 +523,35 @@ function isStatusHistoryNote(note: OrderNote): boolean {
 
 function formatHistoryBody(content: string): string {
   return content.replace(/^Order updated:\s*/i, '').trim();
+}
+
+function formatOrderNoteBody(content: string, order: OrderDetail): string {
+  const trimmedContent = content.trim();
+
+  if (!/^Order refunded:/i.test(trimmedContent)) {
+    return trimmedContent;
+  }
+
+  return trimmedContent.replace(
+    /- GP adjusted to \$0\.00/i,
+    `- GP: ${formatCurrency(calculateOrderActualGp(order), order.currency)}`,
+  );
+}
+
+function calculateOrderActualGp(order: OrderDetail): number {
+  const financialSummary = getOrderFinancialSummary(order);
+  const shipment = order.shipments[0] ?? null;
+  const cost = shipment?.costs[0] ?? null;
+  const additionalAmount =
+    shipment && shipment.additionalCosts.length > 0
+      ? shipment.additionalCosts.reduce((total, entry) => total + entry.amount, 0)
+      : cost?.additionalAmount ?? 0;
+  const totalCosts =
+    (cost?.purchaseAmount ?? 0) +
+    (cost?.shippingAmount ?? 0) +
+    additionalAmount;
+
+  return financialSummary.gpSaleBasis - totalCosts;
 }
 
 function formatNullableCurrency(value: number | null, currency = 'USD'): string {

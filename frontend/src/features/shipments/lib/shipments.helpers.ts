@@ -270,6 +270,7 @@ export function toUpdateShipmentStatusPayload(
   return {
     status: payload.status,
     bolNumber: payload.bolNumber,
+    pickupNumber: payload.pickupNumber,
     proNumber: payload.proNumber,
     carrierName: payload.carrierName,
     purchaseAmount: payload.purchaseAmount,

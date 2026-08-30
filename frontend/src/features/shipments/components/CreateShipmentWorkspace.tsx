@@ -8,6 +8,7 @@ import {
   LoaderCircle,
   MessageSquarePlus,
   PackageCheck,
+  TrendingUp,
   Search,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -66,7 +67,10 @@ import type {
   OrderShipmentStatus,
 } from '@/features/orders/types/order.types';
 import type { ShipmentSummary } from '../types/shipment.types';
-import { CreateShipmentForm } from './CreateShipmentForm';
+import {
+  CreateShipmentForm,
+  type CreateShipmentCostDraft,
+} from './CreateShipmentForm';
 import { ShipmentEligibleOrdersTable } from './ShipmentEligibleOrdersTable';
 
 const SHIPMENT_ORDER_STATUS_FILTERS = [
@@ -214,6 +218,11 @@ export function CreateShipmentWorkspace() {
 export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
   const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [costDraft, setCostDraft] = useState<CreateShipmentCostDraft>({
+    purchaseAmount: 0,
+    shippingAmount: 0,
+    additionalAmount: 0,
+  });
   const { order, isLoading, error } = useOrderDetailWithRefresh(
     orderId,
     refreshKey,
@@ -305,6 +314,7 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.9fr)]">
         <ShipmentOrderDetailsPanel
           order={order}
+          costDraft={costDraft}
           onRefresh={() => setRefreshKey((currentValue) => currentValue + 1)}
         />
 
@@ -326,6 +336,7 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
               ) : (
                 <CreateShipmentForm
                   selectedOrder={order}
+                  onCostDraftChange={setCostDraft}
                   onCreated={handleShipmentCreated}
                 />
               )}
@@ -339,9 +350,11 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
 
 export function ShipmentOrderDetailsPanel({
   order,
+  costDraft,
   onRefresh,
 }: {
   order: OrderDetail;
+  costDraft: CreateShipmentCostDraft;
   onRefresh: () => void;
 }) {
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
@@ -382,33 +395,15 @@ export function ShipmentOrderDetailsPanel({
   };
 
   const intake = order.intakeDetails;
+  const financialSummary = getOrderFinancialSummary(order);
 
   return (
     <div className="space-y-3">
-      <Card className="overflow-hidden border-border/70 shadow-sm">
-        <CardHeader className="bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(255,255,255,0.98))] p-4">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0 space-y-1">
-              <CardDescription className="text-xs">Selected order</CardDescription>
-              <CardTitle className="truncate text-xl">
-                {order.orderNumber}
-              </CardTitle>
-              <p className="line-clamp-2 text-xs text-muted-foreground">
-                {order.customerName} ordered {order.partDescription}.
-              </p>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-3 xl:min-w-[22rem]">
-              <MetricCard label="Status" value={formatOrderStatus(order.status)} />
-              <MetricCard
-                label="Sale value"
-                value={formatCurrency(order.totalSaleAmount, order.currency)}
-              />
-              <MetricCard label="Notes" value={String(order.notes.length)} />
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      <ShipmentWorkspaceGpCard
+        order={order}
+        costDraft={costDraft}
+        retainedAmount={financialSummary.gpSaleBasis}
+      />
 
       <div className="grid gap-3 2xl:grid-cols-2">
         <DetailGroup title="Order and customer" icon={<FileStack className="h-4 w-4 text-primary" />}>
@@ -741,6 +736,79 @@ function ShippingAddressValue({
         <p className="whitespace-pre-wrap text-foreground">{trimmedShippingAddress}</p>
       ) : null}
     </div>
+  );
+}
+
+function ShipmentWorkspaceGpCard({
+  order,
+  costDraft,
+  retainedAmount,
+}: {
+  order: OrderDetail;
+  costDraft: CreateShipmentCostDraft;
+  retainedAmount: number;
+}) {
+  const totalCosts =
+    costDraft.purchaseAmount +
+    costDraft.shippingAmount +
+    costDraft.additionalAmount;
+  const grossProfit = retainedAmount - totalCosts;
+  const isRefunded = order.status === 'REFUNDED';
+
+  return (
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className="bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(255,255,255,0.98))] p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <TrendingUp className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <CardDescription className="text-xs">GP calculation</CardDescription>
+                <CardTitle className="truncate text-xl">
+                  {formatCurrency(grossProfit, order.currency)}
+                </CardTitle>
+              </div>
+            </div>
+            <p className="mt-2 line-clamp-1 text-xs text-muted-foreground">
+              {order.orderNumber} · {order.customerName}
+            </p>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[24rem]">
+            <MetricCard
+              label="Sale Amount"
+              value={formatCurrency(order.totalSaleAmount, order.currency)}
+            />
+            {isRefunded ? (
+              <MetricCard
+                label="Refund retained"
+                value={formatCurrency(retainedAmount, order.currency)}
+              />
+            ) : null}
+            <MetricCard
+              label="Total costs"
+              value={formatCurrency(totalCosts, order.currency)}
+            />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-2 p-4 sm:grid-cols-3">
+        <MetricCard
+          label="Part cost"
+          value={formatCurrency(costDraft.purchaseAmount, order.currency)}
+        />
+        <MetricCard
+          label="Actual shipping"
+          value={formatCurrency(costDraft.shippingAmount, order.currency)}
+        />
+        <MetricCard
+          label="Additional costs"
+          value={formatCurrency(costDraft.additionalAmount, order.currency)}
+        />
+      </CardContent>
+    </Card>
   );
 }
 

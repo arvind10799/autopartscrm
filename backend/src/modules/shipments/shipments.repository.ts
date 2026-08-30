@@ -19,6 +19,7 @@ import { QueryShipmentsDto } from './dto/query-shipments.dto';
 const shipmentSummarySelect = {
   id: true,
   bolNumber: true,
+  pickupNumber: true,
   proNumber: true,
   carrierName: true,
   status: true,
@@ -129,6 +130,7 @@ export class ShipmentsRepository {
       return await this.prismaService.shipment.create({
         data: {
           bolNumber: createShipmentDto.bolNumber?.trim(),
+          pickupNumber: createShipmentDto.pickupNumber?.trim(),
           order: {
             connect: {
               id: createShipmentDto.orderId,
@@ -199,6 +201,12 @@ export class ShipmentsRepository {
           },
         },
         {
+          pickupNumber: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
           carrierName: {
             contains: search,
             mode: 'insensitive',
@@ -257,6 +265,7 @@ export class ShipmentsRepository {
     statusUpdate: {
       status: PrismaShipmentStatus;
       bolNumber?: string;
+      pickupNumber?: string;
       proNumber?: string;
       carrierName?: string;
       shippedAt?: Date;
@@ -273,6 +282,10 @@ export class ShipmentsRepository {
 
     if (statusUpdate.bolNumber) {
       data.bolNumber = statusUpdate.bolNumber.trim();
+    }
+
+    if (statusUpdate.pickupNumber !== undefined) {
+      data.pickupNumber = statusUpdate.pickupNumber?.trim();
     }
 
     if (statusUpdate.proNumber) {

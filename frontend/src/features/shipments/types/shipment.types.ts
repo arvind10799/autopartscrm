@@ -77,6 +77,7 @@ export interface ShipmentCounts {
 export interface ShipmentSummary {
   id: string;
   bolNumber: string | null;
+  pickupNumber: string | null;
   proNumber: string | null;
   carrierName: string | null;
   currentStatus: ShipmentStatus;
@@ -166,6 +167,7 @@ export interface ShipmentsListQuery {
 export interface UpdateShipmentStatusInput {
   status: ShipmentStatus;
   bolNumber?: string;
+  pickupNumber?: string;
   proNumber?: string;
   carrierName?: string;
   purchaseAmount?: number;

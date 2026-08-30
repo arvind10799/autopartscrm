@@ -26,6 +26,12 @@ export class CreateShipmentDto {
   @MaxLength(50)
   bolNumber?: string;
 
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  pickupNumber?: string;
+
   @IsUUID()
   orderId: string;
 

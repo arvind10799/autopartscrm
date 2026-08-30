@@ -88,10 +88,9 @@ export class ShipmentsService {
       user,
       `Shipment status updated:\nStatus: ${formatShipmentStatusLabel(
         shipment.status,
-      )}\nShipment: ${shipment.bolNumber ?? 'BOL pending'}${this.formatCostNoteLines(
-        createShipmentDto,
-        shipment.order.currency,
-      )}`,
+      )}\nShipment: ${shipment.bolNumber ?? 'BOL pending'}${
+        shipment.pickupNumber ? `\nPickup No.: ${shipment.pickupNumber}` : ''
+      }${this.formatCostNoteLines(createShipmentDto, shipment.order.currency)}`,
     );
 
     await this.redisCacheService.bumpNamespaceVersion(
@@ -148,7 +147,7 @@ export class ShipmentsService {
           nextStatus,
         )}\nShipment: ${
           existingShipment.bolNumber ?? 'BOL pending'
-        }${this.formatCostNoteLines(
+        }${existingShipment.pickupNumber ? `\nPickup No.: ${existingShipment.pickupNumber}` : ''}${this.formatCostNoteLines(
           updateShipmentStatusDto,
           existingShipment.order.currency,
         )}`,
@@ -189,6 +188,10 @@ export class ShipmentsService {
         !existingShipment.bolNumber
           ? updateShipmentStatusDto.bolNumber
           : undefined,
+      pickupNumber:
+        nextStatus === PrismaShipmentStatus.SHIPPED
+          ? updateShipmentStatusDto.pickupNumber
+          : undefined,
       proNumber:
         nextStatus === PrismaShipmentStatus.IN_TRANSIT &&
         !existingShipment.proNumber
@@ -221,7 +224,9 @@ export class ShipmentsService {
         currentStatus,
       )} -> ${formatShipmentStatusLabel(nextStatus)}\nShipment: ${
         shipment.bolNumber ?? 'BOL pending'
-      }${shipment.proNumber ? `\nPRO: ${shipment.proNumber}` : ''}${this.formatCostNoteLines(
+      }${shipment.pickupNumber ? `\nPickup No.: ${shipment.pickupNumber}` : ''}${
+        shipment.proNumber ? `\nPRO: ${shipment.proNumber}` : ''
+      }${this.formatCostNoteLines(
         updateShipmentStatusDto,
         shipment.order.currency,
       )}`,

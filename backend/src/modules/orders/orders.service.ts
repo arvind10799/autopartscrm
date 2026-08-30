@@ -300,12 +300,27 @@ export class OrdersService {
       ...refundUpdate,
     });
 
+    const retainedAmount =
+      refundType === RefundType.PARTIAL
+        ? Number(refundUpdate.refundDeductionAmount ?? 0)
+        : 0;
+    const gpAmount = await this.calculateRefundGrossProfit(id, retainedAmount);
+    const formattedGp = this.formatCurrencyAmount(gpAmount, existingOrder.currency);
+    const formattedDeduction = this.formatCurrencyAmount(
+      Number(refundUpdate.refundDeductionAmount ?? 0),
+      existingOrder.currency,
+    );
+    const formattedCustomerRefund = this.formatCurrencyAmount(
+      Math.max(Number(existingOrder.totalSaleAmount) - retainedAmount, 0),
+      existingOrder.currency,
+    );
+
     await this.notesService.create(
       {
         content:
           refundType === RefundType.FULL
-            ? 'Order refunded:\n- Refund type: Full refund\n- GP adjusted to $0.00'
-            : `Order refunded:\n- Refund type: Partial refund\n- Deduction amount: ${refundUpdate.refundDeductionAmount}\n- Reason for deduction: ${refundUpdate.refundDeductionReason}`,
+            ? `Order refunded:\n- Refund type: Full refund\n- GP: ${formattedGp}`
+            : `Order refunded:\n- Refund type: Partial refund\n- Customer refunded amount: ${formattedCustomerRefund}\n- Deduction amount: ${formattedDeduction}\n- Reason for deduction: ${refundUpdate.refundDeductionReason}\n- GP: ${formattedGp}`,
         entityType: NoteEntityType.ORDER,
         entityId: id,
       },
@@ -316,6 +331,52 @@ export class OrdersService {
     await this.notificationsService.notifyOrderUpdated(id, user);
 
     return this.ordersRepository.findSummaryById(id, user);
+  }
+
+  private async calculateRefundGrossProfit(
+    orderId: string,
+    retainedAmount: number,
+  ): Promise<number> {
+    const latestShipment = await this.prismaService.shipment.findFirst({
+      where: { orderId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        costs: {
+          take: 1,
+          select: {
+            purchaseAmount: true,
+            shippingAmount: true,
+            additionalAmount: true,
+          },
+        },
+        additionalCosts: {
+          select: {
+            amount: true,
+          },
+        },
+      },
+    });
+    const cost = latestShipment?.costs[0] ?? null;
+    const additionalAmount =
+      latestShipment && latestShipment.additionalCosts.length > 0
+        ? latestShipment.additionalCosts.reduce(
+            (total, entry) => total + Number(entry.amount),
+            0,
+          )
+        : Number(cost?.additionalAmount ?? 0);
+    const totalCosts =
+      Number(cost?.purchaseAmount ?? 0) +
+      Number(cost?.shippingAmount ?? 0) +
+      additionalAmount;
+
+    return retainedAmount - totalCosts;
+  }
+
+  private formatCurrencyAmount(amount: number, currency: string): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'USD',
+    }).format(amount);
   }
 
   private validatePaymentMethodForStatus(

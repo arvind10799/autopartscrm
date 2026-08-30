@@ -59,6 +59,7 @@ type RefundDetailsLike = {
 export function GrossProfitSummaryCard({
   shipmentId,
   totalSaleAmount,
+  originalSaleAmount = totalSaleAmount,
   currency,
   cost,
   saleMetricLabel = 'Sale',
@@ -74,6 +75,7 @@ export function GrossProfitSummaryCard({
 }: {
   shipmentId?: string;
   totalSaleAmount: number;
+  originalSaleAmount?: number;
   currency: string;
   cost: ShipmentCostLike;
   saleMetricLabel?: string;
@@ -330,11 +332,17 @@ export function GrossProfitSummaryCard({
             ) : null}
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-5">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
             <GpMetric
-              label={saleMetricLabel}
-              value={formatCurrency(totalSaleAmount, displayCurrency)}
+              label="Sale Amount"
+              value={formatCurrency(originalSaleAmount, displayCurrency)}
             />
+            {hasRefundDetails ? (
+              <GpMetric
+                label={saleMetricLabel}
+                value={formatCurrency(totalSaleAmount, displayCurrency)}
+              />
+            ) : null}
             <GpMetric
               label="Part cost"
               value={formatCurrency(purchaseAmount, displayCurrency)}

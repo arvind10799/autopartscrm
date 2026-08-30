@@ -38,6 +38,10 @@ export function ShipmentDetailGrid({
       <CardContent className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         <DetailBlock label="BOL number" value={shipment.bolNumber ?? 'BOL pending'} />
         <DetailBlock
+          label="Pickup No."
+          value={shipment.pickupNumber ?? 'Pickup pending'}
+        />
+        <DetailBlock
           label="PRO number"
           value={shipment.proNumber ?? 'Pending until in transit'}
         />

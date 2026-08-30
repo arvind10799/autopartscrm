@@ -210,6 +210,9 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
               shipment.order.totalSaleAmount ??
               0
             }
+            originalSaleAmount={
+              invoiceOrder?.totalSaleAmount ?? shipment.order.totalSaleAmount ?? 0
+            }
             currency={shipment.order.currency}
             cost={shipmentCost}
             saleMetricLabel={invoiceOrder?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
@@ -274,6 +277,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
 
           <ShipmentNotesHistoryCard
             shipment={shipment}
+            order={invoiceOrder}
             orderNotes={invoiceOrder?.notes ?? []}
             isOrderNotesLoading={isInvoiceOrderLoading}
           />
@@ -524,10 +528,12 @@ function getShipmentDetailNextStatuses(
 
 function ShipmentNotesHistoryCard({
   shipment,
+  order,
   orderNotes,
   isOrderNotesLoading,
 }: {
   shipment: ShipmentDetail;
+  order?: OrderDetail | null;
   orderNotes: OrderNote[];
   isOrderNotesLoading: boolean;
 }) {
@@ -555,7 +561,7 @@ function ShipmentNotesHistoryCard({
         authorName: note.author.name,
         label: 'Order note',
         badgeVariant: 'neutral' as const,
-        body: note.content,
+        body: formatOrderNoteBody(note.content, order, shipment),
       })),
     ...orderNotes
       .filter(isOrderUpdateNote)
@@ -887,6 +893,45 @@ function isPlainOrderNote(note: OrderNote): boolean {
 
 function formatOrderHistoryBody(content: string): string {
   return content.replace(/^Order updated:\s*/i, '').trim();
+}
+
+function formatOrderNoteBody(
+  content: string,
+  order: OrderDetail | null | undefined,
+  shipment: ShipmentDetail,
+): string {
+  const trimmedContent = content.trim();
+
+  if (!/^Order refunded:/i.test(trimmedContent)) {
+    return trimmedContent;
+  }
+
+  return trimmedContent.replace(
+    /- GP adjusted to \$0\.00/i,
+    `- GP: ${formatCurrency(calculateShipmentActualGp(order, shipment), shipment.order.currency)}`,
+  );
+}
+
+function calculateShipmentActualGp(
+  order: OrderDetail | null | undefined,
+  shipment: ShipmentDetail,
+): number {
+  const retainedAmount = order
+    ? getOrderFinancialSummary(order).gpSaleBasis
+    : shipment.order.status === 'REFUNDED'
+      ? 0
+      : shipment.order.totalSaleAmount ?? 0;
+  const cost = shipment.costs[0] ?? null;
+  const additionalAmount =
+    shipment.additionalCosts.length > 0
+      ? shipment.additionalCosts.reduce((total, entry) => total + entry.amount, 0)
+      : cost?.additionalAmount ?? 0;
+  const totalCosts =
+    (cost?.purchaseAmount ?? 0) +
+    (cost?.shippingAmount ?? 0) +
+    additionalAmount;
+
+  return retainedAmount - totalCosts;
 }
 
 function formatShipmentStatusHistoryBody(content: string): string {

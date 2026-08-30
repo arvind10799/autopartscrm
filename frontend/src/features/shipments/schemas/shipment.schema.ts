@@ -96,6 +96,7 @@ const shipmentPaginationMetaSchema = z.object({
 const shipmentBackendSummarySchema = z.object({
   id: entityIdSchema,
   bolNumber: z.string().nullable(),
+  pickupNumber: z.string().nullable().optional(),
   proNumber: z.string().nullable(),
   carrierName: z.string().nullable(),
   status: shipmentStatusSchema,
@@ -123,6 +124,7 @@ function normalizeShipmentSummary(
   return {
     id: shipment.id,
     bolNumber: shipment.bolNumber,
+    pickupNumber: shipment.pickupNumber ?? null,
     proNumber: shipment.proNumber,
     carrierName: shipment.carrierName,
     currentStatus: shipment.status,
@@ -158,6 +160,7 @@ const shipmentTimelineShipmentSchema = z
   .object({
     id: entityIdSchema,
     bolNumber: z.string().nullable(),
+    pickupNumber: z.string().nullable().optional(),
     proNumber: z.string().nullable(),
     carrierName: z.string().nullable(),
     status: shipmentStatusSchema,
@@ -166,6 +169,7 @@ const shipmentTimelineShipmentSchema = z
   .transform((shipment) => ({
     id: shipment.id,
     bolNumber: shipment.bolNumber,
+    pickupNumber: shipment.pickupNumber ?? null,
     proNumber: shipment.proNumber,
     carrierName: shipment.carrierName,
     orderId: shipment.orderId,
@@ -203,6 +207,12 @@ export const updateShipmentStatusSchema = z.object({
     .max(50, 'BOL number must be 50 characters or fewer.')
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
+  pickupNumber: z
+    .string()
+    .trim()
+    .max(50, 'Pickup No. must be 50 characters or fewer.')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
   proNumber: z
     .string()
     .trim()
@@ -231,6 +241,12 @@ export const createShipmentSchema = z.object({
     .string()
     .trim()
     .max(50, 'BOL number must be 50 characters or fewer.')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+  pickupNumber: z
+    .string()
+    .trim()
+    .max(50, 'Pickup No. must be 50 characters or fewer.')
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
   orderId: z

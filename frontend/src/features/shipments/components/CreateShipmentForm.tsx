@@ -33,6 +33,7 @@ const DEFAULT_SHIPMENT_STATUS: ShipmentStatus = 'PENDING';
 
 const defaultValues: CreateShipmentFormValues = {
   bolNumber: '',
+  pickupNumber: '',
   orderId: '',
   status: DEFAULT_SHIPMENT_STATUS,
   carrierName: '',
@@ -45,6 +46,7 @@ const defaultValues: CreateShipmentFormValues = {
 export function CreateShipmentForm({
   selectedOrder,
   onCreated,
+  onCostDraftChange,
 }: {
   selectedOrder: Pick<
     OrderSummary,
@@ -52,6 +54,7 @@ export function CreateShipmentForm({
   > &
     Partial<Pick<OrderDetail, 'shipments'>>;
   onCreated: (shipment: ShipmentSummary) => void;
+  onCostDraftChange?: (draft: CreateShipmentCostDraft) => void;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [savedShipmentSnapshot, setSavedShipmentSnapshot] =
@@ -73,6 +76,9 @@ export function CreateShipmentForm({
     defaultValues,
   });
   const selectedStatus = form.watch('status');
+  const purchaseAmountValue = form.watch('purchaseAmount');
+  const shippingAmountValue = form.watch('shippingAmount');
+  const additionalAmountValue = form.watch('additionalAmount');
   const showShippingFields = selectedStatus === 'SHIPPED';
   const showPurchaseCostField =
     selectedStatus === 'PURCHASE' || selectedStatus === 'SHIPPED';
@@ -91,6 +97,7 @@ export function CreateShipmentForm({
     }
 
     form.setValue('bolNumber', '');
+    form.setValue('pickupNumber', '');
     form.setValue('carrierName', '');
   }, [form, showShippingFields]);
 
@@ -101,6 +108,23 @@ export function CreateShipmentForm({
 
     form.setValue('shippingAmount', '');
   }, [form, showActualShippingCostField]);
+
+  useEffect(() => {
+    onCostDraftChange?.({
+      purchaseAmount:
+        parseOptionalAmount(purchaseAmountValue) ??
+        (hasSavedPurchaseCost ? currentCost?.purchaseAmount ?? 0 : 0),
+      shippingAmount: parseOptionalAmount(shippingAmountValue) ?? 0,
+      additionalAmount: parseOptionalAmount(additionalAmountValue) ?? 0,
+    });
+  }, [
+    additionalAmountValue,
+    currentCost?.purchaseAmount,
+    hasSavedPurchaseCost,
+    onCostDraftChange,
+    purchaseAmountValue,
+    shippingAmountValue,
+  ]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
@@ -189,6 +213,26 @@ export function CreateShipmentForm({
             {form.formState.errors.bolNumber ? (
               <p className="text-xs text-destructive">
                 {form.formState.errors.bolNumber.message}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="space-y-2">
+            <Label
+              htmlFor="pickupNumber"
+              className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              Pickup No. <span className="text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              id="pickupNumber"
+              placeholder="PU-2026-001"
+              className="h-11 rounded-xl"
+              {...form.register('pickupNumber')}
+            />
+            {form.formState.errors.pickupNumber ? (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.pickupNumber.message}
               </p>
             ) : null}
           </div>
@@ -312,6 +356,7 @@ export function CreateShipmentForm({
 type ShipmentFormSource = {
   id?: string;
   bolNumber?: string | null;
+  pickupNumber?: string | null;
   carrierName?: string | null;
   status?: string;
   currentStatus?: ShipmentStatus;
@@ -357,6 +402,7 @@ function buildShipmentFormValues(
     orderId,
     status,
     bolNumber: shipment?.bolNumber ?? '',
+    pickupNumber: shipment?.pickupNumber ?? '',
     carrierName: shipment?.carrierName ?? '',
     purchaseAmount:
       cost?.purchaseAmount !== undefined ? cost.purchaseAmount.toFixed(2) : '',
@@ -368,4 +414,20 @@ function buildShipmentFormValues(
         : '',
     costNotes: cost?.notes ?? '',
   };
+}
+
+export type CreateShipmentCostDraft = {
+  purchaseAmount: number;
+  shippingAmount: number;
+  additionalAmount: number;
+};
+
+function parseOptionalAmount(value: unknown): number | undefined {
+  if (value === '' || value === null || value === undefined) {
+    return undefined;
+  }
+
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue) ? Math.max(parsedValue, 0) : undefined;
 }

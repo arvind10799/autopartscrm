@@ -302,6 +302,7 @@ const orderShipmentCostHistorySchema = z.object({
 const orderShipmentSchema = z.object({
   id: z.string(),
   bolNumber: z.string().nullable(),
+  pickupNumber: z.string().nullable().optional().default(null),
   proNumber: z.string().nullable(),
   carrierName: z.string().nullable(),
   status: orderShipmentStatusSchema,
@@ -371,6 +372,7 @@ const orderBackendSummarySchema = z.object({
       z.object({
         id: z.string(),
         bolNumber: z.string().nullable(),
+        pickupNumber: z.string().nullable().optional().default(null),
         proNumber: z.string().nullable(),
         status: orderShipmentStatusSchema,
         carrierName: z.string().nullable().optional(),
@@ -426,6 +428,7 @@ function normalizeOrderSummary(order: z.infer<typeof orderBackendSummarySchema>)
       ? {
           id: order.shipments[0].id,
           bolNumber: order.shipments[0].bolNumber,
+          pickupNumber: order.shipments[0].pickupNumber ?? null,
           proNumber: order.shipments[0].proNumber,
           status: order.shipments[0].status,
           createdAt: order.shipments[0].createdAt,

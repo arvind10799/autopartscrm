@@ -114,7 +114,7 @@ export function ShipmentsPageContent() {
                   value={searchTerm}
                   onChange={(event) => handleSearchChange(event.target.value)}
                   className="pl-9"
-                  placeholder="Search by BOL, PRO, carrier, order, or customer"
+                  placeholder="Search by BOL, Pickup No., PRO, carrier, order, or customer"
                 />
               </div>
 

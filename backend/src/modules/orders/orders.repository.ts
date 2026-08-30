@@ -74,6 +74,7 @@ const orderListSelect = {
     select: {
       id: true,
       bolNumber: true,
+      pickupNumber: true,
       proNumber: true,
       carrierName: true,
       status: true,

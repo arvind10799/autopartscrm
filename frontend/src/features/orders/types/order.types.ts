@@ -101,7 +101,13 @@ export interface OrderSummary {
   latestShipmentStatus: OrderShipmentStatus | null;
   latestShipment: Pick<
     OrderShipment,
-    'id' | 'bolNumber' | 'proNumber' | 'status' | 'createdAt' | 'updatedAt'
+    | 'id'
+    | 'bolNumber'
+    | 'pickupNumber'
+    | 'proNumber'
+    | 'status'
+    | 'createdAt'
+    | 'updatedAt'
   > | null;
   createdAt: string;
   updatedAt: string;
@@ -118,6 +124,7 @@ export interface OrderSummary {
 export interface OrderShipment {
   id: string;
   bolNumber: string | null;
+  pickupNumber: string | null;
   proNumber: string | null;
   carrierName: string | null;
   status: string;
