@@ -74,6 +74,7 @@ export class CostsService {
 
     const nextAmounts = this.resolveCostAmounts(updateCostDto, existingAmounts);
     const changes = this.buildBaseCostChanges(existingAmounts, updateCostDto);
+    const editNote = updateCostDto.notes?.trim();
 
     const cost = await this.costsRepository.updateByShipmentId(shipmentId, {
       ...updateCostDto,
@@ -88,7 +89,9 @@ export class CostsService {
         summary: `GP costs updated: ${changes
           .map((change) => change.label)
           .join(', ')}.`,
-        changes,
+        changes: editNote
+          ? [...changes, this.buildChange('Edit note', null, editNote)]
+          : changes,
         user,
       });
     }

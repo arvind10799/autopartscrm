@@ -64,6 +64,7 @@ export interface UpdateShipmentCostInput {
   shippingCharges: number;
   additionalCharges: number;
   currency: string;
+  notes?: string;
 }
 
 export interface ShipmentCostDraft {

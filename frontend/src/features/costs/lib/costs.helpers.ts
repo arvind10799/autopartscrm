@@ -55,6 +55,7 @@ export function toBackendUpdateShipmentCostPayload(
     shippingAmount: payload.shippingCharges,
     additionalAmount: payload.additionalCharges,
     currency: payload.currency,
+    notes: payload.notes,
   };
 }
 

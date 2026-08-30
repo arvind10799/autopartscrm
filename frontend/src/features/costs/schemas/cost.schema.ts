@@ -117,6 +117,12 @@ export const createShipmentCostSchema = z.object({
 
 export const updateShipmentCostSchema = createShipmentCostSchema.omit({
   shipmentId: true,
+}).extend({
+  notes: z
+    .string()
+    .trim()
+    .max(1000, 'Note must be 1,000 characters or fewer.')
+    .optional(),
 });
 
 export const shipmentCostFormSchema = z

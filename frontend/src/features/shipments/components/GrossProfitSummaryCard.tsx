@@ -97,6 +97,7 @@ export function GrossProfitSummaryCard({
   const [purchaseAmountInput, setPurchaseAmountInput] = useState('');
   const [shippingAmountInput, setShippingAmountInput] = useState('');
   const [currencyInput, setCurrencyInput] = useState('');
+  const [baseCostEditNote, setBaseCostEditNote] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const purchaseAmount = cost?.purchaseAmount ?? 0;
@@ -134,6 +135,7 @@ export function GrossProfitSummaryCard({
     setPurchaseAmountInput(purchaseAmount.toFixed(2));
     setShippingAmountInput(shippingAmount.toFixed(2));
     setCurrencyInput(displayCurrency);
+    setBaseCostEditNote('');
     setFormError(null);
     setIsEditingBaseCost(true);
   };
@@ -215,6 +217,7 @@ export function GrossProfitSummaryCard({
     const parsedPurchaseAmount = Number(purchaseAmountInput);
     const parsedShippingAmount = Number(shippingAmountInput);
     const normalizedCurrency = currencyInput.trim().toUpperCase();
+    const trimmedEditNote = baseCostEditNote.trim();
 
     if (!shipmentId || !cost || !canOpenBaseEditForm) {
       return;
@@ -235,6 +238,11 @@ export function GrossProfitSummaryCard({
       return;
     }
 
+    if (!trimmedEditNote) {
+      setFormError('Add a note explaining why these costs changed.');
+      return;
+    }
+
     setIsSaving(true);
     setFormError(null);
 
@@ -244,6 +252,7 @@ export function GrossProfitSummaryCard({
         shippingCharges: parsedShippingAmount,
         additionalCharges: additionalAmount,
         currency: normalizedCurrency,
+        notes: trimmedEditNote,
       });
       toast.success('Shipment cost updated', 'GP calculation has been refreshed.');
       setIsEditingBaseCost(false);
@@ -349,7 +358,7 @@ export function GrossProfitSummaryCard({
             {refundDetails?.refundType === 'PARTIAL'
               ? 'deduction amount - part cost - actual shipping cost - additional costs.'
               : refundDetails?.refundType === 'FULL'
-                ? 'full refund keeps GP locked at $0.00.'
+                ? 'retained amount - part cost - actual shipping cost - additional costs.'
                 : 'sale - part cost - actual shipping cost - additional costs.'}
           </p>
 
@@ -383,9 +392,7 @@ export function GrossProfitSummaryCard({
                   </p>
                 </div>
               ) : (
-                <p className="mt-1 text-xs">
-                  Complete order amount refunded. GP is locked at $0.00.
-                </p>
+                null
               )}
               {refundDetails?.refundedAt ? (
                 <p className="mt-1 text-[11px] text-violet-800 dark:text-violet-200">
@@ -536,6 +543,16 @@ export function GrossProfitSummaryCard({
                   value={currencyInput}
                   onChange={(event) => setCurrencyInput(event.target.value)}
                   placeholder="USD"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gp-edit-note">Edit note</Label>
+                <Textarea
+                  id="gp-edit-note"
+                  rows={3}
+                  value={baseCostEditNote}
+                  onChange={(event) => setBaseCostEditNote(event.target.value)}
+                  placeholder="Example: Yard refunded $300, so part cost was adjusted to net $100."
                 />
               </div>
               {formError ? (

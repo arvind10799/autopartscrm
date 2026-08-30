@@ -95,9 +95,5 @@ export function getOrderFinancialSummary(
     retainedPaidAmount,
     remainingAmount,
     gpSaleBasis,
-    grossProfitOverride:
-      order.status === 'REFUNDED' && order.intakeDetails.refundType !== 'PARTIAL'
-        ? 0
-        : undefined,
   };
 }
