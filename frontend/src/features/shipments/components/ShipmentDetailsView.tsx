@@ -45,7 +45,11 @@ import {
   formatShipmentStatusOptionLabel,
   getAllowedNextShipmentStatuses,
 } from '../lib/shipments.helpers';
-import type { ShipmentDetail, ShipmentStatus } from '../types/shipment.types';
+import {
+  SHIPMENT_STATUSES,
+  type ShipmentDetail,
+  type ShipmentStatus,
+} from '../types/shipment.types';
 import { GrossProfitSummaryCard } from './GrossProfitSummaryCard';
 import { ShipmentDetailGrid } from './ShipmentDetailGrid';
 import { ShipmentStatusUpdateCard } from './ShipmentStatusUpdateCard';
@@ -88,19 +92,33 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     error: invoiceOrderError,
   } = useOrderDetailWithRefresh(shipment?.orderId ?? '', orderRefreshKey);
   const [selectedStatus, setSelectedStatus] = useState<ShipmentStatus | ''>('');
+  const [bolNumber, setBolNumber] = useState('');
+  const [pickupNumber, setPickupNumber] = useState('');
   const [proNumber, setProNumber] = useState('');
+  const [carrierName, setCarrierName] = useState('');
   const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
+  const isAdmin = authUser?.role === 'ADMIN';
 
   useEffect(() => {
     if (!shipment) {
       setSelectedStatus('');
+      setBolNumber('');
+      setPickupNumber('');
       setProNumber('');
+      setCarrierName('');
       return;
     }
 
-    setSelectedStatus(getShipmentDetailNextStatuses(shipment.currentStatus)[0] ?? '');
-    setProNumber('');
-  }, [shipment]);
+    setSelectedStatus(
+      isAdmin
+        ? shipment.currentStatus
+        : getShipmentDetailNextStatuses(shipment.currentStatus)[0] ?? '',
+    );
+    setBolNumber(shipment.bolNumber ?? '');
+    setPickupNumber(shipment.pickupNumber ?? '');
+    setProNumber(shipment.proNumber ?? '');
+    setCarrierName(shipment.carrierName ?? '');
+  }, [isAdmin, shipment]);
 
   if (isLoading) {
     return <DetailPageSkeleton />;
@@ -131,7 +149,9 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     );
   }
 
-  const nextStatuses = getShipmentDetailNextStatuses(shipment.currentStatus);
+  const nextStatuses = isAdmin
+    ? [...SHIPMENT_STATUSES]
+    : getShipmentDetailNextStatuses(shipment.currentStatus);
   const resolvedOrderStatus = invoiceOrder?.status ?? shipment.order.status;
   const isOrderResolvedForShipment =
     resolvedOrderStatus === 'CANCELLED' || resolvedOrderStatus === 'REFUNDED';
@@ -158,14 +178,21 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
       return;
     }
 
-    await updateStatus(selectedStatus, proNumber);
+    await updateStatus(selectedStatus, {
+      bolNumber,
+      pickupNumber,
+      proNumber,
+      carrierName,
+    });
     setOrderRefreshKey((currentValue) => currentValue + 1);
   };
 
   const handleStatusChange = (status: ShipmentStatus) => {
     clearStatusError();
     setSelectedStatus(status);
-    setProNumber('');
+    if (!isAdmin) {
+      setProNumber('');
+    }
   };
 
   return (
@@ -289,15 +316,33 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             selectedStatus={selectedStatus}
             isUpdatingStatus={isUpdatingStatus}
             statusError={statusError}
+            bolNumber={bolNumber}
+            pickupNumber={pickupNumber}
             proNumber={proNumber}
+            carrierName={carrierName}
+            isAdminOverride={isAdmin}
+            requiresBolNumber={selectedStatus === 'SHIPPED' && !bolNumber.trim()}
             requiresProNumber={
-              selectedStatus === 'IN_TRANSIT' && !shipment.proNumber
+              selectedStatus === 'IN_TRANSIT' &&
+              (isAdmin ? !proNumber.trim() : !shipment.proNumber)
             }
             lockedReason={statusLockedReason}
             onStatusChange={handleStatusChange}
+            onBolNumberChange={(value) => {
+              clearStatusError();
+              setBolNumber(value);
+            }}
+            onPickupNumberChange={(value) => {
+              clearStatusError();
+              setPickupNumber(value);
+            }}
             onProNumberChange={(value) => {
               clearStatusError();
               setProNumber(value);
+            }}
+            onCarrierNameChange={(value) => {
+              clearStatusError();
+              setCarrierName(value);
             }}
             onSubmit={handleStatusSubmit}
           />

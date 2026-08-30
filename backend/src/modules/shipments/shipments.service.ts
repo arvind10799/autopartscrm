@@ -4,6 +4,7 @@ import {
   ShipmentStatus as PrismaShipmentStatus,
 } from '@prisma/client';
 import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
+import { Role } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { CACHE_NAMESPACE_ORDERS_LIST } from '../../infrastructure/redis/redis.constants';
@@ -118,10 +119,13 @@ export class ShipmentsService {
     const currentStatus = existingShipment.status;
     const nextStatus = updateShipmentStatusDto.status as PrismaShipmentStatus;
     const existingCost = existingShipment.costs[0] ?? null;
+    const isAdmin = user.role === Role.ADMIN;
     const hasCostPayload = this.hasCostPayload(updateShipmentStatusDto);
+    const hasAdminShipmentDataPayload =
+      isAdmin && this.hasShipmentDataPayload(updateShipmentStatusDto);
 
     if (currentStatus === nextStatus) {
-      if (!hasCostPayload) {
+      if (!hasCostPayload && !hasAdminShipmentDataPayload) {
         throw new BadRequestException(
           `Shipment is already in ${nextStatus} status.`,
         );
@@ -133,23 +137,35 @@ export class ShipmentsService {
         existingCost,
         false,
       );
+      const shipment = hasAdminShipmentDataPayload
+        ? await this.shipmentsRepository.updateStatus(id, {
+            status: nextStatus,
+            bolNumber: updateShipmentStatusDto.bolNumber,
+            pickupNumber: updateShipmentStatusDto.pickupNumber,
+            proNumber: updateShipmentStatusDto.proNumber,
+            carrierName: updateShipmentStatusDto.carrierName,
+          })
+        : existingShipment;
+
       await this.upsertShipmentCostIfNeeded(
-        existingShipment.id,
-        existingShipment.order.totalSaleAmount,
-        existingShipment.order.currency,
+        shipment.id,
+        shipment.order.totalSaleAmount,
+        shipment.order.currency,
         updateShipmentStatusDto,
         existingCost,
       );
       await this.addOrderStatusHistoryNote(
-        existingShipment.orderId,
+        shipment.orderId,
         user,
         `Shipment status updated:\nStatus: ${formatShipmentStatusLabel(
           nextStatus,
         )}\nShipment: ${
-          existingShipment.bolNumber ?? 'BOL pending'
-        }${existingShipment.pickupNumber ? `\nPickup No.: ${existingShipment.pickupNumber}` : ''}${this.formatCostNoteLines(
+          shipment.bolNumber ?? 'BOL pending'
+        }${shipment.pickupNumber ? `\nPickup No.: ${shipment.pickupNumber}` : ''}${
+          shipment.proNumber ? `\nPRO: ${shipment.proNumber}` : ''
+        }${this.formatCostNoteLines(
           updateShipmentStatusDto,
-          existingShipment.order.currency,
+          shipment.order.currency,
         )}`,
       );
       await this.redisCacheService.bumpNamespaceVersion(
@@ -159,11 +175,13 @@ export class ShipmentsService {
       return this.shipmentsRepository.findOne(id);
     }
 
-    this.ensureStatusTransitionAllowed(
-      currentStatus,
-      nextStatus,
-      Boolean(existingShipment.shippedAt),
-    );
+    if (!isAdmin) {
+      this.ensureStatusTransitionAllowed(
+        currentStatus,
+        nextStatus,
+        Boolean(existingShipment.shippedAt),
+      );
+    }
     this.ensureBolNumberForShipped(
       nextStatus,
       existingShipment.bolNumber,
@@ -184,26 +202,29 @@ export class ShipmentsService {
     const shipment = await this.shipmentsRepository.updateStatus(id, {
       status: nextStatus,
       bolNumber:
-        nextStatus === PrismaShipmentStatus.SHIPPED &&
-        !existingShipment.bolNumber
+        isAdmin ||
+        (nextStatus === PrismaShipmentStatus.SHIPPED &&
+          !existingShipment.bolNumber)
           ? updateShipmentStatusDto.bolNumber
           : undefined,
       pickupNumber:
-        nextStatus === PrismaShipmentStatus.SHIPPED
+        isAdmin || nextStatus === PrismaShipmentStatus.SHIPPED
           ? updateShipmentStatusDto.pickupNumber
           : undefined,
       proNumber:
-        nextStatus === PrismaShipmentStatus.IN_TRANSIT &&
-        !existingShipment.proNumber
+        isAdmin ||
+        (nextStatus === PrismaShipmentStatus.IN_TRANSIT &&
+          !existingShipment.proNumber)
           ? updateShipmentStatusDto.proNumber
           : undefined,
       carrierName:
-        nextStatus === PrismaShipmentStatus.SHIPPED
+        isAdmin || nextStatus === PrismaShipmentStatus.SHIPPED
           ? updateShipmentStatusDto.carrierName
           : undefined,
       shippedAt:
         (nextStatus === PrismaShipmentStatus.SHIPPED ||
-          nextStatus === PrismaShipmentStatus.IN_TRANSIT) &&
+          nextStatus === PrismaShipmentStatus.IN_TRANSIT ||
+          nextStatus === PrismaShipmentStatus.DELIVERED) &&
         !existingShipment.shippedAt
           ? new Date()
           : undefined,
@@ -344,6 +365,20 @@ export class ShipmentsService {
       payload.shippingAmount !== undefined ||
       payload.additionalAmount !== undefined ||
       payload.costNotes !== undefined
+    );
+  }
+
+  private hasShipmentDataPayload(
+    payload: Pick<
+      UpdateShipmentStatusDto,
+      'bolNumber' | 'pickupNumber' | 'proNumber' | 'carrierName'
+    >,
+  ): boolean {
+    return (
+      payload.bolNumber !== undefined ||
+      payload.pickupNumber !== undefined ||
+      payload.proNumber !== undefined ||
+      payload.carrierName !== undefined
     );
   }
 

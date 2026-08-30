@@ -20,22 +20,38 @@ export function ShipmentStatusUpdateCard({
   selectedStatus,
   isUpdatingStatus,
   statusError,
+  bolNumber,
+  pickupNumber,
   proNumber,
+  carrierName,
+  isAdminOverride,
+  requiresBolNumber,
   requiresProNumber,
   lockedReason,
   onStatusChange,
+  onBolNumberChange,
+  onPickupNumberChange,
   onProNumberChange,
+  onCarrierNameChange,
   onSubmit,
 }: {
   nextStatuses: ShipmentStatus[];
   selectedStatus: ShipmentStatus | '';
   isUpdatingStatus: boolean;
   statusError: string | null;
+  bolNumber?: string;
+  pickupNumber?: string;
   proNumber: string;
+  carrierName?: string;
+  isAdminOverride?: boolean;
+  requiresBolNumber?: boolean;
   requiresProNumber: boolean;
   lockedReason?: string | null;
   onStatusChange: (status: ShipmentStatus) => void;
+  onBolNumberChange?: (bolNumber: string) => void;
+  onPickupNumberChange?: (pickupNumber: string) => void;
   onProNumberChange: (proNumber: string) => void;
+  onCarrierNameChange?: (carrierName: string) => void;
   onSubmit: () => Promise<void>;
 }) {
   return (
@@ -52,7 +68,7 @@ export function ShipmentStatusUpdateCard({
           <>
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Next allowed status
+                {isAdminOverride ? 'Shipment status' : 'Next allowed status'}
               </p>
               <Select
                 value={selectedStatus}
@@ -73,7 +89,40 @@ export function ShipmentStatusUpdateCard({
               </Select>
             </div>
 
-            {requiresProNumber ? (
+            {isAdminOverride ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ShipmentDataInput
+                  label="BOL number"
+                  value={bolNumber ?? ''}
+                  onChange={(value) => onBolNumberChange?.(value)}
+                  disabled={isUpdatingStatus}
+                  placeholder="BOL-2026-001"
+                />
+                <ShipmentDataInput
+                  label="Pickup No."
+                  value={pickupNumber ?? ''}
+                  onChange={(value) => onPickupNumberChange?.(value)}
+                  disabled={isUpdatingStatus}
+                  placeholder="PU-2026-001"
+                />
+                <ShipmentDataInput
+                  label="PRO number"
+                  value={proNumber}
+                  onChange={onProNumberChange}
+                  disabled={isUpdatingStatus}
+                  placeholder="PRO-2026-001"
+                />
+                <ShipmentDataInput
+                  label="Freight carrier"
+                  value={carrierName ?? ''}
+                  onChange={(value) => onCarrierNameChange?.(value)}
+                  disabled={isUpdatingStatus}
+                  placeholder="FedEx Freight"
+                />
+              </div>
+            ) : null}
+
+            {requiresProNumber && !isAdminOverride ? (
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   PRO number
@@ -92,6 +141,7 @@ export function ShipmentStatusUpdateCard({
               disabled={
                 !selectedStatus ||
                 isUpdatingStatus ||
+                (requiresBolNumber && (bolNumber ?? '').trim().length === 0) ||
                 (requiresProNumber && proNumber.trim().length === 0)
               }
               onClick={() => void onSubmit()}
@@ -112,5 +162,33 @@ export function ShipmentStatusUpdateCard({
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function ShipmentDataInput({
+  label,
+  value,
+  placeholder,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </p>
+      <Input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        placeholder={placeholder}
+      />
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRequestTracker } from '@/lib/hooks/useRequestTracker';
 import { toast } from '@/lib/stores/toast.store';
 import { getErrorMessage } from '@/lib/utils/error';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 import { shipmentsApi } from '../api/shipments-api';
 import {
   applyOptimisticShipmentStatus,
@@ -15,7 +16,10 @@ import {
 import type {
   ShipmentDetail,
   ShipmentStatus,
+  UpdateShipmentStatusInput,
 } from '../types/shipment.types';
+
+type ShipmentStatusUpdateDraft = Omit<UpdateShipmentStatusInput, 'status'>;
 
 type UseShipmentDetailResult = {
   shipment: ShipmentDetail | null;
@@ -25,7 +29,10 @@ type UseShipmentDetailResult = {
   statusError: string | null;
   clearStatusError: () => void;
   refreshShipment: () => Promise<void>;
-  updateStatus: (status: ShipmentStatus, proNumber?: string) => Promise<void>;
+  updateStatus: (
+    status: ShipmentStatus,
+    draft?: ShipmentStatusUpdateDraft,
+  ) => Promise<void>;
 };
 
 export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
@@ -34,6 +41,7 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const authUser = useAuthStore((state) => state.user);
   const detailRequestTracker = useRequestTracker();
   const statusRequestTracker = useRequestTracker();
 
@@ -88,29 +96,36 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
     setStatusError(null);
   };
 
-  const updateStatus = async (nextStatus: ShipmentStatus, proNumber?: string) => {
+  const updateStatus = async (
+    nextStatus: ShipmentStatus,
+    draft: ShipmentStatusUpdateDraft = {},
+  ) => {
     if (!shipment || isUpdatingStatus) {
       return;
     }
 
     const previousShipment = shipment;
+    const isAdmin = authUser?.role === 'ADMIN';
     const nextAllowedStatuses = getAllowedNextShipmentStatuses(
       previousShipment.currentStatus,
     );
 
-    if (!nextAllowedStatuses.includes(nextStatus)) {
+    if (!isAdmin && !nextAllowedStatuses.includes(nextStatus)) {
       setStatusError(
         `Shipment status cannot transition from ${previousShipment.currentStatus} to ${nextStatus}.`,
       );
       return;
     }
 
-    if (!isShipmentStatusTransitionAllowed(previousShipment, nextStatus)) {
+    if (!isAdmin && !isShipmentStatusTransitionAllowed(previousShipment, nextStatus)) {
       setStatusError('Shipment cannot be marked as delivered before it has shipped.');
       return;
     }
 
-    const normalizedProNumber = proNumber?.trim();
+    const normalizedBolNumber = draft.bolNumber?.trim();
+    const normalizedPickupNumber = draft.pickupNumber?.trim();
+    const normalizedProNumber = draft.proNumber?.trim();
+    const normalizedCarrierName = draft.carrierName?.trim();
 
     if (
       nextStatus === 'IN_TRANSIT' &&
@@ -128,14 +143,22 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
       applyOptimisticShipmentStatus(
         previousShipment,
         nextStatus,
-        normalizedProNumber,
+        {
+          bolNumber: normalizedBolNumber,
+          pickupNumber: normalizedPickupNumber,
+          proNumber: normalizedProNumber,
+          carrierName: normalizedCarrierName,
+        },
       ),
     );
 
     try {
       const updatedShipment = await shipmentsApi.updateStatus(previousShipment.id, {
         status: nextStatus,
+        bolNumber: normalizedBolNumber,
+        pickupNumber: normalizedPickupNumber,
         proNumber: normalizedProNumber,
+        carrierName: normalizedCarrierName,
       });
 
       if (!statusRequestTracker.isCurrentRequest(requestId)) {

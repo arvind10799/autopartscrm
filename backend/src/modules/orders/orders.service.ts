@@ -161,7 +161,9 @@ export class OrdersService {
       );
     }
 
-    this.validatePaymentMethodForStatus(nextStatus, nextPaymentMethod);
+    if (user.role !== Role.ADMIN) {
+      this.validatePaymentMethodForStatus(nextStatus, nextPaymentMethod);
+    }
 
     if (
       nextStatus === OrderStatus.PARTIALLY_PAID &&

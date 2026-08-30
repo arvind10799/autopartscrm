@@ -233,7 +233,12 @@ export function getShipmentPageMetrics(
 export function applyOptimisticShipmentStatus(
   shipment: ShipmentDetail,
   nextStatus: ShipmentStatus,
-  proNumber?: string,
+  draft: {
+    bolNumber?: string;
+    pickupNumber?: string;
+    proNumber?: string;
+    carrierName?: string;
+  } = {},
 ): ShipmentDetail {
   const now = new Date().toISOString();
   const shippedAt =
@@ -246,8 +251,10 @@ export function applyOptimisticShipmentStatus(
   return {
     ...shipment,
     currentStatus: nextStatus,
-    proNumber:
-      nextStatus === 'IN_TRANSIT' && proNumber ? proNumber : shipment.proNumber,
+    bolNumber: draft.bolNumber ?? shipment.bolNumber,
+    pickupNumber: draft.pickupNumber ?? shipment.pickupNumber,
+    proNumber: draft.proNumber ?? shipment.proNumber,
+    carrierName: draft.carrierName ?? shipment.carrierName,
     updatedAt: now,
     shippedAt,
     deliveredAt: nextStatus === 'DELIVERED' ? now : shipment.deliveredAt,
