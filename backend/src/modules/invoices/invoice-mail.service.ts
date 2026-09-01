@@ -271,7 +271,7 @@ export class InvoiceMailService {
 
   private buildPublicAssetUrl(path: string): string {
     const baseUrl = this.configService
-      .get<string>('APP_BASE_URL', 'https://crm.intraciatechnologies.com')
+      .get<string>('APP_BASE_URL', 'https://crm.meeautoparts.com')
       .replace(/\/$/, '');
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
