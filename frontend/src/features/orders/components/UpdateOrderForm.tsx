@@ -302,7 +302,7 @@ export function UpdateOrderForm({
                 ['vehicleMake', 'Make'],
                 ['vehicleModel', 'Model'],
                 ['vehicleYear', 'Year'],
-                ['vehicleVariant', 'Variant'],
+                ['vehicleVariant', 'Part'],
                 ['vehicleConfiguration', 'Configuration'],
               ].map(([field, label]) => (
                 <EditorField key={field} label={label} id={field}>

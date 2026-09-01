@@ -791,13 +791,6 @@ function InvoiceFormModal({
     });
   };
 
-  const updateBooleanField = (field: 'photoIdRequired', value: boolean) => {
-    onChange({
-      ...draft,
-      [field]: value,
-    });
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-8"
@@ -848,15 +841,6 @@ function InvoiceFormModal({
                 onChange={(value) => updateField('invoiceDate', value)}
               />
               <InvoiceInput label="Sales Assistant" value={draft.salesAssistant} onChange={(value) => updateField('salesAssistant', value)} />
-              <InvoiceSelect
-                label="Photo ID"
-                value={draft.photoIdRequired ? 'required' : 'not-required'}
-                options={[
-                  { label: 'Required', value: 'required' },
-                  { label: 'Not required', value: 'not-required' },
-                ]}
-                onChange={(value) => updateBooleanField('photoIdRequired', value === 'required')}
-              />
             </InvoiceFormSection>
 
             <InvoiceFormSection title="Customer Information">
@@ -1437,35 +1421,6 @@ function InvoiceInput({
   );
 }
 
-function InvoiceSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: Array<{ label: string; value: string }>;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="space-y-1.5 text-sm font-medium text-foreground">
-      <span>{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-2xl border border-input bg-white px-4 py-2.5 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 function InvoiceTextarea({
   label,
   value,
@@ -1491,6 +1446,7 @@ function InvoiceTextarea({
 function defaultsToDraft(defaults: InvoiceDefaults): InvoiceDraft {
   return {
     ...defaults,
+    photoIdRequired: true,
     contactNumber: formatUsPhoneNumber(defaults.contactNumber),
     warrantyPartsOnly: defaults.warrantyPartsOnly || DEFAULT_WARRANTY_PARTS_ONLY,
     cancellationPolicy: defaults.cancellationPolicy || DEFAULT_CANCELLATION_POLICY,
@@ -1549,7 +1505,7 @@ function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
     customerSignature: invoice.customerSignature ?? '',
     customerSignatureImage: invoice.customerSignatureImage ?? '',
     signatureDate: formatDateInputValue(invoice.signatureDate),
-    photoIdRequired: invoice.photoIdRequired,
+    photoIdRequired: true,
   };
 }
 
@@ -1587,7 +1543,7 @@ function draftToPayload(draft: InvoiceDraft): CreateInvoiceInput {
     coreCharge: toAmount(draft.coreCharge),
     customerSignature: draft.customerSignature,
     signatureDate: draft.signatureDate,
-    photoIdRequired: draft.photoIdRequired,
+    photoIdRequired: true,
   };
 }
 
@@ -1609,7 +1565,7 @@ function draftToInvoicePreview(orderId: string, draft: InvoiceDraft): InvoiceRec
     customerSignature: draft.customerSignature || null,
     customerSignatureImage: draft.customerSignatureImage || null,
     signatureDate: draft.signatureDate || null,
-    photoIdRequired: draft.photoIdRequired,
+    photoIdRequired: true,
     photoIdDocument: null,
     photoIdFileName: null,
     photoIdMimeType: null,

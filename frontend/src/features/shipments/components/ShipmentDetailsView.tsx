@@ -444,7 +444,7 @@ function FullOrderDetailsModal({
             <CompactDetail label="Make" value={formatNullableText(intake.vehicleMake)} />
             <CompactDetail label="Model" value={formatNullableText(intake.vehicleModel)} />
             <CompactDetail label="Year" value={formatNullableText(intake.vehicleYear)} />
-            <CompactDetail label="Variant" value={formatNullableText(intake.vehicleVariant)} />
+            <CompactDetail label="Part" value={formatNullableText(intake.vehicleVariant)} />
             <CompactDetail label="VIN" value={formatNullableText(intake.vehicleVin)} />
             <CompactDetail
               label="Miles offered"

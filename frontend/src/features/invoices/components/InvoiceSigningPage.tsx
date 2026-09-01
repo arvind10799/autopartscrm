@@ -30,6 +30,35 @@ const TYPED_SIGNATURE_STYLES = [
   { label: 'Bold Script', font: '"Monotype Corsiva", "Brush Script MT", cursive' },
 ];
 
+function hasAcceptedTermsForCurrentInvoice(invoice: PublicInvoiceRecord) {
+  if (invoice.status === 'SIGNED') {
+    return true;
+  }
+
+  const events = invoice.auditTrail?.events ?? [];
+  const acceptedAt = getLatestAuditEventTimestamp(events, 'TERMS_ACCEPTED');
+
+  if (!acceptedAt) {
+    return false;
+  }
+
+  const editedAt = getLatestAuditEventTimestamp(events, 'EDITED');
+
+  return !editedAt || acceptedAt >= editedAt;
+}
+
+function getLatestAuditEventTimestamp(
+  events: NonNullable<PublicInvoiceRecord['auditTrail']>['events'],
+  eventType: string,
+) {
+  const timestamps = events
+    .filter((event) => event.eventType === eventType)
+    .map((event) => Date.parse(event.occurredAt))
+    .filter((timestamp) => Number.isFinite(timestamp));
+
+  return timestamps.length ? Math.max(...timestamps) : null;
+}
+
 export function InvoiceSigningPage({ token }: { token: string }) {
   const [invoice, setInvoice] = useState<PublicInvoiceRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +89,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
     setPhotoIdDocument(loadedInvoice.photoIdDocument ?? '');
     setPhotoIdFileName(loadedInvoice.photoIdFileName ?? '');
     setPhotoIdMimeType(loadedInvoice.photoIdMimeType ?? '');
-    setHasAcceptedTerms(
-      loadedInvoice.auditTrail?.events.some(
-        (event) => event.eventType === 'TERMS_ACCEPTED',
-      ) ?? false,
-    );
+    setHasAcceptedTerms(hasAcceptedTermsForCurrentInvoice(loadedInvoice));
   }, []);
 
   useEffect(() => {
@@ -327,7 +352,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
       return;
     }
 
-    if (invoice.photoIdRequired && !photoIdDocument) {
+    if (!photoIdDocument) {
       toast.error('Photo ID required', 'Upload your photo ID before signing.');
       return;
     }
@@ -558,67 +583,66 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                     )}
                   </div>
 
-                  {invoice.photoIdRequired ? (
-                    <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3">
-                      <div className="mb-2 flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">
-                            Photo ID required
-                          </p>
-                          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            Upload a driver license, passport.
-                          </p>
-                        </div>
-                        {photoIdDocument ? (
-                          <BadgePill>Uploaded</BadgePill>
-                        ) : null}
+                  <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3">
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          Photo ID required
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          Upload a driver license, passport.
+                        </p>
                       </div>
                       {photoIdDocument ? (
-                        <div className="space-y-2">
-                          <div className="rounded-lg border border-border bg-white p-2.5 text-sm text-foreground">
-                            <p className="truncate font-medium">
-                              {photoIdFileName || 'Photo ID document'}
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {photoIdMimeType || 'Uploaded document'}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setPhotoIdDocument('');
-                              setPhotoIdFileName('');
-                              setPhotoIdMimeType('');
-                            }}
-                          >
-                            Choose another file
-                          </Button>
-                        </div>
-                      ) : (
-                        <label
-                          onDragOver={(event) => event.preventDefault()}
-                          onDrop={handlePhotoIdDrop}
-                          className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-4 text-center transition hover:border-primary/50 hover:bg-primary/5"
-                        >
-                          <UploadCloud className="h-6 w-6 text-primary" />
-                          <p className="mt-2 text-sm font-semibold text-foreground">
-                            Drop photo ID here or browse
+                        <BadgePill>Uploaded</BadgePill>
+                      ) : null}
+                    </div>
+                    <PhotoIdGuidance />
+                    {photoIdDocument ? (
+                      <div className="space-y-2">
+                        <div className="rounded-lg border border-border bg-white p-2.5 text-sm text-foreground">
+                          <p className="truncate font-medium">
+                            {photoIdFileName || 'Photo ID document'}
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            PNG, JPG, BMP, WEBP, or PDF. Max 5 MB.
+                            {photoIdMimeType || 'Uploaded document'}
                           </p>
-                          <input
-                            type="file"
-                            accept="image/png,image/jpeg,image/bmp,image/webp,application/pdf"
-                            className="hidden"
-                            onChange={handlePhotoIdInput}
-                          />
-                        </label>
-                      )}
-                    </div>
-                  ) : null}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setPhotoIdDocument('');
+                            setPhotoIdFileName('');
+                            setPhotoIdMimeType('');
+                          }}
+                        >
+                          Choose another file
+                        </Button>
+                      </div>
+                    ) : (
+                      <label
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={handlePhotoIdDrop}
+                        className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-4 text-center transition hover:border-primary/50 hover:bg-primary/5"
+                      >
+                        <UploadCloud className="h-6 w-6 text-primary" />
+                        <p className="mt-2 text-sm font-semibold text-foreground">
+                          Drop photo ID here or browse
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          PNG, JPG, BMP, WEBP, or PDF. Max 5 MB.
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/bmp,image/webp,application/pdf"
+                          className="hidden"
+                          onChange={handlePhotoIdInput}
+                        />
+                      </label>
+                    )}
+                  </div>
 
                   <div className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs leading-5 text-slate-700">
                     Add your signature and confirm the agreement before submitting.
@@ -833,7 +857,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
         </aside>
       </div>
 
-      {!isSigned && !hasAcceptedTerms ? (
+      {!isSigned ? (
         <SigningAgreementBar
           checked={hasAcceptedTerms}
           disabled={isSubmitting || isAcceptingTerms}
@@ -1014,6 +1038,38 @@ function TermsModal({
             Ok
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PhotoIdGuidance() {
+  return (
+    <div className="mb-3 grid gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3 sm:grid-cols-[150px_1fr]">
+      <div className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
+        <div className="bg-[#1578df] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white">
+          Driver License
+        </div>
+        <div className="grid grid-cols-[44px_1fr] gap-2 p-2">
+          <div className="flex h-12 w-10 items-center justify-center rounded bg-sky-100 text-[10px] font-bold text-sky-700">
+            Photo
+          </div>
+          <div className="space-y-1 text-[9px] font-semibold leading-none text-slate-800">
+            <p>Name Surname</p>
+            <p>Address visible</p>
+            <p className="flex items-center gap-1">
+              ID 1234 <span className="inline-block h-2 w-8 rounded-sm bg-slate-900" /> 123
+            </p>
+            <div className="mt-1 h-3 rounded-sm bg-[repeating-linear-gradient(90deg,#111_0,#111_2px,transparent_2px,transparent_5px)]" />
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col justify-center">
+        <p className="text-sm font-semibold text-amber-800">Photo ID example</p>
+        <ul className="mt-1 space-y-1 text-xs leading-5 text-amber-900">
+          <li>You can cover any sensitive information.</li>
+          <li>Name and address need to be visible.</li>
+        </ul>
       </div>
     </div>
   );

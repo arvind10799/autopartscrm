@@ -122,7 +122,7 @@ export class InvoicesService {
       customerSignature: '',
       customerSignatureImage: '',
       signatureDate: '',
-      photoIdRequired: false,
+      photoIdRequired: true,
     };
   }
 
@@ -192,7 +192,7 @@ export class InvoicesService {
       signatureDate: createInvoiceDto.signatureDate
         ? this.parseDate(createInvoiceDto.signatureDate)
         : null,
-      photoIdRequired: createInvoiceDto.photoIdRequired,
+      photoIdRequired: true,
       status: 'CREATED',
     });
 
@@ -275,7 +275,7 @@ export class InvoicesService {
       salesTaxes: new Prisma.Decimal(createInvoiceDto.salesTaxes),
       coreCharge: new Prisma.Decimal(createInvoiceDto.coreCharge),
       totalAmount: new Prisma.Decimal(totalAmount),
-      photoIdRequired: createInvoiceDto.photoIdRequired,
+      photoIdRequired: true,
     });
 
     await this.notesService.create(
@@ -369,7 +369,7 @@ export class InvoicesService {
       customerSignature: null,
       customerSignatureImage: null,
       signatureDate: null,
-      photoIdRequired: createInvoiceDto.photoIdRequired,
+      photoIdRequired: true,
       photoIdDocument: null,
       photoIdFileName: null,
       photoIdMimeType: null,
@@ -425,7 +425,13 @@ export class InvoicesService {
 
     this.assertTokenIsActive(invoice);
 
-    if (invoice.photoIdRequired && !signInvoiceDto.photoIdDocument) {
+    if (!this.hasAcceptedTermsForCurrentInvoice(invoice)) {
+      throw new BadRequestException(
+        'Terms & Conditions must be accepted before signing.',
+      );
+    }
+
+    if (!signInvoiceDto.photoIdDocument) {
       throw new BadRequestException('Photo ID is required before signing.');
     }
 
@@ -526,9 +532,7 @@ export class InvoicesService {
 
     this.assertTokenIsActive(invoice);
 
-    const hasAcceptedTerms = invoice.auditEvents?.some(
-      (event) => event.eventType === 'TERMS_ACCEPTED',
-    );
+    const hasAcceptedTerms = this.hasAcceptedTermsForCurrentInvoice(invoice);
 
     if (!hasAcceptedTerms) {
       await this.createAuditEvent(invoice.id, 'TERMS_ACCEPTED', {
@@ -747,6 +751,7 @@ export class InvoicesService {
 
     return {
       ...safeInvoice,
+      photoIdRequired: true,
       ...(invoice.invoiceDate
         ? { invoiceDate: this.formatDateOnlyValue(invoice.invoiceDate) }
         : {}),
@@ -949,6 +954,38 @@ export class InvoicesService {
     };
 
     return titles[eventType] ?? eventType;
+  }
+
+  private hasAcceptedTermsForCurrentInvoice(invoice: {
+    auditEvents?: InvoiceAuditEventRecord[];
+  }): boolean {
+    const acceptedAt = this.getLatestAuditEventTimestamp(
+      invoice.auditEvents,
+      'TERMS_ACCEPTED',
+    );
+
+    if (!acceptedAt) {
+      return false;
+    }
+
+    const editedAt = this.getLatestAuditEventTimestamp(
+      invoice.auditEvents,
+      'EDITED',
+    );
+
+    return !editedAt || acceptedAt >= editedAt;
+  }
+
+  private getLatestAuditEventTimestamp(
+    auditEvents: InvoiceAuditEventRecord[] | undefined,
+    eventType: string,
+  ): number | null {
+    const timestamps = (auditEvents ?? [])
+      .filter((event) => event.eventType === eventType)
+      .map((event) => event.occurredAt.getTime())
+      .filter((timestamp) => Number.isFinite(timestamp));
+
+    return timestamps.length ? Math.max(...timestamps) : null;
   }
 
   private userToAuditActor(user: AuthenticatedUser): InvoiceAuditActor {

@@ -573,8 +573,8 @@ export const createOrderSchema = z.object({
   ),
   vehicleVariant: createRequiredTextSchema(
     120,
-    'Variant is required.',
-    'Variant must be 120 characters or fewer.',
+    'Part is required.',
+    'Part must be 120 characters or fewer.',
   ),
   vehicleVin: createRequiredVinSchema(),
   vehicleNotes: createRequiredTextSchema(
@@ -754,8 +754,8 @@ export const createOrderFormSchema = z.object({
   ),
   vehicleVariant: createRequiredTextSchema(
     120,
-    'Variant is required.',
-    'Variant must be 120 characters or fewer.',
+    'Part is required.',
+    'Part must be 120 characters or fewer.',
   ),
   vehicleVin: createRequiredVinSchema(),
   vehicleNotes: createRequiredTextSchema(
@@ -960,7 +960,7 @@ export const updateOrderSchema = z.object({
   vehicleMake: createOptionalTextSchema(120, 'Make must be 120 characters or fewer.'),
   vehicleModel: createOptionalTextSchema(120, 'Model must be 120 characters or fewer.'),
   vehicleYear: createOptionalTextSchema(20, 'Year must be 20 characters or fewer.'),
-  vehicleVariant: createOptionalTextSchema(120, 'Variant must be 120 characters or fewer.'),
+  vehicleVariant: createOptionalTextSchema(120, 'Part must be 120 characters or fewer.'),
   vehicleVin: createOptionalVinSchema(),
   vehicleNotes: createOptionalTextSchema(1000, 'Part description must be 1000 characters or fewer.'),
   vehicleConfiguration: createOptionalTextSchema(255, 'Configuration must be 255 characters or fewer.'),

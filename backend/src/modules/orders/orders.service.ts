@@ -649,7 +649,7 @@ export class OrdersService {
     vehicleMake: 'Vehicle make',
     vehicleModel: 'Vehicle model',
     vehicleYear: 'Vehicle year',
-    vehicleVariant: 'Vehicle variant',
+    vehicleVariant: 'Vehicle part',
     vehicleVin: 'VIN',
     vehicleNotes: 'Part description',
     vehicleConfiguration: 'Vehicle configuration',

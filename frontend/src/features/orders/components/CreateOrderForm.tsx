@@ -967,7 +967,7 @@ export function CreateOrderForm({
 
               <Field
                 id="vehicleVariant"
-                label="Variant"
+                label="Part"
                 error={form.formState.errors.vehicleVariant?.message?.toString()}
               >
                 <VehicleCombobox

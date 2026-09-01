@@ -217,7 +217,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 <DetailBlock label="Make" value={intake.vehicleMake ?? 'Not provided'} />
                 <DetailBlock label="Model" value={intake.vehicleModel ?? 'Not provided'} />
                 <DetailBlock label="Year" value={intake.vehicleYear ?? 'Not provided'} />
-                <DetailBlock label="Variant" value={intake.vehicleVariant ?? 'Not provided'} />
+                <DetailBlock label="Part" value={intake.vehicleVariant ?? 'Not provided'} />
                 <DetailBlock label="VIN" value={intake.vehicleVin ?? 'Not provided'} />
                 <DetailBlock
                   label="Part Description"
