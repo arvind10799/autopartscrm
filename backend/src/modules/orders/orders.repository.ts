@@ -506,60 +506,67 @@ export class OrdersRepository {
     }
 
     if (search) {
-      where.OR = [
-        {
-          orderNumber: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          salesNumber: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          customerName: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          partDescription: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          customerEmail: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        ...phoneSearchTerms.map((phoneSearchTerm) => ({
-          customerPhone: {
-            contains: phoneSearchTerm,
-            mode: 'insensitive' as const,
-          },
-        })),
-        {
-          createdBy: {
-            name: {
+      if (this.isExactSalesNumberSearch(search)) {
+        where.salesNumber = {
+          equals: search,
+          mode: 'insensitive',
+        };
+      } else {
+        where.OR = [
+          {
+            orderNumber: {
               contains: search,
               mode: 'insensitive',
             },
           },
-        },
-        {
-          createdBy: {
-            email: {
+          {
+            salesNumber: {
               contains: search,
               mode: 'insensitive',
             },
           },
-        },
-      ];
+          {
+            customerName: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            partDescription: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            customerEmail: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          ...phoneSearchTerms.map((phoneSearchTerm) => ({
+            customerPhone: {
+              contains: phoneSearchTerm,
+              mode: 'insensitive' as const,
+            },
+          })),
+          {
+            createdBy: {
+              name: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+          {
+            createdBy: {
+              email: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+        ];
+      }
     }
 
     const [data, total] = await this.prismaService.$transaction([
@@ -809,6 +816,10 @@ export class OrdersRepository {
     }
 
     return Array.from(terms);
+  }
+
+  private isExactSalesNumberSearch(search: string): boolean {
+    return /^\d{1,9}$/.test(search.trim());
   }
 
   private buildOrderNumberDateSegment(date: Date): string {

@@ -178,6 +178,33 @@ describe('OrdersRepository', () => {
     );
   });
 
+  it('treats short numeric search as an exact sales number lookup', async () => {
+    prismaService.order.findMany.mockReturnValue('findManyPromise');
+    prismaService.order.count.mockReturnValue('countPromise');
+    prismaService.$transaction.mockResolvedValue([[], 0]);
+
+    await repository.findAll({ search: '500' }, adminUser);
+
+    expect(prismaService.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          salesNumber: {
+            equals: '500',
+            mode: 'insensitive',
+          },
+        },
+      }),
+    );
+    expect(prismaService.order.count).toHaveBeenCalledWith({
+      where: {
+        salesNumber: {
+          equals: '500',
+          mode: 'insensitive',
+        },
+      },
+    });
+  });
+
   it('allows sales users to view order details across agents', async () => {
     prismaService.order.findFirst.mockResolvedValue({
       id: 'order-id',

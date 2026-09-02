@@ -28,12 +28,19 @@ function buildColumns(
         className: 'w-[11%]',
       },
       cell: ({ row }) => (
-        <Link
-          href={`/orders/${row.original.id}`}
-          className="block truncate font-semibold text-primary transition hover:text-primary/80"
-        >
-          {row.original.orderNumber}
-        </Link>
+        <div className="min-w-0 space-y-0.5">
+          <Link
+            href={`/orders/${row.original.id}`}
+            className="block truncate font-semibold text-primary transition hover:text-primary/80"
+          >
+            {row.original.orderNumber}
+          </Link>
+          {row.original.salesNumber ? (
+            <p className="truncate text-xs font-medium text-muted-foreground">
+              Sale {row.original.salesNumber}
+            </p>
+          ) : null}
+        </div>
       ),
     },
     {

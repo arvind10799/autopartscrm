@@ -189,48 +189,70 @@ export class ShipmentsRepository {
     }
 
     if (search) {
-      where.OR = [
-        {
-          bolNumber: {
-            contains: search,
-            mode: 'insensitive',
+      if (this.isExactSalesNumberSearch(search)) {
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : []),
+          {
+            order: {
+              salesNumber: {
+                equals: search,
+                mode: 'insensitive',
+              },
+            },
           },
-        },
-        {
-          proNumber: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          pickupNumber: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          carrierName: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          order: {
-            orderNumber: {
+        ];
+      } else {
+        where.OR = [
+          {
+            bolNumber: {
               contains: search,
               mode: 'insensitive',
             },
           },
-        },
-        {
-          order: {
-            customerName: {
+          {
+            proNumber: {
               contains: search,
               mode: 'insensitive',
             },
           },
-        },
-      ];
+          {
+            pickupNumber: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            carrierName: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            order: {
+              orderNumber: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+          {
+            order: {
+              salesNumber: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+          {
+            order: {
+              customerName: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+        ];
+      }
     }
 
     const [data, total] = await this.prismaService.$transaction([
@@ -247,6 +269,10 @@ export class ShipmentsRepository {
     ]);
 
     return createPaginatedResponse(data, total, page, limit);
+  }
+
+  private isExactSalesNumberSearch(search: string): boolean {
+    return /^\d{1,9}$/.test(search.trim());
   }
 
   async findOne(id: string) {
