@@ -22,8 +22,8 @@ function buildColumns(
 ): ColumnDef<OrderSummary>[] {
   const columns: ColumnDef<OrderSummary>[] = [
     {
-      accessorKey: 'orderNumber',
-      header: 'Order',
+      accessorKey: 'salesNumber',
+      header: 'Sale',
       meta: {
         className: 'w-[11%]',
       },
@@ -33,13 +33,11 @@ function buildColumns(
             href={`/orders/${row.original.id}`}
             className="block truncate font-semibold text-primary transition hover:text-primary/80"
           >
-            {row.original.orderNumber}
+            {row.original.salesNumber ?? '—'}
           </Link>
-          {row.original.salesNumber ? (
-            <p className="truncate text-xs font-medium text-muted-foreground">
-              Sale {row.original.salesNumber}
-            </p>
-          ) : null}
+          <p className="truncate text-xs font-medium text-muted-foreground">
+            Order {row.original.orderNumber}
+          </p>
         </div>
       ),
     },
