@@ -1,0 +1,1 @@
+ALTER TYPE "ShipmentStatus" ADD VALUE 'DISPUTED';

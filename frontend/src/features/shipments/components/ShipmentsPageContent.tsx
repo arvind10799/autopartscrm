@@ -31,6 +31,7 @@ import { ShipmentsTable } from './ShipmentsTable';
 const OPERATIONAL_SHIPMENT_STATUS_FILTERS = [
   'SHIPPED',
   'IN_TRANSIT',
+  'DISPUTED',
   'DELAYED',
   'DELIVERED',
   'CANCELLED',

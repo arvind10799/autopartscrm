@@ -99,6 +99,10 @@ function getPrimaryLine({
     return 'Delivered';
   }
 
+  if (status === 'DISPUTED') {
+    return 'Disputed';
+  }
+
   if (status === 'CANCELLED') {
     return 'Cancelled';
   }
@@ -130,7 +134,7 @@ function getSecondaryLine(status: ShipmentStatusDisplay | null | undefined) {
     return 'Shipped';
   }
 
-  if (status === 'DELIVERED' || status === 'CANCELLED') {
+  if (status === 'DISPUTED' || status === 'DELIVERED' || status === 'CANCELLED') {
     return null;
   }
 
@@ -153,6 +157,7 @@ function getStatusTextClass(status: ShipmentStatusDisplay | null | undefined) {
     PURCHASE: 'text-orange-700',
     SHIPPED: 'text-blue-700',
     IN_TRANSIT: 'text-indigo-700',
+    DISPUTED: 'text-rose-700',
     DELIVERED: 'text-emerald-700',
     DELAYED: 'text-amber-700',
     CANCELLED: 'text-rose-700',

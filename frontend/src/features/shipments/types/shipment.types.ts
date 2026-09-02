@@ -7,6 +7,7 @@ export const SHIPMENT_STATUSES = [
   'PURCHASE',
   'SHIPPED',
   'IN_TRANSIT',
+  'DISPUTED',
   'DELIVERED',
   'DELAYED',
   'CANCELLED',

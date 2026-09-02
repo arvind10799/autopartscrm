@@ -12,6 +12,7 @@ const shipmentStatusTones: Record<
   PURCHASE: 'warning',
   SHIPPED: 'info',
   IN_TRANSIT: 'info',
+  DISPUTED: 'danger',
   DELIVERED: 'success',
   DELAYED: 'warning',
   CANCELLED: 'danger',

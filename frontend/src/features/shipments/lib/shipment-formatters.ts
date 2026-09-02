@@ -12,6 +12,7 @@ const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   PURCHASE: 'Purchase',
   SHIPPED: 'Shipped',
   IN_TRANSIT: 'In transit',
+  DISPUTED: 'Disputed',
   DELIVERED: 'Delivered',
   DELAYED: 'Delayed',
   CANCELLED: 'Cancelled',

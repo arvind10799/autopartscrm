@@ -114,6 +114,7 @@ const shipmentDetailSelect = {
 const OPERATIONAL_SHIPMENT_STATUSES = [
   PrismaShipmentStatus.SHIPPED,
   PrismaShipmentStatus.IN_TRANSIT,
+  PrismaShipmentStatus.DISPUTED,
   PrismaShipmentStatus.DELAYED,
   PrismaShipmentStatus.DELIVERED,
   PrismaShipmentStatus.CANCELLED,
