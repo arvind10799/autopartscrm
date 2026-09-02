@@ -68,6 +68,12 @@ export class ShipmentsService {
 
   async create(createShipmentDto: CreateShipmentDto, user: AuthenticatedUser) {
     await this.ensureOrderCanCreateShipment(createShipmentDto.orderId);
+    this.ensureCarrierNameForShipped(
+      (createShipmentDto.status ??
+        PrismaShipmentStatus.PENDING) as PrismaShipmentStatus,
+      null,
+      createShipmentDto.carrierName,
+    );
     this.ensureCostPayloadForStatus(
       (createShipmentDto.status ??
         PrismaShipmentStatus.PENDING) as PrismaShipmentStatus,
@@ -119,13 +125,13 @@ export class ShipmentsService {
     const currentStatus = existingShipment.status;
     const nextStatus = updateShipmentStatusDto.status as PrismaShipmentStatus;
     const existingCost = existingShipment.costs[0] ?? null;
-    const isAdmin = user.role === Role.ADMIN;
+    const canOverrideShipment = user.role === Role.ADMIN || user.role === Role.SHIPPING;
     const hasCostPayload = this.hasCostPayload(updateShipmentStatusDto);
-    const hasAdminShipmentDataPayload =
-      isAdmin && this.hasShipmentDataPayload(updateShipmentStatusDto);
+    const hasShipmentEditorDataPayload =
+      canOverrideShipment && this.hasShipmentDataPayload(updateShipmentStatusDto);
 
     if (currentStatus === nextStatus) {
-      if (!hasCostPayload && !hasAdminShipmentDataPayload) {
+      if (!hasCostPayload && !hasShipmentEditorDataPayload) {
         throw new BadRequestException(
           `Shipment is already in ${nextStatus} status.`,
         );
@@ -137,7 +143,13 @@ export class ShipmentsService {
         existingCost,
         false,
       );
-      const shipment = hasAdminShipmentDataPayload
+      this.ensureCarrierNameForShipped(
+        nextStatus,
+        existingShipment.carrierName,
+        updateShipmentStatusDto.carrierName,
+      );
+
+      const shipment = hasShipmentEditorDataPayload
         ? await this.shipmentsRepository.updateStatus(id, {
             status: nextStatus,
             bolNumber: updateShipmentStatusDto.bolNumber,
@@ -175,7 +187,7 @@ export class ShipmentsService {
       return this.shipmentsRepository.findOne(id);
     }
 
-    if (!isAdmin) {
+    if (!canOverrideShipment) {
       this.ensureStatusTransitionAllowed(
         currentStatus,
         nextStatus,
@@ -186,6 +198,11 @@ export class ShipmentsService {
       nextStatus,
       existingShipment.bolNumber,
       updateShipmentStatusDto.bolNumber,
+    );
+    this.ensureCarrierNameForShipped(
+      nextStatus,
+      existingShipment.carrierName,
+      updateShipmentStatusDto.carrierName,
     );
     this.ensureProNumberForInTransit(
       nextStatus,
@@ -202,23 +219,23 @@ export class ShipmentsService {
     const shipment = await this.shipmentsRepository.updateStatus(id, {
       status: nextStatus,
       bolNumber:
-        isAdmin ||
+        canOverrideShipment ||
         (nextStatus === PrismaShipmentStatus.SHIPPED &&
           !existingShipment.bolNumber)
           ? updateShipmentStatusDto.bolNumber
           : undefined,
       pickupNumber:
-        isAdmin || nextStatus === PrismaShipmentStatus.SHIPPED
+        canOverrideShipment || nextStatus === PrismaShipmentStatus.SHIPPED
           ? updateShipmentStatusDto.pickupNumber
           : undefined,
       proNumber:
-        isAdmin ||
+        canOverrideShipment ||
         (nextStatus === PrismaShipmentStatus.IN_TRANSIT &&
           !existingShipment.proNumber)
           ? updateShipmentStatusDto.proNumber
           : undefined,
       carrierName:
-        isAdmin || nextStatus === PrismaShipmentStatus.SHIPPED
+        canOverrideShipment || nextStatus === PrismaShipmentStatus.SHIPPED
           ? updateShipmentStatusDto.carrierName
           : undefined,
       shippedAt:
@@ -504,6 +521,22 @@ export class ShipmentsService {
     if (!nextBolNumber) {
       throw new BadRequestException(
         'BOL number is required when moving shipment to shipped.',
+      );
+    }
+  }
+
+  private ensureCarrierNameForShipped(
+    nextStatus: PrismaShipmentStatus,
+    existingCarrierName: string | null,
+    nextCarrierName?: string,
+  ): void {
+    if (nextStatus !== PrismaShipmentStatus.SHIPPED || existingCarrierName) {
+      return;
+    }
+
+    if (!nextCarrierName) {
+      throw new BadRequestException(
+        'Freight carrier is required when moving shipment to shipped.',
       );
     }
   }

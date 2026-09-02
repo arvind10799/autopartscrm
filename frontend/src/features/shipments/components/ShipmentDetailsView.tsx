@@ -97,7 +97,8 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   const [proNumber, setProNumber] = useState('');
   const [carrierName, setCarrierName] = useState('');
   const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
-  const isAdmin = authUser?.role === 'ADMIN';
+  const canOverrideShipment =
+    authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
 
   useEffect(() => {
     if (!shipment) {
@@ -110,7 +111,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     }
 
     setSelectedStatus(
-      isAdmin
+      canOverrideShipment
         ? shipment.currentStatus
         : getShipmentDetailNextStatuses(shipment.currentStatus)[0] ?? '',
     );
@@ -118,7 +119,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     setPickupNumber(shipment.pickupNumber ?? '');
     setProNumber(shipment.proNumber ?? '');
     setCarrierName(shipment.carrierName ?? '');
-  }, [isAdmin, shipment]);
+  }, [canOverrideShipment, shipment]);
 
   if (isLoading) {
     return <DetailPageSkeleton />;
@@ -149,7 +150,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     );
   }
 
-  const nextStatuses = isAdmin
+  const nextStatuses = canOverrideShipment
     ? [...SHIPMENT_STATUSES]
     : getShipmentDetailNextStatuses(shipment.currentStatus);
   const resolvedOrderStatus = invoiceOrder?.status ?? shipment.order.status;
@@ -190,7 +191,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   const handleStatusChange = (status: ShipmentStatus) => {
     clearStatusError();
     setSelectedStatus(status);
-    if (!isAdmin) {
+    if (!canOverrideShipment) {
       setProNumber('');
     }
   };
@@ -320,11 +321,14 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             pickupNumber={pickupNumber}
             proNumber={proNumber}
             carrierName={carrierName}
-            isAdminOverride={isAdmin}
+            isAdminOverride={canOverrideShipment}
             requiresBolNumber={selectedStatus === 'SHIPPED' && !bolNumber.trim()}
+            requiresCarrierName={
+              selectedStatus === 'SHIPPED' && !carrierName.trim()
+            }
             requiresProNumber={
               selectedStatus === 'IN_TRANSIT' &&
-              (isAdmin ? !proNumber.trim() : !shipment.proNumber)
+              (canOverrideShipment ? !proNumber.trim() : !shipment.proNumber)
             }
             lockedReason={statusLockedReason}
             onStatusChange={handleStatusChange}

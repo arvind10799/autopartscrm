@@ -242,7 +242,7 @@ export function CreateShipmentForm({
               htmlFor="carrierName"
               className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
             >
-              Freight carrier <span className="text-muted-foreground">(optional)</span>
+              Freight carrier
             </Label>
             <Input
               id="carrierName"

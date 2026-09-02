@@ -6,6 +6,8 @@ import {
   IsString,
   MaxLength,
   Min,
+  IsNotEmpty,
+  ValidateIf,
 } from 'class-validator';
 import { ShipmentStatus } from '../../../common/enums/shipment-status.enum';
 import { trimToUndefined } from '../../../common/utils/transform.util';
@@ -33,8 +35,12 @@ export class UpdateShipmentStatusDto {
   proNumber?: string;
 
   @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @ValidateIf(
+    (dto: UpdateShipmentStatusDto) =>
+      dto.status === ShipmentStatus.SHIPPED || dto.carrierName !== undefined,
+  )
   @IsString()
+  @IsNotEmpty()
   @MaxLength(120)
   carrierName?: string;
 

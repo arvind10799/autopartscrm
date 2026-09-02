@@ -49,7 +49,7 @@ export function UpdateOrderForm({
   onCancel: () => void;
 }) {
   const role = useAuthStore((state) => state.user?.role);
-  const isAdmin = role === 'ADMIN';
+  const canEditAllOrderFields = role === 'ADMIN' || role === 'SHIPPING';
   const [formError, setFormError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { order, isLoading, error } = useOrderDetailWithRefresh(orderId, refreshKey);
@@ -157,7 +157,7 @@ export function UpdateOrderForm({
 
     try {
       const parsedPayload = updateOrderFormSchema.parse(values);
-      const payload = isAdmin
+      const payload = canEditAllOrderFields
         ? parsedPayload
         : {
             customerEmail: parsedPayload.customerEmail,
@@ -231,7 +231,7 @@ export function UpdateOrderForm({
           <div className="space-y-1">
             <p className="font-semibold text-foreground">Edit order</p>
             <p className="text-sm text-muted-foreground">
-              {isAdmin
+              {canEditAllOrderFields
                 ? `Update all order information and add notes for ${order.orderNumber}.`
                 : `Update customer contact details and add notes for ${order.orderNumber}.`}
             </p>
@@ -255,7 +255,7 @@ export function UpdateOrderForm({
           </div>
         </div>
 
-        {isAdmin ? (
+        {canEditAllOrderFields ? (
           <>
             <EditorSection title="Admin order fields">
               <EditorField label="Customer name" id="customerName">

@@ -105,19 +105,23 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
     }
 
     const previousShipment = shipment;
-    const isAdmin = authUser?.role === 'ADMIN';
+    const canOverrideShipment =
+      authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
     const nextAllowedStatuses = getAllowedNextShipmentStatuses(
       previousShipment.currentStatus,
     );
 
-    if (!isAdmin && !nextAllowedStatuses.includes(nextStatus)) {
+    if (!canOverrideShipment && !nextAllowedStatuses.includes(nextStatus)) {
       setStatusError(
         `Shipment status cannot transition from ${previousShipment.currentStatus} to ${nextStatus}.`,
       );
       return;
     }
 
-    if (!isAdmin && !isShipmentStatusTransitionAllowed(previousShipment, nextStatus)) {
+    if (
+      !canOverrideShipment &&
+      !isShipmentStatusTransitionAllowed(previousShipment, nextStatus)
+    ) {
       setStatusError('Shipment cannot be marked as delivered before it has shipped.');
       return;
     }
@@ -133,6 +137,15 @@ export function useShipmentDetail(shipmentId: string): UseShipmentDetailResult {
       !normalizedProNumber
     ) {
       setStatusError('PRO number is required when moving shipment to in transit.');
+      return;
+    }
+
+    if (
+      nextStatus === 'SHIPPED' &&
+      !previousShipment.carrierName &&
+      !normalizedCarrierName
+    ) {
+      setStatusError('Freight carrier is required when moving shipment to shipped.');
       return;
     }
 

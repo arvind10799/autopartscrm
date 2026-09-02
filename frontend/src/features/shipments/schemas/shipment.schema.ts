@@ -234,6 +234,14 @@ export const updateShipmentStatusSchema = z.object({
     .max(1000, 'Cost reason must be 1,000 characters or fewer.')
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
+}).superRefine((value, context) => {
+  if (value.status === 'SHIPPED' && !value.carrierName) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Freight carrier is required when shipment status is shipped.',
+      path: ['carrierName'],
+    });
+  }
 });
 
 export const createShipmentSchema = z.object({
@@ -282,6 +290,14 @@ export const createShipmentSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: 'BOL number is required when shipment status is shipped.',
       path: ['bolNumber'],
+    });
+  }
+
+  if (value.status === 'SHIPPED' && !value.carrierName) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Freight carrier is required when shipment status is shipped.',
+      path: ['carrierName'],
     });
   }
 

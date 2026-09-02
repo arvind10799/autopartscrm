@@ -85,6 +85,7 @@ export class OrdersController {
     return this.ordersService.refund(params.id, refundOrderDto, user);
   }
 
+  @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
   @Patch(':id')
   update(
     @Param() params: UuidParamDto,

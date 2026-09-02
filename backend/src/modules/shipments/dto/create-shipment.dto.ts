@@ -40,8 +40,12 @@ export class CreateShipmentDto {
   status?: ShipmentStatus;
 
   @Transform(({ value }) => trimToUndefined(value))
-  @IsOptional()
+  @ValidateIf(
+    (dto: CreateShipmentDto) =>
+      dto.status === ShipmentStatus.SHIPPED || dto.carrierName !== undefined,
+  )
   @IsString()
+  @IsNotEmpty()
   @MaxLength(120)
   carrierName?: string;
 

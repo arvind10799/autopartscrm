@@ -268,6 +268,18 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                     />
                   }
                 />
+                {latestShipment ? (
+                  <>
+                    <DetailBlock
+                      label="PRO Number"
+                      value={latestShipment.proNumber ?? 'PRO pending'}
+                    />
+                    <DetailBlock
+                      label="Freight Carrier"
+                      value={latestShipment.carrierName ?? 'Carrier pending'}
+                    />
+                  </>
+                ) : null}
               </CollapsibleDetailSection>
 
               <DetailSection title="Pricing / Sales Info">

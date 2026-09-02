@@ -26,6 +26,7 @@ export function ShipmentStatusUpdateCard({
   carrierName,
   isAdminOverride,
   requiresBolNumber,
+  requiresCarrierName,
   requiresProNumber,
   lockedReason,
   onStatusChange,
@@ -45,6 +46,7 @@ export function ShipmentStatusUpdateCard({
   carrierName?: string;
   isAdminOverride?: boolean;
   requiresBolNumber?: boolean;
+  requiresCarrierName?: boolean;
   requiresProNumber: boolean;
   lockedReason?: string | null;
   onStatusChange: (status: ShipmentStatus) => void;
@@ -142,6 +144,8 @@ export function ShipmentStatusUpdateCard({
                 !selectedStatus ||
                 isUpdatingStatus ||
                 (requiresBolNumber && (bolNumber ?? '').trim().length === 0) ||
+                (requiresCarrierName &&
+                  (carrierName ?? '').trim().length === 0) ||
                 (requiresProNumber && proNumber.trim().length === 0)
               }
               onClick={() => void onSubmit()}

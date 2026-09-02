@@ -114,6 +114,7 @@ function buildColumns(
       cell: ({ row }) => {
         const canEdit =
           role === 'ADMIN' ||
+          role === 'SHIPPING' ||
           (role === 'SALES' && row.original.createdBy.id === currentUserId);
 
         return (

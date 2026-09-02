@@ -603,7 +603,7 @@ export class OrdersService {
     updateOrderDto: UpdateOrderDto,
     user: AuthenticatedUser,
   ): void {
-    if (user.role === Role.ADMIN) {
+    if (user.role === Role.ADMIN || user.role === Role.SHIPPING) {
       return;
     }
 
