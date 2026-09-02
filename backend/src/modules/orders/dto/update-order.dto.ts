@@ -25,6 +25,12 @@ export class UpdateOrderDto {
   @Transform(({ value }) => trimToUndefined(value))
   @IsOptional()
   @IsString()
+  @MaxLength(80)
+  salesNumber?: string;
+
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
+  @IsString()
   @MaxLength(160)
   customerName?: string;
 

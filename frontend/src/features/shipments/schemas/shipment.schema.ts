@@ -14,6 +14,7 @@ const optionalAmountInputSchema = z.preprocess(
 const shipmentOrderSummarySchema = z.object({
   id: entityIdSchema,
   orderNumber: z.string(),
+  salesNumber: z.string().nullable().optional(),
   customerName: z.string(),
   status: orderStatusSchema,
   totalSaleAmount: z.coerce.number().optional(),
@@ -28,6 +29,7 @@ const shipmentOrderSummarySchema = z.object({
 }).transform((order) => ({
   id: order.id,
   orderNumber: order.orderNumber,
+  salesNumber: order.salesNumber ?? null,
   customerName: order.customerName,
   status: order.status,
   totalSaleAmount: order.totalSaleAmount,

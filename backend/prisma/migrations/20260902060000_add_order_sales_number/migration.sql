@@ -1,0 +1,3 @@
+ALTER TABLE "Order"
+ADD COLUMN "salesNumber" VARCHAR(80);
+

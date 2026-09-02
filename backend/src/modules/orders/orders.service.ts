@@ -468,6 +468,7 @@ export class OrdersService {
 
   private buildOrderUpdateHistoryMessage(
     existingOrder: {
+      salesNumber: string | null;
       customerName: string;
       partDescription: string;
       customerEmail: string | null;
@@ -491,6 +492,12 @@ export class OrdersService {
     );
     const nextQuantity = updateOrderDto.quantity ?? existingOrder.quantity;
 
+    this.pushChangeLine(
+      changeLines,
+      'Sales number',
+      existingOrder.salesNumber,
+      updateOrderDto.salesNumber ?? existingOrder.salesNumber,
+    );
     this.pushChangeLine(
       changeLines,
       'Customer name',
@@ -607,7 +614,12 @@ export class OrdersService {
       return;
     }
 
-    const salesFields = new Set(['customerEmail', 'customerPhone', 'note']);
+    const salesFields = new Set([
+      'salesNumber',
+      'customerEmail',
+      'customerPhone',
+      'note',
+    ]);
     const restrictedField = Object.entries(updateOrderDto).find(
       ([field, value]) => value !== undefined && !salesFields.has(field),
     );

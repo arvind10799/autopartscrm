@@ -25,6 +25,11 @@ const columns: ColumnDef<ShipmentSummary>[] = [
         >
           {row.original.order.orderNumber}
         </Link>
+        {row.original.order.salesNumber ? (
+          <p className="truncate text-xs text-muted-foreground">
+            Sales Number: {row.original.order.salesNumber}
+          </p>
+        ) : null}
         <p className="truncate text-xs text-muted-foreground">
           {row.original.order.customerName}
         </p>

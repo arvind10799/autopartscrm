@@ -410,6 +410,10 @@ export function ShipmentOrderDetailsPanel({
           <DetailGrid>
             <DetailBlock label="Order number" value={order.orderNumber} />
             <DetailBlock
+              label="Sales Number"
+              value={order.salesNumber ?? 'Not provided'}
+            />
+            <DetailBlock
               label="Order date"
               value={intake.orderDate ? formatDate(intake.orderDate) : 'Not provided'}
             />

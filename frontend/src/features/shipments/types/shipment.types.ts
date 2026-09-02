@@ -18,6 +18,7 @@ export type ShipmentStatusDisplay = ShipmentStatus | 'REFUNDED';
 export interface ShipmentOrderSummary {
   id: string;
   orderNumber: string;
+  salesNumber: string | null;
   customerName: string;
   status: OrderStatus;
   totalSaleAmount?: number;

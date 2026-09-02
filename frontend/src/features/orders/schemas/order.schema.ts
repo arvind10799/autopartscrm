@@ -350,6 +350,7 @@ const orderIntakeDetailsSchema = z.object({
 const orderBackendSummarySchema = z.object({
   id: z.string(),
   orderNumber: z.string(),
+  salesNumber: z.string().nullable().optional(),
   customerName: z.string(),
   partDescription: z.string(),
   customerEmail: z.string().email().nullable(),
@@ -409,6 +410,7 @@ function normalizeOrderSummary(order: z.infer<typeof orderBackendSummarySchema>)
   return {
     id: order.id,
     orderNumber: order.orderNumber,
+    salesNumber: order.salesNumber ?? null,
     customerName: order.customerName,
     partDescription: order.partDescription,
     salePrice: order.price,
@@ -430,6 +432,7 @@ function normalizeOrderSummary(order: z.infer<typeof orderBackendSummarySchema>)
           bolNumber: order.shipments[0].bolNumber,
           pickupNumber: order.shipments[0].pickupNumber ?? null,
           proNumber: order.shipments[0].proNumber,
+          carrierName: order.shipments[0].carrierName ?? null,
           status: order.shipments[0].status,
           createdAt: order.shipments[0].createdAt,
           updatedAt: order.shipments[0].updatedAt,
@@ -542,6 +545,10 @@ export const createOrderSchema = z.object({
       .trim()
       .min(1, 'Order number is required.')
       .max(50, 'Order number must be 50 characters or fewer.'),
+  ),
+  salesNumber: createOptionalTextSchema(
+    80,
+    'Sales number must be 80 characters or fewer.',
   ),
   orderDate: createRequiredPastOrTodayDateSchema('Date is required.'),
   customerName: z
@@ -724,6 +731,11 @@ export const createOrderFormSchema = z.object({
       .min(1, 'Order number is required.')
       .max(50, 'Order number must be 50 characters or fewer.'),
   ),
+  salesNumber: z
+    .string()
+    .trim()
+    .max(80, 'Sales number must be 80 characters or fewer.')
+    .optional(),
   orderDate: createRequiredPastOrTodayDateSchema('Date is required.'),
   customerName: z
     .string()
@@ -932,6 +944,10 @@ export const createOrderFormSchema = z.object({
 }).pipe(createOrderSchema);
 
 export const updateOrderSchema = z.object({
+  salesNumber: createOptionalTextSchema(
+    80,
+    'Sales number must be 80 characters or fewer.',
+  ),
   customerName: createOptionalTextSchema(
     160,
     'Customer name must be 160 characters or fewer.',
@@ -986,6 +1002,7 @@ export const updateOrderSchema = z.object({
 });
 
 export const updateOrderFormSchema = z.object({
+  salesNumber: z.string().max(80, 'Sales number must be 80 characters or fewer.').optional(),
   customerName: z.string().max(160).optional(),
   partDescription: z.string().max(255).optional(),
   customerEmail: z

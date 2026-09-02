@@ -413,6 +413,10 @@ function FullOrderDetailsModal({
           <CompactOrderSection title="Order / Payment">
             <CompactDetail label="Order number" value={order.orderNumber} />
             <CompactDetail
+              label="Sales Number"
+              value={order.salesNumber ?? 'Not provided'}
+            />
+            <CompactDetail
               label="Order date"
               value={intake.orderDate ? formatDate(intake.orderDate) : 'Not provided'}
             />

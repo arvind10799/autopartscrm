@@ -50,6 +50,10 @@ export function ShipmentDetailGrid({
           value={<ShipmentStatusBadge status={displayStatus} />}
         />
         <DetailBlock label="Order number" value={shipment.order.orderNumber} />
+        <DetailBlock
+          label="Sales Number"
+          value={shipment.order.salesNumber ?? 'Not provided'}
+        />
         <DetailBlock label="Customer" value={shipment.order.customerName} />
         <DetailBlock
           label="Shipped at"

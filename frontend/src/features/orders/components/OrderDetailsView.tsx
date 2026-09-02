@@ -191,6 +191,10 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
               <DetailSection title="Basic Order Info">
                 <DetailBlock label="Order number" value={order.orderNumber} />
                 <DetailBlock
+                  label="Sales Number"
+                  value={order.salesNumber ?? 'Not provided'}
+                />
+                <DetailBlock
                   label="Advisor name"
                   value={intake.advisorName ?? order.createdBy.name}
                 />

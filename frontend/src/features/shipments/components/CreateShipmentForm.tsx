@@ -50,7 +50,7 @@ export function CreateShipmentForm({
 }: {
   selectedOrder: Pick<
     OrderSummary,
-    'id' | 'orderNumber' | 'customerName' | 'createdBy'
+    'id' | 'orderNumber' | 'salesNumber' | 'customerName' | 'createdBy'
   > &
     Partial<Pick<OrderDetail, 'shipments'>>;
   onCreated: (shipment: ShipmentSummary) => void;
@@ -163,6 +163,9 @@ export function CreateShipmentForm({
         </Label>
         <div className="rounded-[1.35rem] border border-border/70 bg-secondary/20 px-4 py-4">
           <p className="font-semibold text-foreground">{selectedOrder.orderNumber}</p>
+          <p className="text-sm text-muted-foreground">
+            Sales Number: {selectedOrder.salesNumber ?? 'Not provided'}
+          </p>
           <p className="text-sm text-muted-foreground">{selectedOrder.customerName}</p>
           <p className="mt-2 text-xs text-muted-foreground">
             Sales agent: {selectedOrder.createdBy.name}

@@ -89,6 +89,7 @@ export interface OrderIntakeDetails {
 export interface OrderSummary {
   id: string;
   orderNumber: string;
+  salesNumber: string | null;
   customerName: string;
   partDescription: string;
   salePrice: number;
@@ -105,6 +106,7 @@ export interface OrderSummary {
     | 'bolNumber'
     | 'pickupNumber'
     | 'proNumber'
+    | 'carrierName'
     | 'status'
     | 'createdAt'
     | 'updatedAt'
@@ -214,6 +216,7 @@ export interface CreateOrderInput {
   leadId?: string;
   advisorName: string;
   orderNumber: string;
+  salesNumber?: string;
   orderDate: string;
   customerName: string;
   partDescription: string;
@@ -254,6 +257,7 @@ export interface NextOrderNumber {
 }
 
 export interface UpdateOrderInput {
+  salesNumber?: string;
   customerName?: string;
   partDescription?: string;
   customerEmail?: string;

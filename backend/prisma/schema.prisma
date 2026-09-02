@@ -112,6 +112,7 @@ model Lead {
 model Order {
   id              String      @id @default(uuid()) @db.Uuid
   orderNumber     String      @unique @db.VarChar(50)
+  salesNumber     String?     @db.VarChar(80)
   customerName    String      @db.VarChar(160)
   partDescription String      @db.VarChar(255)
   customerEmail   String?     @db.VarChar(160)

@@ -45,6 +45,7 @@ const SHIPMENT_WORKFLOW_STATUSES = [
 const orderListSelect = {
   id: true,
   orderNumber: true,
+  salesNumber: true,
   customerName: true,
   partDescription: true,
   customerEmail: true,
@@ -316,6 +317,7 @@ const orderDetailInclude = {
 const orderEditableSelect = {
   id: true,
   orderNumber: true,
+  salesNumber: true,
   customerName: true,
   partDescription: true,
   customerEmail: true,
@@ -376,6 +378,7 @@ export class OrdersRepository {
       return await client.order.create({
         data: {
           orderNumber: createOrderDto.orderNumber.trim(),
+          salesNumber: createOrderDto.salesNumber?.trim(),
           customerName: createOrderDto.customerName.trim(),
           partDescription: createOrderDto.partDescription.trim(),
           customerEmail: createOrderDto.customerEmail?.trim().toLowerCase(),
@@ -506,6 +509,12 @@ export class OrdersRepository {
       where.OR = [
         {
           orderNumber: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          salesNumber: {
             contains: search,
             mode: 'insensitive',
           },
@@ -650,6 +659,10 @@ export class OrdersRepository {
 
     if (updateOrderDto.partDescription !== undefined) {
       data.partDescription = updateOrderDto.partDescription.trim();
+    }
+
+    if (updateOrderDto.salesNumber !== undefined) {
+      data.salesNumber = updateOrderDto.salesNumber?.trim() || null;
     }
 
     if (updateOrderDto.customerEmail !== undefined) {

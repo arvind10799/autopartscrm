@@ -37,6 +37,7 @@ const defaultValues: CreateOrderFormValues = {
   leadId: undefined,
   advisorName: '',
   orderNumber: '',
+  salesNumber: '',
   orderDate: '',
   customerName: '',
   partDescription: '',
@@ -818,6 +819,19 @@ export function CreateOrderForm({
                 {orderNumberError ? (
                   <p className="text-xs text-destructive">{orderNumberError}</p>
                 ) : null}
+              </Field>
+
+              <Field
+                id="salesNumber"
+                label="Sales Number"
+                error={form.formState.errors.salesNumber?.message?.toString()}
+              >
+                <Input
+                  id="salesNumber"
+                  placeholder="Enter sales number"
+                  className="h-11 rounded-xl"
+                  {...form.register('salesNumber')}
+                />
               </Field>
 
               <Field

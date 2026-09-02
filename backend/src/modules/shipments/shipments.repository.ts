@@ -32,6 +32,7 @@ const shipmentSummarySelect = {
     select: {
       id: true,
       orderNumber: true,
+      salesNumber: true,
       customerName: true,
       status: true,
       totalSaleAmount: true,

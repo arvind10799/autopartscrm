@@ -270,7 +270,7 @@ export function OrdersPageContent() {
                   value={searchTerm}
                   onChange={(event) => handleSearchChange(event.target.value)}
                   className="pl-9"
-                  placeholder="Search by order number, customer, phone, email, or part"
+                  placeholder="Search by order number, sales number, customer, phone, email, or part"
                 />
               </div>
 

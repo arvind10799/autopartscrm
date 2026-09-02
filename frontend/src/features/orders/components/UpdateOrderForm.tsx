@@ -58,6 +58,7 @@ export function UpdateOrderForm({
     defaultValues: {
       customerEmail: '',
       customerPhone: '',
+      salesNumber: '',
       customerName: '',
       partDescription: '',
       price: '',
@@ -119,6 +120,7 @@ export function UpdateOrderForm({
     form.reset({
       customerEmail: order.customerEmail ?? '',
       customerPhone: formatUsPhoneNumber(order.customerPhone ?? ''),
+      salesNumber: order.salesNumber ?? '',
       customerName: order.customerName,
       partDescription: order.partDescription,
       price: String(order.salePrice),
@@ -160,6 +162,7 @@ export function UpdateOrderForm({
       const payload = canEditAllOrderFields
         ? parsedPayload
         : {
+            salesNumber: parsedPayload.salesNumber,
             customerEmail: parsedPayload.customerEmail,
             customerPhone: parsedPayload.customerPhone,
             note: parsedPayload.note,
@@ -170,6 +173,7 @@ export function UpdateOrderForm({
       setRefreshKey((currentValue) => currentValue + 1);
       form.reset({
         ...values,
+        salesNumber: payload.salesNumber ?? '',
         customerEmail: payload.customerEmail ?? '',
         customerPhone: formatUsPhoneNumber(payload.customerPhone ?? ''),
         note: '',
@@ -246,6 +250,14 @@ export function UpdateOrderForm({
             <Input id="orderNumberReadonly" value={order.orderNumber} readOnly />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="salesNumber">Sales Number</Label>
+            <Input
+              id="salesNumber"
+              placeholder="Enter sales number"
+              {...form.register('salesNumber')}
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="partDescriptionReadonly">Part description</Label>
             <Input
               id="partDescriptionReadonly"
@@ -257,7 +269,7 @@ export function UpdateOrderForm({
 
         {canEditAllOrderFields ? (
           <>
-            <EditorSection title="Admin order fields">
+            <EditorSection title="Order fields">
               <EditorField label="Customer name" id="customerName">
                 <Input id="customerName" {...form.register('customerName')} />
               </EditorField>

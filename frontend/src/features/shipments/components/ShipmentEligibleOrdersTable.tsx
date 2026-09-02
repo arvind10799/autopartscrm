@@ -52,6 +52,11 @@ export function ShipmentEligibleOrdersTable({
       cell: ({ row }) => (
         <div className="space-y-1">
           <p className="font-semibold text-foreground">{row.original.orderNumber}</p>
+          {row.original.salesNumber ? (
+            <p className="text-xs text-muted-foreground">
+              Sales Number: {row.original.salesNumber}
+            </p>
+          ) : null}
           <p className="text-xs text-muted-foreground">
             Updated {formatDateTime(row.original.updatedAt)}
           </p>

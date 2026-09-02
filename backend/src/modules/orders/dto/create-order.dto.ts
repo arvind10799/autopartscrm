@@ -37,6 +37,12 @@ export class CreateOrderDto {
   @MaxLength(50)
   orderNumber: string;
 
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  salesNumber?: string;
+
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()

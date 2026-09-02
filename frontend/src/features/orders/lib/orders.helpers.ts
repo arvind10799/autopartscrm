@@ -228,6 +228,7 @@ export function toBackendCreateOrderPayload(order: CreateOrderInput) {
     leadId: order.leadId,
     advisorName: order.advisorName,
     orderNumber: order.orderNumber,
+    salesNumber: order.salesNumber,
     orderDate: order.orderDate,
     customerName: order.customerName,
     partDescription: order.partDescription,
@@ -266,6 +267,7 @@ export function toBackendCreateOrderPayload(order: CreateOrderInput) {
 
 export function toBackendUpdateOrderPayload(order: UpdateOrderInput) {
   return {
+    salesNumber: order.salesNumber,
     customerName: order.customerName,
     partDescription: order.partDescription,
     customerEmail: order.customerEmail,

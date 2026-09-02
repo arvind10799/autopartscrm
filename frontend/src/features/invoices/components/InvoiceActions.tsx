@@ -1104,7 +1104,7 @@ function InvoiceDocument({ invoice }, ref) {
           </p>
           <p>
             <strong>Billing Address :</strong>
-            <span>{invoice.billingAddress || ''}</span>
+            <span className="invoice-address-value">{invoice.billingAddress || ''}</span>
           </p>
           <p>
             <strong>Contact Number :</strong>
@@ -1698,12 +1698,7 @@ function formatInvoiceDate(value: string): string {
     return value;
   }
 
-  return date.toLocaleDateString('en-US', {
-    timeZone: 'America/Los_Angeles',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).replace(',', '');
+  return formatInvoiceDateParts(date, 'America/Los_Angeles');
 }
 
 function getDateOnlyValue(value: string): string | null {
@@ -1725,14 +1720,21 @@ function formatReadableDateOnly(value: string): string {
     return value;
   }
 
-  return date
-    .toLocaleDateString('en-US', {
-      timeZone: 'UTC',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    })
-    .replace(',', '');
+  return formatInvoiceDateParts(date, 'UTC');
+}
+
+function formatInvoiceDateParts(date: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).formatToParts(date);
+  const month = parts.find((part) => part.type === 'month')?.value ?? '';
+  const day = parts.find((part) => part.type === 'day')?.value ?? '';
+  const year = parts.find((part) => part.type === 'year')?.value ?? '';
+
+  return [month, day, year].filter(Boolean).join(' - ');
 }
 
 function formatSignatureDate(value: string): string {
@@ -2595,6 +2597,13 @@ const INVOICE_DOCUMENT_CSS = `
     margin: 0;
   }
 
+  .invoice-address-cell p {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 8px;
+    align-items: start;
+  }
+
   .invoice-address-cell strong,
   .invoice-payment-summary strong {
     color: #555b63;
@@ -2603,7 +2612,7 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-address-cell span {
-    margin-left: 8px;
+    min-width: 0;
     color: #303844;
     font-family: Helvetica, Arial, sans-serif;
     font-size: 13px;
@@ -2612,11 +2621,14 @@ const INVOICE_DOCUMENT_CSS = `
     overflow-wrap: anywhere;
   }
 
+  .invoice-address-cell .invoice-address-value {
+    white-space: pre-line;
+  }
+
   .invoice-address-cell .invoice-shipping-address {
-    display: inline-flex;
+    display: flex;
     flex-direction: column;
     gap: 1px;
-    vertical-align: top;
   }
 
   .invoice-address-cell .invoice-shipping-address b {
@@ -2629,6 +2641,7 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-address-cell .invoice-shipping-address span {
     margin-left: 0;
+    white-space: pre-line;
   }
 
   .invoice-delivery-note {
