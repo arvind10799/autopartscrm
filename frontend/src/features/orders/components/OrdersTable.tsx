@@ -36,7 +36,7 @@ function buildColumns(
             {row.original.salesNumber ?? '—'}
           </Link>
           <p className="truncate text-xs font-medium text-muted-foreground">
-            Order {row.original.orderNumber}
+            {row.original.orderNumber}
           </p>
         </div>
       ),
