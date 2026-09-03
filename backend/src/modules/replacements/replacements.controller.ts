@@ -20,13 +20,12 @@ import { QueryReplacementsDto } from './dto/query-replacements.dto';
 import { UpdateReplacementDto } from './dto/update-replacement.dto';
 import { ReplacementsService } from './replacements.service';
 
-@Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
+@Roles(Role.ADMIN, Role.SHIPPING)
 @UseGuards(JwtAuthGuard, RoleGuard)
 @Controller('replacements')
 export class ReplacementsController {
   constructor(private readonly replacementsService: ReplacementsService) {}
 
-  @Roles(Role.ADMIN, Role.SHIPPING)
   @Post()
   create(
     @Body() createReplacementDto: CreateReplacementDto,
@@ -45,7 +44,6 @@ export class ReplacementsController {
     return this.replacementsService.findOne(params.id);
   }
 
-  @Roles(Role.ADMIN, Role.SHIPPING)
   @Patch(':id')
   update(
     @Param() params: UuidParamDto,

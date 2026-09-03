@@ -304,7 +304,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
 
           {invoiceOrder ? <OrderResolutionDetails order={invoiceOrder} /> : null}
 
-          {invoiceOrder ? (
+          {invoiceOrder && canAddAdditionalCost ? (
             <ReplacementTracker
               orderId={invoiceOrder.id}
               shipmentId={shipment.id}

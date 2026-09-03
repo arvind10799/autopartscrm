@@ -22,7 +22,13 @@ import {
   type DateRangeFilterState,
 } from '@/lib/filters/date-range';
 import { formatDateTime, formatRelativeTime } from '@/features/orders/lib/order-formatters';
-import { formatShipmentStatusOptionLabel } from '@/features/shipments/lib/shipments.helpers';
+import {
+  ALL_SHIPMENT_STATUS_FILTER,
+  formatShipmentStatusOptionLabel,
+  parseShipmentStatusFilter,
+  type ShipmentStatusFilter,
+} from '@/features/shipments/lib/shipments.helpers';
+import { SHIPMENT_STATUSES } from '@/features/shipments/types/shipment.types';
 import { useReplacementsList } from '../hooks/useReplacementsList';
 import {
   ALL_REPLACEMENT_STATUS_FILTER,
@@ -35,8 +41,8 @@ import { ReplacementStatusBadge } from './ReplacementStatusBadge';
 
 const columns: ColumnDef<ReplacementRequest>[] = [
   {
-    accessorKey: 'order.orderNumber',
-    header: 'Order',
+    accessorKey: 'order.salesNumber',
+    header: 'Sale',
     meta: { className: 'w-[15%]' },
     cell: ({ row }) => (
       <div className="min-w-0">
@@ -44,10 +50,10 @@ const columns: ColumnDef<ReplacementRequest>[] = [
           href={`/orders/${row.original.order.id}`}
           className="block truncate font-semibold text-primary hover:text-primary/80"
         >
-          {row.original.order.orderNumber}
+          {row.original.order.salesNumber ?? '—'}
         </Link>
         <p className="truncate text-xs text-muted-foreground">
-          Sale {row.original.order.salesNumber ?? '—'}
+          {row.original.order.orderNumber}
         </p>
       </div>
     ),
@@ -145,6 +151,8 @@ export function ReplacementOrdersPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] =
     useState<ReplacementStatusFilter>(ALL_REPLACEMENT_STATUS_FILTER);
+  const [shipmentStatusFilter, setShipmentStatusFilter] =
+    useState<ShipmentStatusFilter>(ALL_SHIPMENT_STATUS_FILTER);
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
@@ -160,6 +168,7 @@ export function ReplacementOrdersPageContent() {
     page,
     search: activeSearch,
     status: statusFilter,
+    shipmentStatus: shipmentStatusFilter,
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
     refreshKey,
@@ -194,7 +203,7 @@ export function ReplacementOrdersPageContent() {
             </CardDescription>
           </div>
 
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_230px_minmax(22rem,28rem)] xl:items-start">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_230px_220px_minmax(22rem,28rem)] xl:items-start">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -219,6 +228,21 @@ export function ReplacementOrdersPageContent() {
               {REPLACEMENT_STATUSES.map((status) => (
                 <option key={status} value={status}>
                   {formatReplacementStatus(status)}
+                </option>
+              ))}
+            </Select>
+
+            <Select
+              value={shipmentStatusFilter}
+              onChange={(event) => {
+                setShipmentStatusFilter(parseShipmentStatusFilter(event.target.value));
+                startTransition(() => setPage(1));
+              }}
+            >
+              <option value={ALL_SHIPMENT_STATUS_FILTER}>All shipping statuses</option>
+              {SHIPMENT_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {formatShipmentStatusOptionLabel(status)}
                 </option>
               ))}
             </Select>

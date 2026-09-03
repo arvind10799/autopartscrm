@@ -336,7 +336,9 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
               <OrderResolutionDetails order={order} />
 
-              <ReplacementTracker orderId={order.id} compact />
+              {canAddAdditionalCost ? (
+                <ReplacementTracker orderId={order.id} compact />
+              ) : null}
             </CardContent>
           </Card>
         </div>

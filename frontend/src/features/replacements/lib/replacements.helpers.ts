@@ -1,4 +1,9 @@
-import { REPLACEMENT_STATUSES, type ReplacementsListQuery, type ReplacementStatus } from '../types/replacement.types';
+import { SHIPMENT_STATUSES, type ShipmentStatus } from '@/features/shipments/types/shipment.types';
+import {
+  REPLACEMENT_STATUSES,
+  type ReplacementsListQuery,
+  type ReplacementStatus,
+} from '../types/replacement.types';
 
 export const REPLACEMENTS_PAGE_SIZE = 20;
 export const ALL_REPLACEMENT_STATUS_FILTER = 'ALL';
@@ -32,6 +37,7 @@ export function normalizeReplacementsListQuery(
         : REPLACEMENTS_PAGE_SIZE,
     ...(query.search?.trim() ? { search: query.search.trim() } : {}),
     ...(query.status ? { status: query.status } : {}),
+    ...(query.shipmentStatus ? { shipmentStatus: query.shipmentStatus } : {}),
     ...(query.orderId ? { orderId: query.orderId } : {}),
     ...(query.shipmentId ? { shipmentId: query.shipmentId } : {}),
     ...(query.createdFrom ? { createdFrom: query.createdFrom } : {}),
@@ -55,6 +61,7 @@ export function parseReplacementsQueryParams(params: URLSearchParams) {
   const page = Number(params.get('page') ?? 1);
   const limit = Number(params.get('limit') ?? REPLACEMENTS_PAGE_SIZE);
   const status = params.get('status') ?? undefined;
+  const shipmentStatus = params.get('shipmentStatus') ?? undefined;
 
   return normalizeReplacementsListQuery({
     page,
@@ -62,6 +69,9 @@ export function parseReplacementsQueryParams(params: URLSearchParams) {
     search: params.get('search') ?? undefined,
     status: REPLACEMENT_STATUSES.includes(status as ReplacementStatus)
       ? (status as ReplacementStatus)
+      : undefined,
+    shipmentStatus: SHIPMENT_STATUSES.includes(shipmentStatus as ShipmentStatus)
+      ? (shipmentStatus as ShipmentStatus)
       : undefined,
     orderId: params.get('orderId') ?? undefined,
     shipmentId: params.get('shipmentId') ?? undefined,

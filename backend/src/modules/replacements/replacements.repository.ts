@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ReplacementStatus as PrismaReplacementStatus } from '@prisma/client';
+import {
+  Prisma,
+  ReplacementStatus as PrismaReplacementStatus,
+  ShipmentStatus as PrismaShipmentStatus,
+} from '@prisma/client';
 import { buildCreatedAtFilter } from '../../common/utils/date-range.util';
 import {
   createPaginatedResponse,
@@ -207,55 +211,81 @@ export class ReplacementsRepository {
   private buildWhere(query: QueryReplacementsDto): Prisma.ReplacementRequestWhereInput {
     const createdAtFilter = buildCreatedAtFilter(query.createdFrom, query.createdTo);
     const trimmedSearch = query.search?.trim();
+    const filters: Prisma.ReplacementRequestWhereInput[] = [];
 
-    return {
-      ...(query.status ? { replacementStatus: query.status } : {}),
-      ...(query.orderId ? { orderId: query.orderId } : {}),
-      ...(query.shipmentId ? { shipmentId: query.shipmentId } : {}),
-      ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
-      ...(trimmedSearch
-        ? {
-            OR: [
-              { customerReason: { contains: trimmedSearch, mode: 'insensitive' } },
-              { yardUpdate: { contains: trimmedSearch, mode: 'insensitive' } },
-              {
-                order: {
-                  orderNumber: { contains: trimmedSearch, mode: 'insensitive' },
-                },
-              },
-              {
-                order: {
-                  salesNumber: { contains: trimmedSearch, mode: 'insensitive' },
-                },
-              },
-              {
-                order: {
-                  customerName: { contains: trimmedSearch, mode: 'insensitive' },
-                },
-              },
-              {
-                order: {
-                  customerPhone: { contains: trimmedSearch, mode: 'insensitive' },
-                },
-              },
-              {
-                order: {
-                  partDescription: { contains: trimmedSearch, mode: 'insensitive' },
-                },
-              },
-              {
-                shipment: {
-                  bolNumber: { contains: trimmedSearch, mode: 'insensitive' },
-                },
-              },
-              {
-                shipment: {
-                  proNumber: { contains: trimmedSearch, mode: 'insensitive' },
-                },
-              },
-            ],
-          }
-        : {}),
-    };
+    if (query.status) {
+      filters.push({ replacementStatus: query.status });
+    }
+
+    if (query.orderId) {
+      filters.push({ orderId: query.orderId });
+    }
+
+    if (query.shipmentId) {
+      filters.push({ shipmentId: query.shipmentId });
+    }
+
+    if (query.shipmentStatus) {
+      filters.push(
+        query.shipmentStatus === PrismaShipmentStatus.PENDING
+          ? {
+              OR: [
+                { shipmentId: null },
+                { shipment: { status: PrismaShipmentStatus.PENDING } },
+              ],
+            }
+          : { shipment: { status: query.shipmentStatus } },
+      );
+    }
+
+    if (createdAtFilter) {
+      filters.push({ createdAt: createdAtFilter });
+    }
+
+    if (trimmedSearch) {
+      filters.push({
+        OR: [
+          { customerReason: { contains: trimmedSearch, mode: 'insensitive' } },
+          { yardUpdate: { contains: trimmedSearch, mode: 'insensitive' } },
+          {
+            order: {
+              orderNumber: { contains: trimmedSearch, mode: 'insensitive' },
+            },
+          },
+          {
+            order: {
+              salesNumber: { contains: trimmedSearch, mode: 'insensitive' },
+            },
+          },
+          {
+            order: {
+              customerName: { contains: trimmedSearch, mode: 'insensitive' },
+            },
+          },
+          {
+            order: {
+              customerPhone: { contains: trimmedSearch, mode: 'insensitive' },
+            },
+          },
+          {
+            order: {
+              partDescription: { contains: trimmedSearch, mode: 'insensitive' },
+            },
+          },
+          {
+            shipment: {
+              bolNumber: { contains: trimmedSearch, mode: 'insensitive' },
+            },
+          },
+          {
+            shipment: {
+              proNumber: { contains: trimmedSearch, mode: 'insensitive' },
+            },
+          },
+        ],
+      });
+    }
+
+    return filters.length > 0 ? { AND: filters } : {};
   }
 }

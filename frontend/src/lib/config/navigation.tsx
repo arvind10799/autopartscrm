@@ -69,7 +69,7 @@ export const navigationConfig: NavigationItemConfig[] = [
     label: 'Replacement Orders',
     description: 'Track replacement requests, yard updates, and replacement history.',
     icon: RotateCcw,
-    roles: ['ADMIN', 'SALES', 'SHIPPING'],
+    roles: ['ADMIN', 'SHIPPING'],
     group: 'workspace',
   },
   {

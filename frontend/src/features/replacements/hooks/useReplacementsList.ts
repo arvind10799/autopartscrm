@@ -5,6 +5,11 @@ import { useRequestTracker } from '@/lib/hooks/useRequestTracker';
 import { getErrorMessage } from '@/lib/utils/error';
 import { replacementsApi } from '../api/replacements-api';
 import {
+  ALL_SHIPMENT_STATUS_FILTER,
+  REFUNDED_SHIPMENT_STATUS_FILTER,
+  type ShipmentStatusFilter,
+} from '@/features/shipments/lib/shipments.helpers';
+import {
   ALL_REPLACEMENT_STATUS_FILTER,
   createEmptyReplacementsResponse,
   normalizeReplacementsListQuery,
@@ -17,6 +22,7 @@ type UseReplacementsListOptions = {
   page: number;
   search: string;
   status: ReplacementStatusFilter;
+  shipmentStatus?: ShipmentStatusFilter;
   orderId?: string;
   shipmentId?: string;
   createdFrom?: string;
@@ -28,6 +34,7 @@ export function useReplacementsList({
   page,
   search,
   status,
+  shipmentStatus,
   orderId,
   shipmentId,
   createdFrom,
@@ -49,6 +56,11 @@ export function useReplacementsList({
       limit: REPLACEMENTS_PAGE_SIZE,
       search,
       status: status === ALL_REPLACEMENT_STATUS_FILTER ? undefined : status,
+      shipmentStatus:
+        shipmentStatus === ALL_SHIPMENT_STATUS_FILTER ||
+        shipmentStatus === REFUNDED_SHIPMENT_STATUS_FILTER
+          ? undefined
+          : shipmentStatus,
       orderId,
       shipmentId,
       createdFrom,
@@ -101,6 +113,7 @@ export function useReplacementsList({
     requestTracker,
     search,
     shipmentId,
+    shipmentStatus,
     status,
   ]);
 

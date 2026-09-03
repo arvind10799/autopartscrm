@@ -95,6 +95,7 @@ export interface ReplacementsListQuery {
   limit: number;
   search?: string;
   status?: ReplacementStatus;
+  shipmentStatus?: ShipmentStatus;
   orderId?: string;
   shipmentId?: string;
   createdFrom?: string;
