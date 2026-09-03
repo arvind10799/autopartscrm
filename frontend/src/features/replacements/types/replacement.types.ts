@@ -2,14 +2,12 @@ import type { OrderStatus } from '@/features/orders/types/order.types';
 import type { ShipmentStatus } from '@/features/shipments/types/shipment.types';
 
 export const REPLACEMENT_STATUSES = [
-  'REQUESTED',
   'YARD_CONTACTED',
   'WAITING_YARD_RESPONSE',
   'APPROVED',
-  'REPLACEMENT_ORDERED',
-  'REPLACEMENT_SHIPPED',
-  'COMPLETED',
-  'REJECTED',
+  'SHIPPED',
+  'IN_TRANSIT',
+  'DELIVERED',
 ] as const;
 
 export type ReplacementStatus = (typeof REPLACEMENT_STATUSES)[number];
@@ -56,6 +54,8 @@ export interface ReplacementHistory {
   nextStatus: ReplacementStatus | null;
   customerReason: string | null;
   yardUpdate: string | null;
+  replacementProNumber: string | null;
+  replacementCarrierName: string | null;
   createdAt: string;
   createdBy: ReplacementUser;
 }
@@ -67,6 +67,8 @@ export interface ReplacementRequest {
   customerReason: string;
   yardUpdate: string | null;
   replacementStatus: ReplacementStatus;
+  replacementProNumber: string | null;
+  replacementCarrierName: string | null;
   createdAt: string;
   updatedAt: string;
   order: ReplacementOrderSummary;
@@ -108,10 +110,14 @@ export interface CreateReplacementInput {
   customerReason: string;
   yardUpdate?: string;
   replacementStatus?: ReplacementStatus;
+  replacementProNumber?: string;
+  replacementCarrierName?: string;
 }
 
 export interface UpdateReplacementInput {
   customerReason?: string;
   yardUpdate?: string;
   replacementStatus?: ReplacementStatus;
+  replacementProNumber?: string;
+  replacementCarrierName?: string;
 }

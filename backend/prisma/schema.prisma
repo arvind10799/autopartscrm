@@ -45,14 +45,12 @@ enum ShipmentStatus {
 }
 
 enum ReplacementStatus {
-  REQUESTED
   YARD_CONTACTED
   WAITING_YARD_RESPONSE
   APPROVED
-  REPLACEMENT_ORDERED
-  REPLACEMENT_SHIPPED
-  COMPLETED
-  REJECTED
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
 }
 
 enum NoteEntityType {
@@ -259,7 +257,9 @@ model ReplacementRequest {
   shipmentId        String?           @db.Uuid
   customerReason    String            @db.Text
   yardUpdate        String?           @db.Text
-  replacementStatus ReplacementStatus @default(REQUESTED)
+  replacementStatus ReplacementStatus @default(YARD_CONTACTED)
+  replacementProNumber String?         @db.VarChar(50)
+  replacementCarrierName String?       @db.VarChar(120)
   createdById       String            @db.Uuid
   updatedById       String?           @db.Uuid
   createdAt         DateTime          @default(now())
@@ -274,6 +274,7 @@ model ReplacementRequest {
   @@index([orderId])
   @@index([shipmentId])
   @@index([replacementStatus])
+  @@index([replacementProNumber])
   @@index([updatedAt])
   @@index([createdAt])
 }
@@ -287,6 +288,8 @@ model ReplacementHistory {
   nextStatus           ReplacementStatus?
   customerReason       String?  @db.Text
   yardUpdate           String?  @db.Text
+  replacementProNumber String?  @db.VarChar(50)
+  replacementCarrierName String? @db.VarChar(120)
   createdById          String   @db.Uuid
   createdAt            DateTime @default(now())
 

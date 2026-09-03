@@ -97,6 +97,8 @@ export class ReplacementsRepository {
       customerReason: string;
       yardUpdate?: string | null;
       replacementStatus: PrismaReplacementStatus;
+      replacementProNumber?: string | null;
+      replacementCarrierName?: string | null;
       createdById: string;
     },
   ) {
@@ -108,6 +110,8 @@ export class ReplacementsRepository {
           customerReason: data.customerReason,
           yardUpdate: data.yardUpdate ?? null,
           replacementStatus: data.replacementStatus,
+          replacementProNumber: data.replacementProNumber ?? null,
+          replacementCarrierName: data.replacementCarrierName ?? null,
           createdById: data.createdById,
           updatedById: data.createdById,
           histories: {
@@ -117,6 +121,8 @@ export class ReplacementsRepository {
               nextStatus: data.replacementStatus,
               customerReason: data.customerReason,
               yardUpdate: data.yardUpdate ?? null,
+              replacementProNumber: data.replacementProNumber ?? null,
+              replacementCarrierName: data.replacementCarrierName ?? null,
               createdById: data.createdById,
             },
           },
@@ -166,6 +172,8 @@ export class ReplacementsRepository {
       customerReason?: string;
       yardUpdate?: string | null;
       replacementStatus?: PrismaReplacementStatus;
+      replacementProNumber?: string | null;
+      replacementCarrierName?: string | null;
       updatedById: string;
       history: {
         action: string;
@@ -174,6 +182,8 @@ export class ReplacementsRepository {
         nextStatus?: PrismaReplacementStatus;
         customerReason?: string | null;
         yardUpdate?: string | null;
+        replacementProNumber?: string | null;
+        replacementCarrierName?: string | null;
       };
     },
   ) {
@@ -188,6 +198,12 @@ export class ReplacementsRepository {
           ...(data.replacementStatus
             ? { replacementStatus: data.replacementStatus }
             : {}),
+          ...(data.replacementProNumber !== undefined
+            ? { replacementProNumber: data.replacementProNumber }
+            : {}),
+          ...(data.replacementCarrierName !== undefined
+            ? { replacementCarrierName: data.replacementCarrierName }
+            : {}),
           updatedById: data.updatedById,
           histories: {
             create: {
@@ -197,6 +213,8 @@ export class ReplacementsRepository {
               nextStatus: data.history.nextStatus,
               customerReason: data.history.customerReason,
               yardUpdate: data.history.yardUpdate,
+              replacementProNumber: data.history.replacementProNumber,
+              replacementCarrierName: data.history.replacementCarrierName,
               createdById: data.updatedById,
             },
           },
@@ -247,6 +265,18 @@ export class ReplacementsRepository {
         OR: [
           { customerReason: { contains: trimmedSearch, mode: 'insensitive' } },
           { yardUpdate: { contains: trimmedSearch, mode: 'insensitive' } },
+          {
+            replacementProNumber: {
+              contains: trimmedSearch,
+              mode: 'insensitive',
+            },
+          },
+          {
+            replacementCarrierName: {
+              contains: trimmedSearch,
+              mode: 'insensitive',
+            },
+          },
           {
             order: {
               orderNumber: { contains: trimmedSearch, mode: 'insensitive' },

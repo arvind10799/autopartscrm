@@ -19,12 +19,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { notesApi } from '@/features/notes/api/notes-api';
 import type { NoteRecord } from '@/features/notes/types/note.types';
 import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
 import { getOrderFinancialSummary } from '@/features/orders/lib/order-financials';
+import { GrossProfitSummaryCard } from '@/features/shipments/components/GrossProfitSummaryCard';
 import {
   formatCurrency,
   formatDate,
@@ -37,7 +39,7 @@ import { cn } from '@/lib/utils/cn';
 import { toast } from '@/lib/stores/toast.store';
 import { useReplacementDetail } from '../hooks/useReplacementDetail';
 import { formatReplacementStatus } from '../lib/replacements.helpers';
-import { REPLACEMENT_STATUSES, type ReplacementStatus } from '../types/replacement.types';
+import type { ReplacementStatus } from '../types/replacement.types';
 import { ReplacementStatusBadge } from './ReplacementStatusBadge';
 
 type ReplacementActivityEntry = {
@@ -75,8 +77,11 @@ export function ReplacementDetailsView({
   const canManage = authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
   const [customerReason, setCustomerReason] = useState('');
   const [yardUpdate, setYardUpdate] = useState('');
+  const [replacementProNumber, setReplacementProNumber] = useState('');
+  const [replacementCarrierName, setReplacementCarrierName] = useState('');
   const [replacementStatus, setReplacementStatus] =
-    useState<ReplacementStatus>('REQUESTED');
+    useState<ReplacementStatus>('YARD_CONTACTED');
+  const [formError, setFormError] = useState<string | null>(null);
   const [orderRefreshKey, setOrderRefreshKey] = useState(0);
   const {
     order,
@@ -98,6 +103,8 @@ export function ReplacementDetailsView({
 
     setCustomerReason(replacement.customerReason);
     setYardUpdate(replacement.yardUpdate ?? '');
+    setReplacementProNumber(replacement.replacementProNumber ?? '');
+    setReplacementCarrierName(replacement.replacementCarrierName ?? '');
     setReplacementStatus(replacement.replacementStatus);
   }, [replacement]);
 
@@ -174,10 +181,26 @@ export function ReplacementDetailsView({
 
   const handleUpdate = async () => {
     clearUpdateError();
+    setFormError(null);
+
+    if (replacementStatus === 'IN_TRANSIT') {
+      if (!replacementCarrierName.trim()) {
+        setFormError('Freight carrier is required when replacement status is in transit.');
+        return;
+      }
+
+      if (!replacementProNumber.trim()) {
+        setFormError('PRO number is required when replacement status is in transit.');
+        return;
+      }
+    }
+
     await updateReplacement({
       customerReason,
       yardUpdate,
       replacementStatus,
+      replacementProNumber,
+      replacementCarrierName,
     });
     setOrderRefreshKey((currentValue) => currentValue + 1);
     toast.success('Replacement updated', 'Replacement details and history were saved.');
@@ -217,40 +240,92 @@ export function ReplacementDetailsView({
 
   const financialSummary = order ? getOrderFinancialSummary(order) : null;
   const intake = order?.intakeDetails;
+  const gpShipment =
+    order?.shipments.find((shipment) => shipment.id === replacement.shipmentId) ??
+    order?.shipments[0] ??
+    null;
+  const gpShipmentCost = gpShipment?.costs[0] ?? null;
   const activityEntries = buildReplacementActivityEntries({
     replacement,
     orderNotes: order?.notes ?? [],
     shipmentNotes,
   });
+  const allowedStatusOptions = getAllowedReplacementStatusOptions(
+    replacement.replacementStatus,
+  );
 
   return (
     <section className="grid gap-6">
-      <Card>
-        <CardHeader className="space-y-4">
-          <Link
-            href="/replacement-orders"
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-fit px-0')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to replacement orders
-          </Link>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
-              <Badge variant="info" className="w-fit">
+      <Card className="border-border/70 shadow-sm">
+        <CardHeader className="space-y-3 px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Link
+              href="/replacement-orders"
+              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'h-8 w-fit px-0')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to replacement orders
+            </Link>
+            <ReplacementStatusBadge status={replacement.replacementStatus} />
+          </div>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <Badge variant="info" className="h-6 w-fit text-[0.7rem]">
                 <RotateCcw className="h-3.5 w-3.5" />
                 Replacement workflow
               </Badge>
-              <CardTitle className="text-3xl">
+              <CardTitle className="truncate text-2xl sm:text-[1.7rem]">
                 {replacement.order.orderNumber}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="line-clamp-1">
                 {replacement.order.customerName} · {replacement.order.partDescription}
               </CardDescription>
             </div>
-            <ReplacementStatusBadge status={replacement.replacementStatus} />
+            <div className="grid gap-1 text-right text-xs text-muted-foreground">
+              <span>
+                Sale: {replacement.order.salesNumber ?? '—'}
+              </span>
+              <span>
+                Updated {formatRelativeTime(replacement.updatedAt)}
+              </span>
+            </div>
           </div>
         </CardHeader>
       </Card>
+
+      <GrossProfitSummaryCard
+        shipmentId={gpShipment?.id}
+        totalSaleAmount={
+          financialSummary?.gpSaleBasis ?? replacement.order.totalSaleAmount
+        }
+        originalSaleAmount={order?.totalSaleAmount ?? replacement.order.totalSaleAmount}
+        currency={order?.currency ?? replacement.order.currency}
+        cost={gpShipmentCost}
+        saleMetricLabel={order?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+        grossProfitOverride={financialSummary?.grossProfitOverride}
+        refundDetails={
+          order?.status === 'REFUNDED'
+            ? {
+                refundType: order.intakeDetails.refundType,
+                refundDeductionAmount: order.intakeDetails.refundDeductionAmount,
+                refundDeductionReason: order.intakeDetails.refundDeductionReason,
+                customerRefundedAmount: financialSummary?.refundedAmount ?? 0,
+                refundedAt: order.intakeDetails.refundedAt,
+              }
+            : null
+        }
+        additionalCosts={gpShipment?.additionalCosts ?? []}
+        costHistories={gpShipment?.costHistories ?? []}
+        canAddAdditionalCost={canManage}
+        canEditBaseCost={canManage}
+        canEditAdditionalCosts={canManage}
+        onAdditionalCostAdded={() =>
+          setOrderRefreshKey((currentValue) => currentValue + 1)
+        }
+        onCostUpdated={() =>
+          setOrderRefreshKey((currentValue) => currentValue + 1)
+        }
+      />
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="grid gap-6">
@@ -382,6 +457,17 @@ export function ReplacementDetailsView({
                   />
                 </CompactSection>
               ) : null}
+
+              <CompactSection title="Replacement Transit">
+                <Detail
+                  label="Freight Carrier"
+                  value={replacement.replacementCarrierName ?? 'Carrier pending'}
+                />
+                <Detail
+                  label="PRO Number"
+                  value={replacement.replacementProNumber ?? 'PRO pending'}
+                />
+              </CompactSection>
             </CardContent>
           </Card>
 
@@ -402,13 +488,38 @@ export function ReplacementDetailsView({
                       setReplacementStatus(event.target.value as ReplacementStatus)
                     }
                   >
-                    {REPLACEMENT_STATUSES.map((status) => (
+                    {allowedStatusOptions.map((status) => (
                       <option key={status} value={status}>
                         {formatReplacementStatus(status)}
                       </option>
                     ))}
                   </Select>
                 </label>
+
+                {replacementStatus === 'IN_TRANSIT' ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="grid gap-2 text-sm font-semibold text-foreground">
+                      Freight Carrier
+                      <Input
+                        value={replacementCarrierName}
+                        onChange={(event) =>
+                          setReplacementCarrierName(event.target.value)
+                        }
+                        placeholder="FedEx Freight"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-sm font-semibold text-foreground">
+                      PRO Number
+                      <Input
+                        value={replacementProNumber}
+                        onChange={(event) =>
+                          setReplacementProNumber(event.target.value)
+                        }
+                        placeholder="PRO123456"
+                      />
+                    </label>
+                  </div>
+                ) : null}
 
                 <label className="grid gap-2 text-sm font-semibold text-foreground">
                   Customer Reason
@@ -428,9 +539,9 @@ export function ReplacementDetailsView({
                   />
                 </label>
 
-                {updateError ? (
+                {formError || updateError ? (
                   <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                    {updateError}
+                    {formError ?? updateError}
                   </div>
                 ) : null}
 
@@ -599,6 +710,28 @@ function Detail({
         {value}
       </div>
     </div>
+  );
+}
+
+const REPLACEMENT_STATUS_FLOW: ReplacementStatus[] = [
+  'YARD_CONTACTED',
+  'WAITING_YARD_RESPONSE',
+  'APPROVED',
+  'SHIPPED',
+  'IN_TRANSIT',
+  'DELIVERED',
+];
+
+function getAllowedReplacementStatusOptions(currentStatus: ReplacementStatus) {
+  const currentIndex = REPLACEMENT_STATUS_FLOW.indexOf(currentStatus);
+
+  if (currentIndex === -1) {
+    return REPLACEMENT_STATUS_FLOW;
+  }
+
+  return REPLACEMENT_STATUS_FLOW.slice(
+    currentIndex,
+    Math.min(currentIndex + 2, REPLACEMENT_STATUS_FLOW.length),
   );
 }
 

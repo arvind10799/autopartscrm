@@ -21,14 +21,7 @@ import {
   createDefaultDateRangeFilterState,
   type DateRangeFilterState,
 } from '@/lib/filters/date-range';
-import { formatDateTime, formatRelativeTime } from '@/features/orders/lib/order-formatters';
-import {
-  ALL_SHIPMENT_STATUS_FILTER,
-  formatShipmentStatusOptionLabel,
-  parseShipmentStatusFilter,
-  type ShipmentStatusFilter,
-} from '@/features/shipments/lib/shipments.helpers';
-import { SHIPMENT_STATUSES } from '@/features/shipments/types/shipment.types';
+import { formatRelativeTime } from '@/features/orders/lib/order-formatters';
 import { useReplacementsList } from '../hooks/useReplacementsList';
 import {
   ALL_REPLACEMENT_STATUS_FILTER,
@@ -112,25 +105,19 @@ const columns: ColumnDef<ReplacementRequest>[] = [
     ),
   },
   {
-    accessorKey: 'shipment',
-    header: 'Shipment',
+    accessorKey: 'replacementProNumber',
+    header: 'Transit',
     meta: { className: 'w-[13%]' },
-    cell: ({ row }) =>
-      row.original.shipment ? (
-        <div className="min-w-0 text-sm">
-          <Link
-            href={`/shipments/${row.original.shipment.id}`}
-            className="block truncate font-semibold text-primary hover:text-primary/80"
-          >
-            {row.original.shipment.bolNumber ?? 'BOL pending'}
-          </Link>
-          <p className="truncate text-xs text-muted-foreground">
-            {formatShipmentStatusOptionLabel(row.original.shipment.status)}
-          </p>
-        </div>
-      ) : (
-        <span className="text-sm text-muted-foreground">Not linked</span>
-      ),
+    cell: ({ row }) => (
+      <div className="min-w-0 text-sm">
+        <p className="truncate font-semibold text-foreground">
+          {row.original.replacementProNumber ?? 'PRO pending'}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {row.original.replacementCarrierName ?? 'Carrier pending'}
+        </p>
+      </div>
+    ),
   },
   {
     id: 'actions',
@@ -151,8 +138,6 @@ export function ReplacementOrdersPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] =
     useState<ReplacementStatusFilter>(ALL_REPLACEMENT_STATUS_FILTER);
-  const [shipmentStatusFilter, setShipmentStatusFilter] =
-    useState<ShipmentStatusFilter>(ALL_SHIPMENT_STATUS_FILTER);
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
@@ -168,7 +153,6 @@ export function ReplacementOrdersPageContent() {
     page,
     search: activeSearch,
     status: statusFilter,
-    shipmentStatus: shipmentStatusFilter,
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
     refreshKey,
@@ -203,7 +187,7 @@ export function ReplacementOrdersPageContent() {
             </CardDescription>
           </div>
 
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_230px_220px_minmax(22rem,28rem)] xl:items-start">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_230px_minmax(22rem,28rem)] xl:items-start">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -213,7 +197,7 @@ export function ReplacementOrdersPageContent() {
                   startTransition(() => setPage(1));
                 }}
                 className="pl-9"
-                placeholder="Search by order, customer, phone, part, BOL, PRO, or yard update"
+                placeholder="Search by sale, order, customer, phone, part, carrier, PRO, or yard update"
               />
             </div>
 
@@ -228,21 +212,6 @@ export function ReplacementOrdersPageContent() {
               {REPLACEMENT_STATUSES.map((status) => (
                 <option key={status} value={status}>
                   {formatReplacementStatus(status)}
-                </option>
-              ))}
-            </Select>
-
-            <Select
-              value={shipmentStatusFilter}
-              onChange={(event) => {
-                setShipmentStatusFilter(parseShipmentStatusFilter(event.target.value));
-                startTransition(() => setPage(1));
-              }}
-            >
-              <option value={ALL_SHIPMENT_STATUS_FILTER}>All shipping statuses</option>
-              {SHIPMENT_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {formatShipmentStatusOptionLabel(status)}
                 </option>
               ))}
             </Select>

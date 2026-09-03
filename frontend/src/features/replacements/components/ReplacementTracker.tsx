@@ -67,6 +67,8 @@ export function ReplacementTracker({
     customerReason: string;
     yardUpdate?: string;
     replacementStatus: ReplacementStatus;
+    replacementProNumber?: string;
+    replacementCarrierName?: string;
   }) => {
     setIsSaving(true);
     setSaveError(null);

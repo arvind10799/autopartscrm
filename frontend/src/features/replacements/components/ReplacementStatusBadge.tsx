@@ -6,14 +6,12 @@ const STATUS_VARIANTS: Record<
   ReplacementStatus,
   'default' | 'secondary' | 'outline' | 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 > = {
-  REQUESTED: 'warning',
   YARD_CONTACTED: 'info',
   WAITING_YARD_RESPONSE: 'warning',
   APPROVED: 'success',
-  REPLACEMENT_ORDERED: 'default',
-  REPLACEMENT_SHIPPED: 'info',
-  COMPLETED: 'success',
-  REJECTED: 'danger',
+  SHIPPED: 'default',
+  IN_TRANSIT: 'info',
+  DELIVERED: 'success',
 };
 
 export function ReplacementStatusBadge({

@@ -58,9 +58,15 @@ const replacementHistorySchema = z.object({
   nextStatus: replacementStatusSchema.nullable(),
   customerReason: z.string().nullable(),
   yardUpdate: z.string().nullable(),
+  replacementProNumber: z.string().nullable().optional(),
+  replacementCarrierName: z.string().nullable().optional(),
   createdAt: isoDateTimeSchema,
   createdBy: replacementUserSchema,
-});
+}).transform((history) => ({
+  ...history,
+  replacementProNumber: history.replacementProNumber ?? null,
+  replacementCarrierName: history.replacementCarrierName ?? null,
+}));
 
 export const replacementRequestSchema = z.object({
   id: entityIdSchema,
@@ -69,6 +75,8 @@ export const replacementRequestSchema = z.object({
   customerReason: z.string(),
   yardUpdate: z.string().nullable(),
   replacementStatus: replacementStatusSchema,
+  replacementProNumber: z.string().nullable().optional(),
+  replacementCarrierName: z.string().nullable().optional(),
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
   order: replacementOrderSchema,
@@ -76,7 +84,11 @@ export const replacementRequestSchema = z.object({
   createdBy: replacementUserSchema,
   updatedBy: replacementUserSchema.nullable(),
   histories: z.array(replacementHistorySchema).optional().default([]),
-});
+}).transform((replacement) => ({
+  ...replacement,
+  replacementProNumber: replacement.replacementProNumber ?? null,
+  replacementCarrierName: replacement.replacementCarrierName ?? null,
+}));
 
 export const replacementsListSchema = z.object({
   items: z.array(replacementRequestSchema),
@@ -105,6 +117,38 @@ export const createReplacementSchema = z.object({
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
   replacementStatus: replacementStatusSchema.optional(),
+  replacementProNumber: z
+    .string()
+    .trim()
+    .max(50, 'PRO number must be 50 characters or fewer.')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+  replacementCarrierName: z
+    .string()
+    .trim()
+    .max(120, 'Freight carrier must be 120 characters or fewer.')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+}).superRefine((value, context) => {
+  if (value.replacementStatus !== 'IN_TRANSIT') {
+    return;
+  }
+
+  if (!value.replacementCarrierName) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Freight carrier is required when replacement status is in transit.',
+      path: ['replacementCarrierName'],
+    });
+  }
+
+  if (!value.replacementProNumber) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'PRO number is required when replacement status is in transit.',
+      path: ['replacementProNumber'],
+    });
+  }
 });
 
 export const updateReplacementSchema = z.object({
@@ -119,4 +163,34 @@ export const updateReplacementSchema = z.object({
     .max(3000, 'Yard update must be 3000 characters or fewer.')
     .optional(),
   replacementStatus: replacementStatusSchema.optional(),
+  replacementProNumber: z
+    .string()
+    .trim()
+    .max(50, 'PRO number must be 50 characters or fewer.')
+    .optional(),
+  replacementCarrierName: z
+    .string()
+    .trim()
+    .max(120, 'Freight carrier must be 120 characters or fewer.')
+    .optional(),
+}).superRefine((value, context) => {
+  if (value.replacementStatus !== 'IN_TRANSIT') {
+    return;
+  }
+
+  if (!value.replacementCarrierName) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Freight carrier is required when replacement status is in transit.',
+      path: ['replacementCarrierName'],
+    });
+  }
+
+  if (!value.replacementProNumber) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'PRO number is required when replacement status is in transit.',
+      path: ['replacementProNumber'],
+    });
+  }
 });

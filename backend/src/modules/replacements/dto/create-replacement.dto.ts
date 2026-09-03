@@ -29,4 +29,14 @@ export class CreateReplacementDto {
   @IsOptional()
   @IsEnum(ReplacementStatus)
   replacementStatus?: ReplacementStatus;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  replacementProNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  replacementCarrierName?: string;
 }

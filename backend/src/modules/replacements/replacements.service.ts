@@ -29,12 +29,23 @@ export class ReplacementsService {
   ) {
     const customerReason = createReplacementDto.customerReason.trim();
     const yardUpdate = this.normalizeOptionalText(createReplacementDto.yardUpdate);
+    const replacementProNumber = this.normalizeOptionalText(
+      createReplacementDto.replacementProNumber,
+    );
+    const replacementCarrierName = this.normalizeOptionalText(
+      createReplacementDto.replacementCarrierName,
+    );
     const replacementStatus =
-      createReplacementDto.replacementStatus ?? ReplacementStatus.REQUESTED;
+      createReplacementDto.replacementStatus ?? ReplacementStatus.YARD_CONTACTED;
 
     if (!customerReason) {
       throw new BadRequestException('Customer reason is required.');
     }
+
+    this.ensureTransitDetails(replacementStatus, {
+      replacementProNumber,
+      replacementCarrierName,
+    });
 
     await this.ensureRelatedRecords(
       createReplacementDto.orderId,
@@ -48,6 +59,8 @@ export class ReplacementsService {
       yardUpdate,
       replacementStatus:
         replacementStatus as unknown as PrismaReplacementStatus,
+      replacementProNumber,
+      replacementCarrierName,
       createdById: user.userId,
     });
 
@@ -55,7 +68,13 @@ export class ReplacementsService {
       orderId: replacement.orderId,
       shipmentId: replacement.shipmentId,
       user,
-      content: this.buildCreateNote(customerReason, yardUpdate, replacementStatus),
+      content: this.buildCreateNote({
+        customerReason,
+        yardUpdate,
+        replacementStatus,
+        replacementProNumber,
+        replacementCarrierName,
+      }),
     });
 
     await this.redisCacheService.bumpNamespaceVersion(
@@ -87,6 +106,14 @@ export class ReplacementsService {
       updateReplacementDto.yardUpdate !== undefined
         ? this.normalizeOptionalText(updateReplacementDto.yardUpdate)
         : undefined;
+    const replacementProNumber =
+      updateReplacementDto.replacementProNumber !== undefined
+        ? this.normalizeOptionalText(updateReplacementDto.replacementProNumber)
+        : undefined;
+    const replacementCarrierName =
+      updateReplacementDto.replacementCarrierName !== undefined
+        ? this.normalizeOptionalText(updateReplacementDto.replacementCarrierName)
+        : undefined;
     const replacementStatus = updateReplacementDto.replacementStatus;
 
     if (customerReason !== undefined && !customerReason) {
@@ -96,17 +123,35 @@ export class ReplacementsService {
     if (
       customerReason === undefined &&
       yardUpdate === undefined &&
-      replacementStatus === undefined
+      replacementStatus === undefined &&
+      replacementProNumber === undefined &&
+      replacementCarrierName === undefined
     ) {
       throw new BadRequestException(
         'At least one replacement field must be provided for update.',
       );
     }
 
+    this.ensureTransitDetails(
+      replacementStatus ?? (existingReplacement.replacementStatus as ReplacementStatus),
+      {
+        replacementProNumber:
+          replacementProNumber !== undefined
+            ? replacementProNumber
+            : existingReplacement.replacementProNumber,
+        replacementCarrierName:
+          replacementCarrierName !== undefined
+            ? replacementCarrierName
+            : existingReplacement.replacementCarrierName,
+      },
+    );
+
     const summary = this.buildUpdateSummary(existingReplacement, {
       customerReason,
       yardUpdate,
       replacementStatus,
+      replacementProNumber,
+      replacementCarrierName,
     });
 
     if (!summary) {
@@ -118,6 +163,8 @@ export class ReplacementsService {
       yardUpdate,
       replacementStatus:
         replacementStatus as unknown as PrismaReplacementStatus | undefined,
+      replacementProNumber,
+      replacementCarrierName,
       updatedById: user.userId,
       history: {
         action: 'UPDATED',
@@ -133,6 +180,14 @@ export class ReplacementsService {
             : existingReplacement.customerReason,
         yardUpdate:
           yardUpdate !== undefined ? yardUpdate : existingReplacement.yardUpdate,
+        replacementProNumber:
+          replacementProNumber !== undefined
+            ? replacementProNumber
+            : existingReplacement.replacementProNumber,
+        replacementCarrierName:
+          replacementCarrierName !== undefined
+            ? replacementCarrierName
+            : existingReplacement.replacementCarrierName,
       },
     });
 
@@ -208,16 +263,28 @@ export class ReplacementsService {
     }
   }
 
-  private buildCreateNote(
-    customerReason: string,
-    yardUpdate: string | null,
-    replacementStatus: ReplacementStatus,
-  ) {
+  private buildCreateNote({
+    customerReason,
+    yardUpdate,
+    replacementStatus,
+    replacementProNumber,
+    replacementCarrierName,
+  }: {
+    customerReason: string;
+    yardUpdate: string | null;
+    replacementStatus: ReplacementStatus;
+    replacementProNumber: string | null;
+    replacementCarrierName: string | null;
+  }) {
     return [
       'Replacement request created:',
       `- Status: ${this.formatReplacementStatus(replacementStatus)}`,
       `- Customer reason: ${customerReason}`,
       ...(yardUpdate ? [`- Yard update: ${yardUpdate}`] : []),
+      ...(replacementCarrierName
+        ? [`- Freight carrier: ${replacementCarrierName}`]
+        : []),
+      ...(replacementProNumber ? [`- PRO number: ${replacementProNumber}`] : []),
     ].join('\n');
   }
 
@@ -226,11 +293,15 @@ export class ReplacementsService {
       customerReason: string;
       yardUpdate: string | null;
       replacementStatus: string;
+      replacementProNumber: string | null;
+      replacementCarrierName: string | null;
     },
     update: {
       customerReason?: string;
       yardUpdate?: string | null;
       replacementStatus?: ReplacementStatus;
+      replacementProNumber?: string | null;
+      replacementCarrierName?: string | null;
     },
   ) {
     const lines: string[] = [];
@@ -260,7 +331,47 @@ export class ReplacementsService {
       lines.push(`- Yard update: ${update.yardUpdate || 'Not set'}`);
     }
 
+    if (
+      update.replacementCarrierName !== undefined &&
+      update.replacementCarrierName !== existingReplacement.replacementCarrierName
+    ) {
+      lines.push(
+        `- Freight carrier: ${update.replacementCarrierName || 'Not set'}`,
+      );
+    }
+
+    if (
+      update.replacementProNumber !== undefined &&
+      update.replacementProNumber !== existingReplacement.replacementProNumber
+    ) {
+      lines.push(`- PRO number: ${update.replacementProNumber || 'Not set'}`);
+    }
+
     return lines.length > 0 ? lines.join('\n') : null;
+  }
+
+  private ensureTransitDetails(
+    replacementStatus: ReplacementStatus,
+    details: {
+      replacementProNumber?: string | null;
+      replacementCarrierName?: string | null;
+    },
+  ) {
+    if (replacementStatus !== ReplacementStatus.IN_TRANSIT) {
+      return;
+    }
+
+    if (!details.replacementCarrierName) {
+      throw new BadRequestException(
+        'Freight carrier is required when replacement status is in transit.',
+      );
+    }
+
+    if (!details.replacementProNumber) {
+      throw new BadRequestException(
+        'PRO number is required when replacement status is in transit.',
+      );
+    }
   }
 
   private normalizeOptionalText(value?: string): string | null {

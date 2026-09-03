@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { REPLACEMENT_STATUSES, type ReplacementRequest, type ReplacementStatus } from '../types/replacement.types';
 import { formatReplacementStatus } from '../lib/replacements.helpers';
@@ -16,6 +17,8 @@ type ReplacementRequestModalProps = {
     customerReason: string;
     yardUpdate?: string;
     replacementStatus: ReplacementStatus;
+    replacementProNumber?: string;
+    replacementCarrierName?: string;
   }) => Promise<void>;
 };
 
@@ -28,14 +31,18 @@ export function ReplacementRequestModal({
 }: ReplacementRequestModalProps) {
   const [customerReason, setCustomerReason] = useState('');
   const [yardUpdate, setYardUpdate] = useState('');
+  const [replacementProNumber, setReplacementProNumber] = useState('');
+  const [replacementCarrierName, setReplacementCarrierName] = useState('');
   const [replacementStatus, setReplacementStatus] =
-    useState<ReplacementStatus>('REQUESTED');
+    useState<ReplacementStatus>('YARD_CONTACTED');
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     setCustomerReason(replacement?.customerReason ?? '');
     setYardUpdate(replacement?.yardUpdate ?? '');
-    setReplacementStatus(replacement?.replacementStatus ?? 'REQUESTED');
+    setReplacementProNumber(replacement?.replacementProNumber ?? '');
+    setReplacementCarrierName(replacement?.replacementCarrierName ?? '');
+    setReplacementStatus(replacement?.replacementStatus ?? 'YARD_CONTACTED');
   }, [replacement]);
 
   const handleSubmit = async () => {
@@ -44,11 +51,25 @@ export function ReplacementRequestModal({
       return;
     }
 
+    if (replacementStatus === 'IN_TRANSIT') {
+      if (!replacementCarrierName.trim()) {
+        setFormError('Freight carrier is required when replacement status is in transit.');
+        return;
+      }
+
+      if (!replacementProNumber.trim()) {
+        setFormError('PRO number is required when replacement status is in transit.');
+        return;
+      }
+    }
+
     setFormError(null);
     await onSubmit({
       customerReason,
       yardUpdate,
       replacementStatus,
+      replacementProNumber,
+      replacementCarrierName,
     });
   };
 
@@ -107,13 +128,34 @@ export function ReplacementRequestModal({
                 setReplacementStatus(event.target.value as ReplacementStatus)
               }
             >
-              {REPLACEMENT_STATUSES.map((status) => (
+              {getReplacementModalStatusOptions(replacement?.replacementStatus).map((status) => (
                 <option key={status} value={status}>
                   {formatReplacementStatus(status)}
                 </option>
               ))}
             </Select>
           </label>
+
+          {replacementStatus === 'IN_TRANSIT' ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-2 text-sm font-semibold text-foreground">
+                Freight Carrier
+                <Input
+                  value={replacementCarrierName}
+                  onChange={(event) => setReplacementCarrierName(event.target.value)}
+                  placeholder="FedEx Freight"
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-semibold text-foreground">
+                PRO Number
+                <Input
+                  value={replacementProNumber}
+                  onChange={(event) => setReplacementProNumber(event.target.value)}
+                  placeholder="PRO123456"
+                />
+              </label>
+            </div>
+          ) : null}
 
           {formError || error ? (
             <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -133,5 +175,22 @@ export function ReplacementRequestModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function getReplacementModalStatusOptions(currentStatus?: ReplacementStatus) {
+  if (!currentStatus) {
+    return ['YARD_CONTACTED'] satisfies ReplacementStatus[];
+  }
+
+  const currentIndex = REPLACEMENT_STATUSES.indexOf(currentStatus);
+
+  if (currentIndex === -1) {
+    return REPLACEMENT_STATUSES;
+  }
+
+  return REPLACEMENT_STATUSES.slice(
+    currentIndex,
+    Math.min(currentIndex + 2, REPLACEMENT_STATUSES.length),
   );
 }
