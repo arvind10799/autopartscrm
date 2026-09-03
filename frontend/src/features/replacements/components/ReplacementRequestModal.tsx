@@ -128,7 +128,7 @@ export function ReplacementRequestModal({
                 setReplacementStatus(event.target.value as ReplacementStatus)
               }
             >
-              {getReplacementModalStatusOptions(replacement?.replacementStatus).map((status) => (
+              {REPLACEMENT_STATUSES.map((status) => (
                 <option key={status} value={status}>
                   {formatReplacementStatus(status)}
                 </option>
@@ -136,26 +136,24 @@ export function ReplacementRequestModal({
             </Select>
           </label>
 
-          {replacementStatus === 'IN_TRANSIT' ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm font-semibold text-foreground">
-                Freight Carrier
-                <Input
-                  value={replacementCarrierName}
-                  onChange={(event) => setReplacementCarrierName(event.target.value)}
-                  placeholder="FedEx Freight"
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold text-foreground">
-                PRO Number
-                <Input
-                  value={replacementProNumber}
-                  onChange={(event) => setReplacementProNumber(event.target.value)}
-                  placeholder="PRO123456"
-                />
-              </label>
-            </div>
-          ) : null}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-2 text-sm font-semibold text-foreground">
+              Freight Carrier
+              <Input
+                value={replacementCarrierName}
+                onChange={(event) => setReplacementCarrierName(event.target.value)}
+                placeholder="FedEx Freight"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-semibold text-foreground">
+              PRO Number
+              <Input
+                value={replacementProNumber}
+                onChange={(event) => setReplacementProNumber(event.target.value)}
+                placeholder="PRO123456"
+              />
+            </label>
+          </div>
 
           {formError || error ? (
             <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -175,22 +173,5 @@ export function ReplacementRequestModal({
         </div>
       </div>
     </div>
-  );
-}
-
-function getReplacementModalStatusOptions(currentStatus?: ReplacementStatus) {
-  if (!currentStatus) {
-    return ['YARD_CONTACTED'] satisfies ReplacementStatus[];
-  }
-
-  const currentIndex = REPLACEMENT_STATUSES.indexOf(currentStatus);
-
-  if (currentIndex === -1) {
-    return REPLACEMENT_STATUSES;
-  }
-
-  return REPLACEMENT_STATUSES.slice(
-    currentIndex,
-    Math.min(currentIndex + 2, REPLACEMENT_STATUSES.length),
   );
 }

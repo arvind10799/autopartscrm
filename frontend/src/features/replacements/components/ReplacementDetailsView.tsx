@@ -39,7 +39,7 @@ import { cn } from '@/lib/utils/cn';
 import { toast } from '@/lib/stores/toast.store';
 import { useReplacementDetail } from '../hooks/useReplacementDetail';
 import { formatReplacementStatus } from '../lib/replacements.helpers';
-import type { ReplacementStatus } from '../types/replacement.types';
+import { REPLACEMENT_STATUSES, type ReplacementStatus } from '../types/replacement.types';
 import { ReplacementStatusBadge } from './ReplacementStatusBadge';
 
 type ReplacementActivityEntry = {
@@ -250,9 +250,6 @@ export function ReplacementDetailsView({
     orderNotes: order?.notes ?? [],
     shipmentNotes,
   });
-  const allowedStatusOptions = getAllowedReplacementStatusOptions(
-    replacement.replacementStatus,
-  );
 
   return (
     <section className="grid gap-6">
@@ -488,7 +485,7 @@ export function ReplacementDetailsView({
                       setReplacementStatus(event.target.value as ReplacementStatus)
                     }
                   >
-                    {allowedStatusOptions.map((status) => (
+                    {REPLACEMENT_STATUSES.map((status) => (
                       <option key={status} value={status}>
                         {formatReplacementStatus(status)}
                       </option>
@@ -496,30 +493,28 @@ export function ReplacementDetailsView({
                   </Select>
                 </label>
 
-                {replacementStatus === 'IN_TRANSIT' ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="grid gap-2 text-sm font-semibold text-foreground">
-                      Freight Carrier
-                      <Input
-                        value={replacementCarrierName}
-                        onChange={(event) =>
-                          setReplacementCarrierName(event.target.value)
-                        }
-                        placeholder="FedEx Freight"
-                      />
-                    </label>
-                    <label className="grid gap-2 text-sm font-semibold text-foreground">
-                      PRO Number
-                      <Input
-                        value={replacementProNumber}
-                        onChange={(event) =>
-                          setReplacementProNumber(event.target.value)
-                        }
-                        placeholder="PRO123456"
-                      />
-                    </label>
-                  </div>
-                ) : null}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="grid gap-2 text-sm font-semibold text-foreground">
+                    Freight Carrier
+                    <Input
+                      value={replacementCarrierName}
+                      onChange={(event) =>
+                        setReplacementCarrierName(event.target.value)
+                      }
+                      placeholder="FedEx Freight"
+                    />
+                  </label>
+                  <label className="grid gap-2 text-sm font-semibold text-foreground">
+                    PRO Number
+                    <Input
+                      value={replacementProNumber}
+                      onChange={(event) =>
+                        setReplacementProNumber(event.target.value)
+                      }
+                      placeholder="PRO123456"
+                    />
+                  </label>
+                </div>
 
                 <label className="grid gap-2 text-sm font-semibold text-foreground">
                   Customer Reason
@@ -710,28 +705,6 @@ function Detail({
         {value}
       </div>
     </div>
-  );
-}
-
-const REPLACEMENT_STATUS_FLOW: ReplacementStatus[] = [
-  'YARD_CONTACTED',
-  'WAITING_YARD_RESPONSE',
-  'APPROVED',
-  'SHIPPED',
-  'IN_TRANSIT',
-  'DELIVERED',
-];
-
-function getAllowedReplacementStatusOptions(currentStatus: ReplacementStatus) {
-  const currentIndex = REPLACEMENT_STATUS_FLOW.indexOf(currentStatus);
-
-  if (currentIndex === -1) {
-    return REPLACEMENT_STATUS_FLOW;
-  }
-
-  return REPLACEMENT_STATUS_FLOW.slice(
-    currentIndex,
-    Math.min(currentIndex + 2, REPLACEMENT_STATUS_FLOW.length),
   );
 }
 
