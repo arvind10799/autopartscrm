@@ -50,8 +50,13 @@ export function ReplacementTracker({
     refreshKey,
   });
   const latestReplacement = replacementsResponse.items[0] ?? null;
+  const hasExistingReplacement = Boolean(latestReplacement);
 
   const openCreateModal = () => {
+    if (isLoading || hasExistingReplacement) {
+      return;
+    }
+
     setEditingReplacement(null);
     setSaveError(null);
     setIsModalOpen(true);
@@ -115,9 +120,18 @@ export function ReplacementTracker({
               </CardDescription>
             </div>
             {canManage ? (
-              <Button size="sm" onClick={openCreateModal}>
+              <Button
+                size="sm"
+                onClick={openCreateModal}
+                disabled={isLoading || hasExistingReplacement}
+                title={
+                  hasExistingReplacement
+                    ? 'Replacement already initiated for this order.'
+                    : 'Create replacement request'
+                }
+              >
                 <RotateCcw className="h-4 w-4" />
-                Replacement
+                {hasExistingReplacement ? 'Replacement initiated' : 'Replacement'}
               </Button>
             ) : null}
           </div>
