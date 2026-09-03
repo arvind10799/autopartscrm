@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils/cn';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { notesApi } from '@/features/notes/api/notes-api';
+import { ReplacementTracker } from '@/features/replacements/components/ReplacementTracker';
 import {
   OrderResolutionActions,
   OrderResolutionDetails,
@@ -302,6 +303,14 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
           />
 
           {invoiceOrder ? <OrderResolutionDetails order={invoiceOrder} /> : null}
+
+          {invoiceOrder ? (
+            <ReplacementTracker
+              orderId={invoiceOrder.id}
+              shipmentId={shipment.id}
+              compact
+            />
+          ) : null}
 
           <ShipmentNotesHistoryCard
             shipment={shipment}

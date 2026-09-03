@@ -19,6 +19,7 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { ReplacementsModule } from './modules/replacements/replacements.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { VehicleLookupModule } from './modules/vehicle-lookup/vehicle-lookup.module';
@@ -32,6 +33,7 @@ import { VehicleLookupModule } from './modules/vehicle-lookup/vehicle-lookup.mod
     AuthModule,
     LeadsModule,
     OrdersModule,
+    ReplacementsModule,
     ShipmentsModule,
     CostsModule,
     InvoicesModule,

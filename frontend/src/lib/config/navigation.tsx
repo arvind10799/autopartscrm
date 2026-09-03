@@ -4,6 +4,7 @@ import {
   FileText,
   Gauge,
   Phone,
+  RotateCcw,
   Truck,
   Users,
 } from 'lucide-react';
@@ -61,6 +62,14 @@ export const navigationConfig: NavigationItemConfig[] = [
     description: 'Pick eligible confirmed orders and convert them into shipments.',
     icon: Truck,
     roles: ['SHIPPING'],
+    group: 'workspace',
+  },
+  {
+    href: '/replacement-orders',
+    label: 'Replacement Orders',
+    description: 'Track replacement requests, yard updates, and replacement history.',
+    icon: RotateCcw,
+    roles: ['ADMIN', 'SALES', 'SHIPPING'],
     group: 'workspace',
   },
   {
