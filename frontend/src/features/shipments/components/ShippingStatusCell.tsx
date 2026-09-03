@@ -18,6 +18,7 @@ type ShippingStatusCellProps = {
   fallbackDate?: string | null;
   bolNumber?: string | null;
   proNumber?: string | null;
+  hasReplacement?: boolean;
   className?: string;
 };
 
@@ -78,7 +79,12 @@ function getPrimaryLine({
   fallbackDate,
   bolNumber,
   proNumber,
+  hasReplacement,
 }: ShippingStatusCellProps) {
+  if (hasReplacement) {
+    return 'Replacement';
+  }
+
   if (orderStatus === 'REFUNDED') {
     return 'Refunded';
   }
@@ -113,7 +119,12 @@ function getPrimaryLine({
 function getDisplayStatus({
   status,
   orderStatus,
-}: Pick<ShippingStatusCellProps, 'status' | 'orderStatus'>): ShipmentStatusDisplay | null {
+  hasReplacement,
+}: Pick<ShippingStatusCellProps, 'status' | 'orderStatus' | 'hasReplacement'>): ShipmentStatusDisplay | null {
+  if (hasReplacement) {
+    return 'REPLACEMENT';
+  }
+
   if (orderStatus === 'REFUNDED') {
     return 'REFUNDED';
   }
@@ -134,7 +145,12 @@ function getSecondaryLine(status: ShipmentStatusDisplay | null | undefined) {
     return 'Shipped';
   }
 
-  if (status === 'DISPUTED' || status === 'DELIVERED' || status === 'CANCELLED') {
+  if (
+    status === 'DISPUTED' ||
+    status === 'DELIVERED' ||
+    status === 'CANCELLED' ||
+    status === 'REPLACEMENT'
+  ) {
     return null;
   }
 
@@ -162,6 +178,7 @@ function getStatusTextClass(status: ShipmentStatusDisplay | null | undefined) {
     DELAYED: 'text-amber-700',
     CANCELLED: 'text-rose-700',
     REFUNDED: 'text-violet-700',
+    REPLACEMENT: 'text-violet-700',
   };
 
   return status ? statusTextClasses[status] : 'text-slate-600';

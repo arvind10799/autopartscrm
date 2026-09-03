@@ -11,6 +11,7 @@ import {
   normalizeOrdersListQuery,
   ORDER_PAGE_SIZE,
   REFUNDED_SHIPMENT_STATUS_FILTER,
+  REPLACEMENT_SHIPMENT_STATUS_FILTER,
   type OrderStatusFilter,
   type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
@@ -22,6 +23,7 @@ type UseOrdersListOptions = {
   status?: OrderStatusFilter;
   shipmentStatus?: ShipmentStatusFilter;
   hasShipment?: boolean;
+  hasReplacement?: boolean;
   createdFrom?: string;
   createdTo?: string;
   createdById?: string;
@@ -40,6 +42,7 @@ export function useOrdersList({
   status,
   shipmentStatus,
   hasShipment,
+  hasReplacement,
   createdFrom,
   createdTo,
   createdById,
@@ -57,6 +60,8 @@ export function useOrdersList({
     const isResolutionShipmentFilter =
       shipmentStatus === 'CANCELLED' ||
       shipmentStatus === REFUNDED_SHIPMENT_STATUS_FILTER;
+    const isReplacementShipmentFilter =
+      shipmentStatus === REPLACEMENT_SHIPMENT_STATUS_FILTER;
     const resolvedOrderStatus =
       status === ALL_ORDER_STATUS_FILTER || status === undefined
         ? isResolutionShipmentFilter
@@ -69,10 +74,13 @@ export function useOrdersList({
       search,
       status: resolvedOrderStatus,
       shipmentStatus:
-        shipmentStatus === ALL_SHIPMENT_STATUS_FILTER || isResolutionShipmentFilter
+        shipmentStatus === ALL_SHIPMENT_STATUS_FILTER ||
+        isResolutionShipmentFilter ||
+        isReplacementShipmentFilter
           ? undefined
           : shipmentStatus,
       hasShipment,
+      hasReplacement: hasReplacement || isReplacementShipmentFilter || undefined,
       createdFrom,
       createdTo,
       createdById,
@@ -117,6 +125,7 @@ export function useOrdersList({
     createdTo,
     createdById,
     hasShipment,
+    hasReplacement,
     page,
     refreshKey,
     requestTracker,

@@ -26,6 +26,12 @@ const shipmentOrderSummarySchema = z.object({
     .nullable()
     .optional(),
   createdAt: isoDateTimeSchema,
+  _count: z
+    .object({
+      replacementRequests: z.number().int().min(0).optional().default(0),
+    })
+    .optional()
+    .default({ replacementRequests: 0 }),
 }).transform((order) => ({
   id: order.id,
   orderNumber: order.orderNumber,
@@ -36,6 +42,9 @@ const shipmentOrderSummarySchema = z.object({
   currency: order.currency,
   orderDate: order.intakeDetails?.orderDate ?? null,
   createdAt: order.createdAt,
+  counts: {
+    replacementRequests: order._count.replacementRequests,
+  },
 }));
 
 const shipmentCostSummarySchema = z.object({
@@ -284,14 +293,6 @@ export const createShipmentSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: 'Part purchased cost is required for purchase status.',
       path: ['purchaseAmount'],
-    });
-  }
-
-  if (value.status === 'SHIPPED' && !value.bolNumber) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'BOL number is required when shipment status is shipped.',
-      path: ['bolNumber'],
     });
   }
 

@@ -17,6 +17,7 @@ const shipmentStatusTones: Record<
   DELAYED: 'warning',
   CANCELLED: 'danger',
   REFUNDED: 'warning',
+  REPLACEMENT: 'info',
 };
 
 export function ShipmentStatusBadge({ status }: { status: ShipmentStatusDisplay }) {

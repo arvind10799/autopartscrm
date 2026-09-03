@@ -23,12 +23,14 @@ import {
   formatShipmentStatusOptionLabel,
   parseShipmentStatusFilter,
   REFUNDED_SHIPMENT_STATUS_FILTER,
+  REPLACEMENT_SHIPMENT_STATUS_FILTER,
   type ShipmentStatusFilter,
 } from '../lib/shipments.helpers';
 import type { ShipmentStatus } from '../types/shipment.types';
 import { ShipmentsTable } from './ShipmentsTable';
 
 const OPERATIONAL_SHIPMENT_STATUS_FILTERS = [
+  REPLACEMENT_SHIPMENT_STATUS_FILTER,
   'SHIPPED',
   'IN_TRANSIT',
   'DISPUTED',
@@ -36,7 +38,11 @@ const OPERATIONAL_SHIPMENT_STATUS_FILTERS = [
   'DELIVERED',
   'CANCELLED',
   REFUNDED_SHIPMENT_STATUS_FILTER,
-] as const satisfies readonly (ShipmentStatus | typeof REFUNDED_SHIPMENT_STATUS_FILTER)[];
+] as const satisfies readonly (
+  | ShipmentStatus
+  | typeof REFUNDED_SHIPMENT_STATUS_FILTER
+  | typeof REPLACEMENT_SHIPMENT_STATUS_FILTER
+)[];
 
 export function ShipmentsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');

@@ -32,6 +32,7 @@ import {
   formatShipmentStatusOptionLabel,
   parseShipmentStatusFilter,
   REFUNDED_SHIPMENT_STATUS_FILTER,
+  REPLACEMENT_SHIPMENT_STATUS_FILTER,
   type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
 import {
@@ -46,6 +47,7 @@ import { UpdateOrderForm } from './UpdateOrderForm';
 const ALL_AGENTS_FILTER = 'ALL';
 const PHONE_LIKE_SEARCH_PATTERN = /^[\d\s()+.-]+$/;
 const ORDER_SHIPMENT_STATUS_FILTERS = [
+  REPLACEMENT_SHIPMENT_STATUS_FILTER,
   ...ORDER_SHIPMENT_STATUSES,
   REFUNDED_SHIPMENT_STATUS_FILTER,
 ] as const;

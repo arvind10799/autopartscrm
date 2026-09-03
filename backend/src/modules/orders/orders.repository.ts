@@ -166,6 +166,7 @@ const orderListSelect = {
     select: {
       shipments: true,
       notes: true,
+      replacementRequests: true,
     },
   },
 } satisfies Prisma.OrderSelect;
@@ -310,6 +311,7 @@ const orderDetailInclude = {
     select: {
       shipments: true,
       notes: true,
+      replacementRequests: true,
     },
   },
 } satisfies Prisma.OrderInclude;
@@ -467,6 +469,20 @@ export class OrdersRepository {
     const hasShipmentFilter = this.normalizeHasShipmentFilter(
       queryOrdersDto.hasShipment,
     );
+    const hasReplacementFilter = this.normalizeHasShipmentFilter(
+      queryOrdersDto.hasReplacement,
+    );
+
+    if (hasReplacementFilter) {
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          replacementRequests: {
+            some: {},
+          },
+        },
+      ];
+    }
 
     if (hasShipmentFilter !== undefined && !queryOrdersDto.shipmentStatus) {
       if (hasShipmentFilter) {

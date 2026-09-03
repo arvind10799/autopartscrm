@@ -331,7 +331,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             proNumber={proNumber}
             carrierName={carrierName}
             isAdminOverride={canOverrideShipment}
-            requiresBolNumber={selectedStatus === 'SHIPPED' && !bolNumber.trim()}
+            requiresBolNumber={false}
             requiresCarrierName={
               selectedStatus === 'SHIPPED' && !carrierName.trim()
             }

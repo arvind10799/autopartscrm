@@ -39,6 +39,11 @@ const shipmentSummarySelect = {
       currency: true,
       intakeDetails: true,
       createdAt: true,
+      _count: {
+        select: {
+          replacementRequests: true,
+        },
+      },
     },
   },
   costs: {
@@ -177,6 +182,19 @@ export class ShipmentsRepository {
       where.order = {
         status: queryShipmentsDto.orderStatus,
       };
+    }
+
+    if (queryShipmentsDto.hasReplacement === 'true') {
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          order: {
+            replacementRequests: {
+              some: {},
+            },
+          },
+        },
+      ];
     }
 
     const createdAtFilter = buildCreatedAtFilter(

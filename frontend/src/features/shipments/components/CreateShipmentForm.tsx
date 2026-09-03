@@ -205,7 +205,7 @@ export function CreateShipmentForm({
               htmlFor="bolNumber"
               className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
             >
-              BOL number
+              BOL number <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Input
               id="bolNumber"

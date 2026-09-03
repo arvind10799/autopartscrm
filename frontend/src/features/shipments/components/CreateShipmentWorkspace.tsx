@@ -50,6 +50,7 @@ import {
   formatShipmentStatusOptionLabel,
   parseShipmentStatusFilter,
   REFUNDED_SHIPMENT_STATUS_FILTER,
+  REPLACEMENT_SHIPMENT_STATUS_FILTER,
   type ShipmentStatusFilter,
 } from '@/features/orders/lib/orders.helpers';
 import {
@@ -74,6 +75,7 @@ import {
 import { ShipmentEligibleOrdersTable } from './ShipmentEligibleOrdersTable';
 
 const SHIPMENT_ORDER_STATUS_FILTERS = [
+  REPLACEMENT_SHIPMENT_STATUS_FILTER,
   'PENDING',
   'LOCATING',
   'PRE_PROCESSING',
@@ -81,7 +83,11 @@ const SHIPMENT_ORDER_STATUS_FILTERS = [
   'DISPUTED',
   'CANCELLED',
   REFUNDED_SHIPMENT_STATUS_FILTER,
-] as const satisfies readonly (OrderShipmentStatus | typeof REFUNDED_SHIPMENT_STATUS_FILTER)[];
+] as const satisfies readonly (
+  | OrderShipmentStatus
+  | typeof REFUNDED_SHIPMENT_STATUS_FILTER
+  | typeof REPLACEMENT_SHIPMENT_STATUS_FILTER
+)[];
 
 export function CreateShipmentWorkspace() {
   const router = useRouter();
@@ -247,7 +253,7 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
         completedOrder
           ? `Shipment workflow saved for ${completedOrder.orderNumber}`
           : 'Shipment workflow saved',
-        'The order remains in Shipment orders until it is marked shipped with a BOL.',
+        'The order remains in Shipment orders until it is marked shipped.',
       );
     }
     setRefreshKey((currentValue) => currentValue + 1);

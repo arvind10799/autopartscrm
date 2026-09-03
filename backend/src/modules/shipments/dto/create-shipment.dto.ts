@@ -17,12 +17,8 @@ import {
 
 export class CreateShipmentDto {
   @Transform(({ value }) => trimToUndefined(value))
-  @ValidateIf(
-    (dto: CreateShipmentDto) =>
-      dto.status === ShipmentStatus.SHIPPED || dto.bolNumber !== undefined,
-  )
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(50)
   bolNumber?: string;
 

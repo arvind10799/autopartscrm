@@ -23,12 +23,14 @@ export const ORDER_PAGE_SIZE = 10;
 export const ALL_ORDER_STATUS_FILTER = 'ALL' as const;
 export const ALL_SHIPMENT_STATUS_FILTER = 'ALL' as const;
 export const REFUNDED_SHIPMENT_STATUS_FILTER = 'REFUNDED' as const;
+export const REPLACEMENT_SHIPMENT_STATUS_FILTER = 'REPLACEMENT' as const;
 
 export type OrderStatusFilter = typeof ALL_ORDER_STATUS_FILTER | OrderStatus;
 export type ShipmentStatusFilter =
   | typeof ALL_SHIPMENT_STATUS_FILTER
   | OrderShipmentStatus
-  | typeof REFUNDED_SHIPMENT_STATUS_FILTER;
+  | typeof REFUNDED_SHIPMENT_STATUS_FILTER
+  | typeof REPLACEMENT_SHIPMENT_STATUS_FILTER;
 
 const orderStatusSchema = z.enum(ORDER_STATUSES);
 const shipmentStatusSchema = z.enum(ORDER_SHIPMENT_STATUSES);
@@ -49,6 +51,7 @@ export type NormalizedOrdersQuery = {
   status?: OrderStatus;
   shipmentStatus?: OrderShipmentStatus;
   hasShipment?: boolean;
+  hasReplacement?: boolean;
   createdFrom?: string;
   createdTo?: string;
   createdById?: string;
@@ -80,7 +83,10 @@ export function formatOrderStatusOptionLabel(status: OrderStatus): string {
 }
 
 export function formatShipmentStatusOptionLabel(
-  status: OrderShipmentStatus | typeof REFUNDED_SHIPMENT_STATUS_FILTER,
+  status:
+    | OrderShipmentStatus
+    | typeof REFUNDED_SHIPMENT_STATUS_FILTER
+    | typeof REPLACEMENT_SHIPMENT_STATUS_FILTER,
 ): string {
   return status
     .toLowerCase()
@@ -123,6 +129,10 @@ export function parseShipmentStatusFilter(value: string): ShipmentStatusFilter {
     return REFUNDED_SHIPMENT_STATUS_FILTER;
   }
 
+  if (value === REPLACEMENT_SHIPMENT_STATUS_FILTER) {
+    return REPLACEMENT_SHIPMENT_STATUS_FILTER;
+  }
+
   return isShipmentStatus(value) ? value : ALL_SHIPMENT_STATUS_FILTER;
 }
 
@@ -150,6 +160,7 @@ export function parseOrdersQueryParams(
   const statusValue = searchParams.get('status');
   const shipmentStatusValue = searchParams.get('shipmentStatus');
   const hasShipmentValue = searchParams.get('hasShipment');
+  const hasReplacementValue = searchParams.get('hasReplacement');
   const createdById = parseUserIdFilter(searchParams.get('createdById'));
 
   return {
@@ -167,6 +178,7 @@ export function parseOrdersQueryParams(
         : hasShipmentValue === 'false'
           ? false
           : undefined,
+    hasReplacement: hasReplacementValue === 'true' ? true : undefined,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
     createdById,
@@ -195,6 +207,10 @@ export function buildOrdersQueryString(query: NormalizedOrdersQuery): string {
     baseSearchParams.set('hasShipment', String(query.hasShipment));
   }
 
+  if (query.hasReplacement) {
+    baseSearchParams.set('hasReplacement', 'true');
+  }
+
   if (query.createdById) {
     baseSearchParams.set('createdById', query.createdById);
   }
@@ -217,6 +233,7 @@ export function normalizeOrdersListQuery(
     status: input.status,
     shipmentStatus: input.shipmentStatus,
     hasShipment: input.hasShipment,
+    hasReplacement: input.hasReplacement,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
     createdById: parseUserIdFilter(input.createdById),

@@ -91,6 +91,7 @@ const columns: ColumnDef<ShipmentSummary>[] = [
         fallbackDate={row.original.order.createdAt}
         bolNumber={row.original.bolNumber}
         proNumber={row.original.proNumber}
+        hasReplacement={row.original.order.counts.replacementRequests > 0}
       />
     ),
   },

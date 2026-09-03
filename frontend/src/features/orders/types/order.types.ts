@@ -120,6 +120,7 @@ export interface OrderSummary {
   counts: {
     shipments: number;
     notes: number;
+    replacementRequests: number;
   };
   latestNote: OrderNote | null;
 }
@@ -208,6 +209,7 @@ export interface OrdersListQuery {
   status?: OrderStatus;
   shipmentStatus?: OrderShipmentStatus;
   hasShipment?: boolean;
+  hasReplacement?: boolean;
   createdFrom?: string;
   createdTo?: string;
   createdById?: string;

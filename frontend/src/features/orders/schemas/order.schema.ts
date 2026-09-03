@@ -398,6 +398,7 @@ const orderBackendSummarySchema = z.object({
   _count: z.object({
     shipments: z.number(),
     notes: z.number(),
+    replacementRequests: z.number().optional().default(0),
   }),
   notes: z
     .array(orderNoteSchema)
@@ -446,6 +447,7 @@ function normalizeOrderSummary(order: z.infer<typeof orderBackendSummarySchema>)
     counts: {
       shipments: order._count.shipments,
       notes: order._count.notes,
+      replacementRequests: order._count.replacementRequests,
     },
     latestNote: order.notes[0] ?? null,
   };

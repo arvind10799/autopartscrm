@@ -25,6 +25,10 @@ export class QueryOrdersDto extends PaginationQueryDto {
   hasShipment?: string;
 
   @IsOptional()
+  @IsString()
+  hasReplacement?: string;
+
+  @IsOptional()
   @IsUUID()
   createdById?: string;
 }

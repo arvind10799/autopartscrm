@@ -15,4 +15,8 @@ export class QueryShipmentsDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(OrderStatus)
   orderStatus?: OrderStatus;
+
+  @IsOptional()
+  @IsString()
+  hasReplacement?: string;
 }

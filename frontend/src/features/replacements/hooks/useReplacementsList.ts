@@ -7,6 +7,7 @@ import { replacementsApi } from '../api/replacements-api';
 import {
   ALL_SHIPMENT_STATUS_FILTER,
   REFUNDED_SHIPMENT_STATUS_FILTER,
+  REPLACEMENT_SHIPMENT_STATUS_FILTER,
   type ShipmentStatusFilter,
 } from '@/features/shipments/lib/shipments.helpers';
 import {
@@ -58,7 +59,8 @@ export function useReplacementsList({
       status: status === ALL_REPLACEMENT_STATUS_FILTER ? undefined : status,
       shipmentStatus:
         shipmentStatus === ALL_SHIPMENT_STATUS_FILTER ||
-        shipmentStatus === REFUNDED_SHIPMENT_STATUS_FILTER
+        shipmentStatus === REFUNDED_SHIPMENT_STATUS_FILTER ||
+        shipmentStatus === REPLACEMENT_SHIPMENT_STATUS_FILTER
           ? undefined
           : shipmentStatus,
       orderId,

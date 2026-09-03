@@ -203,11 +203,6 @@ export class ShipmentsService {
         Boolean(existingShipment.shippedAt),
       );
     }
-    this.ensureBolNumberForShipped(
-      nextStatus,
-      existingShipment.bolNumber,
-      updateShipmentStatusDto.bolNumber,
-    );
     this.ensureCarrierNameForShipped(
       nextStatus,
       existingShipment.carrierName,
@@ -514,22 +509,6 @@ export class ShipmentsService {
     if (!nextProNumber) {
       throw new BadRequestException(
         'PRO number is required when moving shipment to in transit.',
-      );
-    }
-  }
-
-  private ensureBolNumberForShipped(
-    nextStatus: PrismaShipmentStatus,
-    existingBolNumber: string | null,
-    nextBolNumber?: string,
-  ): void {
-    if (nextStatus !== PrismaShipmentStatus.SHIPPED || existingBolNumber) {
-      return;
-    }
-
-    if (!nextBolNumber) {
-      throw new BadRequestException(
-        'BOL number is required when moving shipment to shipped.',
       );
     }
   }

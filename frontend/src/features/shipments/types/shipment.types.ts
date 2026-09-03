@@ -14,7 +14,7 @@ export const SHIPMENT_STATUSES = [
 ] as const;
 
 export type ShipmentStatus = (typeof SHIPMENT_STATUSES)[number];
-export type ShipmentStatusDisplay = ShipmentStatus | 'REFUNDED';
+export type ShipmentStatusDisplay = ShipmentStatus | 'REFUNDED' | 'REPLACEMENT';
 
 export interface ShipmentOrderSummary {
   id: string;
@@ -26,6 +26,9 @@ export interface ShipmentOrderSummary {
   currency: string;
   orderDate: string | null;
   createdAt: string;
+  counts: {
+    replacementRequests: number;
+  };
 }
 
 export interface ShipmentCostSummary {
@@ -162,6 +165,7 @@ export interface ShipmentsListQuery {
   search?: string;
   status?: ShipmentStatus;
   orderStatus?: Extract<OrderStatus, 'CANCELLED' | 'REFUNDED'>;
+  hasReplacement?: boolean;
   createdFrom?: string;
   createdTo?: string;
 }

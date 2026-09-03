@@ -17,11 +17,13 @@ import type {
 export const SHIPMENT_PAGE_SIZE = 10;
 export const ALL_SHIPMENT_STATUS_FILTER = 'ALL' as const;
 export const REFUNDED_SHIPMENT_STATUS_FILTER = 'REFUNDED' as const;
+export const REPLACEMENT_SHIPMENT_STATUS_FILTER = 'REPLACEMENT' as const;
 
 export type ShipmentStatusFilter =
   | typeof ALL_SHIPMENT_STATUS_FILTER
   | ShipmentStatus
-  | typeof REFUNDED_SHIPMENT_STATUS_FILTER;
+  | typeof REFUNDED_SHIPMENT_STATUS_FILTER
+  | typeof REPLACEMENT_SHIPMENT_STATUS_FILTER;
 
 type ShipmentsListQueryInput = {
   page?: unknown;
@@ -29,6 +31,7 @@ type ShipmentsListQueryInput = {
   search?: unknown;
   status?: unknown;
   orderStatus?: unknown;
+  hasReplacement?: unknown;
   createdFrom?: unknown;
   createdTo?: unknown;
 };
@@ -80,7 +83,10 @@ export function createEmptyShipmentsResponse(
 }
 
 export function formatShipmentStatusOptionLabel(
-  status: ShipmentStatus | typeof REFUNDED_SHIPMENT_STATUS_FILTER,
+  status:
+    | ShipmentStatus
+    | typeof REFUNDED_SHIPMENT_STATUS_FILTER
+    | typeof REPLACEMENT_SHIPMENT_STATUS_FILTER,
 ): string {
   return status
     .toLowerCase()
@@ -96,6 +102,10 @@ export function isShipmentStatus(value: string): value is ShipmentStatus {
 export function parseShipmentStatusFilter(value: string): ShipmentStatusFilter {
   if (value === REFUNDED_SHIPMENT_STATUS_FILTER) {
     return REFUNDED_SHIPMENT_STATUS_FILTER;
+  }
+
+  if (value === REPLACEMENT_SHIPMENT_STATUS_FILTER) {
+    return REPLACEMENT_SHIPMENT_STATUS_FILTER;
   }
 
   return isShipmentStatus(value) ? value : ALL_SHIPMENT_STATUS_FILTER;
@@ -114,6 +124,7 @@ export function parseShipmentsQueryParams(
     search: searchParams.get('search'),
     status: searchParams.get('status'),
     orderStatus: searchParams.get('orderStatus'),
+    hasReplacement: searchParams.get('hasReplacement'),
     ...readTimestampRangeQueryFromSearchParams(searchParams),
   });
 }
@@ -145,13 +156,20 @@ export function normalizeShipmentsListQuery(
             input.orderStatus === 'CANCELLED'
           ? input.orderStatus
           : undefined;
+  const hasReplacement =
+    input.status === REPLACEMENT_SHIPMENT_STATUS_FILTER ||
+    input.hasReplacement === true ||
+    input.hasReplacement === 'true'
+      ? true
+      : undefined;
 
   return {
     page,
     limit,
     search,
-    status: orderStatus ? undefined : status,
+    status: orderStatus || hasReplacement ? undefined : status,
     orderStatus,
+    hasReplacement,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
   };
@@ -173,6 +191,10 @@ export function buildShipmentsQueryString(query: ShipmentsListQuery): string {
 
   if (query.orderStatus) {
     baseSearchParams.set('orderStatus', query.orderStatus);
+  }
+
+  if (query.hasReplacement) {
+    baseSearchParams.set('hasReplacement', 'true');
   }
 
   return buildDateRangeSearchParams(baseSearchParams, query).toString();

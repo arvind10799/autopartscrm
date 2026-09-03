@@ -21,6 +21,7 @@ const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
 const SHIPMENT_STATUS_DISPLAY_LABELS: Record<ShipmentStatusDisplay, string> = {
   ...SHIPMENT_STATUS_LABELS,
   REFUNDED: 'Refunded',
+  REPLACEMENT: 'Replacement',
 };
 
 const TRACKING_TIMELINE_STATUS_LABELS: Record<TrackingTimelineStatus, string> = {

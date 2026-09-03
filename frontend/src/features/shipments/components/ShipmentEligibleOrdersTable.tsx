@@ -107,6 +107,7 @@ export function ShipmentEligibleOrdersTable({
           fallbackDate={row.original.createdAt}
           bolNumber={row.original.latestShipment?.bolNumber}
           proNumber={row.original.latestShipment?.proNumber}
+          hasReplacement={row.original.counts.replacementRequests > 0}
         />
       ),
     },
