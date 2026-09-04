@@ -159,8 +159,6 @@ export function UpdateOrderForm({
     });
   }, [form, order]);
 
-  const canSalesEditPartDescription =
-    isSalesUser && Boolean(order) && isBlankEditableValue(order?.partDescription);
   const canSalesEditVehicleVin =
     isSalesUser && Boolean(order) && isBlankEditableValue(order?.intakeDetails?.vehicleVin);
   const canSalesEditVehicleNotes =
@@ -183,9 +181,6 @@ export function UpdateOrderForm({
             shippingPhone: parsedPayload.shippingPhone,
             shippingAt: parsedPayload.shippingAt,
             companyName: parsedPayload.companyName,
-            ...(canSalesEditPartDescription
-              ? { partDescription: parsedPayload.partDescription }
-              : {}),
             ...(canSalesEditVehicleVin
               ? { vehicleVin: parsedPayload.vehicleVin }
               : {}),
@@ -253,11 +248,11 @@ export function UpdateOrderForm({
   }
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-border/70 bg-secondary/35 p-4">
+    <div className="space-y-3">
+      <div className="rounded-2xl border border-border/70 bg-secondary/35 p-3">
         <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-primary/10 p-2 text-primary">
-            <PencilLine className="h-5 w-5" />
+          <div className="rounded-xl bg-primary/10 p-2 text-primary">
+            <PencilLine className="h-4 w-4" />
           </div>
           <div className="space-y-1">
             <p className="font-semibold text-foreground">Edit order</p>
@@ -270,8 +265,8 @@ export function UpdateOrderForm({
         </div>
       </div>
 
-      <form className="space-y-5" onSubmit={onSubmit}>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <form className="space-y-3" onSubmit={onSubmit}>
+        <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="orderNumberReadonly">Order number</Label>
             <Input id="orderNumberReadonly" value={order.orderNumber} readOnly />
@@ -284,21 +279,6 @@ export function UpdateOrderForm({
               {...form.register('salesNumber')}
             />
           </div>
-          {canSalesEditPartDescription ? (
-            <div className="space-y-2">
-              <Label htmlFor="partDescription">Part description</Label>
-              <Input id="partDescription" {...form.register('partDescription')} />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="partDescriptionReadonly">Part description</Label>
-              <Input
-                id="partDescriptionReadonly"
-                value={order.partDescription}
-                readOnly
-              />
-            </div>
-          )}
         </div>
 
         {canEditAllOrderFields ? (
@@ -306,9 +286,6 @@ export function UpdateOrderForm({
             <EditorSection title="Order fields">
               <EditorField label="Customer name" id="customerName">
                 <Input id="customerName" {...form.register('customerName')} />
-              </EditorField>
-              <EditorField label="Part description" id="partDescription">
-                <Input id="partDescription" {...form.register('partDescription')} />
               </EditorField>
               <EditorField label="Advisor name" id="advisorName">
                 <Input id="advisorName" {...form.register('advisorName')} />
@@ -540,7 +517,7 @@ export function UpdateOrderForm({
           </EditorSection>
         ) : null}
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="customerEmail">Customer email</Label>
             <Input
@@ -578,7 +555,7 @@ export function UpdateOrderForm({
           </Label>
           <Textarea
             id="note"
-            rows={4}
+            rows={3}
             placeholder="Add a note about this edit or customer update"
             {...form.register('note')}
           />
@@ -611,18 +588,18 @@ export function UpdateOrderForm({
         </div>
       </form>
 
-      <div className="space-y-3 rounded-2xl border border-border/70 bg-white/80 p-4">
+      <div className="space-y-2 rounded-2xl border border-border/70 bg-white/80 p-3 dark:bg-slate-950/40">
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-primary" />
           <p className="font-semibold text-foreground">Previous edit history and notes</p>
         </div>
 
         {order.notes.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {order.notes.map((note) => (
               <div
                 key={note.id}
-                className="rounded-2xl border border-border/70 bg-secondary/20 p-4"
+                className="rounded-xl border border-border/70 bg-secondary/20 p-3"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={isHistoryNote(note) ? 'info' : 'secondary'}>
@@ -632,7 +609,7 @@ export function UpdateOrderForm({
                     {note.author.name} | {formatDateTime(note.createdAt)}
                   </span>
                 </div>
-                <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">
+                <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">
                   {note.content}
                 </p>
               </div>
@@ -656,9 +633,9 @@ function EditorSection({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border/70 bg-secondary/15 p-4">
-      <h3 className="mb-4 font-semibold text-foreground">{title}</h3>
-      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+    <section className="rounded-2xl border border-border/70 bg-secondary/15 p-3">
+      <h3 className="mb-3 text-sm font-semibold text-foreground">{title}</h3>
+      <div className="grid gap-3 sm:grid-cols-2">{children}</div>
     </section>
   );
 }
@@ -673,7 +650,7 @@ function EditorField({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
       {children}
     </div>

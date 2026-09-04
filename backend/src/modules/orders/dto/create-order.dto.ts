@@ -139,17 +139,17 @@ export class CreateOrderDto {
   @MaxLength(500)
   shippingAddress?: string;
 
-  @Transform(({ value }) => trimString(value))
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(160)
-  shippingPerson: string;
+  shippingPerson?: string;
 
-  @Transform(({ value }) => trimString(value))
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
-  shippingPhone: string;
+  shippingPhone?: string;
 
   @Transform(({ value }) => trimString(value))
   @IsOptional()
@@ -157,11 +157,11 @@ export class CreateOrderDto {
   @MaxLength(40)
   shippingAt?: string;
 
-  @Transform(({ value }) => trimString(value))
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(160)
-  companyName: string;
+  companyName?: string;
 
   @Transform(({ value }) => trimString(value))
   @IsString()

@@ -630,7 +630,6 @@ export class OrdersService {
       'companyName',
     ]);
     const emptyOnlySalesFields = new Set([
-      'partDescription',
       'vehicleVin',
       'vehicleNotes',
     ]);
@@ -646,10 +645,6 @@ export class OrdersService {
 
       if (!emptyOnlySalesFields.has(field)) {
         return true;
-      }
-
-      if (field === 'partDescription') {
-        return !this.isEmptySalesEditableValue(existingOrder.partDescription);
       }
 
       return !this.isEmptySalesEditableValue(intakeDetails[field]);

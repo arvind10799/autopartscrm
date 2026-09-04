@@ -606,19 +606,17 @@ export const createOrderSchema = z.object({
   ),
   billingPhone: createRequiredPhoneSchema('Billing phone is required.'),
   shippingAddress: createOptionalTextSchema(500, 'Shipping address must be 500 characters or fewer.'),
-  shippingPerson: createRequiredTextSchema(
+  shippingPerson: createOptionalTextSchema(
     160,
-    'Shipping person is required.',
     'Shipping person must be 160 characters or fewer.',
   ),
-  shippingPhone: createRequiredPhoneSchema('Shipping phone is required.'),
+  shippingPhone: createOptionalPhoneSchema('Shipping phone must be 10 digits.'),
   shippingAt: createOptionalTextSchema(
     40,
     'Shipping date must be 40 characters or fewer.',
   ),
-  companyName: createRequiredTextSchema(
+  companyName: createOptionalTextSchema(
     160,
-    'Company name is required.',
     'Company name must be 160 characters or fewer.',
   ),
   milesOffered: createRequiredTextSchema(
@@ -783,19 +781,17 @@ export const createOrderFormSchema = z.object({
   ),
   billingPhone: createRequiredPhoneSchema('Billing phone is required.'),
   shippingAddress: createOptionalTextSchema(500, 'Shipping address must be 500 characters or fewer.'),
-  shippingPerson: createRequiredTextSchema(
+  shippingPerson: createOptionalTextSchema(
     160,
-    'Shipping person is required.',
     'Shipping person must be 160 characters or fewer.',
   ),
-  shippingPhone: createRequiredPhoneSchema('Shipping phone is required.'),
+  shippingPhone: createOptionalPhoneSchema('Shipping phone must be 10 digits.'),
   shippingAt: createOptionalTextSchema(
     40,
     'Shipping date must be 40 characters or fewer.',
   ),
-  companyName: createRequiredTextSchema(
+  companyName: createOptionalTextSchema(
     160,
-    'Company name is required.',
     'Company name must be 160 characters or fewer.',
   ),
   milesOffered: createRequiredTextSchema(
