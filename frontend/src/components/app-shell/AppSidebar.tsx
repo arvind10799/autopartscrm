@@ -47,8 +47,8 @@ export function AppSidebar({
         id="crm-sidebar"
         aria-label="CRM sidebar navigation"
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#f36f3d]/20 bg-[linear-gradient(180deg,#fff7f2_0%,#edf7fb_46%,#f8fbff_100%)] px-2.5 py-4 text-slate-900 shadow-2xl shadow-sky-950/10 transition-[width,transform,box-shadow,background-color,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width,transform] dark:border-[#f36f3d]/15 dark:bg-[linear-gradient(180deg,#071326_0%,#0b172a_48%,#020617_100%)] dark:text-slate-100 dark:shadow-black/30',
-          'w-[min(14rem,calc(100vw-1rem))]',
+          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#f36f3d]/20 bg-[linear-gradient(180deg,#fff7f2_0%,#edf7fb_46%,#f8fbff_100%)] px-2 py-3.5 text-slate-900 shadow-2xl shadow-sky-950/10 transition-[width,transform,box-shadow,background-color,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width,transform] dark:border-[#f36f3d]/15 dark:bg-[linear-gradient(180deg,#071326_0%,#0b172a_48%,#020617_100%)] dark:text-slate-100 dark:shadow-black/30',
+          'w-[min(13rem,calc(100vw-1rem))]',
           'lg:translate-x-0 lg:shadow-none',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
@@ -76,8 +76,8 @@ export function AppSidebar({
             className={cn(
               'relative flex items-center rounded-[1.15rem] border border-white/85 bg-white/80 shadow-sm shadow-sky-900/5 ring-1 ring-[#1f5b70]/10 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-700/70 dark:bg-slate-950/55 dark:shadow-black/20 dark:ring-[#f36f3d]/15',
               isCollapsed
-                ? 'justify-center px-1.5 py-2.5'
-                : 'min-h-[5.4rem] justify-center px-3 py-4',
+                ? 'justify-center px-1 py-2'
+                : 'min-h-[4.75rem] justify-center px-3 py-3.5',
             )}
           >
             <Link
@@ -86,7 +86,7 @@ export function AppSidebar({
               className={cn(
                 'flex min-w-0 items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
                 isCollapsed
-                  ? 'h-10 w-10 overflow-hidden rounded-xl bg-white/90 p-1.5 dark:bg-white/95'
+                  ? 'h-9 w-9 overflow-hidden rounded-xl bg-white/90 p-1.5 dark:bg-white/95'
                   : 'w-full',
               )}
               aria-label="Mee Auto Parts"
@@ -102,7 +102,7 @@ export function AppSidebar({
                   'object-contain transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
                   isCollapsed
                     ? 'h-full w-full scale-[2.6] object-left'
-                    : 'h-auto w-full max-w-[11.6rem]',
+                    : 'h-auto w-full max-w-[10.6rem]',
                 )}
               />
             </Link>
@@ -123,7 +123,7 @@ export function AppSidebar({
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-1.5 top-1.5 hidden h-8 w-8 shrink-0 text-[#1f5b70] hover:bg-[#f36f3d]/10 hover:text-[#f36f3d] dark:text-sky-200 dark:hover:bg-[#f36f3d]/15 dark:hover:text-orange-200 lg:flex"
+              className="absolute -right-3 top-1/2 hidden h-6 w-6 -translate-y-1/2 shrink-0 rounded-full border border-[#1f5b70]/15 bg-white p-0 text-[#1f5b70] shadow-sm shadow-slate-900/10 hover:border-[#f36f3d]/30 hover:bg-[#fff7f2] hover:text-[#f36f3d] dark:border-[#f36f3d]/20 dark:bg-slate-900 dark:text-sky-200 dark:hover:bg-[#f36f3d]/15 dark:hover:text-orange-200 lg:flex"
               onClick={onToggleCollapse}
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               type="button"
@@ -136,7 +136,7 @@ export function AppSidebar({
             </Button>
           </div>
 
-          <Separator className="my-3 bg-[#1f5b70]/15 dark:bg-slate-800" />
+          <Separator className="my-2.5 bg-[#1f5b70]/15 dark:bg-slate-800" />
 
           <nav
             className={cn(
@@ -162,7 +162,7 @@ export function AppSidebar({
                     'group relative flex items-center overflow-visible rounded-xl border text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
                     isCollapsed
                       ? 'justify-center px-2 py-2'
-                      : 'gap-2.5 px-2.5 py-2',
+                      : 'gap-2 px-2 py-1.5',
                     isActive
                       ? 'border-[#1f5b70]/20 bg-white text-[#123f52] shadow-sm shadow-sky-900/5 ring-1 ring-[#f36f3d]/25 dark:border-[#f36f3d]/25 dark:bg-[#123f52]/35 dark:text-orange-100 dark:ring-[#f36f3d]/20'
                       : 'border-transparent text-slate-600 hover:border-[#1f5b70]/15 hover:bg-white/65 hover:text-[#123f52] hover:shadow-sm hover:shadow-sky-900/5 dark:text-slate-300 dark:hover:border-[#f36f3d]/15 dark:hover:bg-slate-800/70 dark:hover:text-orange-100',
@@ -188,7 +188,7 @@ export function AppSidebar({
                     <Icon className="h-4 w-4" />
                   </span>
                   {!isCollapsed && (
-                    <span className="truncate transition-all duration-300">
+                    <span className="truncate text-[0.92rem] transition-all duration-300">
                       {item.label}
                     </span>
                   )}
@@ -204,9 +204,9 @@ export function AppSidebar({
             })}
           </nav>
 
-          <Separator className="my-3 bg-[#1f5b70]/15 dark:bg-slate-800" />
+          <Separator className="my-2.5 bg-[#1f5b70]/15 dark:bg-slate-800" />
 
-          <div className="mt-auto border-t border-[#1f5b70]/15 pt-3 text-center dark:border-slate-800">
+          <div className="mt-auto border-t border-[#1f5b70]/15 pt-2.5 text-center dark:border-slate-800">
             {isCollapsed ? (
               <p
                 className="text-[10px] font-semibold leading-tight text-slate-500 dark:text-slate-400"
