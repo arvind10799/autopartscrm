@@ -118,23 +118,26 @@ export function AppSidebar({
             >
               <PanelLeftClose className="h-4 w-4" />
             </Button>
-
-            {/* Desktop collapse/expand button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute -right-3 top-1/2 hidden h-6 w-6 -translate-y-1/2 shrink-0 rounded-full border border-[#1f5b70]/15 bg-white p-0 text-[#1f5b70] shadow-sm shadow-slate-900/10 hover:border-[#f36f3d]/30 hover:bg-[#fff7f2] hover:text-[#f36f3d] dark:border-[#f36f3d]/20 dark:bg-slate-900 dark:text-sky-200 dark:hover:bg-[#f36f3d]/15 dark:hover:text-orange-200 lg:flex"
-              onClick={onToggleCollapse}
-              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              type="button"
-            >
-              {isCollapsed ? (
-                <PanelLeftOpen className="h-4 w-4" />
-              ) : (
-                <PanelLeftClose className="h-4 w-4" />
-              )}
-            </Button>
           </div>
+
+          {/* Desktop collapse/expand button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'absolute -right-3 top-14 z-50 hidden h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#1f5b70]/20 bg-white p-0 text-[#1f5b70] shadow-md shadow-slate-900/10 ring-2 ring-white/80 transition-all duration-300 hover:-right-3.5 hover:border-[#f36f3d]/40 hover:bg-[#fff7f2] hover:text-[#f36f3d] focus-visible:ring-[#f36f3d]/35 dark:border-[#f36f3d]/25 dark:bg-slate-950 dark:text-sky-200 dark:ring-slate-950/80 dark:hover:bg-[#f36f3d]/15 dark:hover:text-orange-200 lg:flex',
+              isCollapsed ? 'top-10' : 'top-16',
+            )}
+            onClick={onToggleCollapse}
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            type="button"
+          >
+            {isCollapsed ? (
+              <PanelLeftOpen className="h-3.5 w-3.5" />
+            ) : (
+              <PanelLeftClose className="h-3.5 w-3.5" />
+            )}
+          </Button>
 
           <Separator className="my-2.5 bg-[#1f5b70]/15 dark:bg-slate-800" />
 
