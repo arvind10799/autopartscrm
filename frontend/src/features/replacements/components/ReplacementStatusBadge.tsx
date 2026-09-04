@@ -6,9 +6,12 @@ const STATUS_VARIANTS: Record<
   ReplacementStatus,
   'default' | 'secondary' | 'outline' | 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 > = {
-  YARD_CONTACTED: 'info',
   WAITING_YARD_RESPONSE: 'warning',
-  APPROVED: 'success',
+  YARD_CONTACTED: 'info',
+  AGREED: 'success',
+  DISAGREED: 'danger',
+  YARD_REFUNDING: 'warning',
+  YARD_DOESNT_HAVE_REPLACEMENT: 'danger',
   SHIPPED: 'default',
   IN_TRANSIT: 'info',
   DELIVERED: 'success',

@@ -36,7 +36,8 @@ export class ReplacementsService {
       createReplacementDto.replacementCarrierName,
     );
     const replacementStatus =
-      createReplacementDto.replacementStatus ?? ReplacementStatus.YARD_CONTACTED;
+      createReplacementDto.replacementStatus ??
+      ReplacementStatus.WAITING_YARD_RESPONSE;
 
     if (!customerReason) {
       throw new BadRequestException('Customer reason is required.');

@@ -34,7 +34,7 @@ export function ReplacementRequestModal({
   const [replacementProNumber, setReplacementProNumber] = useState('');
   const [replacementCarrierName, setReplacementCarrierName] = useState('');
   const [replacementStatus, setReplacementStatus] =
-    useState<ReplacementStatus>('YARD_CONTACTED');
+    useState<ReplacementStatus>('WAITING_YARD_RESPONSE');
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,7 +42,9 @@ export function ReplacementRequestModal({
     setYardUpdate(replacement?.yardUpdate ?? '');
     setReplacementProNumber(replacement?.replacementProNumber ?? '');
     setReplacementCarrierName(replacement?.replacementCarrierName ?? '');
-    setReplacementStatus(replacement?.replacementStatus ?? 'YARD_CONTACTED');
+    setReplacementStatus(
+      replacement?.replacementStatus ?? 'WAITING_YARD_RESPONSE',
+    );
   }, [replacement]);
 
   const handleSubmit = async () => {

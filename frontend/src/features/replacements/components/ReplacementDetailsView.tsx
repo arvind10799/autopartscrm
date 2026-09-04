@@ -80,7 +80,7 @@ export function ReplacementDetailsView({
   const [replacementProNumber, setReplacementProNumber] = useState('');
   const [replacementCarrierName, setReplacementCarrierName] = useState('');
   const [replacementStatus, setReplacementStatus] =
-    useState<ReplacementStatus>('YARD_CONTACTED');
+    useState<ReplacementStatus>('WAITING_YARD_RESPONSE');
   const [formError, setFormError] = useState<string | null>(null);
   const [orderRefreshKey, setOrderRefreshKey] = useState(0);
   const {

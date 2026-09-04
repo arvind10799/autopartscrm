@@ -45,9 +45,12 @@ enum ShipmentStatus {
 }
 
 enum ReplacementStatus {
-  YARD_CONTACTED
   WAITING_YARD_RESPONSE
-  APPROVED
+  YARD_CONTACTED
+  AGREED
+  DISAGREED
+  YARD_REFUNDING
+  YARD_DOESNT_HAVE_REPLACEMENT
   SHIPPED
   IN_TRANSIT
   DELIVERED
@@ -257,7 +260,7 @@ model ReplacementRequest {
   shipmentId        String?           @db.Uuid
   customerReason    String            @db.Text
   yardUpdate        String?           @db.Text
-  replacementStatus ReplacementStatus @default(YARD_CONTACTED)
+  replacementStatus ReplacementStatus @default(WAITING_YARD_RESPONSE)
   replacementProNumber String?         @db.VarChar(50)
   replacementCarrierName String?       @db.VarChar(120)
   createdById       String            @db.Uuid

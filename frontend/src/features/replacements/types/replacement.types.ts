@@ -2,9 +2,12 @@ import type { OrderStatus } from '@/features/orders/types/order.types';
 import type { ShipmentStatus } from '@/features/shipments/types/shipment.types';
 
 export const REPLACEMENT_STATUSES = [
-  'YARD_CONTACTED',
   'WAITING_YARD_RESPONSE',
-  'APPROVED',
+  'YARD_CONTACTED',
+  'AGREED',
+  'DISAGREED',
+  'YARD_REFUNDING',
+  'YARD_DOESNT_HAVE_REPLACEMENT',
   'SHIPPED',
   'IN_TRANSIT',
   'DELIVERED',

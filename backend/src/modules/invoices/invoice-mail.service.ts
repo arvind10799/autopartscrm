@@ -416,7 +416,10 @@ export class InvoiceMailService {
       .fillColor('#111827')
       .text(invoice.paymentStatus ?? '', left + 92, 436)
       .text(invoice.paymentDate ? this.formatDate(invoice.paymentDate) : '', left + 92, 450)
-      .text(invoice.paymentSource ?? '', left + 92, 464);
+      .text(this.normalizeMultilineText(invoice.paymentSource ?? ''), left + 92, 464, {
+        width: 235,
+        lineGap: 1,
+      });
 
     document
       .fontSize(8.5)

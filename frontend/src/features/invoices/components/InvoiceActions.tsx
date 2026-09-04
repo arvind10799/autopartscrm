@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, ChevronDown, Clock3, Copy, Download, Eye, FileText, Fingerprint, LoaderCircle, Paperclip, Pencil, Send, ShieldCheck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -883,7 +883,13 @@ function InvoiceFormModal({
             <InvoiceFormSection title="Payment Information">
               <InvoiceInput label="Payment Status" value={draft.paymentStatus} onChange={(value) => updateField('paymentStatus', value)} />
               <InvoiceInput label="Payment Date" type="date" value={draft.paymentDate} onChange={(value) => updateField('paymentDate', value)} />
-              <InvoiceInput label="Payment Source" value={draft.paymentSource} onChange={(value) => updateField('paymentSource', value)} placeholder="Card ending. ****xxxx" />
+              <InvoiceTextarea
+                label="Payment Source"
+                value={draft.paymentSource}
+                rows={2}
+                onChange={(value) => updateField('paymentSource', value)}
+                placeholder="Card ending. ****xxxx"
+              />
             </InvoiceFormSection>
 
             <InvoiceFormSection title="Charges & Pricing">
@@ -1425,7 +1431,9 @@ function InvoiceTextarea({
   label,
   value,
   onChange,
-}: {
+  rows = 3,
+  ...props
+}: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange' | 'value'> & {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -1434,8 +1442,9 @@ function InvoiceTextarea({
     <label className="space-y-1.5 text-sm font-medium text-foreground md:col-span-2">
       <span>{label}</span>
       <textarea
+        {...props}
         value={value}
-        rows={3}
+        rows={rows}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-2xl border border-input bg-white px-4 py-2.5 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
@@ -2740,6 +2749,7 @@ const INVOICE_DOCUMENT_CSS = `
     line-height: 19px;
     font-weight: 500;
     color: #252b34;
+    white-space: pre-line;
     overflow-wrap: anywhere;
   }
 
