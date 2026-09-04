@@ -563,7 +563,7 @@ export const createOrderSchema = z.object({
     .trim()
     .min(1, 'Part description is required.')
     .max(255, 'Part description must be 255 characters or fewer.'),
-  customerEmail: requiredEmailSchema,
+  customerEmail: optionalEmailSchema,
   customerPhone: createRequiredPhoneSchema('Customer phone is required.'),
   vehicleMake: createRequiredTextSchema(
     120,
@@ -585,10 +585,9 @@ export const createOrderSchema = z.object({
     'Part is required.',
     'Part must be 120 characters or fewer.',
   ),
-  vehicleVin: createRequiredVinSchema(),
-  vehicleNotes: createRequiredTextSchema(
+  vehicleVin: createOptionalVinSchema(),
+  vehicleNotes: createOptionalTextSchema(
     1000,
-    'Part description is required.',
     'Part description must be 1000 characters or fewer.',
   ),
   vehicleConfiguration: createOptionalTextSchema(
@@ -606,11 +605,7 @@ export const createOrderSchema = z.object({
     'Billing person must be 160 characters or fewer.',
   ),
   billingPhone: createRequiredPhoneSchema('Billing phone is required.'),
-  shippingAddress: createRequiredTextSchema(
-    500,
-    'Shipping address is required.',
-    'Shipping address must be 500 characters or fewer.',
-  ),
+  shippingAddress: createOptionalTextSchema(500, 'Shipping address must be 500 characters or fewer.'),
   shippingPerson: createRequiredTextSchema(
     160,
     'Shipping person is required.',
@@ -678,11 +673,7 @@ export const createOrderSchema = z.object({
     orderStatusSchema,
   ),
   paymentMethod: orderPaymentMethodSchema.optional(),
-  note: z
-    .string()
-    .trim()
-    .min(1, 'Order note is required.')
-    .max(1000, 'Notes must be 1000 characters or fewer.'),
+  note: createOptionalTextSchema(1000, 'Notes must be 1000 characters or fewer.'),
 }).superRefine((value, context) => {
   if (requiresPaymentMethod(value.status) && !value.paymentMethod) {
     context.addIssue({
@@ -749,7 +740,7 @@ export const createOrderFormSchema = z.object({
     .trim()
     .min(1, 'Part description is required.')
     .max(255, 'Part description must be 255 characters or fewer.'),
-  customerEmail: requiredEmailSchema,
+  customerEmail: optionalEmailSchema,
   customerPhone: createRequiredPhoneSchema('Customer phone is required.'),
   vehicleMake: createRequiredTextSchema(
     120,
@@ -771,10 +762,9 @@ export const createOrderFormSchema = z.object({
     'Part is required.',
     'Part must be 120 characters or fewer.',
   ),
-  vehicleVin: createRequiredVinSchema(),
-  vehicleNotes: createRequiredTextSchema(
+  vehicleVin: createOptionalVinSchema(),
+  vehicleNotes: createOptionalTextSchema(
     1000,
-    'Part description is required.',
     'Part description must be 1000 characters or fewer.',
   ),
   vehicleConfiguration: z
@@ -792,11 +782,7 @@ export const createOrderFormSchema = z.object({
     'Billing person must be 160 characters or fewer.',
   ),
   billingPhone: createRequiredPhoneSchema('Billing phone is required.'),
-  shippingAddress: createRequiredTextSchema(
-    500,
-    'Shipping address is required.',
-    'Shipping address must be 500 characters or fewer.',
-  ),
+  shippingAddress: createOptionalTextSchema(500, 'Shipping address must be 500 characters or fewer.'),
   shippingPerson: createRequiredTextSchema(
     160,
     'Shipping person is required.',
@@ -899,11 +885,7 @@ export const createOrderFormSchema = z.object({
     },
     orderPaymentMethodSchema.optional(),
   ),
-  note: z
-    .string()
-    .trim()
-    .min(1, 'Order note is required.')
-    .max(1000, 'Notes must be 1000 characters or fewer.'),
+  note: createOptionalTextSchema(1000, 'Notes must be 1000 characters or fewer.'),
 }).superRefine((value, context) => {
   if (requiresPaymentMethod(value.status) && !value.paymentMethod) {
     context.addIssue({

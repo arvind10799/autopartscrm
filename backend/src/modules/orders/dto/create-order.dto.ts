@@ -62,10 +62,10 @@ export class CreateOrderDto {
   partDescription: string;
 
   @Transform(({ value }) => trimToLowerCaseEmail(value))
-  @IsNotEmpty()
+  @IsOptional()
   @IsEmail()
   @MaxLength(160)
-  customerEmail: string;
+  customerEmail?: string;
 
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -98,16 +98,16 @@ export class CreateOrderDto {
   vehicleVariant: string;
 
   @Transform(({ value }) => trimToUpperCase(value))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @Length(17, 17)
-  vehicleVin: string;
+  vehicleVin?: string;
 
-  @Transform(({ value }) => trimString(value))
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(1000)
-  vehicleNotes: string;
+  vehicleNotes?: string;
 
   @Transform(({ value }) => trimToUndefined(value))
   @IsOptional()
@@ -133,11 +133,11 @@ export class CreateOrderDto {
   @Matches(/^\(\d{3}\) \d{3}-\d{4}$/)
   billingPhone: string;
 
-  @Transform(({ value }) => trimString(value))
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(500)
-  shippingAddress: string;
+  shippingAddress?: string;
 
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -222,11 +222,11 @@ export class CreateOrderDto {
   @IsEnum(OrderPaymentMethod)
   paymentMethod?: OrderPaymentMethod;
 
-  @Transform(({ value }) => trimString(value))
+  @Transform(({ value }) => trimToUndefined(value))
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(1000)
-  note: string;
+  note?: string;
 
   @IsOptional()
   @IsUUID()

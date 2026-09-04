@@ -39,6 +39,10 @@ function isHistoryNote(note: OrderNote): boolean {
   return note.content.startsWith('Order updated:');
 }
 
+function isBlankEditableValue(value: unknown): boolean {
+  return value === null || value === undefined || String(value).trim().length === 0;
+}
+
 export function UpdateOrderForm({
   orderId,
   onUpdated,
@@ -50,6 +54,7 @@ export function UpdateOrderForm({
 }) {
   const role = useAuthStore((state) => state.user?.role);
   const canEditAllOrderFields = role === 'ADMIN' || role === 'SHIPPING';
+  const isSalesUser = role === 'SALES';
   const [formError, setFormError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { order, isLoading, error } = useOrderDetailWithRefresh(orderId, refreshKey);
@@ -154,6 +159,14 @@ export function UpdateOrderForm({
     });
   }, [form, order]);
 
+  const canSalesEditPartDescription =
+    isSalesUser && Boolean(order) && isBlankEditableValue(order?.partDescription);
+  const canSalesEditVehicleVin =
+    isSalesUser && Boolean(order) && isBlankEditableValue(order?.intakeDetails?.vehicleVin);
+  const canSalesEditVehicleNotes =
+    isSalesUser && Boolean(order) && isBlankEditableValue(order?.intakeDetails?.vehicleNotes);
+  const canSalesEditShippingFields = isSalesUser;
+
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
 
@@ -165,6 +178,20 @@ export function UpdateOrderForm({
             salesNumber: parsedPayload.salesNumber,
             customerEmail: parsedPayload.customerEmail,
             customerPhone: parsedPayload.customerPhone,
+            shippingAddress: parsedPayload.shippingAddress,
+            shippingPerson: parsedPayload.shippingPerson,
+            shippingPhone: parsedPayload.shippingPhone,
+            shippingAt: parsedPayload.shippingAt,
+            companyName: parsedPayload.companyName,
+            ...(canSalesEditPartDescription
+              ? { partDescription: parsedPayload.partDescription }
+              : {}),
+            ...(canSalesEditVehicleVin
+              ? { vehicleVin: parsedPayload.vehicleVin }
+              : {}),
+            ...(canSalesEditVehicleNotes
+              ? { vehicleNotes: parsedPayload.vehicleNotes }
+              : {}),
             note: parsedPayload.note,
           };
       const updatedOrder = await ordersApi.update(orderId, payload);
@@ -237,7 +264,7 @@ export function UpdateOrderForm({
             <p className="text-sm text-muted-foreground">
               {canEditAllOrderFields
                 ? `Update all order information and add notes for ${order.orderNumber}.`
-                : `Update customer contact details and add notes for ${order.orderNumber}.`}
+                : `Update contact details, shipping details, and empty fields for ${order.orderNumber}.`}
             </p>
           </div>
         </div>
@@ -257,14 +284,21 @@ export function UpdateOrderForm({
               {...form.register('salesNumber')}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="partDescriptionReadonly">Part description</Label>
-            <Input
-              id="partDescriptionReadonly"
-              value={order.partDescription}
-              readOnly
-            />
-          </div>
+          {canSalesEditPartDescription ? (
+            <div className="space-y-2">
+              <Label htmlFor="partDescription">Part description</Label>
+              <Input id="partDescription" {...form.register('partDescription')} />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="partDescriptionReadonly">Part description</Label>
+              <Input
+                id="partDescriptionReadonly"
+                value={order.partDescription}
+                readOnly
+              />
+            </div>
+          )}
         </div>
 
         {canEditAllOrderFields ? (
@@ -429,6 +463,81 @@ export function UpdateOrderForm({
               ))}
             </EditorSection>
           </>
+        ) : null}
+
+        {!canEditAllOrderFields &&
+        (canSalesEditVehicleVin || canSalesEditVehicleNotes) ? (
+          <EditorSection title="Empty order fields">
+            {canSalesEditVehicleVin ? (
+              <EditorField label="VIN" id="vehicleVin">
+                <Input
+                  id="vehicleVin"
+                  maxLength={17}
+                  {...vehicleVinInput}
+                  onChange={handleVehicleVinChange}
+                />
+              </EditorField>
+            ) : null}
+            {canSalesEditVehicleNotes ? (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="vehicleNotes">Part Description</Label>
+                <Textarea id="vehicleNotes" rows={3} {...form.register('vehicleNotes')} />
+              </div>
+            ) : null}
+          </EditorSection>
+        ) : null}
+
+        {canSalesEditShippingFields ? (
+          <EditorSection title="Shipping information">
+            <EditorField label="Person" id="shippingPerson">
+              <Input id="shippingPerson" {...form.register('shippingPerson')} />
+            </EditorField>
+            <EditorField label="Phone" id="shippingPhone">
+              <Input
+                id="shippingPhone"
+                type="tel"
+                maxLength={14}
+                {...shippingPhoneInput}
+                onChange={handleShippingPhoneChange}
+              />
+            </EditorField>
+            <div className="space-y-2 sm:col-span-2">
+              <Label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Address
+              </Label>
+              <div className="grid gap-3 rounded-2xl border border-border/60 bg-white/60 p-3 dark:bg-slate-950/40">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="shippingAddress"
+                    className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                  >
+                    Business address
+                  </Label>
+                  <Textarea
+                    id="shippingAddress"
+                    rows={3}
+                    className="min-h-[88px] rounded-xl"
+                    placeholder="Enter business address"
+                    {...form.register('shippingAddress')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="companyName"
+                    className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                  >
+                    Business name
+                  </Label>
+                  <Input
+                    id="companyName"
+                    className="h-11 rounded-xl"
+                    placeholder="Enter business name"
+                    {...form.register('companyName')}
+                  />
+                </div>
+              </div>
+            </div>
+          </EditorSection>
         ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">

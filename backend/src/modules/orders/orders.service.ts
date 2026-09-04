@@ -145,9 +145,8 @@ export class OrdersService {
       );
     }
 
-    this.validateUpdateAccess(updateOrderDto, user);
-
     const existingOrder = await this.ordersRepository.findEditableById(id, user);
+    this.validateUpdateAccess(updateOrderDto, user, existingOrder);
     const nextStatus = updateOrderDto.status ?? existingOrder.status;
     const nextPaymentMethod =
       updateOrderDto.paymentMethod !== undefined
@@ -609,26 +608,62 @@ export class OrdersService {
   private validateUpdateAccess(
     updateOrderDto: UpdateOrderDto,
     user: AuthenticatedUser,
+    existingOrder: {
+      partDescription: string;
+      customerEmail: string | null;
+      intakeDetails: Prisma.JsonValue;
+    },
   ): void {
     if (user.role === Role.ADMIN || user.role === Role.SHIPPING) {
       return;
     }
 
-    const salesFields = new Set([
+    const alwaysAllowedSalesFields = new Set([
       'salesNumber',
       'customerEmail',
       'customerPhone',
       'note',
+      'shippingAddress',
+      'shippingPerson',
+      'shippingPhone',
+      'shippingAt',
+      'companyName',
     ]);
-    const restrictedField = Object.entries(updateOrderDto).find(
-      ([field, value]) => value !== undefined && !salesFields.has(field),
-    );
+    const emptyOnlySalesFields = new Set([
+      'partDescription',
+      'vehicleVin',
+      'vehicleNotes',
+    ]);
+    const intakeDetails = this.normalizeIntakeDetails(existingOrder.intakeDetails);
+    const restrictedField = Object.entries(updateOrderDto).find(([field, value]) => {
+      if (value === undefined) {
+        return false;
+      }
+
+      if (alwaysAllowedSalesFields.has(field)) {
+        return false;
+      }
+
+      if (!emptyOnlySalesFields.has(field)) {
+        return true;
+      }
+
+      if (field === 'partDescription') {
+        return !this.isEmptySalesEditableValue(existingOrder.partDescription);
+      }
+
+      return !this.isEmptySalesEditableValue(intakeDetails[field]);
+    });
 
     if (restrictedField) {
       throw new BadRequestException(
-        'Sales users can only update customer contact details and notes.',
+        'Sales users can only update contact details, shipping details, notes, and fields left empty during order creation.',
       );
     }
+  }
+
+  private isEmptySalesEditableValue(value: unknown): boolean {
+    return value === null || value === undefined || String(value).trim().length === 0;
   }
 
   private normalizeIntakeDetails(value: Prisma.JsonValue): Record<string, unknown> {
