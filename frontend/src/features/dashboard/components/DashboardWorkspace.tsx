@@ -403,7 +403,7 @@ function SalesOverviewTab({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <SalesKpiCard
           icon={<PhoneCall className="h-5 w-5" />}
           label="Total Leads"
@@ -575,19 +575,21 @@ function SalesKpiCard({
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="flex items-start justify-between gap-3 p-4">
+      <CardContent className="flex items-start justify-between gap-2.5 p-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             {label}
           </p>
-          <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground">
+          <p className="mt-2 text-xl font-semibold tracking-[-0.03em] text-foreground">
             {value}
           </p>
-          <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
+          <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+            {hint}
+          </p>
         </div>
         <div
           className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
             toneClasses,
           )}
         >
@@ -704,7 +706,7 @@ function OrderStatusTab({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <SalesKpiCard
           icon={<Clock3 className="h-5 w-5" />}
           label="Pending Orders"
