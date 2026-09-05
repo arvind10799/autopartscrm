@@ -150,6 +150,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
       <GrossProfitSummaryCard
         shipmentId={latestShipment?.id}
+        orderId={order.id}
         totalSaleAmount={financialSummary.gpSaleBasis}
         originalSaleAmount={order.totalSaleAmount}
         currency={order.currency}

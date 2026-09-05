@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { costsApi } from '@/features/costs/api/costs-api';
 import { formatCurrency, formatDateTime } from '@/features/orders/lib/order-formatters';
+import { shipmentsApi } from '@/features/shipments/api/shipments-api';
 import { toast } from '@/lib/stores/toast.store';
 import { getErrorMessage } from '@/lib/utils/error';
 
@@ -62,6 +63,7 @@ type RefundDetailsLike = {
 
 export function GrossProfitSummaryCard({
   shipmentId,
+  orderId,
   totalSaleAmount,
   originalSaleAmount = totalSaleAmount,
   currency,
@@ -78,6 +80,7 @@ export function GrossProfitSummaryCard({
   onCostUpdated,
 }: {
   shipmentId?: string;
+  orderId?: string;
   totalSaleAmount: number;
   originalSaleAmount?: number;
   currency: string;
@@ -141,7 +144,7 @@ export function GrossProfitSummaryCard({
     canEditBaseCost && Boolean(shipmentId) && Boolean(cost);
   const canOpenEstimatedCostForm =
     canEditBaseCost &&
-    Boolean(shipmentId) &&
+    (Boolean(shipmentId) || Boolean(orderId)) &&
     (!hasActualPurchaseAmount || !hasActualShippingAmount);
   const hasRefundDetails = Boolean(refundDetails?.refundType);
 
@@ -307,7 +310,7 @@ export function GrossProfitSummaryCard({
     const normalizedCurrency = currencyInput.trim().toUpperCase();
     const trimmedEditNote = baseCostEditNote.trim();
 
-    if (!shipmentId || !canOpenEstimatedCostForm) {
+    if ((!shipmentId && !orderId) || !canOpenEstimatedCostForm) {
       return;
     }
 
@@ -352,11 +355,24 @@ export function GrossProfitSummaryCard({
         notes: trimmedEditNote,
       };
 
-      if (cost) {
+      if (shipmentId && cost) {
         await costsApi.updateByShipmentId(shipmentId, estimatedCostPayload);
-      } else {
+      } else if (shipmentId) {
         await costsApi.create({
           shipmentId,
+          estimatedPurchaseAmount: estimatedCostPayload.estimatedPurchaseAmount,
+          estimatedShippingCharges: estimatedCostPayload.estimatedShippingCharges,
+          additionalCharges: additionalAmount,
+          currency: normalizedCurrency,
+          notes: trimmedEditNote,
+        });
+      } else if (orderId) {
+        const shipment = await shipmentsApi.create({
+          orderId,
+          status: 'PENDING',
+        });
+        await costsApi.create({
+          shipmentId: shipment.id,
           estimatedPurchaseAmount: estimatedCostPayload.estimatedPurchaseAmount,
           estimatedShippingCharges: estimatedCostPayload.estimatedShippingCharges,
           additionalCharges: additionalAmount,
