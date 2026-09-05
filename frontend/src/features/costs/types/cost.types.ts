@@ -66,12 +66,12 @@ export interface CreateShipmentCostInput {
 }
 
 export interface UpdateShipmentCostInput {
-  purchaseAmount: number;
-  shippingCharges: number;
+  purchaseAmount?: number;
+  shippingCharges?: number;
   estimatedPurchaseAmount?: number;
   estimatedShippingCharges?: number;
-  additionalCharges: number;
-  currency: string;
+  additionalCharges?: number;
+  currency?: string;
   notes?: string;
 }
 

@@ -125,9 +125,13 @@ export const createShipmentCostSchema = z.object({
   currency: currencyCodeSchema,
 });
 
-export const updateShipmentCostSchema = createShipmentCostSchema.omit({
-  shipmentId: true,
-}).extend({
+export const updateShipmentCostSchema = z.object({
+  purchaseAmount: amountSchema.optional(),
+  shippingCharges: amountSchema.optional(),
+  estimatedPurchaseAmount: amountSchema.optional(),
+  estimatedShippingCharges: amountSchema.optional(),
+  additionalCharges: amountSchema.optional(),
+  currency: currencyCodeSchema.optional(),
   notes: z
     .string()
     .trim()

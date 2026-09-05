@@ -56,15 +56,35 @@ export function toBackendCreateShipmentCostPayload(
 export function toBackendUpdateShipmentCostPayload(
   payload: UpdateShipmentCostInput,
 ) {
-  return {
-    purchaseAmount: payload.purchaseAmount,
-    shippingAmount: payload.shippingCharges,
-    estimatedPurchaseAmount: payload.estimatedPurchaseAmount,
-    estimatedShippingAmount: payload.estimatedShippingCharges,
-    additionalAmount: payload.additionalCharges,
-    currency: payload.currency,
+  const requestPayload: Record<string, number | string | undefined> = {
     notes: payload.notes,
   };
+
+  if (payload.purchaseAmount !== undefined) {
+    requestPayload.purchaseAmount = payload.purchaseAmount;
+  }
+
+  if (payload.shippingCharges !== undefined) {
+    requestPayload.shippingAmount = payload.shippingCharges;
+  }
+
+  if (payload.estimatedPurchaseAmount !== undefined) {
+    requestPayload.estimatedPurchaseAmount = payload.estimatedPurchaseAmount;
+  }
+
+  if (payload.estimatedShippingCharges !== undefined) {
+    requestPayload.estimatedShippingAmount = payload.estimatedShippingCharges;
+  }
+
+  if (payload.additionalCharges !== undefined) {
+    requestPayload.additionalAmount = payload.additionalCharges;
+  }
+
+  if (payload.currency !== undefined) {
+    requestPayload.currency = payload.currency;
+  }
+
+  return requestPayload;
 }
 
 export function parseCurrencyInput(value: string | undefined): string {

@@ -96,6 +96,7 @@ export function GrossProfitSummaryCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingBaseCost, setIsEditingBaseCost] = useState(false);
+  const [isEditingEstimatedCost, setIsEditingEstimatedCost] = useState(false);
   const [editingAdditionalCost, setEditingAdditionalCost] =
     useState<ShipmentAdditionalCostLike | null>(null);
   const [amount, setAmount] = useState('');
@@ -138,6 +139,11 @@ export function GrossProfitSummaryCard({
   const canOpenForm = canAddAdditionalCost && Boolean(shipmentId) && Boolean(cost);
   const canOpenBaseEditForm =
     canEditBaseCost && Boolean(shipmentId) && Boolean(cost);
+  const canOpenEstimatedCostForm =
+    canEditBaseCost &&
+    Boolean(shipmentId) &&
+    Boolean(cost) &&
+    (!hasActualPurchaseAmount || !hasActualShippingAmount);
   const hasRefundDetails = Boolean(refundDetails?.refundType);
 
   const resetAdditionalCostForm = () => {
@@ -155,12 +161,19 @@ export function GrossProfitSummaryCard({
   const openBaseEditForm = () => {
     setPurchaseAmountInput(purchaseAmount.toFixed(2));
     setShippingAmountInput(shippingAmount.toFixed(2));
+    setCurrencyInput(displayCurrency);
+    setBaseCostEditNote('');
+    setFormError(null);
+    setIsEditingBaseCost(true);
+  };
+
+  const openEstimatedCostForm = () => {
     setEstimatedPurchaseAmountInput(estimatedPurchaseAmount.toFixed(2));
     setEstimatedShippingAmountInput(estimatedShippingAmount.toFixed(2));
     setCurrencyInput(displayCurrency);
     setBaseCostEditNote('');
     setFormError(null);
-    setIsEditingBaseCost(true);
+    setIsEditingEstimatedCost(true);
   };
 
   const openAdditionalCostEditForm = (entry: ShipmentAdditionalCostLike) => {
@@ -239,8 +252,6 @@ export function GrossProfitSummaryCard({
   const handleBaseCostSubmit = async () => {
     const parsedPurchaseAmount = Number(purchaseAmountInput);
     const parsedShippingAmount = Number(shippingAmountInput);
-    const parsedEstimatedPurchaseAmount = Number(estimatedPurchaseAmountInput);
-    const parsedEstimatedShippingAmount = Number(estimatedShippingAmountInput);
     const normalizedCurrency = currencyInput.trim().toUpperCase();
     const trimmedEditNote = baseCostEditNote.trim();
 
@@ -255,6 +266,49 @@ export function GrossProfitSummaryCard({
 
     if (!Number.isFinite(parsedShippingAmount) || parsedShippingAmount < 0) {
       setFormError('Enter a valid actual shipping cost.');
+      return;
+    }
+
+    if (!/^[A-Z]{3,10}$/.test(normalizedCurrency)) {
+      setFormError('Enter a valid currency code.');
+      return;
+    }
+
+    if (!trimmedEditNote) {
+      setFormError('Add a note explaining why these costs changed.');
+      return;
+    }
+
+    setIsSaving(true);
+    setFormError(null);
+
+    try {
+      await costsApi.updateByShipmentId(shipmentId, {
+        purchaseAmount: parsedPurchaseAmount,
+        shippingCharges: parsedShippingAmount,
+        additionalCharges: additionalAmount,
+        currency: normalizedCurrency,
+        notes: trimmedEditNote,
+      });
+      toast.success('Shipment cost updated', 'GP calculation has been refreshed.');
+      setIsEditingBaseCost(false);
+      await onCostUpdated?.();
+    } catch (error) {
+      setFormError(
+        getErrorMessage(error, 'Unable to update shipment cost right now.'),
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEstimatedCostSubmit = async () => {
+    const parsedEstimatedPurchaseAmount = Number(estimatedPurchaseAmountInput);
+    const parsedEstimatedShippingAmount = Number(estimatedShippingAmountInput);
+    const normalizedCurrency = currencyInput.trim().toUpperCase();
+    const trimmedEditNote = baseCostEditNote.trim();
+
+    if (!shipmentId || !cost || !canOpenEstimatedCostForm) {
       return;
     }
 
@@ -280,7 +334,7 @@ export function GrossProfitSummaryCard({
     }
 
     if (!trimmedEditNote) {
-      setFormError('Add a note explaining why these costs changed.');
+      setFormError('Add a note explaining why these estimates changed.');
       return;
     }
 
@@ -289,24 +343,21 @@ export function GrossProfitSummaryCard({
 
     try {
       await costsApi.updateByShipmentId(shipmentId, {
-        purchaseAmount: parsedPurchaseAmount,
-        shippingCharges: parsedShippingAmount,
         estimatedPurchaseAmount: hasActualPurchaseAmount
           ? undefined
           : parsedEstimatedPurchaseAmount,
         estimatedShippingCharges: hasActualShippingAmount
           ? undefined
           : parsedEstimatedShippingAmount,
-        additionalCharges: additionalAmount,
         currency: normalizedCurrency,
         notes: trimmedEditNote,
       });
-      toast.success('Shipment cost updated', 'GP calculation has been refreshed.');
-      setIsEditingBaseCost(false);
+      toast.success('Estimated cost updated', 'GP calculation has been refreshed.');
+      setIsEditingEstimatedCost(false);
       await onCostUpdated?.();
     } catch (error) {
       setFormError(
-        getErrorMessage(error, 'Unable to update shipment cost right now.'),
+        getErrorMessage(error, 'Unable to update estimated costs right now.'),
       );
     } finally {
       setIsSaving(false);
@@ -357,6 +408,18 @@ export function GrossProfitSummaryCard({
               >
                 <Edit3 className="h-4 w-4" />
                 Edit GP Costs
+              </Button>
+            ) : null}
+            {canEditBaseCost ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={!canOpenEstimatedCostForm}
+                onClick={openEstimatedCostForm}
+              >
+                <Plus className="h-4 w-4" />
+                Add / Edit Estimated Cost
               </Button>
             ) : null}
             {canAddAdditionalCost ? (
@@ -591,6 +654,75 @@ export function GrossProfitSummaryCard({
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="gp-currency">Currency</Label>
+                <Input
+                  id="gp-currency"
+                  value={currencyInput}
+                  onChange={(event) => setCurrencyInput(event.target.value)}
+                  placeholder="USD"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gp-edit-note">Edit note</Label>
+                <Textarea
+                  id="gp-edit-note"
+                  rows={3}
+                  value={baseCostEditNote}
+                  onChange={(event) => setBaseCostEditNote(event.target.value)}
+                  placeholder="Example: Yard refunded $300, so part cost was adjusted to net $100."
+                />
+              </div>
+              {formError ? (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {formError}
+                </div>
+              ) : null}
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditingBaseCost(false)}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => void handleBaseCostSubmit()}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Update costs'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isEditingEstimatedCost ? (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 py-6 backdrop-blur-sm sm:py-10">
+          <div className="w-full max-w-lg rounded-[1.5rem] border border-border bg-card p-5 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-semibold text-foreground">
+                  Add / Edit Estimated Cost
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Estimates are used in GP until actual costs are entered.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingEstimatedCost(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="gp-estimated-purchase-amount">
@@ -638,22 +770,22 @@ export function GrossProfitSummaryCard({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="gp-currency">Currency</Label>
+                <Label htmlFor="gp-estimated-currency">Currency</Label>
                 <Input
-                  id="gp-currency"
+                  id="gp-estimated-currency"
                   value={currencyInput}
                   onChange={(event) => setCurrencyInput(event.target.value)}
                   placeholder="USD"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="gp-edit-note">Edit note</Label>
+                <Label htmlFor="gp-estimated-edit-note">Edit note</Label>
                 <Textarea
-                  id="gp-edit-note"
+                  id="gp-estimated-edit-note"
                   rows={3}
                   value={baseCostEditNote}
                   onChange={(event) => setBaseCostEditNote(event.target.value)}
-                  placeholder="Example: Yard refunded $300, so part cost was adjusted to net $100."
+                  placeholder="Example: Estimated for month-end GP until yard invoice arrives."
                 />
               </div>
               {formError ? (
@@ -665,17 +797,17 @@ export function GrossProfitSummaryCard({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsEditingBaseCost(false)}
+                  onClick={() => setIsEditingEstimatedCost(false)}
                   disabled={isSaving}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => void handleBaseCostSubmit()}
+                  onClick={() => void handleEstimatedCostSubmit()}
                   disabled={isSaving}
                 >
-                  {isSaving ? 'Saving...' : 'Update costs'}
+                  {isSaving ? 'Saving...' : 'Save estimate'}
                 </Button>
               </div>
             </div>
