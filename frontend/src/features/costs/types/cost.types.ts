@@ -57,12 +57,13 @@ export interface UpdateShipmentAdditionalCostInput {
 
 export interface CreateShipmentCostInput {
   shipmentId: string;
-  purchaseAmount: number;
-  shippingCharges: number;
+  purchaseAmount?: number;
+  shippingCharges?: number;
   estimatedPurchaseAmount?: number;
   estimatedShippingCharges?: number;
-  additionalCharges: number;
+  additionalCharges?: number;
   currency: string;
+  notes?: string;
 }
 
 export interface UpdateShipmentCostInput {

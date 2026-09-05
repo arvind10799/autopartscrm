@@ -42,15 +42,33 @@ export function hydrateShipmentCostFormValues(
 export function toBackendCreateShipmentCostPayload(
   payload: CreateShipmentCostInput,
 ) {
-  return {
+  const requestPayload: Record<string, number | string | undefined> = {
     shipmentId: payload.shipmentId,
-    purchaseAmount: payload.purchaseAmount,
-    shippingAmount: payload.shippingCharges,
-    estimatedPurchaseAmount: payload.estimatedPurchaseAmount,
-    estimatedShippingAmount: payload.estimatedShippingCharges,
-    additionalAmount: payload.additionalCharges,
     currency: payload.currency,
+    notes: payload.notes,
   };
+
+  if (payload.purchaseAmount !== undefined) {
+    requestPayload.purchaseAmount = payload.purchaseAmount;
+  }
+
+  if (payload.shippingCharges !== undefined) {
+    requestPayload.shippingAmount = payload.shippingCharges;
+  }
+
+  if (payload.estimatedPurchaseAmount !== undefined) {
+    requestPayload.estimatedPurchaseAmount = payload.estimatedPurchaseAmount;
+  }
+
+  if (payload.estimatedShippingCharges !== undefined) {
+    requestPayload.estimatedShippingAmount = payload.estimatedShippingCharges;
+  }
+
+  if (payload.additionalCharges !== undefined) {
+    requestPayload.additionalAmount = payload.additionalCharges;
+  }
+
+  return requestPayload;
 }
 
 export function toBackendUpdateShipmentCostPayload(

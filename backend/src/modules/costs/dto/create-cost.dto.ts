@@ -16,10 +16,11 @@ export class CreateCostDto {
   @IsUUID()
   shipmentId: string;
 
+  @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  purchaseAmount: number;
+  purchaseAmount?: number;
 
   @IsOptional()
   @Type(() => Number)

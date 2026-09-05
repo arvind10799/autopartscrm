@@ -117,12 +117,17 @@ export const updateShipmentAdditionalCostSchema =
 
 export const createShipmentCostSchema = z.object({
   shipmentId: entityIdSchema,
-  purchaseAmount: amountSchema,
-  shippingCharges: amountSchema,
+  purchaseAmount: amountSchema.optional(),
+  shippingCharges: amountSchema.optional(),
   estimatedPurchaseAmount: amountSchema.optional(),
   estimatedShippingCharges: amountSchema.optional(),
-  additionalCharges: amountSchema,
+  additionalCharges: amountSchema.optional(),
   currency: currencyCodeSchema,
+  notes: z
+    .string()
+    .trim()
+    .max(1000, 'Note must be 1,000 characters or fewer.')
+    .optional(),
 });
 
 export const updateShipmentCostSchema = z.object({

@@ -142,7 +142,6 @@ export function GrossProfitSummaryCard({
   const canOpenEstimatedCostForm =
     canEditBaseCost &&
     Boolean(shipmentId) &&
-    Boolean(cost) &&
     (!hasActualPurchaseAmount || !hasActualShippingAmount);
   const hasRefundDetails = Boolean(refundDetails?.refundType);
 
@@ -308,7 +307,7 @@ export function GrossProfitSummaryCard({
     const normalizedCurrency = currencyInput.trim().toUpperCase();
     const trimmedEditNote = baseCostEditNote.trim();
 
-    if (!shipmentId || !cost || !canOpenEstimatedCostForm) {
+    if (!shipmentId || !canOpenEstimatedCostForm) {
       return;
     }
 
@@ -342,7 +341,7 @@ export function GrossProfitSummaryCard({
     setFormError(null);
 
     try {
-      await costsApi.updateByShipmentId(shipmentId, {
+      const estimatedCostPayload = {
         estimatedPurchaseAmount: hasActualPurchaseAmount
           ? undefined
           : parsedEstimatedPurchaseAmount,
@@ -351,7 +350,20 @@ export function GrossProfitSummaryCard({
           : parsedEstimatedShippingAmount,
         currency: normalizedCurrency,
         notes: trimmedEditNote,
-      });
+      };
+
+      if (cost) {
+        await costsApi.updateByShipmentId(shipmentId, estimatedCostPayload);
+      } else {
+        await costsApi.create({
+          shipmentId,
+          estimatedPurchaseAmount: estimatedCostPayload.estimatedPurchaseAmount,
+          estimatedShippingCharges: estimatedCostPayload.estimatedShippingCharges,
+          additionalCharges: additionalAmount,
+          currency: normalizedCurrency,
+          notes: trimmedEditNote,
+        });
+      }
       toast.success('Estimated cost updated', 'GP calculation has been refreshed.');
       setIsEditingEstimatedCost(false);
       await onCostUpdated?.();

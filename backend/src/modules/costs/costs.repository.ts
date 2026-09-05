@@ -61,7 +61,7 @@ export class CostsRepository {
               id: createCostDto.shipmentId,
             },
           },
-          purchaseAmount: createCostDto.purchaseAmount,
+          purchaseAmount: createCostDto.purchaseAmount ?? 0,
           shippingAmount: createCostDto.shippingAmount ?? 0,
           estimatedPurchaseAmount: createCostDto.estimatedPurchaseAmount ?? 0,
           estimatedShippingAmount: createCostDto.estimatedShippingAmount ?? 0,

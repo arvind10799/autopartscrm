@@ -33,6 +33,7 @@ export class CostsService {
         this.resolveCostAmounts(createCostDto),
       ),
     });
+    const createNote = createCostDto.notes?.trim();
     await this.recordCostHistory(createCostDto.shipmentId, {
       action: 'GP_COST_CREATED',
       summary: 'GP cost record was created.',
@@ -51,7 +52,8 @@ export class CostsService {
         ),
         this.buildChange('Additional costs', null, createCostDto.additionalAmount ?? 0),
         this.buildChange('Currency', null, createCostDto.currency?.trim().toUpperCase() ?? 'USD'),
-      ],
+        createNote ? this.buildChange('Edit note', null, createNote) : null,
+      ].filter(this.isMeaningfulHistoryChange),
       user,
     });
     await this.notificationsService.notifyShipmentActivity(
