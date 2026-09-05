@@ -27,7 +27,7 @@ export type SalesOverviewTotals = {
 };
 
 export type SalesOverviewResponse = {
-  selectedMonth: string;
+  selectedMonth: string | null;
   periodLabel: string;
   currency: string;
   generatedAt: string;

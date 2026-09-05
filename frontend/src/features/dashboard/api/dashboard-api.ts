@@ -7,14 +7,16 @@ import { salesOverviewSchema } from '../schemas/sales-overview.schema';
 import type { SalesOverviewResponse } from '../types/sales-overview.types';
 
 export const dashboardApi = {
-  async getSalesOverview(month: string): Promise<SalesOverviewResponse> {
+  async getSalesOverview(month?: string | null): Promise<SalesOverviewResponse> {
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
       '/api/dashboard/sales-overview',
-      {
-        params: {
-          month,
-        },
-      },
+      month
+        ? {
+            params: {
+              month,
+            },
+          }
+        : undefined,
     );
 
     return parseApiData(response, salesOverviewSchema, {

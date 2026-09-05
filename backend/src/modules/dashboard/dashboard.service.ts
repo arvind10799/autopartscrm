@@ -28,7 +28,28 @@ export class DashboardService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async getSalesOverview(query: QuerySalesOverviewDto) {
-    const period = this.resolvePacificMonthRange(query.month);
+    const period = this.resolveSalesOverviewPeriod(query.month);
+    const leadWhere: Prisma.LeadWhereInput = period.start
+      ? {
+          leadDate: {
+            gte: period.start,
+            lt: period.end,
+          },
+        }
+      : {};
+    const orderWhere: Prisma.OrderWhereInput = {
+      ...(period.start
+        ? {
+            createdAt: {
+              gte: period.start,
+              lt: period.end,
+            },
+          }
+        : {}),
+      status: {
+        in: COMPLETED_SALE_STATUSES,
+      },
+    };
 
     const [users, leads, orders] = await this.prismaService.$transaction([
       this.prismaService.user.findMany({
@@ -43,26 +64,13 @@ export class DashboardService {
         },
       }),
       this.prismaService.lead.findMany({
-        where: {
-          leadDate: {
-            gte: period.start,
-            lt: period.end,
-          },
-        },
+        where: leadWhere,
         select: {
           createdById: true,
         },
       }),
       this.prismaService.order.findMany({
-        where: {
-          createdAt: {
-            gte: period.start,
-            lt: period.end,
-          },
-          status: {
-            in: COMPLETED_SALE_STATUSES,
-          },
-        },
+        where: orderWhere,
         select: {
           id: true,
           createdById: true,
@@ -233,8 +241,17 @@ export class DashboardService {
     return saleAmount - effectivePurchaseAmount - effectiveShippingAmount - additionalAmount;
   }
 
-  private resolvePacificMonthRange(month?: string) {
-    const selectedMonth = month ?? this.getPacificMonthKey(new Date());
+  private resolveSalesOverviewPeriod(month?: string) {
+    if (!month) {
+      return {
+        selectedMonth: null,
+        start: null,
+        end: null,
+        label: 'All time',
+      };
+    }
+
+    const selectedMonth = month;
     const [yearText, monthText] = selectedMonth.split('-');
     const year = Number(yearText);
     const monthNumber = Number(monthText);

@@ -21,7 +21,7 @@ export const salesOverviewTotalsSchema = z.object({
 });
 
 export const salesOverviewSchema = z.object({
-  selectedMonth: z.string(),
+  selectedMonth: z.string().nullable(),
   periodLabel: z.string(),
   currency: z.string(),
   generatedAt: z.string(),

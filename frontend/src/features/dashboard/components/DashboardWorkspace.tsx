@@ -10,13 +10,13 @@ import {
   DollarSign,
   PhoneCall,
   TrendingUp,
-  UserRound,
   Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { cn } from '@/lib/utils/cn';
@@ -32,22 +32,18 @@ import type {
 const DASHBOARD_TABS: Array<{
   id: DashboardTab;
   label: string;
-  description: string;
 }> = [
   {
     id: 'sales-overview',
     label: 'Sales Overview',
-    description: 'Month-to-date team and agent sales performance.',
   },
   {
     id: 'order-status',
     label: 'Order Status',
-    description: 'Order movement and fulfillment health. Coming next.',
   },
   {
     id: 'agent-leads',
     label: 'Agent Leads',
-    description: 'Agent lead quality and conversion tracking. Coming next.',
   },
 ];
 
@@ -59,6 +55,7 @@ type SortState = {
 export function DashboardWorkspace() {
   const user = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<DashboardTab>('sales-overview');
+  const [periodMode, setPeriodMode] = useState<'all' | 'month'>('month');
   const [selectedMonth, setSelectedMonth] = useState(() =>
     getPacificTodayDateInputValue().slice(0, 7),
   );
@@ -84,7 +81,7 @@ export function DashboardWorkspace() {
 
       try {
         const response = await dashboardApi.getSalesOverview(
-          selectedMonth || maxMonth,
+          periodMode === 'all' ? null : selectedMonth || maxMonth,
         );
 
         if (!isCancelled) {
@@ -110,78 +107,72 @@ export function DashboardWorkspace() {
     return () => {
       isCancelled = true;
     };
-  }, [activeTab, maxMonth, refreshKey, selectedMonth]);
+  }, [activeTab, maxMonth, periodMode, refreshKey, selectedMonth]);
 
   return (
-    <section className="space-y-5">
-      <Card className="overflow-hidden border-primary/15 bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.14),_transparent_34%),linear-gradient(135deg,_hsl(var(--card)),_hsl(var(--secondary))_62%,_hsl(var(--card)))] shadow-sm">
-        <CardContent className="grid gap-5 p-5 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div className="space-y-3">
-            <Badge
-              variant="outline"
-              className="w-fit border-primary/20 bg-primary/10 text-primary"
-            >
-              Dashboard Workspace
-            </Badge>
-            <div>
-              <h1 className="font-[var(--font-heading)] text-3xl font-semibold tracking-[-0.04em] text-foreground">
-                Sales command center
-              </h1>
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-                Switch between sales overview, order status, and agent leads
-                without leaving the dashboard.
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm">
-            <label
-              htmlFor="dashboard-month"
-              className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-            >
-              <CalendarDays className="h-4 w-4 text-primary" />
-              Selected month
-            </label>
-            <Input
-              id="dashboard-month"
-              type="month"
-              value={selectedMonth}
-              max={maxMonth}
-              onChange={(event) =>
-                setSelectedMonth(event.target.value || maxMonth)
-              }
-              className="h-10 min-w-56 rounded-xl"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-border/70 bg-card p-2 shadow-sm">
-        {DASHBOARD_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'min-w-44 flex-1 rounded-xl px-4 py-3 text-left transition sm:flex-none',
-              activeTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
-            )}
-          >
-            <span className="block text-sm font-semibold">{tab.label}</span>
-            <span
+    <section className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap gap-1.5">
+          {DASHBOARD_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'mt-0.5 block text-xs',
+                'rounded-xl px-3.5 py-2 text-sm font-semibold transition',
                 activeTab === tab.id
-                  ? 'text-primary-foreground/80'
-                  : 'text-muted-foreground',
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
               )}
             >
-              {tab.description}
-            </span>
-          </button>
-        ))}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="min-w-36">
+            <label
+              htmlFor="dashboard-period-mode"
+              className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              <CalendarDays className="h-3.5 w-3.5 text-primary" />
+              Period
+            </label>
+            <Select
+              id="dashboard-period-mode"
+              value={periodMode}
+              onChange={(event) =>
+                setPeriodMode(event.target.value === 'all' ? 'all' : 'month')
+              }
+              className="h-9 rounded-xl"
+            >
+              <option value="all">All time</option>
+              <option value="month">Monthly</option>
+            </Select>
+          </div>
+
+          {periodMode === 'month' ? (
+            <div className="min-w-44">
+              <label
+                htmlFor="dashboard-month"
+                className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+              >
+                Month
+              </label>
+              <Input
+                id="dashboard-month"
+                type="month"
+                value={selectedMonth}
+                max={maxMonth}
+                onChange={(event) =>
+                  setSelectedMonth(event.target.value || maxMonth)
+                }
+                className="h-9 rounded-xl"
+              />
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {activeTab === 'sales-overview' ? (
@@ -189,7 +180,8 @@ export function DashboardWorkspace() {
           data={salesOverview}
           isLoading={isLoadingSalesOverview}
           error={salesOverviewError}
-          month={selectedMonth}
+          periodMode={periodMode}
+          month={periodMode === 'all' ? null : selectedMonth}
           onRetry={() => setRefreshKey((currentValue) => currentValue + 1)}
         />
       ) : (
@@ -218,13 +210,15 @@ function SalesOverviewTab({
   data,
   isLoading,
   error,
+  periodMode,
   month,
   onRetry,
 }: {
   data: SalesOverviewResponse | null;
   isLoading: boolean;
   error: string | null;
-  month: string;
+  periodMode: 'all' | 'month';
+  month: string | null;
   onRetry: () => void;
 }) {
   const [sortState, setSortState] = useState<SortState>({
@@ -298,7 +292,7 @@ function SalesOverviewTab({
           </h2>
           <p className="text-sm text-muted-foreground">
             Leads are counted as calls. Values update from CRM records for{' '}
-            {month}.
+            {periodMode === 'all' ? 'all time' : month}.
           </p>
         </div>
       </div>
