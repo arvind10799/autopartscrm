@@ -21,6 +21,10 @@ import { getErrorMessage } from '@/lib/utils/error';
 type ShipmentCostLike = {
   purchaseAmount: number;
   shippingAmount: number;
+  estimatedPurchaseAmount: number;
+  estimatedShippingAmount: number;
+  hasActualPurchaseAmount: boolean;
+  hasActualShippingAmount: boolean;
   additionalAmount: number;
   grossProfit: number;
   currency: string;
@@ -98,12 +102,26 @@ export function GrossProfitSummaryCard({
   const [reason, setReason] = useState('');
   const [purchaseAmountInput, setPurchaseAmountInput] = useState('');
   const [shippingAmountInput, setShippingAmountInput] = useState('');
+  const [estimatedPurchaseAmountInput, setEstimatedPurchaseAmountInput] =
+    useState('');
+  const [estimatedShippingAmountInput, setEstimatedShippingAmountInput] =
+    useState('');
   const [currencyInput, setCurrencyInput] = useState('');
   const [baseCostEditNote, setBaseCostEditNote] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const purchaseAmount = cost?.purchaseAmount ?? 0;
   const shippingAmount = cost?.shippingAmount ?? 0;
+  const estimatedPurchaseAmount = cost?.estimatedPurchaseAmount ?? 0;
+  const estimatedShippingAmount = cost?.estimatedShippingAmount ?? 0;
+  const hasActualPurchaseAmount = cost?.hasActualPurchaseAmount ?? false;
+  const hasActualShippingAmount = cost?.hasActualShippingAmount ?? false;
+  const effectivePurchaseAmount = hasActualPurchaseAmount
+    ? purchaseAmount
+    : estimatedPurchaseAmount;
+  const effectiveShippingAmount = hasActualShippingAmount
+    ? shippingAmount
+    : estimatedShippingAmount;
   const displayCurrency = cost?.currency ?? currency;
   const additionalAmount = useMemo(
     () =>
@@ -112,7 +130,8 @@ export function GrossProfitSummaryCard({
         : cost?.additionalAmount ?? 0,
     [additionalCosts, cost?.additionalAmount],
   );
-  const totalCosts = purchaseAmount + shippingAmount + additionalAmount;
+  const totalCosts =
+    effectivePurchaseAmount + effectiveShippingAmount + additionalAmount;
   const grossProfit = grossProfitOverride ?? totalSaleAmount - totalCosts;
   const grossProfitTone =
     grossProfit >= 0 ? 'text-emerald-600' : 'text-destructive';
@@ -136,6 +155,8 @@ export function GrossProfitSummaryCard({
   const openBaseEditForm = () => {
     setPurchaseAmountInput(purchaseAmount.toFixed(2));
     setShippingAmountInput(shippingAmount.toFixed(2));
+    setEstimatedPurchaseAmountInput(estimatedPurchaseAmount.toFixed(2));
+    setEstimatedShippingAmountInput(estimatedShippingAmount.toFixed(2));
     setCurrencyInput(displayCurrency);
     setBaseCostEditNote('');
     setFormError(null);
@@ -218,6 +239,8 @@ export function GrossProfitSummaryCard({
   const handleBaseCostSubmit = async () => {
     const parsedPurchaseAmount = Number(purchaseAmountInput);
     const parsedShippingAmount = Number(shippingAmountInput);
+    const parsedEstimatedPurchaseAmount = Number(estimatedPurchaseAmountInput);
+    const parsedEstimatedShippingAmount = Number(estimatedShippingAmountInput);
     const normalizedCurrency = currencyInput.trim().toUpperCase();
     const trimmedEditNote = baseCostEditNote.trim();
 
@@ -232,6 +255,22 @@ export function GrossProfitSummaryCard({
 
     if (!Number.isFinite(parsedShippingAmount) || parsedShippingAmount < 0) {
       setFormError('Enter a valid actual shipping cost.');
+      return;
+    }
+
+    if (
+      !Number.isFinite(parsedEstimatedPurchaseAmount) ||
+      parsedEstimatedPurchaseAmount < 0
+    ) {
+      setFormError('Enter a valid estimated purchase cost.');
+      return;
+    }
+
+    if (
+      !Number.isFinite(parsedEstimatedShippingAmount) ||
+      parsedEstimatedShippingAmount < 0
+    ) {
+      setFormError('Enter a valid estimated shipping cost.');
       return;
     }
 
@@ -252,6 +291,12 @@ export function GrossProfitSummaryCard({
       await costsApi.updateByShipmentId(shipmentId, {
         purchaseAmount: parsedPurchaseAmount,
         shippingCharges: parsedShippingAmount,
+        estimatedPurchaseAmount: hasActualPurchaseAmount
+          ? undefined
+          : parsedEstimatedPurchaseAmount,
+        estimatedShippingCharges: hasActualShippingAmount
+          ? undefined
+          : parsedEstimatedShippingAmount,
         additionalCharges: additionalAmount,
         currency: normalizedCurrency,
         notes: trimmedEditNote,
@@ -344,12 +389,14 @@ export function GrossProfitSummaryCard({
               />
             ) : null}
             <GpMetric
-              label="Part cost"
-              value={formatCurrency(purchaseAmount, displayCurrency)}
+              label={hasActualPurchaseAmount ? 'Part cost' : 'Est. part cost'}
+              value={formatCurrency(effectivePurchaseAmount, displayCurrency)}
+              hint={hasActualPurchaseAmount ? 'Actual cost applied' : 'Using estimate'}
             />
             <GpMetric
-              label="Shipping cost"
-              value={formatCurrency(shippingAmount, displayCurrency)}
+              label={hasActualShippingAmount ? 'Shipping cost' : 'Est. shipping'}
+              value={formatCurrency(effectiveShippingAmount, displayCurrency)}
+              hint={hasActualShippingAmount ? 'Actual cost applied' : 'Using estimate'}
             />
             <GpMetric
               label="Additional"
@@ -367,7 +414,7 @@ export function GrossProfitSummaryCard({
               ? 'deduction amount - part cost - actual shipping cost - additional costs.'
               : refundDetails?.refundType === 'FULL'
                 ? 'retained amount - part cost - actual shipping cost - additional costs.'
-                : 'sale - part cost - actual shipping cost - additional costs.'}
+                : 'sale - effective part cost - effective shipping cost - additional costs.'}
           </p>
 
           {hasRefundDetails ? (
@@ -544,6 +591,52 @@ export function GrossProfitSummaryCard({
                   />
                 </div>
               </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="gp-estimated-purchase-amount">
+                    Estimated purchase cost
+                  </Label>
+                  <Input
+                    id="gp-estimated-purchase-amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={estimatedPurchaseAmountInput}
+                    disabled={hasActualPurchaseAmount}
+                    onChange={(event) =>
+                      setEstimatedPurchaseAmountInput(event.target.value)
+                    }
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {hasActualPurchaseAmount
+                      ? 'Disabled because actual part cost is saved.'
+                      : 'Used until actual part cost is saved.'}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gp-estimated-shipping-amount">
+                    Estimated shipping cost
+                  </Label>
+                  <Input
+                    id="gp-estimated-shipping-amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={estimatedShippingAmountInput}
+                    disabled={hasActualShippingAmount}
+                    onChange={(event) =>
+                      setEstimatedShippingAmountInput(event.target.value)
+                    }
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {hasActualShippingAmount
+                      ? 'Disabled because actual shipping cost is saved.'
+                      : 'Used until actual shipping cost is saved.'}
+                  </p>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="gp-currency">Currency</Label>
                 <Input
@@ -667,13 +760,26 @@ export function GrossProfitSummaryCard({
   );
 }
 
-function GpMetric({ label, value }: { label: string; value: string }) {
+function GpMetric({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
   return (
     <div className="rounded-xl border border-border/70 bg-secondary/20 px-3 py-2">
       <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>
       <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
+      {hint ? (
+        <p className="mt-1 text-[0.65rem] font-medium text-muted-foreground">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }

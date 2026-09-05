@@ -305,6 +305,8 @@ export function toUpdateShipmentStatusPayload(
     carrierName: payload.carrierName,
     purchaseAmount: payload.purchaseAmount,
     shippingAmount: payload.shippingAmount,
+    estimatedPurchaseAmount: payload.estimatedPurchaseAmount,
+    estimatedShippingAmount: payload.estimatedShippingAmount,
     additionalAmount: payload.additionalAmount,
     costNotes: payload.costNotes,
   };

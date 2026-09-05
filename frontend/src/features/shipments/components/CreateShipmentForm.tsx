@@ -39,6 +39,8 @@ const defaultValues: CreateShipmentFormValues = {
   carrierName: '',
   purchaseAmount: '',
   shippingAmount: '',
+  estimatedPurchaseAmount: '',
+  estimatedShippingAmount: '',
   additionalAmount: '',
   costNotes: '',
 };
@@ -70,7 +72,9 @@ export function CreateShipmentForm({
   );
   const currentCost = shipmentForForm?.costs?.[0] ?? null;
   const hasSavedPurchaseCost =
-    currentCost?.purchaseAmount !== undefined && currentCost.purchaseAmount > 0;
+    currentCost?.hasActualPurchaseAmount === true;
+  const hasSavedShippingCost =
+    currentCost?.hasActualShippingAmount === true;
   const form = useForm<CreateShipmentFormValues>({
     resolver: zodResolver(createShipmentSchema),
     defaultValues,
@@ -78,14 +82,16 @@ export function CreateShipmentForm({
   const selectedStatus = form.watch('status');
   const purchaseAmountValue = form.watch('purchaseAmount');
   const shippingAmountValue = form.watch('shippingAmount');
+  const estimatedPurchaseAmountValue = form.watch('estimatedPurchaseAmount');
+  const estimatedShippingAmountValue = form.watch('estimatedShippingAmount');
   const additionalAmountValue = form.watch('additionalAmount');
   const showShippingFields = selectedStatus === 'SHIPPED';
   const showPurchaseCostField =
     selectedStatus === 'PURCHASE' || selectedStatus === 'SHIPPED';
-  const showPurchaseCostInput =
-    showPurchaseCostField &&
-    !(selectedStatus === 'SHIPPED' && hasSavedPurchaseCost);
+  const showPurchaseCostInput = showPurchaseCostField && !hasSavedPurchaseCost;
   const showActualShippingCostField = selectedStatus === 'SHIPPED';
+  const showEstimatedPurchaseCostField = !hasSavedPurchaseCost;
+  const showEstimatedShippingCostField = !hasSavedShippingCost;
 
   useEffect(() => {
     form.reset(buildShipmentFormValues(selectedOrder.id, shipmentForForm));
@@ -114,13 +120,31 @@ export function CreateShipmentForm({
       purchaseAmount:
         parseOptionalAmount(purchaseAmountValue) ??
         (hasSavedPurchaseCost ? currentCost?.purchaseAmount ?? 0 : 0),
-      shippingAmount: parseOptionalAmount(shippingAmountValue) ?? 0,
+      shippingAmount:
+        parseOptionalAmount(shippingAmountValue) ??
+        (hasSavedShippingCost ? currentCost?.shippingAmount ?? 0 : 0),
+      estimatedPurchaseAmount:
+        parseOptionalAmount(estimatedPurchaseAmountValue) ??
+        currentCost?.estimatedPurchaseAmount ??
+        0,
+      estimatedShippingAmount:
+        parseOptionalAmount(estimatedShippingAmountValue) ??
+        currentCost?.estimatedShippingAmount ??
+        0,
+      hasActualPurchaseAmount: hasSavedPurchaseCost,
+      hasActualShippingAmount: hasSavedShippingCost,
       additionalAmount: parseOptionalAmount(additionalAmountValue) ?? 0,
     });
   }, [
     additionalAmountValue,
+    currentCost?.estimatedPurchaseAmount,
+    currentCost?.estimatedShippingAmount,
     currentCost?.purchaseAmount,
+    currentCost?.shippingAmount,
+    estimatedPurchaseAmountValue,
+    estimatedShippingAmountValue,
     hasSavedPurchaseCost,
+    hasSavedShippingCost,
     onCostDraftChange,
     purchaseAmountValue,
     shippingAmountValue,
@@ -135,6 +159,9 @@ export function CreateShipmentForm({
         purchaseAmount:
           values.purchaseAmount ||
           (hasSavedPurchaseCost ? currentCost.purchaseAmount : undefined),
+        shippingAmount:
+          values.shippingAmount ||
+          (hasSavedShippingCost ? currentCost?.shippingAmount : undefined),
         status: values.status ?? 'PENDING',
       });
       const savedShipment = currentShipment
@@ -291,6 +318,55 @@ export function CreateShipmentForm({
         </div>
       ) : null}
 
+      {(showEstimatedPurchaseCostField || showEstimatedShippingCostField) ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {showEstimatedPurchaseCostField ? (
+            <div className="space-y-2">
+              <Label
+                htmlFor="estimatedPurchaseAmount"
+                className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+              >
+                Estimated purchase cost
+              </Label>
+              <Input
+                id="estimatedPurchaseAmount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                className="h-11 rounded-xl"
+                {...form.register('estimatedPurchaseAmount')}
+              />
+              <p className="text-xs text-muted-foreground">
+                Used in GP until actual part cost is saved.
+              </p>
+            </div>
+          ) : null}
+          {showEstimatedShippingCostField ? (
+            <div className="space-y-2">
+              <Label
+                htmlFor="estimatedShippingAmount"
+                className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+              >
+                Estimated shipping cost
+              </Label>
+              <Input
+                id="estimatedShippingAmount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                className="h-11 rounded-xl"
+                {...form.register('estimatedShippingAmount')}
+              />
+              <p className="text-xs text-muted-foreground">
+                Used in GP until actual shipping cost is saved.
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {selectedStatus === 'SHIPPED' && hasSavedPurchaseCost ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
@@ -366,6 +442,10 @@ type ShipmentFormSource = {
   costs?: Array<{
     purchaseAmount: number;
     shippingAmount: number;
+    estimatedPurchaseAmount: number;
+    estimatedShippingAmount: number;
+    hasActualPurchaseAmount: boolean;
+    hasActualShippingAmount: boolean;
     additionalAmount: number;
     notes: string | null;
   }>;
@@ -411,6 +491,14 @@ function buildShipmentFormValues(
       cost?.purchaseAmount !== undefined ? cost.purchaseAmount.toFixed(2) : '',
     shippingAmount:
       cost?.shippingAmount !== undefined ? cost.shippingAmount.toFixed(2) : '',
+    estimatedPurchaseAmount:
+      cost?.estimatedPurchaseAmount !== undefined
+        ? cost.estimatedPurchaseAmount.toFixed(2)
+        : '',
+    estimatedShippingAmount:
+      cost?.estimatedShippingAmount !== undefined
+        ? cost.estimatedShippingAmount.toFixed(2)
+        : '',
     additionalAmount:
       cost?.additionalAmount !== undefined
         ? cost.additionalAmount.toFixed(2)
@@ -422,6 +510,10 @@ function buildShipmentFormValues(
 export type CreateShipmentCostDraft = {
   purchaseAmount: number;
   shippingAmount: number;
+  estimatedPurchaseAmount: number;
+  estimatedShippingAmount: number;
+  hasActualPurchaseAmount: boolean;
+  hasActualShippingAmount: boolean;
   additionalAmount: number;
 };
 

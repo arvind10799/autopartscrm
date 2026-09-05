@@ -146,6 +146,10 @@ export interface OrderShipmentCost {
   shipmentId: string;
   purchaseAmount: number;
   shippingAmount: number;
+  estimatedPurchaseAmount: number;
+  estimatedShippingAmount: number;
+  hasActualPurchaseAmount: boolean;
+  hasActualShippingAmount: boolean;
   additionalAmount: number;
   grossProfit: number;
   currency: string;

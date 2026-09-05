@@ -13,6 +13,10 @@ const shipmentCostAmountSelect = {
   shipmentId: true,
   purchaseAmount: true,
   shippingAmount: true,
+  estimatedPurchaseAmount: true,
+  estimatedShippingAmount: true,
+  hasActualPurchaseAmount: true,
+  hasActualShippingAmount: true,
   additionalAmount: true,
   currency: true,
 } satisfies Prisma.ShipmentCostSelect;
@@ -59,6 +63,10 @@ export class CostsRepository {
           },
           purchaseAmount: createCostDto.purchaseAmount,
           shippingAmount: createCostDto.shippingAmount ?? 0,
+          estimatedPurchaseAmount: createCostDto.estimatedPurchaseAmount ?? 0,
+          estimatedShippingAmount: createCostDto.estimatedShippingAmount ?? 0,
+          hasActualPurchaseAmount: createCostDto.purchaseAmount !== undefined,
+          hasActualShippingAmount: createCostDto.shippingAmount !== undefined,
           additionalAmount: createCostDto.additionalAmount ?? 0,
           grossProfit: createCostDto.grossProfit,
           currency: createCostDto.currency?.trim().toUpperCase() ?? 'USD',
@@ -109,10 +117,23 @@ export class CostsRepository {
 
     if (updateCostDto.shippingAmount !== undefined) {
       data.shippingAmount = updateCostDto.shippingAmount;
+      data.hasActualShippingAmount = true;
+    }
+
+    if (updateCostDto.estimatedPurchaseAmount !== undefined) {
+      data.estimatedPurchaseAmount = updateCostDto.estimatedPurchaseAmount;
+    }
+
+    if (updateCostDto.estimatedShippingAmount !== undefined) {
+      data.estimatedShippingAmount = updateCostDto.estimatedShippingAmount;
     }
 
     if (updateCostDto.additionalAmount !== undefined) {
       data.additionalAmount = updateCostDto.additionalAmount;
+    }
+
+    if (updateCostDto.purchaseAmount !== undefined) {
+      data.hasActualPurchaseAmount = true;
     }
 
     if (updateCostDto.grossProfit !== undefined) {

@@ -347,6 +347,10 @@ export class OrdersService {
           select: {
             purchaseAmount: true,
             shippingAmount: true,
+            estimatedPurchaseAmount: true,
+            estimatedShippingAmount: true,
+            hasActualPurchaseAmount: true,
+            hasActualShippingAmount: true,
             additionalAmount: true,
           },
         },
@@ -366,8 +370,16 @@ export class OrdersService {
           )
         : Number(cost?.additionalAmount ?? 0);
     const totalCosts =
-      Number(cost?.purchaseAmount ?? 0) +
-      Number(cost?.shippingAmount ?? 0) +
+      Number(
+        cost?.hasActualPurchaseAmount
+          ? cost.purchaseAmount
+          : cost?.estimatedPurchaseAmount ?? 0,
+      ) +
+      Number(
+        cost?.hasActualShippingAmount
+          ? cost.shippingAmount
+          : cost?.estimatedShippingAmount ?? 0,
+      ) +
       additionalAmount;
 
     return retainedAmount - totalCosts;

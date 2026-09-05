@@ -228,6 +228,10 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
   const [costDraft, setCostDraft] = useState<CreateShipmentCostDraft>({
     purchaseAmount: 0,
     shippingAmount: 0,
+    estimatedPurchaseAmount: 0,
+    estimatedShippingAmount: 0,
+    hasActualPurchaseAmount: false,
+    hasActualShippingAmount: false,
     additionalAmount: 0,
   });
   const { order, isLoading, error } = useOrderDetailWithRefresh(
@@ -760,8 +764,12 @@ function ShipmentWorkspaceGpCard({
   retainedAmount: number;
 }) {
   const totalCosts =
-    costDraft.purchaseAmount +
-    costDraft.shippingAmount +
+    (costDraft.hasActualPurchaseAmount
+      ? costDraft.purchaseAmount
+      : costDraft.estimatedPurchaseAmount) +
+    (costDraft.hasActualShippingAmount
+      ? costDraft.shippingAmount
+      : costDraft.estimatedShippingAmount) +
     costDraft.additionalAmount;
   const grossProfit = retainedAmount - totalCosts;
   const isRefunded = order.status === 'REFUNDED';
@@ -807,12 +815,26 @@ function ShipmentWorkspaceGpCard({
       </CardHeader>
       <CardContent className="grid gap-2 p-4 sm:grid-cols-3">
         <MetricCard
-          label="Part cost"
-          value={formatCurrency(costDraft.purchaseAmount, order.currency)}
+          label={costDraft.hasActualPurchaseAmount ? 'Part cost' : 'Est. part cost'}
+          value={formatCurrency(
+            costDraft.hasActualPurchaseAmount
+              ? costDraft.purchaseAmount
+              : costDraft.estimatedPurchaseAmount,
+            order.currency,
+          )}
         />
         <MetricCard
-          label="Actual shipping"
-          value={formatCurrency(costDraft.shippingAmount, order.currency)}
+          label={
+            costDraft.hasActualShippingAmount
+              ? 'Actual shipping'
+              : 'Est. shipping'
+          }
+          value={formatCurrency(
+            costDraft.hasActualShippingAmount
+              ? costDraft.shippingAmount
+              : costDraft.estimatedShippingAmount,
+            order.currency,
+          )}
         />
         <MetricCard
           label="Additional costs"

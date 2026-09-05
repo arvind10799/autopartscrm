@@ -84,6 +84,8 @@ export function useCostsWorkspace(): UseCostsWorkspaceResult {
     selectedShipmentId,
     purchaseAmountValue,
     shippingChargesValue,
+    estimatedPurchaseAmountValue,
+    estimatedShippingChargesValue,
     additionalChargesValue,
     currencyValue,
   ] = useWatch({
@@ -92,6 +94,8 @@ export function useCostsWorkspace(): UseCostsWorkspaceResult {
       'shipmentId',
       'purchaseAmount',
       'shippingCharges',
+      'estimatedPurchaseAmount',
+      'estimatedShippingCharges',
       'additionalCharges',
       'currency',
     ],
@@ -109,9 +113,19 @@ export function useCostsWorkspace(): UseCostsWorkspaceResult {
     () => ({
       purchaseAmount: parseAmountInput(purchaseAmountValue),
       shippingCharges: parseAmountInput(shippingChargesValue),
+      estimatedPurchaseAmount: parseAmountInput(estimatedPurchaseAmountValue),
+      estimatedShippingCharges: parseAmountInput(estimatedShippingChargesValue),
+      hasActualPurchaseAmount: true,
+      hasActualShippingAmount: true,
       additionalCharges: parseAmountInput(additionalChargesValue),
     }),
-    [additionalChargesValue, purchaseAmountValue, shippingChargesValue],
+    [
+      additionalChargesValue,
+      estimatedPurchaseAmountValue,
+      estimatedShippingChargesValue,
+      purchaseAmountValue,
+      shippingChargesValue,
+    ],
   );
 
   const activeCurrency = parseCurrencyInput(currencyValue);

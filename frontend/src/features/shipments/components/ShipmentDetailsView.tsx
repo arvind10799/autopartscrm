@@ -989,8 +989,12 @@ function calculateShipmentActualGp(
       ? shipment.additionalCosts.reduce((total, entry) => total + entry.amount, 0)
       : cost?.additionalAmount ?? 0;
   const totalCosts =
-    (cost?.purchaseAmount ?? 0) +
-    (cost?.shippingAmount ?? 0) +
+    (cost?.hasActualPurchaseAmount
+      ? cost.purchaseAmount
+      : cost?.estimatedPurchaseAmount ?? 0) +
+    (cost?.hasActualShippingAmount
+      ? cost.shippingAmount
+      : cost?.estimatedShippingAmount ?? 0) +
     additionalAmount;
 
   return retainedAmount - totalCosts;

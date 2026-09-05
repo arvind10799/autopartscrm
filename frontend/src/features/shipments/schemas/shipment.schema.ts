@@ -52,6 +52,10 @@ const shipmentCostSummarySchema = z.object({
   shipmentId: entityIdSchema,
   purchaseAmount: z.coerce.number(),
   shippingAmount: z.coerce.number(),
+  estimatedPurchaseAmount: z.coerce.number().optional().default(0),
+  estimatedShippingAmount: z.coerce.number().optional().default(0),
+  hasActualPurchaseAmount: z.boolean().optional().default(false),
+  hasActualShippingAmount: z.boolean().optional().default(false),
   additionalAmount: z.coerce.number(),
   grossProfit: z.coerce.number(),
   currency: z.string().optional().default('USD'),
@@ -238,6 +242,8 @@ export const updateShipmentStatusSchema = z.object({
     .transform((value) => (value === '' ? undefined : value)),
   purchaseAmount: optionalAmountInputSchema,
   shippingAmount: optionalAmountInputSchema,
+  estimatedPurchaseAmount: optionalAmountInputSchema,
+  estimatedShippingAmount: optionalAmountInputSchema,
   additionalAmount: optionalAmountInputSchema,
   costNotes: z
     .string()
@@ -280,6 +286,8 @@ export const createShipmentSchema = z.object({
     .transform((val) => (val === '' ? undefined : val)),
   purchaseAmount: optionalAmountInputSchema,
   shippingAmount: optionalAmountInputSchema,
+  estimatedPurchaseAmount: optionalAmountInputSchema,
+  estimatedShippingAmount: optionalAmountInputSchema,
   additionalAmount: optionalAmountInputSchema,
   costNotes: z
     .string()

@@ -286,7 +286,12 @@ export class ShipmentsService {
     status: PrismaShipmentStatus,
     payload: Pick<
       CreateShipmentDto | UpdateShipmentStatusDto,
-      'purchaseAmount' | 'shippingAmount' | 'additionalAmount' | 'costNotes'
+      | 'purchaseAmount'
+      | 'shippingAmount'
+      | 'estimatedPurchaseAmount'
+      | 'estimatedShippingAmount'
+      | 'additionalAmount'
+      | 'costNotes'
     >,
     existingCost: ShipmentCostSnapshot | null,
     isStatusChange: boolean,
@@ -330,7 +335,12 @@ export class ShipmentsService {
     currency: string,
     payload: Pick<
       CreateShipmentDto | UpdateShipmentStatusDto,
-      'purchaseAmount' | 'shippingAmount' | 'additionalAmount' | 'costNotes'
+      | 'purchaseAmount'
+      | 'shippingAmount'
+      | 'estimatedPurchaseAmount'
+      | 'estimatedShippingAmount'
+      | 'additionalAmount'
+      | 'costNotes'
     >,
     existingCost: ShipmentCostSnapshot | null,
   ): Promise<void> {
@@ -345,12 +355,34 @@ export class ShipmentsService {
     const shippingAmount = new Prisma.Decimal(
       payload.shippingAmount ?? existingCost?.shippingAmount ?? 0,
     );
+    const estimatedPurchaseAmount = new Prisma.Decimal(
+      payload.estimatedPurchaseAmount ??
+        existingCost?.estimatedPurchaseAmount ??
+        0,
+    );
+    const estimatedShippingAmount = new Prisma.Decimal(
+      payload.estimatedShippingAmount ??
+        existingCost?.estimatedShippingAmount ??
+        0,
+    );
+    const hasActualPurchaseAmount =
+      payload.purchaseAmount !== undefined ||
+      Boolean(existingCost?.hasActualPurchaseAmount);
+    const hasActualShippingAmount =
+      payload.shippingAmount !== undefined ||
+      Boolean(existingCost?.hasActualShippingAmount);
     const additionalAmount = new Prisma.Decimal(
       payload.additionalAmount ?? existingCost?.additionalAmount ?? 0,
     );
+    const effectivePurchaseAmount = hasActualPurchaseAmount
+      ? purchaseAmount
+      : estimatedPurchaseAmount;
+    const effectiveShippingAmount = hasActualShippingAmount
+      ? shippingAmount
+      : estimatedShippingAmount;
     const grossProfit = new Prisma.Decimal(totalSaleAmount)
-      .sub(purchaseAmount)
-      .sub(shippingAmount)
+      .sub(effectivePurchaseAmount)
+      .sub(effectiveShippingAmount)
       .sub(additionalAmount);
 
     await this.prismaService.shipmentCost.upsert({
@@ -359,6 +391,10 @@ export class ShipmentsService {
         shipmentId,
         purchaseAmount,
         shippingAmount,
+        estimatedPurchaseAmount,
+        estimatedShippingAmount,
+        hasActualPurchaseAmount,
+        hasActualShippingAmount,
         additionalAmount,
         grossProfit,
         currency,
@@ -367,6 +403,10 @@ export class ShipmentsService {
       update: {
         purchaseAmount,
         shippingAmount,
+        estimatedPurchaseAmount,
+        estimatedShippingAmount,
+        hasActualPurchaseAmount,
+        hasActualShippingAmount,
         additionalAmount,
         grossProfit,
         currency,
@@ -378,12 +418,19 @@ export class ShipmentsService {
   private hasCostPayload(
     payload: Pick<
       CreateShipmentDto | UpdateShipmentStatusDto,
-      'purchaseAmount' | 'shippingAmount' | 'additionalAmount' | 'costNotes'
+      | 'purchaseAmount'
+      | 'shippingAmount'
+      | 'estimatedPurchaseAmount'
+      | 'estimatedShippingAmount'
+      | 'additionalAmount'
+      | 'costNotes'
     >,
   ): boolean {
     return (
       payload.purchaseAmount !== undefined ||
       payload.shippingAmount !== undefined ||
+      payload.estimatedPurchaseAmount !== undefined ||
+      payload.estimatedShippingAmount !== undefined ||
       payload.additionalAmount !== undefined ||
       payload.costNotes !== undefined
     );
@@ -421,7 +468,12 @@ export class ShipmentsService {
   private formatCostNoteLines(
     payload: Pick<
       CreateShipmentDto | UpdateShipmentStatusDto,
-      'purchaseAmount' | 'shippingAmount' | 'additionalAmount' | 'costNotes'
+      | 'purchaseAmount'
+      | 'shippingAmount'
+      | 'estimatedPurchaseAmount'
+      | 'estimatedShippingAmount'
+      | 'additionalAmount'
+      | 'costNotes'
     >,
     currency: string,
   ): string {
@@ -436,6 +488,18 @@ export class ShipmentsService {
     if (payload.shippingAmount !== undefined) {
       lines.push(
         `Actual shipping cost: ${formatCostAmount(payload.shippingAmount, currency)}`,
+      );
+    }
+
+    if (payload.estimatedPurchaseAmount !== undefined) {
+      lines.push(
+        `Estimated purchase cost: ${formatCostAmount(payload.estimatedPurchaseAmount, currency)}`,
+      );
+    }
+
+    if (payload.estimatedShippingAmount !== undefined) {
+      lines.push(
+        `Estimated shipping cost: ${formatCostAmount(payload.estimatedShippingAmount, currency)}`,
       );
     }
 
@@ -548,6 +612,10 @@ export class ShipmentsService {
 type ShipmentCostSnapshot = {
   purchaseAmount: Prisma.Decimal;
   shippingAmount: Prisma.Decimal;
+  estimatedPurchaseAmount: Prisma.Decimal;
+  estimatedShippingAmount: Prisma.Decimal;
+  hasActualPurchaseAmount: boolean;
+  hasActualShippingAmount: boolean;
   additionalAmount: Prisma.Decimal;
   notes: string | null;
 };

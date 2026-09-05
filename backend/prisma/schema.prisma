@@ -309,6 +309,10 @@ model ReplacementHistory {
   shipmentId       String   @unique @db.Uuid
   purchaseAmount   Decimal  @db.Decimal(12, 2)
   shippingAmount   Decimal  @default(0) @db.Decimal(12, 2)
+  estimatedPurchaseAmount Decimal @default(0) @db.Decimal(12, 2)
+  estimatedShippingAmount Decimal @default(0) @db.Decimal(12, 2)
+  hasActualPurchaseAmount Boolean  @default(false)
+  hasActualShippingAmount Boolean  @default(false)
   additionalAmount Decimal  @default(0) @db.Decimal(12, 2)
   grossProfit      Decimal  @db.Decimal(12, 2)
   currency         String   @default("USD") @db.VarChar(10)

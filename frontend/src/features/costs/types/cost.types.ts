@@ -18,6 +18,10 @@ export interface ShipmentCostRecord {
   shipmentId: string;
   purchaseAmount: number;
   shippingCharges: number;
+  estimatedPurchaseAmount: number;
+  estimatedShippingCharges: number;
+  hasActualPurchaseAmount: boolean;
+  hasActualShippingAmount: boolean;
   additionalCharges: number;
   gp: number;
   currency: string;
@@ -55,6 +59,8 @@ export interface CreateShipmentCostInput {
   shipmentId: string;
   purchaseAmount: number;
   shippingCharges: number;
+  estimatedPurchaseAmount?: number;
+  estimatedShippingCharges?: number;
   additionalCharges: number;
   currency: string;
 }
@@ -62,6 +68,8 @@ export interface CreateShipmentCostInput {
 export interface UpdateShipmentCostInput {
   purchaseAmount: number;
   shippingCharges: number;
+  estimatedPurchaseAmount?: number;
+  estimatedShippingCharges?: number;
   additionalCharges: number;
   currency: string;
   notes?: string;
@@ -70,6 +78,10 @@ export interface UpdateShipmentCostInput {
 export interface ShipmentCostDraft {
   purchaseAmount: number;
   shippingCharges: number;
+  estimatedPurchaseAmount: number;
+  estimatedShippingCharges: number;
+  hasActualPurchaseAmount: boolean;
+  hasActualShippingAmount: boolean;
   additionalCharges: number;
 }
 

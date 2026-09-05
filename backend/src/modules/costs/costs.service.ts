@@ -39,6 +39,16 @@ export class CostsService {
       changes: [
         this.buildChange('Part cost', null, createCostDto.purchaseAmount),
         this.buildChange('Actual shipping cost', null, createCostDto.shippingAmount ?? 0),
+        this.buildChange(
+          'Estimated purchase cost',
+          null,
+          createCostDto.estimatedPurchaseAmount ?? 0,
+        ),
+        this.buildChange(
+          'Estimated shipping cost',
+          null,
+          createCostDto.estimatedShippingAmount ?? 0,
+        ),
         this.buildChange('Additional costs', null, createCostDto.additionalAmount ?? 0),
         this.buildChange('Currency', null, createCostDto.currency?.trim().toUpperCase() ?? 'USD'),
       ],
@@ -252,6 +262,10 @@ export class CostsService {
       {
         purchaseAmount: Number(existingAmounts.purchaseAmount),
         shippingAmount: Number(existingAmounts.shippingAmount),
+        estimatedPurchaseAmount: Number(existingAmounts.estimatedPurchaseAmount),
+        estimatedShippingAmount: Number(existingAmounts.estimatedShippingAmount),
+        hasActualPurchaseAmount: existingAmounts.hasActualPurchaseAmount,
+        hasActualShippingAmount: existingAmounts.hasActualShippingAmount,
         additionalAmount: Number(additionalAmount),
       },
     );
@@ -265,17 +279,29 @@ export class CostsService {
   private resolveCostAmounts(
     dto: Pick<
       CreateCostDto | UpdateCostDto,
-      'purchaseAmount' | 'shippingAmount' | 'additionalAmount'
+      | 'purchaseAmount'
+      | 'shippingAmount'
+      | 'estimatedPurchaseAmount'
+      | 'estimatedShippingAmount'
+      | 'additionalAmount'
     >,
     existing?: {
       purchaseAmount: Prisma.Decimal;
       shippingAmount: Prisma.Decimal;
+      estimatedPurchaseAmount: Prisma.Decimal;
+      estimatedShippingAmount: Prisma.Decimal;
+      hasActualPurchaseAmount: boolean;
+      hasActualShippingAmount: boolean;
       additionalAmount: Prisma.Decimal;
       currency?: string;
     },
   ): {
     purchaseAmount: number;
     shippingAmount: number;
+    estimatedPurchaseAmount: number;
+    estimatedShippingAmount: number;
+    hasActualPurchaseAmount: boolean;
+    hasActualShippingAmount: boolean;
     additionalAmount: number;
   } {
     return {
@@ -283,6 +309,18 @@ export class CostsService {
         dto.purchaseAmount ?? Number(existing?.purchaseAmount ?? 0),
       shippingAmount:
         dto.shippingAmount ?? Number(existing?.shippingAmount ?? 0),
+      estimatedPurchaseAmount:
+        dto.estimatedPurchaseAmount ??
+        Number(existing?.estimatedPurchaseAmount ?? 0),
+      estimatedShippingAmount:
+        dto.estimatedShippingAmount ??
+        Number(existing?.estimatedShippingAmount ?? 0),
+      hasActualPurchaseAmount:
+        dto.purchaseAmount !== undefined ||
+        Boolean(existing?.hasActualPurchaseAmount),
+      hasActualShippingAmount:
+        dto.shippingAmount !== undefined ||
+        Boolean(existing?.hasActualShippingAmount),
       additionalAmount:
         dto.additionalAmount ?? Number(existing?.additionalAmount ?? 0),
     };
@@ -293,12 +331,23 @@ export class CostsService {
     costs: {
       purchaseAmount: number;
       shippingAmount: number;
+      estimatedPurchaseAmount: number;
+      estimatedShippingAmount: number;
+      hasActualPurchaseAmount: boolean;
+      hasActualShippingAmount: boolean;
       additionalAmount: number;
     },
   ): Prisma.Decimal {
+    const effectivePurchaseAmount = costs.hasActualPurchaseAmount
+      ? costs.purchaseAmount
+      : costs.estimatedPurchaseAmount;
+    const effectiveShippingAmount = costs.hasActualShippingAmount
+      ? costs.shippingAmount
+      : costs.estimatedShippingAmount;
+
     return new Prisma.Decimal(totalSaleAmount)
-      .sub(costs.purchaseAmount)
-      .sub(costs.shippingAmount)
+      .sub(effectivePurchaseAmount)
+      .sub(effectiveShippingAmount)
       .sub(costs.additionalAmount);
   }
 
@@ -307,6 +356,10 @@ export class CostsService {
       purchaseAmount: Prisma.Decimal;
       shippingAmount: Prisma.Decimal;
       additionalAmount: Prisma.Decimal;
+      estimatedPurchaseAmount: Prisma.Decimal;
+      estimatedShippingAmount: Prisma.Decimal;
+      hasActualPurchaseAmount: boolean;
+      hasActualShippingAmount: boolean;
       currency: string;
     },
     updateCostDto: UpdateCostDto,
@@ -332,6 +385,22 @@ export class CostsService {
             'Additional costs',
             existingAmounts.additionalAmount,
             updateCostDto.additionalAmount,
+          ),
+      updateCostDto.estimatedPurchaseAmount === undefined ||
+      existingAmounts.hasActualPurchaseAmount
+        ? null
+        : this.buildChange(
+            'Estimated purchase cost',
+            existingAmounts.estimatedPurchaseAmount,
+            updateCostDto.estimatedPurchaseAmount,
+          ),
+      updateCostDto.estimatedShippingAmount === undefined ||
+      existingAmounts.hasActualShippingAmount
+        ? null
+        : this.buildChange(
+            'Estimated shipping cost',
+            existingAmounts.estimatedShippingAmount,
+            updateCostDto.estimatedShippingAmount,
           ),
       updateCostDto.currency === undefined
         ? null

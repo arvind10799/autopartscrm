@@ -18,6 +18,8 @@ export function buildDefaultShipmentCostFormValues(
     shipmentId,
     purchaseAmount: '',
     shippingCharges: '0.00',
+    estimatedPurchaseAmount: '0.00',
+    estimatedShippingCharges: '0.00',
     additionalCharges: '0.00',
     currency: 'USD',
   };
@@ -30,6 +32,8 @@ export function hydrateShipmentCostFormValues(
     shipmentId: cost.shipmentId,
     purchaseAmount: cost.purchaseAmount.toFixed(2),
     shippingCharges: cost.shippingCharges.toFixed(2),
+    estimatedPurchaseAmount: cost.estimatedPurchaseAmount.toFixed(2),
+    estimatedShippingCharges: cost.estimatedShippingCharges.toFixed(2),
     additionalCharges: cost.additionalCharges.toFixed(2),
     currency: cost.currency.toUpperCase(),
   };
@@ -42,6 +46,8 @@ export function toBackendCreateShipmentCostPayload(
     shipmentId: payload.shipmentId,
     purchaseAmount: payload.purchaseAmount,
     shippingAmount: payload.shippingCharges,
+    estimatedPurchaseAmount: payload.estimatedPurchaseAmount,
+    estimatedShippingAmount: payload.estimatedShippingCharges,
     additionalAmount: payload.additionalCharges,
     currency: payload.currency,
   };
@@ -53,6 +59,8 @@ export function toBackendUpdateShipmentCostPayload(
   return {
     purchaseAmount: payload.purchaseAmount,
     shippingAmount: payload.shippingCharges,
+    estimatedPurchaseAmount: payload.estimatedPurchaseAmount,
+    estimatedShippingAmount: payload.estimatedShippingCharges,
     additionalAmount: payload.additionalCharges,
     currency: payload.currency,
     notes: payload.notes,
@@ -79,8 +87,12 @@ export function parseAmountInput(value: string | undefined): number {
 
 export function calculateTotalCosts(costDraft: ShipmentCostDraft): number {
   return (
-    costDraft.purchaseAmount +
-    costDraft.shippingCharges +
+    (costDraft.hasActualPurchaseAmount
+      ? costDraft.purchaseAmount
+      : costDraft.estimatedPurchaseAmount) +
+    (costDraft.hasActualShippingAmount
+      ? costDraft.shippingCharges
+      : costDraft.estimatedShippingCharges) +
     costDraft.additionalCharges
   );
 }
