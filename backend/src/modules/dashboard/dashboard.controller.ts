@@ -4,6 +4,7 @@ import { Role } from '../../common/enums/role.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/role.guard';
 import { DashboardService } from './dashboard.service';
+import { QueryOrderStatusDashboardDto } from './dto/query-order-status-dashboard.dto';
 import { QuerySalesOverviewDto } from './dto/query-sales-overview.dto';
 
 @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
@@ -15,5 +16,10 @@ export class DashboardController {
   @Get('sales-overview')
   getSalesOverview(@Query() query: QuerySalesOverviewDto) {
     return this.dashboardService.getSalesOverview(query);
+  }
+
+  @Get('order-status')
+  getOrderStatus(@Query() query: QueryOrderStatusDashboardDto) {
+    return this.dashboardService.getOrderStatus(query);
   }
 }

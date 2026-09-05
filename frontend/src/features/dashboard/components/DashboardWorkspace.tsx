@@ -1,14 +1,19 @@
 'use client';
 
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   BarChart3,
   CalendarDays,
   ClipboardList,
+  Clock3,
   DollarSign,
+  PackageCheck,
   PhoneCall,
+  Search,
   TrendingUp,
   Users,
 } from 'lucide-react';
@@ -19,11 +24,18 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/features/auth/store/auth.store';
+import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
 import { cn } from '@/lib/utils/cn';
 import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
+import { formatDate } from '@/features/orders/lib/order-formatters';
 import { dashboardApi } from '../api/dashboard-api';
 import type {
   DashboardTab,
+  OrderStatusAgeingRange,
+  OrderStatusDashboardOrder,
+  OrderStatusDashboardResponse,
+  OrderStatusDashboardStatus,
+  OrderStatusSortKey,
   SalesOverviewAgent,
   SalesOverviewResponse,
   SalesOverviewSortKey,
@@ -52,6 +64,11 @@ type SortState = {
   direction: 'asc' | 'desc';
 };
 
+type OrderStatusSortState = {
+  key: OrderStatusSortKey;
+  direction: 'asc' | 'desc';
+};
+
 export function DashboardWorkspace() {
   const user = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<DashboardTab>('sales-overview');
@@ -66,7 +83,26 @@ export function DashboardWorkspace() {
   const [salesOverviewError, setSalesOverviewError] = useState<string | null>(
     null,
   );
+  const [orderStatus, setOrderStatus] =
+    useState<OrderStatusDashboardResponse | null>(null);
+  const [isLoadingOrderStatus, setIsLoadingOrderStatus] = useState(false);
+  const [orderStatusError, setOrderStatusError] = useState<string | null>(null);
+  const [orderSearchInput, setOrderSearchInput] = useState('');
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('ALL');
+  const [orderAgentFilter, setOrderAgentFilter] = useState('ALL');
+  const [orderAgeingRange, setOrderAgeingRange] =
+    useState<OrderStatusAgeingRange>('ALL');
+  const [overdueDays, setOverdueDays] = useState(14);
   const maxMonth = getPacificTodayDateInputValue().slice(0, 7);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setOrderSearch(orderSearchInput.trim());
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [orderSearchInput]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -108,6 +144,63 @@ export function DashboardWorkspace() {
       isCancelled = true;
     };
   }, [activeTab, maxMonth, periodMode, refreshKey, selectedMonth]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadOrderStatus() {
+      if (activeTab !== 'order-status') {
+        return;
+      }
+
+      setIsLoadingOrderStatus(true);
+      setOrderStatusError(null);
+
+      try {
+        const response = await dashboardApi.getOrderStatus({
+          month: periodMode === 'all' ? null : selectedMonth || maxMonth,
+          search: orderSearch,
+          status: orderStatusFilter,
+          agentId: orderAgentFilter,
+          ageingRange: orderAgeingRange,
+          overdueDays,
+        });
+
+        if (!isCancelled) {
+          setOrderStatus(response);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setOrderStatusError(
+            error instanceof Error
+              ? error.message
+              : 'Unable to load order status dashboard.',
+          );
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingOrderStatus(false);
+        }
+      }
+    }
+
+    void loadOrderStatus();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    activeTab,
+    maxMonth,
+    orderAgeingRange,
+    orderAgentFilter,
+    orderSearch,
+    orderStatusFilter,
+    overdueDays,
+    periodMode,
+    refreshKey,
+    selectedMonth,
+  ]);
 
   return (
     <section className="space-y-4">
@@ -184,16 +277,29 @@ export function DashboardWorkspace() {
           month={periodMode === 'all' ? null : selectedMonth}
           onRetry={() => setRefreshKey((currentValue) => currentValue + 1)}
         />
+      ) : activeTab === 'order-status' ? (
+        <OrderStatusTab
+          data={orderStatus}
+          isLoading={isLoadingOrderStatus}
+          error={orderStatusError}
+          periodMode={periodMode}
+          searchInput={orderSearchInput}
+          onSearchInputChange={setOrderSearchInput}
+          statusFilter={orderStatusFilter}
+          onStatusFilterChange={setOrderStatusFilter}
+          agentFilter={orderAgentFilter}
+          onAgentFilterChange={setOrderAgentFilter}
+          ageingRange={orderAgeingRange}
+          onAgeingRangeChange={setOrderAgeingRange}
+          overdueDays={overdueDays}
+          onOverdueDaysChange={setOverdueDays}
+          canConfigureOverdue={user?.role === 'ADMIN'}
+          onRetry={() => setRefreshKey((currentValue) => currentValue + 1)}
+        />
       ) : (
         <PlaceholderTab
-          title={
-            activeTab === 'order-status' ? 'Order Status' : 'Agent Leads'
-          }
-          description={
-            activeTab === 'order-status'
-              ? 'This tab will show order status breakdowns, aging, and workflow movement.'
-              : 'This tab will show agent-level lead lists, follow-ups, and conversion quality.'
-          }
+          title="Agent Leads"
+          description="This tab will show agent-level lead lists, follow-ups, and conversion quality."
         />
       )}
 
@@ -492,6 +598,378 @@ function SalesKpiCard({
   );
 }
 
+function OrderStatusTab({
+  data,
+  isLoading,
+  error,
+  periodMode,
+  searchInput,
+  onSearchInputChange,
+  statusFilter,
+  onStatusFilterChange,
+  agentFilter,
+  onAgentFilterChange,
+  ageingRange,
+  onAgeingRangeChange,
+  overdueDays,
+  onOverdueDaysChange,
+  canConfigureOverdue,
+  onRetry,
+}: {
+  data: OrderStatusDashboardResponse | null;
+  isLoading: boolean;
+  error: string | null;
+  periodMode: 'all' | 'month';
+  searchInput: string;
+  onSearchInputChange: (value: string) => void;
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
+  agentFilter: string;
+  onAgentFilterChange: (value: string) => void;
+  ageingRange: OrderStatusAgeingRange;
+  onAgeingRangeChange: (value: OrderStatusAgeingRange) => void;
+  overdueDays: number;
+  onOverdueDaysChange: (value: number) => void;
+  canConfigureOverdue: boolean;
+  onRetry: () => void;
+}) {
+  const [sortState, setSortState] = useState<OrderStatusSortState>({
+    key: 'ageingDays',
+    direction: 'desc',
+  });
+  const sortedOrders = useMemo(() => {
+    const orders = [...(data?.orders ?? [])];
+
+    orders.sort((first, second) => {
+      const direction = sortState.direction === 'asc' ? 1 : -1;
+
+      if (sortState.key === 'ageingDays') {
+        return (first.ageingDays - second.ageingDays) * direction;
+      }
+
+      if (sortState.key === 'saleDate') {
+        return (
+          (new Date(first.saleDate).getTime() -
+            new Date(second.saleDate).getTime()) *
+          direction
+        );
+      }
+
+      return (
+        String(first[sortState.key]).localeCompare(
+          String(second[sortState.key]),
+          undefined,
+          { sensitivity: 'base' },
+        ) * direction
+      );
+    });
+
+    return orders;
+  }, [data?.orders, sortState]);
+
+  const handleSort = (key: OrderStatusSortKey) => {
+    setSortState((currentState) => ({
+      key,
+      direction:
+        currentState.key === key && currentState.direction === 'desc'
+          ? 'asc'
+          : 'desc',
+    }));
+  };
+
+  if (isLoading) {
+    return <OrderStatusSkeleton />;
+  }
+
+  if (error || !data) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center gap-3 py-14 text-center">
+          <PackageCheck className="h-10 w-10 text-muted-foreground" />
+          <div>
+            <p className="font-semibold text-foreground">
+              Order status dashboard is unavailable
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {error ?? 'Unable to load order status analytics right now.'}
+            </p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SalesKpiCard
+          icon={<Clock3 className="h-5 w-5" />}
+          label="Pending Orders"
+          value={data.totals.pendingOrders.toLocaleString()}
+          hint="Still in fulfilment workflow"
+          tone="blue"
+        />
+        <SalesKpiCard
+          icon={<BarChart3 className="h-5 w-5" />}
+          label="Average Ageing"
+          value={`${data.totals.averageAgeing.toLocaleString()} days`}
+          hint="Average age for pending orders"
+          tone="orange"
+        />
+        <SalesKpiCard
+          icon={<PackageCheck className="h-5 w-5" />}
+          label={periodMode === 'all' ? 'Delivered' : 'Delivered MTD'}
+          value={data.totals.deliveredMtd.toLocaleString()}
+          hint="Delivered orders in current period"
+          tone="emerald"
+        />
+        <SalesKpiCard
+          icon={<AlertTriangle className="h-5 w-5" />}
+          label="Overdue Orders"
+          value={data.totals.overdueOrders.toLocaleString()}
+          hint={`Ageing greater than ${data.overdueDays} days`}
+          tone="violet"
+        />
+      </div>
+
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-border/70 bg-secondary/30 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg">Order Status</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {data.periodLabel} · {data.orders.length.toLocaleString()} matching orders
+              </p>
+            </div>
+            <Badge variant="outline" className="bg-card">
+              Overdue &gt; {data.overdueDays} days
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 p-4">
+          <div className="grid gap-2 xl:grid-cols-[1.3fr_0.85fr_0.85fr_0.75fr_0.6fr]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchInput}
+                onChange={(event) => onSearchInputChange(event.target.value)}
+                placeholder="Search order, sale no., or customer"
+                className="h-10 rounded-xl pl-9"
+              />
+            </div>
+            <Select
+              value={statusFilter}
+              onChange={(event) => onStatusFilterChange(event.target.value)}
+              className="h-10 rounded-xl"
+            >
+              <option value="ALL">All statuses</option>
+              {data.statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {formatDashboardStatus(status)}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={agentFilter}
+              onChange={(event) => onAgentFilterChange(event.target.value)}
+              className="h-10 rounded-xl"
+            >
+              <option value="ALL">All agents</option>
+              {data.agents.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={ageingRange}
+              onChange={(event) =>
+                onAgeingRangeChange(event.target.value as OrderStatusAgeingRange)
+              }
+              className="h-10 rounded-xl"
+            >
+              <option value="ALL">All ageing</option>
+              <option value="0-7">0-7 days</option>
+              <option value="8-14">8-14 days</option>
+              <option value="15-30">15-30 days</option>
+              <option value="31+">31+ days</option>
+            </Select>
+            <Input
+              type="number"
+              min={1}
+              value={overdueDays}
+              disabled={!canConfigureOverdue}
+              title={
+                canConfigureOverdue
+                  ? 'Admin can configure the overdue threshold.'
+                  : 'Only Admin can configure overdue threshold.'
+              }
+              onChange={(event) =>
+                onOverdueDaysChange(Math.max(1, Number(event.target.value) || 14))
+              }
+              className="h-10 rounded-xl"
+            />
+          </div>
+
+          {sortedOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-12 text-center">
+              <ClipboardList className="h-10 w-10 text-muted-foreground" />
+              <p className="font-semibold text-foreground">No matching orders</p>
+              <p className="text-sm text-muted-foreground">
+                Try changing the search, status, agent, ageing, or period filter.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-border/70">
+              <table className="w-full min-w-[920px] text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  <tr>
+                    <OrderSortableHeader
+                      label="Order number"
+                      sortKey="orderNumber"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                      align="left"
+                    />
+                    <OrderSortableHeader
+                      label="Customer"
+                      sortKey="customerName"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                      align="left"
+                    />
+                    <OrderSortableHeader
+                      label="Agent"
+                      sortKey="agentName"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                      align="left"
+                    />
+                    <OrderSortableHeader
+                      label="Sale Date"
+                      sortKey="saleDate"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                    />
+                    <OrderSortableHeader
+                      label="Ageing"
+                      sortKey="ageingDays"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                    />
+                    <OrderSortableHeader
+                      label="Status"
+                      sortKey="status"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                    />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedOrders.map((order) => (
+                    <OrderStatusRow key={order.id} order={order} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function OrderSortableHeader({
+  label,
+  sortKey,
+  activeSort,
+  onSort,
+  align = 'right',
+}: {
+  label: string;
+  sortKey: OrderStatusSortKey;
+  activeSort: OrderStatusSortState;
+  onSort: (key: OrderStatusSortKey) => void;
+  align?: 'left' | 'right';
+}) {
+  const isActive = activeSort.key === sortKey;
+  const SortIcon = activeSort.direction === 'asc' ? ArrowUp : ArrowDown;
+
+  return (
+    <th className={cn('px-4 py-3', align === 'right' ? 'text-right' : 'text-left')}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-lg px-1 py-1 transition hover:text-foreground',
+          align === 'right' ? 'justify-end' : 'justify-start',
+          isActive ? 'text-foreground' : 'text-muted-foreground',
+        )}
+      >
+        {label}
+        {isActive ? <SortIcon className="h-3.5 w-3.5" /> : null}
+      </button>
+    </th>
+  );
+}
+
+function OrderStatusRow({ order }: { order: OrderStatusDashboardOrder }) {
+  return (
+    <tr className="border-t border-border/70 transition hover:bg-secondary/35">
+      <td className="px-4 py-3">
+        <Link
+          href={`/orders/${order.id}`}
+          className="font-semibold text-primary hover:underline"
+        >
+          {order.orderNumber}
+        </Link>
+        {order.salesNumber ? (
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Sale {order.salesNumber}
+          </p>
+        ) : null}
+      </td>
+      <td className="max-w-[240px] px-4 py-3">
+        <p className="truncate font-medium text-foreground">
+          {order.customerName}
+        </p>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+            {order.agentInitials}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate font-medium text-foreground">
+              {order.agentName}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {order.agentEmail}
+            </p>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-right text-muted-foreground">
+        {formatDate(order.saleDate)}
+      </td>
+      <td
+        className={cn(
+          'px-4 py-3 text-right font-semibold',
+          order.isOverdue ? 'text-destructive' : 'text-foreground',
+        )}
+      >
+        {order.ageingDays.toLocaleString()}
+      </td>
+      <td className="px-4 py-3 text-right">
+        <ShipmentStatusBadge status={order.status} />
+      </td>
+    </tr>
+  );
+}
+
 function SortableHeader({
   label,
   sortKey,
@@ -610,12 +1088,43 @@ function SalesOverviewSkeleton() {
   );
 }
 
+function OrderStatusSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-32" />
+        ))}
+      </div>
+      <Skeleton className="h-[460px]" />
+    </div>
+  );
+}
+
 function formatDashboardCurrency(value: number, currency: string) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatDashboardStatus(status: OrderStatusDashboardStatus) {
+  const labels: Record<OrderStatusDashboardStatus, string> = {
+    PENDING: 'Pending',
+    LOCATING: 'Locating',
+    PRE_PROCESSING: 'Pre Processing',
+    PURCHASE: 'Purchase',
+    SHIPPED: 'Shipped',
+    IN_TRANSIT: 'In Transit',
+    DISPUTED: 'Disputed',
+    DELIVERED: 'Delivered',
+    DELAYED: 'Delayed',
+    CANCELLED: 'Cancelled',
+    REFUNDED: 'Refunded',
+  };
+
+  return labels[status];
 }
 
 function formatRole(role: SalesOverviewAgent['role']) {
