@@ -23,6 +23,7 @@ export type OrderStatusDashboardStatus =
 export type OrderStatusAgeingRange = 'ALL' | '0-7' | '8-14' | '15-30' | '31+';
 
 export type OrderStatusSortKey =
+  | 'salesNumber'
   | 'orderNumber'
   | 'customerName'
   | 'agentName'
@@ -90,6 +91,15 @@ export type OrderStatusDashboardTotals = {
   overdueOrders: number;
 };
 
+export type OrderStatusDashboardMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
 export type OrderStatusDashboardResponse = {
   selectedMonth: string | null;
   periodLabel: string;
@@ -99,6 +109,7 @@ export type OrderStatusDashboardResponse = {
   statusOptions: OrderStatusDashboardStatus[];
   totals: OrderStatusDashboardTotals;
   orders: OrderStatusDashboardOrder[];
+  meta: OrderStatusDashboardMeta;
 };
 
 export type OrderStatusDashboardQuery = {
@@ -108,4 +119,6 @@ export type OrderStatusDashboardQuery = {
   agentId?: string;
   ageingRange?: OrderStatusAgeingRange;
   overdueDays?: number;
+  page?: number;
+  limit?: number;
 };

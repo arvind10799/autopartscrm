@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { OrderStatus, Prisma, Role, ShipmentStatus } from '@prisma/client';
+import {
+  createPaginatedResponse,
+  getPaginationParams,
+} from '../../common/utils/pagination.util';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { QueryOrderStatusDashboardDto } from './dto/query-order-status-dashboard.dto';
 import { QuerySalesOverviewDto } from './dto/query-sales-overview.dto';
@@ -220,6 +224,10 @@ export class DashboardService {
   async getOrderStatus(query: QueryOrderStatusDashboardDto) {
     const period = this.resolveSalesOverviewPeriod(query.month);
     const overdueDays = query.overdueDays ?? 14;
+    const { page, limit, skip } = getPaginationParams(
+      query.page,
+      query.limit ?? 20,
+    );
     const search = query.search?.trim();
     const statusFilter = this.normalizeOrderStatusDashboardStatus(query.status);
     const ageingRange = this.normalizeAgeingRange(query.ageingRange);
@@ -364,6 +372,13 @@ export class DashboardService {
               pendingRows.length,
           )
         : 0;
+    const paginatedRows = rows.slice(skip, skip + limit);
+    const paginatedOrders = createPaginatedResponse(
+      paginatedRows,
+      rows.length,
+      page,
+      limit,
+    );
 
     return {
       selectedMonth: period.selectedMonth,
@@ -384,7 +399,8 @@ export class DashboardService {
         deliveredMtd: deliveredRows.length,
         overdueOrders: overdueRows.length,
       },
-      orders: rows,
+      orders: paginatedOrders.items,
+      meta: paginatedOrders.meta,
     };
   }
 

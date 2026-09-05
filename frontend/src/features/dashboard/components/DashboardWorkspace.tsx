@@ -8,6 +8,8 @@ import {
   ArrowUp,
   BarChart3,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Clock3,
   DollarSign,
@@ -59,6 +61,8 @@ const DASHBOARD_TABS: Array<{
   },
 ];
 
+const ORDER_STATUS_PAGE_SIZE = 20;
+
 type SortState = {
   key: SalesOverviewSortKey;
   direction: 'asc' | 'desc';
@@ -94,15 +98,8 @@ export function DashboardWorkspace() {
   const [orderAgeingRange, setOrderAgeingRange] =
     useState<OrderStatusAgeingRange>('ALL');
   const [overdueDays, setOverdueDays] = useState(14);
+  const [orderPage, setOrderPage] = useState(1);
   const maxMonth = getPacificTodayDateInputValue().slice(0, 7);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setOrderSearch(orderSearchInput.trim());
-    }, 350);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [orderSearchInput]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -164,6 +161,8 @@ export function DashboardWorkspace() {
           agentId: orderAgentFilter,
           ageingRange: orderAgeingRange,
           overdueDays,
+          page: orderPage,
+          limit: ORDER_STATUS_PAGE_SIZE,
         });
 
         if (!isCancelled) {
@@ -195,12 +194,38 @@ export function DashboardWorkspace() {
     orderAgeingRange,
     orderAgentFilter,
     orderSearch,
+    orderPage,
     orderStatusFilter,
     overdueDays,
     periodMode,
     refreshKey,
     selectedMonth,
   ]);
+
+  const applyOrderSearch = () => {
+    setOrderPage(1);
+    setOrderSearch(orderSearchInput.trim());
+  };
+
+  const updateOrderStatusFilter = (value: string) => {
+    setOrderPage(1);
+    setOrderStatusFilter(value);
+  };
+
+  const updateOrderAgentFilter = (value: string) => {
+    setOrderPage(1);
+    setOrderAgentFilter(value);
+  };
+
+  const updateOrderAgeingRange = (value: OrderStatusAgeingRange) => {
+    setOrderPage(1);
+    setOrderAgeingRange(value);
+  };
+
+  const updateOverdueDays = (value: number) => {
+    setOrderPage(1);
+    setOverdueDays(value);
+  };
 
   return (
     <section className="space-y-4">
@@ -235,9 +260,10 @@ export function DashboardWorkspace() {
             <Select
               id="dashboard-period-mode"
               value={periodMode}
-              onChange={(event) =>
-                setPeriodMode(event.target.value === 'all' ? 'all' : 'month')
-              }
+              onChange={(event) => {
+                setOrderPage(1);
+                setPeriodMode(event.target.value === 'all' ? 'all' : 'month');
+              }}
               className="h-9 rounded-xl"
             >
               <option value="all">All time</option>
@@ -258,9 +284,10 @@ export function DashboardWorkspace() {
                 type="month"
                 value={selectedMonth}
                 max={maxMonth}
-                onChange={(event) =>
-                  setSelectedMonth(event.target.value || maxMonth)
-                }
+                onChange={(event) => {
+                  setOrderPage(1);
+                  setSelectedMonth(event.target.value || maxMonth);
+                }}
                 className="h-9 rounded-xl"
               />
             </div>
@@ -285,14 +312,16 @@ export function DashboardWorkspace() {
           periodMode={periodMode}
           searchInput={orderSearchInput}
           onSearchInputChange={setOrderSearchInput}
+          onSearchSubmit={applyOrderSearch}
           statusFilter={orderStatusFilter}
-          onStatusFilterChange={setOrderStatusFilter}
+          onStatusFilterChange={updateOrderStatusFilter}
           agentFilter={orderAgentFilter}
-          onAgentFilterChange={setOrderAgentFilter}
+          onAgentFilterChange={updateOrderAgentFilter}
           ageingRange={orderAgeingRange}
-          onAgeingRangeChange={setOrderAgeingRange}
+          onAgeingRangeChange={updateOrderAgeingRange}
           overdueDays={overdueDays}
-          onOverdueDaysChange={setOverdueDays}
+          onOverdueDaysChange={updateOverdueDays}
+          onPageChange={setOrderPage}
           canConfigureOverdue={user?.role === 'ADMIN'}
           onRetry={() => setRefreshKey((currentValue) => currentValue + 1)}
         />
@@ -607,6 +636,7 @@ function OrderStatusTab({
   periodMode,
   searchInput,
   onSearchInputChange,
+  onSearchSubmit,
   statusFilter,
   onStatusFilterChange,
   agentFilter,
@@ -615,6 +645,7 @@ function OrderStatusTab({
   onAgeingRangeChange,
   overdueDays,
   onOverdueDaysChange,
+  onPageChange,
   canConfigureOverdue,
   onRetry,
 }: {
@@ -624,6 +655,7 @@ function OrderStatusTab({
   periodMode: 'all' | 'month';
   searchInput: string;
   onSearchInputChange: (value: string) => void;
+  onSearchSubmit: () => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
   agentFilter: string;
@@ -632,6 +664,7 @@ function OrderStatusTab({
   onAgeingRangeChange: (value: OrderStatusAgeingRange) => void;
   overdueDays: number;
   onOverdueDaysChange: (value: number) => void;
+  onPageChange: (page: number) => void;
   canConfigureOverdue: boolean;
   onRetry: () => void;
 }) {
@@ -679,7 +712,7 @@ function OrderStatusTab({
     }));
   };
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return <OrderStatusSkeleton />;
   }
 
@@ -703,6 +736,10 @@ function OrderStatusTab({
       </Card>
     );
   }
+
+  const startItem =
+    data.meta.total === 0 ? 0 : (data.meta.page - 1) * data.meta.limit + 1;
+  const endItem = Math.min(data.meta.page * data.meta.limit, data.meta.total);
 
   return (
     <div className="space-y-4">
@@ -743,24 +780,47 @@ function OrderStatusTab({
             <div>
               <CardTitle className="text-lg">Order Status</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {data.periodLabel} · {data.orders.length.toLocaleString()} matching orders
+                {data.periodLabel} · {data.meta.total.toLocaleString()} matching orders
               </p>
             </div>
-            <Badge variant="outline" className="bg-card">
-              Overdue &gt; {data.overdueDays} days
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              {isLoading ? (
+                <Badge variant="outline" className="bg-card">
+                  Updating...
+                </Badge>
+              ) : null}
+              <Badge variant="outline" className="bg-card">
+                Overdue &gt; {data.overdueDays} days
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 p-4">
           <div className="grid gap-2 xl:grid-cols-[1.3fr_0.85fr_0.85fr_0.75fr_0.6fr]">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchInput}
-                onChange={(event) => onSearchInputChange(event.target.value)}
-                placeholder="Search order, sale no., or customer"
-                className="h-10 rounded-xl pl-9"
-              />
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchInput}
+                  onChange={(event) => onSearchInputChange(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      onSearchSubmit();
+                    }
+                  }}
+                  placeholder="Search order, sale no., or customer"
+                  className="h-10 rounded-xl pl-9"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl"
+                onClick={onSearchSubmit}
+                disabled={isLoading}
+              >
+                Search
+              </Button>
             </div>
             <Select
               value={statusFilter}
@@ -825,13 +885,18 @@ function OrderStatusTab({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-border/70">
+            <div
+              className={cn(
+                'overflow-x-auto rounded-2xl border border-border/70 transition-opacity',
+                isLoading ? 'opacity-70' : 'opacity-100',
+              )}
+            >
               <table className="w-full min-w-[920px] text-sm">
                 <thead className="bg-muted/50 text-xs uppercase tracking-[0.16em] text-muted-foreground">
                   <tr>
                     <OrderSortableHeader
-                      label="Order number"
-                      sortKey="orderNumber"
+                      label="Sale"
+                      sortKey="salesNumber"
                       activeSort={sortState}
                       onSort={handleSort}
                       align="left"
@@ -878,6 +943,38 @@ function OrderStatusTab({
               </table>
             </div>
           )}
+          <div className="flex flex-col gap-3 border-t border-border/70 pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Showing {startItem.toLocaleString()}-{endItem.toLocaleString()} of{' '}
+              {data.meta.total.toLocaleString()}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!data.meta.hasPreviousPage || isLoading}
+                onClick={() => onPageChange(Math.max(data.meta.page - 1, 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <span className="min-w-24 text-center text-sm text-muted-foreground">
+                Page {data.meta.totalPages === 0 ? 0 : data.meta.page} of{' '}
+                {data.meta.totalPages}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!data.meta.hasNextPage || isLoading}
+                onClick={() => onPageChange(data.meta.page + 1)}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -919,6 +1016,8 @@ function OrderSortableHeader({
 }
 
 function OrderStatusRow({ order }: { order: OrderStatusDashboardOrder }) {
+  const saleLabel = order.salesNumber || 'No sale number';
+
   return (
     <tr className="border-t border-border/70 transition hover:bg-secondary/35">
       <td className="px-4 py-3">
@@ -926,13 +1025,11 @@ function OrderStatusRow({ order }: { order: OrderStatusDashboardOrder }) {
           href={`/orders/${order.id}`}
           className="font-semibold text-primary hover:underline"
         >
-          {order.orderNumber}
+          {saleLabel}
         </Link>
-        {order.salesNumber ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Sale {order.salesNumber}
-          </p>
-        ) : null}
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {order.orderNumber}
+        </p>
       </td>
       <td className="max-w-[240px] px-4 py-3">
         <p className="truncate font-medium text-foreground">
@@ -947,9 +1044,6 @@ function OrderStatusRow({ order }: { order: OrderStatusDashboardOrder }) {
           <div className="min-w-0">
             <p className="truncate font-medium text-foreground">
               {order.agentName}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {order.agentEmail}
             </p>
           </div>
         </div>

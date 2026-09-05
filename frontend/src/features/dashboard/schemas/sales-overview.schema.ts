@@ -64,6 +64,14 @@ export const orderStatusDashboardSchema = z.object({
     deliveredMtd: z.coerce.number(),
     overdueOrders: z.coerce.number(),
   }),
+  meta: z.object({
+    page: z.coerce.number(),
+    limit: z.coerce.number(),
+    total: z.coerce.number(),
+    totalPages: z.coerce.number(),
+    hasNextPage: z.boolean(),
+    hasPreviousPage: z.boolean(),
+  }),
   orders: z.array(
     z.object({
       id: z.string().uuid(),

@@ -61,6 +61,14 @@ export const dashboardApi = {
       params.overdueDays = query.overdueDays;
     }
 
+    if (query.page) {
+      params.page = query.page;
+    }
+
+    if (query.limit) {
+      params.limit = query.limit;
+    }
+
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
       '/api/dashboard/order-status',
       {
