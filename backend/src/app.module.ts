@@ -14,6 +14,7 @@ import { LoggingMiddleware } from './common/middleware/logging.middleware';
 import { RedisModule } from './infrastructure/redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CostsModule } from './modules/costs/costs.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { NotesModule } from './modules/notes/notes.module';
@@ -31,6 +32,7 @@ import { VehicleLookupModule } from './modules/vehicle-lookup/vehicle-lookup.mod
     }),
     RedisModule,
     AuthModule,
+    DashboardModule,
     LeadsModule,
     OrdersModule,
     ReplacementsModule,

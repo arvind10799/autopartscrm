@@ -1,5 +1,5 @@
-import { DashboardContent } from '@/features/dashboard/components/DashboardContent';
+import { DashboardWorkspace } from '@/features/dashboard/components/DashboardWorkspace';
 
 export default function DashboardPage() {
-  return <DashboardContent />;
+  return <DashboardWorkspace />;
 }
