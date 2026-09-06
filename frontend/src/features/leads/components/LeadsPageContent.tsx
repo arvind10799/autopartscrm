@@ -13,9 +13,7 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -175,20 +173,8 @@ export function LeadsPageContent() {
     <>
       <section className="grid gap-4">
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-          <CardHeader className="space-y-4 border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d94d00]">
-                  Leads
-                </p>
-                <CardTitle className="text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
-                  Leads Workspace
-                </CardTitle>
-                <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-                  Manage intake, follow-ups, quotes, and order conversion.
-                </CardDescription>
-              </div>
-
+          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
                 <DateRangeFilter
                   value={dateFilter}
