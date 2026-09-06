@@ -10,12 +10,13 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { DataTable } from '@/components/data-table/DataTable';
+import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import type { UserRole } from '@/features/auth/types/auth.types';
 import { cn } from '@/lib/utils/cn';
 import { formatDate, formatLeadCurrency } from '../lib/lead-formatters';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
-import type { LeadSummary, PaginationMeta } from '../types/lead.types';
+import type { LeadStatus, LeadSummary, PaginationMeta } from '../types/lead.types';
 
 function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
@@ -28,6 +29,29 @@ function formatVehicleSummary(lead: LeadSummary) {
     .join(' ') || '--';
 }
 
+function getLeadStatusTone(status: LeadStatus | 'CONVERTED') {
+  const toneClasses: Record<LeadStatus | 'CONVERTED', string> = {
+    CONVERTED:
+      'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300',
+    PROSPECT:
+      'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-300',
+    QUOTED:
+      'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-300',
+    CALL_BACK_LATER:
+      'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300',
+    SHOPPING_AROUND:
+      'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/50 dark:bg-violet-950/30 dark:text-violet-300',
+    NOT_INTERESTED:
+      'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300',
+    NEEDS_LOCALLY:
+      'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300',
+    WE_DONT_SALE:
+      'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300',
+  };
+
+  return toneClasses[status];
+}
+
 function buildColumns(
   onConvert: (lead: LeadSummary) => void,
   onEdit: (lead: LeadSummary) => void,
@@ -38,21 +62,32 @@ function buildColumns(
       accessorKey: 'date',
       header: 'Date',
       cell: ({ row }) => (
-        <p className="font-semibold text-foreground">{formatDate(row.original.date)}</p>
+        <p className="whitespace-nowrap font-semibold text-slate-950 dark:text-white">
+          {formatDate(row.original.date)}
+        </p>
       ),
     },
     {
       accessorKey: 'customerName',
       header: 'Customer',
       cell: ({ row }) => (
-        <p className="font-medium text-foreground">{row.original.customerName}</p>
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-slate-950 dark:text-white">
+            {row.original.customerName}
+          </p>
+          {row.original.customerEmail ? (
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+              {row.original.customerEmail}
+            </p>
+          ) : null}
+        </div>
       ),
     },
     {
       accessorKey: 'customerPhone',
       header: 'Phone No.',
       cell: ({ row }) => (
-        <p className="whitespace-nowrap text-sm text-foreground">
+        <p className="whitespace-nowrap text-sm font-medium text-slate-700 dark:text-slate-200">
           {row.original.customerPhone}
         </p>
       ),
@@ -61,7 +96,7 @@ function buildColumns(
       accessorKey: 'partDescription',
       header: 'Vehicle',
       cell: ({ row }) => (
-        <p className="max-w-xs text-sm text-foreground">
+        <p className="max-w-xs truncate text-sm text-slate-700 dark:text-slate-200">
           {formatVehicleSummary(row.original)}
         </p>
       ),
@@ -70,7 +105,7 @@ function buildColumns(
       accessorKey: 'quote',
       header: 'Quote',
       cell: ({ row }) => (
-        <span className="font-medium text-foreground">
+        <span className="font-semibold text-slate-950 dark:text-white">
           {row.original.quote !== null
             ? formatLeadCurrency(row.original.quote, row.original.quoteCurrency)
             : '--'}
@@ -80,13 +115,18 @@ function buildColumns(
     {
       accessorKey: 'status',
       header: 'Status',
-      cell: ({ row }) => (
-        <p className="font-medium text-foreground">
-          {row.original.isConverted
-            ? 'Converted'
-            : formatLeadStatusLabel(row.original.status)}
-        </p>
-      ),
+      cell: ({ row }) => {
+        const status = row.original.isConverted ? 'CONVERTED' : row.original.status;
+
+        return (
+          <Badge
+            variant="outline"
+            className={cn('rounded-full px-2.5 py-1 font-semibold', getLeadStatusTone(status))}
+          >
+            {status === 'CONVERTED' ? 'Converted' : formatLeadStatusLabel(status)}
+          </Badge>
+        );
+      },
     },
     {
       id: 'actions',
@@ -95,18 +135,31 @@ function buildColumns(
         row.original.isConverted && row.original.convertedOrder ? (
           <Link
             href={`/orders/${row.original.convertedOrder.id}`}
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'rounded-xl px-2 text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
+            )}
           >
             View order
             <ArrowRight className="h-4 w-4" />
           </Link>
         ) : (
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => onEdit(row.original)}
+            >
               <PencilLine className="h-4 w-4" />
               Edit
             </Button>
-            <Button variant="outline" size="sm" onClick={() => onConvert(row.original)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-[#ff5a00]/25 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
+              onClick={() => onConvert(row.original)}
+            >
               <RefreshCw className="h-4 w-4" />
               Convert to order
             </Button>
@@ -120,7 +173,7 @@ function buildColumns(
       accessorKey: 'adviserName',
       header: 'Adviser',
       cell: ({ row }) => (
-        <p className="font-medium text-foreground">
+        <p className="font-medium text-slate-700 dark:text-slate-200">
           {getFirstName(row.original.adviserName)}
         </p>
       ),
@@ -178,7 +231,9 @@ export function LeadsTable({
       emptyDescription="Create a new lead or clear the current search and conversion filters."
       footer={
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">{getRangeLabel(meta, leads.length)}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {getRangeLabel(meta, leads.length)}
+          </p>
 
           <div className="flex items-center gap-2">
             <Button
@@ -191,7 +246,7 @@ export function LeadsTable({
               Previous
             </Button>
 
-            <span className="min-w-24 text-center text-sm text-muted-foreground">
+            <span className="min-w-24 text-center text-sm text-slate-500 dark:text-slate-400">
               Page {totalPages === 0 ? 0 : meta.page} of {totalPages}
             </span>
 

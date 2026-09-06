@@ -173,14 +173,19 @@ export function LeadsPageContent() {
 
   return (
     <>
-      <section className="grid gap-6">
-        <Card>
-          <CardHeader className="space-y-4">
+      <section className="grid gap-4">
+        <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
+          <CardHeader className="space-y-4 border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="space-y-1">
-                <CardTitle className="text-2xl sm:text-[1.75rem]">Leads workspace</CardTitle>
-                <CardDescription>
-                  Create leads, track conversion readiness, and push qualified work into orders.
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d94d00]">
+                  Leads
+                </p>
+                <CardTitle className="text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
+                  Leads Workspace
+                </CardTitle>
+                <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
+                  Manage intake, follow-ups, quotes, and order conversion.
                 </CardDescription>
               </div>
 
@@ -193,7 +198,7 @@ export function LeadsPageContent() {
 
                 <Button
                   size="lg"
-                  className="h-11 whitespace-nowrap"
+                  className="h-11 whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000]"
                   onClick={() => setIsCreateModalOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
@@ -208,7 +213,7 @@ export function LeadsPageContent() {
                 <Input
                   value={searchTerm}
                   onChange={(event) => handleSearchChange(event.target.value)}
-                  className="pl-9"
+                  className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
                   placeholder="Search by customer, email, phone, adviser, CMPT, state, or vehicle"
                 />
               </div>
@@ -220,6 +225,7 @@ export function LeadsPageContent() {
                     parseLeadConversionFilter(event.target.value),
                   )
                 }
+                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               >
                 <option value={ALL_LEAD_CONVERSION_FILTER}>
                   {formatLeadConversionFilterLabel(ALL_LEAD_CONVERSION_FILTER)}
@@ -235,6 +241,7 @@ export function LeadsPageContent() {
                 onChange={(event) =>
                   handleStatusFilterChange(parseLeadStatusFilter(event.target.value))
                 }
+                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               >
                 <option value={ALL_LEAD_STATUS_FILTER}>All statuses</option>
                 {LEAD_STATUSES.map((status) => (
@@ -246,7 +253,7 @@ export function LeadsPageContent() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4">
             <LeadsTable
               leads={leadsResponse.items}
               meta={leadsResponse.meta}
