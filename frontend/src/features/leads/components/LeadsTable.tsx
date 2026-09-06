@@ -61,6 +61,9 @@ function buildColumns(
     {
       accessorKey: 'date',
       header: 'Date',
+      meta: {
+        className: 'w-[6.75rem]',
+      },
       cell: ({ row }) => (
         <p className="whitespace-nowrap font-semibold text-slate-950 dark:text-white">
           {formatDate(row.original.date)}
@@ -70,6 +73,9 @@ function buildColumns(
     {
       accessorKey: 'customerName',
       header: 'Customer',
+      meta: {
+        className: 'w-[12rem]',
+      },
       cell: ({ row }) => (
         <div className="min-w-0">
           <p className="truncate font-semibold text-slate-950 dark:text-white">
@@ -86,6 +92,9 @@ function buildColumns(
     {
       accessorKey: 'customerPhone',
       header: 'Phone No.',
+      meta: {
+        className: 'w-[9rem]',
+      },
       cell: ({ row }) => (
         <p className="whitespace-nowrap text-sm font-medium text-slate-700 dark:text-slate-200">
           {row.original.customerPhone}
@@ -95,8 +104,11 @@ function buildColumns(
     {
       accessorKey: 'partDescription',
       header: 'Vehicle',
+      meta: {
+        className: 'w-[20rem]',
+      },
       cell: ({ row }) => (
-        <p className="max-w-xs truncate text-sm text-slate-700 dark:text-slate-200">
+        <p className="truncate text-sm text-slate-700 dark:text-slate-200">
           {formatVehicleSummary(row.original)}
         </p>
       ),
@@ -104,8 +116,11 @@ function buildColumns(
     {
       accessorKey: 'quote',
       header: 'Quote',
+      meta: {
+        className: 'w-[8rem] text-right',
+      },
       cell: ({ row }) => (
-        <span className="font-semibold text-slate-950 dark:text-white">
+        <span className="whitespace-nowrap font-semibold text-slate-950 dark:text-white">
           {row.original.quote !== null
             ? formatLeadCurrency(row.original.quote, row.original.quoteCurrency)
             : '--'}
@@ -115,13 +130,20 @@ function buildColumns(
     {
       accessorKey: 'status',
       header: 'Status',
+      meta: {
+        className: 'w-[8.25rem]',
+      },
       cell: ({ row }) => {
         const status = row.original.isConverted ? 'CONVERTED' : row.original.status;
 
         return (
           <Badge
             variant="outline"
-            className={cn('rounded-full px-2.5 py-1 font-semibold', getLeadStatusTone(status))}
+            className={cn(
+              'max-w-full rounded-full px-2.5 py-1 text-xs font-semibold leading-tight',
+              status === 'CALL_BACK_LATER' ? 'whitespace-normal rounded-2xl' : 'whitespace-nowrap',
+              getLeadStatusTone(status),
+            )}
           >
             {status === 'CONVERTED' ? 'Converted' : formatLeadStatusLabel(status)}
           </Badge>
@@ -131,24 +153,27 @@ function buildColumns(
     {
       id: 'actions',
       header: '',
+      meta: {
+        className: 'w-[12rem] text-right',
+      },
       cell: ({ row }) =>
         row.original.isConverted && row.original.convertedOrder ? (
           <Link
             href={`/orders/${row.original.convertedOrder.id}`}
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'rounded-xl px-2 text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
+              'h-8 rounded-xl px-2 text-xs text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
             )}
           >
             View order
             <ArrowRight className="h-4 w-4" />
           </Link>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-1.5">
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-xl"
+              className="h-8 rounded-xl px-2 text-xs"
               onClick={() => onEdit(row.original)}
             >
               <PencilLine className="h-4 w-4" />
@@ -157,11 +182,12 @@ function buildColumns(
             <Button
               variant="outline"
               size="sm"
-              className="rounded-xl border-[#ff5a00]/25 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
+              className="h-8 rounded-xl border-[#ff5a00]/25 px-2.5 text-xs text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
               onClick={() => onConvert(row.original)}
+              title="Convert to order"
             >
               <RefreshCw className="h-4 w-4" />
-              Convert to order
+              Convert
             </Button>
           </div>
         ),
@@ -172,6 +198,9 @@ function buildColumns(
     columns.splice(2, 0, {
       accessorKey: 'adviserName',
       header: 'Adviser',
+      meta: {
+        className: 'w-[7rem]',
+      },
       cell: ({ row }) => (
         <p className="font-medium text-slate-700 dark:text-slate-200">
           {getFirstName(row.original.adviserName)}
@@ -227,6 +256,7 @@ export function LeadsTable({
       error={error}
       onRetry={onRetry}
       density="compact"
+      layout="fit"
       emptyTitle="No leads found"
       emptyDescription="Create a new lead or clear the current search and conversion filters."
       footer={

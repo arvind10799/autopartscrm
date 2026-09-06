@@ -41,7 +41,7 @@ export function AppHeader({
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 shadow-sm shadow-slate-950/[0.03] backdrop-blur-xl transition-colors duration-300 dark:border-slate-800 dark:bg-[#020b18]/88 dark:shadow-black/20">
+    <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 shadow-sm shadow-slate-950/[0.03] backdrop-blur-xl transition-colors duration-300 dark:border-slate-800 dark:bg-[rgba(2,11,24,0.92)] dark:shadow-black/20">
       <div
         className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-2.5 sm:px-6 lg:px-8"
         style={{ maxWidth: APP_SHELL_MAX_WIDTH }}
