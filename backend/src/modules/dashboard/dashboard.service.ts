@@ -433,8 +433,7 @@ export class DashboardService {
   }
 
   async getAgentLeads(query: QueryAgentLeadsDashboardDto) {
-    const month = query.month ?? this.getPacificMonthKey(new Date());
-    const period = this.resolveSalesOverviewPeriod(month);
+    const period = this.resolveSalesOverviewPeriod(query.month);
     const search = query.search?.trim();
     const leadWhere: Prisma.LeadWhereInput = {
       ...(period.start

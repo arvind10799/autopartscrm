@@ -234,7 +234,7 @@ export function DashboardWorkspace() {
 
       try {
         const response = await dashboardApi.getAgentLeads({
-          month: selectedMonth || maxMonth,
+          month: periodMode === 'all' ? undefined : selectedMonth || maxMonth,
           search: agentLeadSearch,
           status: agentLeadStatusFilter,
         });
@@ -267,6 +267,7 @@ export function DashboardWorkspace() {
     agentLeadSearch,
     agentLeadStatusFilter,
     maxMonth,
+    periodMode,
     refreshKey,
     selectedMonth,
   ]);
@@ -326,31 +327,29 @@ export function DashboardWorkspace() {
         </div>
 
         <div className="flex flex-wrap items-end gap-2">
-          {activeTab !== 'agent-leads' ? (
-            <div className="min-w-36">
-              <label
-                htmlFor="dashboard-period-mode"
-                className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
-              >
-                <CalendarDays className="h-3.5 w-3.5 text-primary" />
-                Period
-              </label>
-              <Select
-                id="dashboard-period-mode"
-                value={periodMode}
-                onChange={(event) => {
-                  setOrderPage(1);
-                  setPeriodMode(event.target.value === 'all' ? 'all' : 'month');
-                }}
-                className="h-9 rounded-xl"
-              >
-                <option value="all">All time</option>
-                <option value="month">Monthly</option>
-              </Select>
-            </div>
-          ) : null}
+          <div className="min-w-36">
+            <label
+              htmlFor="dashboard-period-mode"
+              className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              <CalendarDays className="h-3.5 w-3.5 text-primary" />
+              Period
+            </label>
+            <Select
+              id="dashboard-period-mode"
+              value={periodMode}
+              onChange={(event) => {
+                setOrderPage(1);
+                setPeriodMode(event.target.value === 'all' ? 'all' : 'month');
+              }}
+              className="h-9 rounded-xl"
+            >
+              <option value="all">All time</option>
+              <option value="month">Monthly</option>
+            </Select>
+          </div>
 
-          {activeTab === 'agent-leads' || periodMode === 'month' ? (
+          {periodMode === 'month' ? (
             <div className="min-w-44">
               <label
                 htmlFor="dashboard-month"
