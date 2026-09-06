@@ -8,6 +8,7 @@ import {
   ChevronDown,
   History,
   LoaderCircle,
+  Plus,
 } from 'lucide-react';
 import { DetailPageSkeleton } from '@/components/feedback/page-skeletons';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +62,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [noteMessage, setNoteMessage] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
+  const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const authUser = useAuthStore((state) => state.user);
   const { order, isLoading, error } = useOrderDetailWithRefresh(orderId, refreshKey);
@@ -83,6 +85,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
         message: trimmedMessage,
       });
       setNoteMessage('');
+      setIsNoteFormOpen(false);
       setRefreshKey((currentValue) => currentValue + 1);
       toast.success('Note added', 'The order activity panel has been refreshed.');
     } catch (caughtError) {
@@ -346,12 +349,89 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <Card className="flex lg:max-h-[calc(100vh-3rem)] flex-col overflow-hidden">
-            <CardHeader className="border-b border-border/70 pb-3">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <History className="h-5 w-5 text-primary" />
-                Remarks
-              </CardTitle>
+            <CardHeader className="border-b border-border/70 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <History className="h-4 w-4 text-primary" />
+                  NOTES
+                </CardTitle>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white hover:bg-[#e65000]"
+                  onClick={() => {
+                    setIsNoteFormOpen((currentValue) => !currentValue);
+                    setNoteError(null);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add note
+                </Button>
+              </div>
             </CardHeader>
+
+            {isNoteFormOpen ? (
+              <div className="border-b border-border/70 bg-card p-3.5 sm:p-4">
+              <form
+                className="space-y-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void handleAddNoteSubmit();
+                }}
+              >
+                <label
+                  htmlFor="order-detail-note"
+                  className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                >
+                  Add note
+                </label>
+                <textarea
+                  id="order-detail-note"
+                  value={noteMessage}
+                  rows={3}
+                  onChange={(event) => setNoteMessage(event.target.value)}
+                  placeholder="Add note"
+                  className={cn(
+                    'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    noteError ? 'border-destructive/60' : null,
+                  )}
+                />
+                {noteError ? (
+                  <p className="text-sm text-destructive">{noteError}</p>
+                ) : null}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-lg px-3 text-xs"
+                    disabled={isSavingNote}
+                    onClick={() => {
+                      setIsNoteFormOpen(false);
+                      setNoteError(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white hover:bg-[#e65000]"
+                    disabled={isSavingNote}
+                  >
+                    {isSavingNote ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Submit'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+            ) : null}
 
             <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3.5 sm:p-4">
               <RemarkTimeline
@@ -372,52 +452,6 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 collapsible
               />
             </CardContent>
-
-            <div className="border-t border-border/70 bg-card p-3.5 sm:p-4">
-              <form
-                className="space-y-2"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void handleAddNoteSubmit();
-                }}
-              >
-                <label
-                  htmlFor="order-detail-note"
-                  className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
-                >
-                  Add Remark
-                </label>
-                <textarea
-                  id="order-detail-note"
-                  value={noteMessage}
-                  rows={3}
-                  onChange={(event) => setNoteMessage(event.target.value)}
-                  placeholder="Add Remark"
-                  className={cn(
-                    'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    noteError ? 'border-destructive/60' : null,
-                  )}
-                />
-                {noteError ? (
-                  <p className="text-sm text-destructive">{noteError}</p>
-                ) : null}
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="w-full bg-[#ff5a00] text-white hover:bg-[#e65000]"
-                  disabled={isSavingNote}
-                >
-                  {isSavingNote ? (
-                    <>
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Submit'
-                  )}
-                </Button>
-              </form>
-            </div>
           </Card>
         </aside>
       </div>
@@ -427,7 +461,12 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
 function buildNoteTimeline(order: OrderDetail): TimelineEntry[] {
   return order.notes
-    .filter((note) => !isHistoryNote(note) && !isStatusHistoryNote(note))
+    .filter(
+      (note) =>
+        !isHistoryNote(note) &&
+        !isStatusHistoryNote(note) &&
+        !isInvoiceActivityNote(note),
+    )
     .map((note) => ({
       id: note.id,
       timestamp: note.createdAt,
@@ -441,13 +480,19 @@ function buildNoteTimeline(order: OrderDetail): TimelineEntry[] {
 
 function buildEditHistoryTimeline(notes: OrderNote[]): TimelineEntry[] {
   return notes
-    .filter((note) => isHistoryNote(note) && !isStatusHistoryNote(note))
+    .filter(
+      (note) =>
+        (isHistoryNote(note) || isInvoiceActivityNote(note)) &&
+        !isStatusHistoryNote(note),
+    )
     .map((note) => ({
       id: note.id,
       timestamp: note.createdAt,
       actorName: note.author.name,
-      action: 'UPDATED order',
-      body: formatHistoryBody(note.content),
+      action: getInvoiceActivityAction(note.content) ?? 'UPDATED order',
+      body: isInvoiceActivityNote(note)
+        ? formatInvoiceActivityBody(note.content)
+        : formatHistoryBody(note.content),
       badgeVariant: 'info' as const,
     }))
     .sort(compareTimelineEntriesDesc);
@@ -511,12 +556,46 @@ function isHistoryNote(note: OrderNote): boolean {
   return note.content.startsWith('Order updated:');
 }
 
+function isInvoiceActivityNote(note: OrderNote): boolean {
+  return Boolean(getInvoiceActivityAction(note.content));
+}
+
+function getInvoiceActivityAction(content: string): string | null {
+  const trimmedContent = content.trim();
+
+  if (/^Invoice generated:/i.test(trimmedContent)) {
+    return 'Invoice generated';
+  }
+
+  if (/^Invoice signature request sent:/i.test(trimmedContent)) {
+    return 'Invoice signature request sent';
+  }
+
+  if (/^Invoice signature request resent:/i.test(trimmedContent)) {
+    return 'Invoice signature request resent';
+  }
+
+  if (/^Invoice updated:/i.test(trimmedContent)) {
+    return 'Invoice updated';
+  }
+
+  if (/^Signed invoice cloned and signature request sent:/i.test(trimmedContent)) {
+    return 'Signed invoice cloned';
+  }
+
+  return null;
+}
+
 function isStatusHistoryNote(note: OrderNote): boolean {
   return /status\s*(changed|:)|\bstatus\b.*->/i.test(note.content);
 }
 
 function formatHistoryBody(content: string): string {
   return content.replace(/^Order updated:\s*/i, '').trim();
+}
+
+function formatInvoiceActivityBody(content: string): string {
+  return content.replace(/^([^:]+):\s*/i, '').trim();
 }
 
 function formatOrderNoteBody(content: string, order: OrderDetail): string {
@@ -792,7 +871,7 @@ function RemarkItem({ entry }: { entry: TimelineEntry }) {
       />
       <div className="space-y-1">
         <p className="text-xs leading-5 text-muted-foreground">
-          <span className="font-semibold text-foreground">
+          <span className={cn('font-semibold', isPlainNote ? 'text-[#d94d00] dark:text-orange-300' : 'text-foreground')}>
             {entry.actorName}
           </span>{' '}
           | {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
@@ -809,7 +888,7 @@ function RemarkItem({ entry }: { entry: TimelineEntry }) {
           className={cn(
             'whitespace-pre-wrap text-xs leading-5',
             isPlainNote
-              ? 'font-semibold text-[#d94d00] dark:text-orange-300'
+              ? 'font-medium text-foreground'
               : 'text-foreground/85',
           )}
         >

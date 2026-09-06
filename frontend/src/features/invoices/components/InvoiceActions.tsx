@@ -373,7 +373,7 @@ export function InvoiceActions({
   const primaryInvoiceActionLabel = !invoice
     ? 'Generate Invoice'
     : invoice.status === 'SIGNED'
-      ? 'Generate Invoice'
+      ? 'View Invoice'
       : 'Edit Invoice';
 
   const handlePrimaryInvoiceAction = () => {
@@ -383,7 +383,7 @@ export function InvoiceActions({
     }
 
     if (invoice.status === 'SIGNED') {
-      openCloneModal();
+      void openInvoiceView();
       return;
     }
 
@@ -410,6 +410,8 @@ export function InvoiceActions({
                 >
                   {isLoadingDefaults ? (
                     <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : invoice?.status === 'SIGNED' ? (
+                    <Eye className="h-4 w-4" />
                   ) : (
                     <FileText className="h-4 w-4" />
                   )}
@@ -423,7 +425,7 @@ export function InvoiceActions({
                 </Badge>
               ) : null}
 
-              {invoice ? (
+              {invoice && !(canManageInvoice && invoice.status === 'SIGNED') ? (
                 <Button
                   type="button"
                   size="sm"
