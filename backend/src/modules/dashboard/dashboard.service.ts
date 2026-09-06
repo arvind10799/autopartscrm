@@ -1,10 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { OrderStatus, Prisma, Role, ShipmentStatus } from '@prisma/client';
+import {
+  LeadStatus,
+  OrderStatus,
+  Prisma,
+  Role,
+  ShipmentStatus,
+} from '@prisma/client';
 import {
   createPaginatedResponse,
   getPaginationParams,
 } from '../../common/utils/pagination.util';
 import { PrismaService } from '../../database/prisma/prisma.service';
+import { QueryAgentLeadsDashboardDto } from './dto/query-agent-leads-dashboard.dto';
 import { QueryOrderStatusDashboardDto } from './dto/query-order-status-dashboard.dto';
 import { QuerySalesOverviewDto } from './dto/query-sales-overview.dto';
 
@@ -44,6 +51,27 @@ const ORDER_STATUS_DASHBOARD_STATUSES = [
 
 type OrderStatusDashboardStatus =
   (typeof ORDER_STATUS_DASHBOARD_STATUSES)[number];
+
+const AGENT_LEAD_DASHBOARD_STATUSES = [
+  LeadStatus.PROSPECT,
+  LeadStatus.QUOTED,
+  LeadStatus.CALL_BACK_LATER,
+  LeadStatus.SHOPPING_AROUND,
+  LeadStatus.NOT_INTERESTED,
+  LeadStatus.NEEDS_LOCALLY,
+  LeadStatus.WE_DONT_SALE,
+] satisfies LeadStatus[];
+
+type AgentLeadMetric = {
+  agentId: string;
+  agentName: string;
+  agentEmail: string;
+  role: Role;
+  initials: string;
+  totalLeads: number;
+  totalProspects: number;
+  lastUpdated: string | null;
+};
 
 @Injectable()
 export class DashboardService {
@@ -401,6 +429,122 @@ export class DashboardService {
       },
       orders: paginatedOrders.items,
       meta: paginatedOrders.meta,
+    };
+  }
+
+  async getAgentLeads(query: QueryAgentLeadsDashboardDto) {
+    const month = query.month ?? this.getPacificMonthKey(new Date());
+    const period = this.resolveSalesOverviewPeriod(month);
+    const search = query.search?.trim();
+    const leadWhere: Prisma.LeadWhereInput = {
+      ...(period.start
+        ? {
+            leadDate: {
+              gte: period.start,
+              lt: period.end,
+            },
+          }
+        : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
+    const userWhere: Prisma.UserWhereInput = {
+      role: {
+        in: [Role.ADMIN, Role.SALES],
+      },
+      ...(search
+        ? {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+    };
+
+    const [users, leads] = await this.prismaService.$transaction([
+      this.prismaService.user.findMany({
+        where: userWhere,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      }),
+      this.prismaService.lead.findMany({
+        where: leadWhere,
+        select: {
+          createdById: true,
+          status: true,
+          updatedAt: true,
+        },
+      }),
+    ]);
+
+    const agentMap = new Map<string, AgentLeadMetric>();
+
+    users.forEach((user) => {
+      agentMap.set(user.id, {
+        agentId: user.id,
+        agentName: user.name,
+        agentEmail: user.email,
+        role: user.role,
+        initials: this.buildInitials(user.name),
+        totalLeads: 0,
+        totalProspects: 0,
+        lastUpdated: null,
+      });
+    });
+
+    leads.forEach((lead) => {
+      const agent = agentMap.get(lead.createdById);
+
+      if (!agent) {
+        return;
+      }
+
+      agent.totalLeads += 1;
+
+      if (lead.status === LeadStatus.PROSPECT) {
+        agent.totalProspects += 1;
+      }
+
+      if (
+        !agent.lastUpdated ||
+        lead.updatedAt > new Date(agent.lastUpdated)
+      ) {
+        agent.lastUpdated = lead.updatedAt.toISOString();
+      }
+    });
+
+    const agents = [...agentMap.values()]
+      .filter((agent) => agent.totalLeads > 0 || Boolean(search))
+      .sort((first, second) =>
+        first.agentName.localeCompare(second.agentName, undefined, {
+          sensitivity: 'base',
+        }),
+      );
+
+    return {
+      selectedMonth: period.selectedMonth,
+      periodLabel: period.label,
+      selectedStatus: query.status ?? null,
+      statusOptions: AGENT_LEAD_DASHBOARD_STATUSES,
+      generatedAt: new Date().toISOString(),
+      totals: agents.reduce(
+        (summary, agent) => ({
+          totalLeads: summary.totalLeads + agent.totalLeads,
+          totalProspects: summary.totalProspects + agent.totalProspects,
+        }),
+        {
+          totalLeads: 0,
+          totalProspects: 0,
+        },
+      ),
+      agents,
     };
   }
 

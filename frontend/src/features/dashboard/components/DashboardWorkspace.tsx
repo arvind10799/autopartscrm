@@ -26,12 +26,19 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/features/auth/store/auth.store';
+import { formatLeadStatusLabel } from '@/features/leads/lib/leads.helpers';
 import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
 import { cn } from '@/lib/utils/cn';
 import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
-import { formatDate } from '@/features/orders/lib/order-formatters';
+import {
+  formatDate,
+  formatDateTime,
+} from '@/features/orders/lib/order-formatters';
 import { dashboardApi } from '../api/dashboard-api';
 import type {
+  AgentLeadsDashboardAgent,
+  AgentLeadsDashboardResponse,
+  AgentLeadsSortKey,
   DashboardTab,
   OrderStatusAgeingRange,
   OrderStatusDashboardOrder,
@@ -73,6 +80,11 @@ type OrderStatusSortState = {
   direction: 'asc' | 'desc';
 };
 
+type AgentLeadsSortState = {
+  key: AgentLeadsSortKey;
+  direction: 'asc' | 'desc';
+};
+
 export function DashboardWorkspace() {
   const user = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<DashboardTab>('sales-overview');
@@ -99,6 +111,13 @@ export function DashboardWorkspace() {
     useState<OrderStatusAgeingRange>('ALL');
   const [overdueDays, setOverdueDays] = useState(14);
   const [orderPage, setOrderPage] = useState(1);
+  const [agentLeads, setAgentLeads] =
+    useState<AgentLeadsDashboardResponse | null>(null);
+  const [isLoadingAgentLeads, setIsLoadingAgentLeads] = useState(false);
+  const [agentLeadsError, setAgentLeadsError] = useState<string | null>(null);
+  const [agentLeadSearchInput, setAgentLeadSearchInput] = useState('');
+  const [agentLeadSearch, setAgentLeadSearch] = useState('');
+  const [agentLeadStatusFilter, setAgentLeadStatusFilter] = useState('ALL');
   const maxMonth = getPacificTodayDateInputValue().slice(0, 7);
 
   useEffect(() => {
@@ -202,9 +221,63 @@ export function DashboardWorkspace() {
     selectedMonth,
   ]);
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadAgentLeads() {
+      if (activeTab !== 'agent-leads') {
+        return;
+      }
+
+      setIsLoadingAgentLeads(true);
+      setAgentLeadsError(null);
+
+      try {
+        const response = await dashboardApi.getAgentLeads({
+          month: selectedMonth || maxMonth,
+          search: agentLeadSearch,
+          status: agentLeadStatusFilter,
+        });
+
+        if (!isCancelled) {
+          setAgentLeads(response);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setAgentLeadsError(
+            error instanceof Error
+              ? error.message
+              : 'Unable to load agent leads dashboard.',
+          );
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingAgentLeads(false);
+        }
+      }
+    }
+
+    void loadAgentLeads();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    activeTab,
+    agentLeadSearch,
+    agentLeadStatusFilter,
+    maxMonth,
+    refreshKey,
+    selectedMonth,
+  ]);
+
   const applyOrderSearch = () => {
     setOrderPage(1);
     setOrderSearch(orderSearchInput.trim());
+  };
+
+  const applyAgentLeadSearch = () => {
+    setAgentLeadSearch(agentLeadSearchInput.trim());
   };
 
   const updateOrderStatusFilter = (value: string) => {
@@ -225,6 +298,10 @@ export function DashboardWorkspace() {
   const updateOverdueDays = (value: number) => {
     setOrderPage(1);
     setOverdueDays(value);
+  };
+
+  const updateAgentLeadStatusFilter = (value: string) => {
+    setAgentLeadStatusFilter(value);
   };
 
   return (
@@ -249,29 +326,31 @@ export function DashboardWorkspace() {
         </div>
 
         <div className="flex flex-wrap items-end gap-2">
-          <div className="min-w-36">
-            <label
-              htmlFor="dashboard-period-mode"
-              className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
-            >
-              <CalendarDays className="h-3.5 w-3.5 text-primary" />
-              Period
-            </label>
-            <Select
-              id="dashboard-period-mode"
-              value={periodMode}
-              onChange={(event) => {
-                setOrderPage(1);
-                setPeriodMode(event.target.value === 'all' ? 'all' : 'month');
-              }}
-              className="h-9 rounded-xl"
-            >
-              <option value="all">All time</option>
-              <option value="month">Monthly</option>
-            </Select>
-          </div>
+          {activeTab !== 'agent-leads' ? (
+            <div className="min-w-36">
+              <label
+                htmlFor="dashboard-period-mode"
+                className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+              >
+                <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                Period
+              </label>
+              <Select
+                id="dashboard-period-mode"
+                value={periodMode}
+                onChange={(event) => {
+                  setOrderPage(1);
+                  setPeriodMode(event.target.value === 'all' ? 'all' : 'month');
+                }}
+                className="h-9 rounded-xl"
+              >
+                <option value="all">All time</option>
+                <option value="month">Monthly</option>
+              </Select>
+            </div>
+          ) : null}
 
-          {periodMode === 'month' ? (
+          {activeTab === 'agent-leads' || periodMode === 'month' ? (
             <div className="min-w-44">
               <label
                 htmlFor="dashboard-month"
@@ -326,9 +405,16 @@ export function DashboardWorkspace() {
           onRetry={() => setRefreshKey((currentValue) => currentValue + 1)}
         />
       ) : (
-        <PlaceholderTab
-          title="Agent Leads"
-          description="This tab will show agent-level lead lists, follow-ups, and conversion quality."
+        <AgentLeadsTab
+          data={agentLeads}
+          isLoading={isLoadingAgentLeads}
+          error={agentLeadsError}
+          searchInput={agentLeadSearchInput}
+          onSearchInputChange={setAgentLeadSearchInput}
+          onSearchSubmit={applyAgentLeadSearch}
+          statusFilter={agentLeadStatusFilter}
+          onStatusFilterChange={updateAgentLeadStatusFilter}
+          onRetry={() => setRefreshKey((currentValue) => currentValue + 1)}
         />
       )}
 
@@ -1066,6 +1152,295 @@ function OrderStatusRow({ order }: { order: OrderStatusDashboardOrder }) {
   );
 }
 
+function AgentLeadsTab({
+  data,
+  isLoading,
+  error,
+  searchInput,
+  onSearchInputChange,
+  onSearchSubmit,
+  statusFilter,
+  onStatusFilterChange,
+  onRetry,
+}: {
+  data: AgentLeadsDashboardResponse | null;
+  isLoading: boolean;
+  error: string | null;
+  searchInput: string;
+  onSearchInputChange: (value: string) => void;
+  onSearchSubmit: () => void;
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
+  onRetry: () => void;
+}) {
+  const [sortState, setSortState] = useState<AgentLeadsSortState>({
+    key: 'totalLeads',
+    direction: 'desc',
+  });
+  const sortedAgents = useMemo(() => {
+    const agents = [...(data?.agents ?? [])];
+
+    agents.sort((first, second) => {
+      const direction = sortState.direction === 'asc' ? 1 : -1;
+
+      if (sortState.key === 'lastUpdated') {
+        const firstTime = first.lastUpdated
+          ? new Date(first.lastUpdated).getTime()
+          : 0;
+        const secondTime = second.lastUpdated
+          ? new Date(second.lastUpdated).getTime()
+          : 0;
+
+        return (firstTime - secondTime) * direction;
+      }
+
+      if (
+        sortState.key === 'totalLeads' ||
+        sortState.key === 'totalProspects'
+      ) {
+        return (first[sortState.key] - second[sortState.key]) * direction;
+      }
+
+      return (
+        first.agentName.localeCompare(second.agentName, undefined, {
+          sensitivity: 'base',
+        }) * direction
+      );
+    });
+
+    return agents;
+  }, [data?.agents, sortState]);
+
+  const handleSort = (key: AgentLeadsSortKey) => {
+    setSortState((currentState) => ({
+      key,
+      direction:
+        currentState.key === key && currentState.direction === 'desc'
+          ? 'asc'
+          : 'desc',
+    }));
+  };
+
+  if (isLoading && !data) {
+    return <AgentLeadsSkeleton />;
+  }
+
+  if (error || !data) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center gap-3 py-14 text-center">
+          <Users className="h-10 w-10 text-muted-foreground" />
+          <div>
+            <p className="font-semibold text-foreground">
+              Agent leads dashboard is unavailable
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {error ?? 'Unable to load agent lead statistics right now.'}
+            </p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <SalesKpiCard
+          icon={<Users className="h-5 w-5" />}
+          label="Total Leads"
+          value={data.totals.totalLeads.toLocaleString()}
+          hint={`Assigned leads for ${data.periodLabel}`}
+          tone="blue"
+        />
+        <SalesKpiCard
+          icon={<ClipboardList className="h-5 w-5" />}
+          label="Total Prospects"
+          value={data.totals.totalProspects.toLocaleString()}
+          hint="Leads currently marked as Prospect"
+          tone="emerald"
+        />
+      </div>
+
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-border/70 bg-secondary/30 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg">Agent Leads</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {data.periodLabel} · {data.agents.length.toLocaleString()} agents
+              </p>
+            </div>
+            {isLoading ? (
+              <Badge variant="outline" className="bg-card">
+                Updating...
+              </Badge>
+            ) : null}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 p-4">
+          <div className="grid gap-2 lg:grid-cols-[1fr_260px]">
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchInput}
+                  onChange={(event) => onSearchInputChange(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      onSearchSubmit();
+                    }
+                  }}
+                  placeholder="Search agent name"
+                  className="h-10 rounded-xl pl-9"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl"
+                onClick={onSearchSubmit}
+                disabled={isLoading}
+              >
+                Search
+              </Button>
+            </div>
+            <Select
+              value={statusFilter}
+              onChange={(event) => onStatusFilterChange(event.target.value)}
+              className="h-10 rounded-xl"
+            >
+              <option value="ALL">All lead statuses</option>
+              {data.statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {formatLeadStatusLabel(status)}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {sortedAgents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-12 text-center">
+              <Users className="h-10 w-10 text-muted-foreground" />
+              <p className="font-semibold text-foreground">No matching agents</p>
+              <p className="text-sm text-muted-foreground">
+                Try another month, agent search, or lead status.
+              </p>
+            </div>
+          ) : (
+            <div
+              className={cn(
+                'overflow-x-auto rounded-2xl border border-border/70 transition-opacity',
+                isLoading ? 'opacity-70' : 'opacity-100',
+              )}
+            >
+              <table className="w-full min-w-[760px] text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  <tr>
+                    <AgentLeadsSortableHeader
+                      label="Agent"
+                      sortKey="agentName"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                      align="left"
+                    />
+                    <AgentLeadsSortableHeader
+                      label="Total Leads"
+                      sortKey="totalLeads"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                    />
+                    <AgentLeadsSortableHeader
+                      label="Total Prospects"
+                      sortKey="totalProspects"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                    />
+                    <AgentLeadsSortableHeader
+                      label="Last Updated"
+                      sortKey="lastUpdated"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                    />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedAgents.map((agent) => (
+                    <AgentLeadsRow key={agent.agentId} agent={agent} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AgentLeadsSortableHeader({
+  label,
+  sortKey,
+  activeSort,
+  onSort,
+  align = 'right',
+}: {
+  label: string;
+  sortKey: AgentLeadsSortKey;
+  activeSort: AgentLeadsSortState;
+  onSort: (key: AgentLeadsSortKey) => void;
+  align?: 'left' | 'right';
+}) {
+  const isActive = activeSort.key === sortKey;
+  const SortIcon = activeSort.direction === 'asc' ? ArrowUp : ArrowDown;
+
+  return (
+    <th className={cn('px-4 py-3', align === 'right' ? 'text-right' : 'text-left')}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-lg px-1 py-1 transition hover:text-foreground',
+          align === 'right' ? 'justify-end' : 'justify-start',
+          isActive ? 'text-foreground' : 'text-muted-foreground',
+        )}
+      >
+        {label}
+        {isActive ? <SortIcon className="h-3.5 w-3.5" /> : null}
+      </button>
+    </th>
+  );
+}
+
+function AgentLeadsRow({ agent }: { agent: AgentLeadsDashboardAgent }) {
+  return (
+    <tr className="border-t border-border/70 transition hover:bg-secondary/35">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+            {agent.initials}
+          </span>
+          <p className="truncate font-medium text-foreground">
+            {agent.agentName}
+          </p>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-right font-semibold text-foreground">
+        {agent.totalLeads.toLocaleString()}
+      </td>
+      <td className="px-4 py-3 text-right font-semibold text-foreground">
+        {agent.totalProspects.toLocaleString()}
+      </td>
+      <td className="px-4 py-3 text-right text-muted-foreground">
+        {agent.lastUpdated ? formatDateTime(agent.lastUpdated) : 'No updates'}
+      </td>
+    </tr>
+  );
+}
+
 function SortableHeader({
   label,
   sortKey,
@@ -1146,31 +1521,6 @@ function AgentPerformanceRow({
   );
 }
 
-function PlaceholderTab({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <BarChart3 className="h-7 w-7" />
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">{title}</h2>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            {description}
-          </p>
-        </div>
-        <Badge variant="outline">Coming soon</Badge>
-      </CardContent>
-    </Card>
-  );
-}
-
 function SalesOverviewSkeleton() {
   return (
     <div className="space-y-5">
@@ -1193,6 +1543,19 @@ function OrderStatusSkeleton() {
         ))}
       </div>
       <Skeleton className="h-[460px]" />
+    </div>
+  );
+}
+
+function AgentLeadsSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-2 sm:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <Skeleton key={index} className="h-28 rounded-2xl" />
+        ))}
+      </div>
+      <Skeleton className="h-[360px] rounded-2xl" />
     </div>
   );
 }

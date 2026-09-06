@@ -1,11 +1,26 @@
 export type DashboardTab = 'sales-overview' | 'order-status' | 'agent-leads';
 
+export type AgentLeadStatus =
+  | 'PROSPECT'
+  | 'QUOTED'
+  | 'CALL_BACK_LATER'
+  | 'SHOPPING_AROUND'
+  | 'NOT_INTERESTED'
+  | 'NEEDS_LOCALLY'
+  | 'WE_DONT_SALE';
+
 export type SalesOverviewSortKey =
   | 'agentName'
   | 'totalCalls'
   | 'totalSales'
   | 'totalCharging'
   | 'grossProfit';
+
+export type AgentLeadsSortKey =
+  | 'agentName'
+  | 'totalLeads'
+  | 'totalProspects'
+  | 'lastUpdated';
 
 export type OrderStatusDashboardStatus =
   | 'PENDING'
@@ -121,4 +136,36 @@ export type OrderStatusDashboardQuery = {
   overdueDays?: number;
   page?: number;
   limit?: number;
+};
+
+export type AgentLeadsDashboardAgent = {
+  agentId: string;
+  agentName: string;
+  agentEmail: string;
+  role: 'ADMIN' | 'SALES' | 'SHIPPING';
+  initials: string;
+  totalLeads: number;
+  totalProspects: number;
+  lastUpdated: string | null;
+};
+
+export type AgentLeadsDashboardTotals = {
+  totalLeads: number;
+  totalProspects: number;
+};
+
+export type AgentLeadsDashboardResponse = {
+  selectedMonth: string | null;
+  periodLabel: string;
+  selectedStatus: AgentLeadStatus | null;
+  statusOptions: AgentLeadStatus[];
+  generatedAt: string;
+  totals: AgentLeadsDashboardTotals;
+  agents: AgentLeadsDashboardAgent[];
+};
+
+export type AgentLeadsDashboardQuery = {
+  month?: string;
+  search?: string;
+  status?: string;
 };

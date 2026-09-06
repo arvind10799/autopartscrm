@@ -29,6 +29,16 @@ export const salesOverviewSchema = z.object({
   agents: z.array(salesOverviewAgentSchema),
 });
 
+const agentLeadStatusSchema = z.enum([
+  'PROSPECT',
+  'QUOTED',
+  'CALL_BACK_LATER',
+  'SHOPPING_AROUND',
+  'NOT_INTERESTED',
+  'NEEDS_LOCALLY',
+  'WE_DONT_SALE',
+]);
+
 const orderStatusDashboardStatusSchema = z.enum([
   'PENDING',
   'LOCATING',
@@ -88,6 +98,30 @@ export const orderStatusDashboardSchema = z.object({
       isPending: z.boolean(),
       isOverdue: z.boolean(),
       deliveredAt: z.string().nullable(),
+    }),
+  ),
+});
+
+export const agentLeadsDashboardSchema = z.object({
+  selectedMonth: z.string().nullable(),
+  periodLabel: z.string(),
+  selectedStatus: agentLeadStatusSchema.nullable(),
+  statusOptions: z.array(agentLeadStatusSchema),
+  generatedAt: z.string(),
+  totals: z.object({
+    totalLeads: z.coerce.number(),
+    totalProspects: z.coerce.number(),
+  }),
+  agents: z.array(
+    z.object({
+      agentId: z.string().uuid(),
+      agentName: z.string(),
+      agentEmail: z.string(),
+      role: z.enum(USER_ROLES),
+      initials: z.string(),
+      totalLeads: z.coerce.number(),
+      totalProspects: z.coerce.number(),
+      lastUpdated: z.string().nullable(),
     }),
   ),
 });
