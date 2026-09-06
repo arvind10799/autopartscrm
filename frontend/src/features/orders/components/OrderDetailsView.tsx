@@ -786,9 +786,9 @@ function TimelineGroup({
   const content = (
     <>
       {entries.length > 0 ? (
-        <ol className="space-y-2 pt-2">
+        <ol className="relative mt-3 space-y-3 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-border">
           {entries.map((entry) => (
-            <TimelineItem key={entry.id} entry={entry} />
+            <RemarkItem key={entry.id} entry={entry} />
           ))}
         </ol>
       ) : (
@@ -801,9 +801,9 @@ function TimelineGroup({
 
   if (collapsible) {
     return (
-      <details className="group rounded-xl border border-border/70 bg-secondary/10 px-3 py-2">
+      <details className="group rounded-xl border border-border/70 bg-secondary/10 px-3 py-2.5">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 marker:hidden">
-          <span>
+          <span className="min-w-0">
             <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               {title}
             </span>
@@ -813,7 +813,9 @@ function TimelineGroup({
           </span>
           <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
         </summary>
-        {content}
+        <div className="border-t border-border/60 pt-1 group-open:mt-2">
+          {content}
+        </div>
       </details>
     );
   }
@@ -912,31 +914,4 @@ function getTimelineDotClassName(variant?: TimelineEntry['badgeVariant']) {
     default:
       return 'bg-teal-500';
   }
-}
-
-function TimelineItem({ entry }: { entry: TimelineEntry }) {
-  return (
-    <li className="relative rounded-xl border border-border/70 bg-background/85 px-3 py-2.5 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">
-            {entry.actorName}
-            <span className="mx-1.5 text-muted-foreground">|</span>
-            <span className="text-[11px] font-medium text-muted-foreground">
-              {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
-            </span>
-          </p>
-        </div>
-        <Badge
-          variant={entry.badgeVariant ?? 'secondary'}
-          className="h-5 shrink-0 rounded-full px-2 text-[11px]"
-        >
-          {entry.action}
-        </Badge>
-      </div>
-      <div className="mt-2 whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
-        {entry.body}
-      </div>
-    </li>
-  );
 }
