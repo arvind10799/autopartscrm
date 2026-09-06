@@ -27,8 +27,6 @@ export function AppHeader({
   const router = useRouter();
   const clearSession = useAuthStore((state) => state.clearSession);
   const [isPending, startTransition] = useTransition();
-  const isLeadsSection = currentSection === 'Leads';
-  const headerTitle = isLeadsSection ? 'Leads Workspace' : currentSection;
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -62,16 +60,9 @@ export function AppHeader({
             <Menu className="h-4 w-4" />
           </Button>
 
-          <div className="min-w-0">
-            {isLeadsSection ? (
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d94d00]">
-                Leads
-              </p>
-            ) : null}
-            <h1 className="truncate text-sm font-semibold text-slate-950 dark:text-white">
-              {headerTitle}
-            </h1>
-          </div>
+          <h1 className="truncate text-sm font-semibold text-slate-950 dark:text-white">
+            {currentSection}
+          </h1>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">

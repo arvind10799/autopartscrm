@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardTitle,
   CardHeader,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -175,6 +176,9 @@ export function LeadsPageContent() {
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
           <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+              <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
+                Leads Workspace
+              </CardTitle>
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
                 <DateRangeFilter
                   value={dateFilter}

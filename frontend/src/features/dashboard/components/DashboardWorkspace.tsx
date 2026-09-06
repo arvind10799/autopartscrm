@@ -505,10 +505,6 @@ function SalesOverviewTab({
           <h2 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
             {data.periodLabel}
           </h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Leads are counted as calls. Values update from CRM records for{' '}
-            {periodMode === 'all' ? 'all time' : month}.
-          </p>
         </div>
       </div>
 
