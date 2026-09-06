@@ -174,17 +174,19 @@ export function LeadsPageContent() {
     <>
       <section className="grid gap-4">
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
+          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
               <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
                 Leads Workspace
               </CardTitle>
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-                <DateRangeFilter
-                  value={dateFilter}
-                  onChange={setDateFilter}
-                  variant="inline"
-                />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div className="w-full sm:w-60">
+                  <DateRangeFilter
+                    value={dateFilter}
+                    onChange={setDateFilter}
+                    variant="inline"
+                  />
+                </div>
 
                 <Button
                   size="lg"
