@@ -62,10 +62,10 @@ function buildColumns(
       accessorKey: 'date',
       header: 'Date',
       meta: {
-        className: role === 'ADMIN' ? 'w-[8%]' : 'w-[9%]',
+        className: 'w-[12%] overflow-hidden',
       },
       cell: ({ row }) => (
-        <p className="whitespace-nowrap font-semibold text-slate-950 dark:text-white">
+        <p className="truncate font-semibold text-slate-950 dark:text-white" title={formatDate(row.original.date)}>
           {formatDate(row.original.date)}
         </p>
       ),
@@ -74,7 +74,7 @@ function buildColumns(
       accessorKey: 'customerName',
       header: 'Customer',
       meta: {
-        className: role === 'ADMIN' ? 'w-[14%]' : 'w-[17%]',
+        className: role === 'ADMIN' ? 'w-[15%] overflow-hidden' : 'w-[18%] overflow-hidden',
       },
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -93,10 +93,13 @@ function buildColumns(
       accessorKey: 'customerPhone',
       header: 'Phone No.',
       meta: {
-        className: role === 'ADMIN' ? 'w-[11%]' : 'w-[13%]',
+        className: 'w-[14%] overflow-hidden',
       },
       cell: ({ row }) => (
-        <p className="whitespace-nowrap text-sm font-medium text-slate-700 dark:text-slate-200">
+        <p
+          className="truncate text-sm font-medium text-slate-700 dark:text-slate-200"
+          title={row.original.customerPhone}
+        >
           {row.original.customerPhone}
         </p>
       ),
@@ -105,10 +108,10 @@ function buildColumns(
       accessorKey: 'partDescription',
       header: 'Vehicle',
       meta: {
-        className: role === 'ADMIN' ? 'w-[25%]' : 'w-[31%]',
+        className: role === 'ADMIN' ? 'w-[22%] overflow-hidden' : 'w-[28%] overflow-hidden',
       },
       cell: ({ row }) => (
-        <p className="truncate text-sm text-slate-700 dark:text-slate-200">
+        <p className="truncate text-sm text-slate-700 dark:text-slate-200" title={formatVehicleSummary(row.original)}>
           {formatVehicleSummary(row.original)}
         </p>
       ),
@@ -117,10 +120,10 @@ function buildColumns(
       accessorKey: 'quote',
       header: 'Quote',
       meta: {
-        className: 'w-[10%] text-right',
+        className: 'w-[11%] overflow-hidden text-right',
       },
       cell: ({ row }) => (
-        <span className="whitespace-nowrap font-semibold text-slate-950 dark:text-white">
+        <span className="block truncate font-semibold text-slate-950 dark:text-white">
           {row.original.quote !== null
             ? formatLeadCurrency(row.original.quote, row.original.quoteCurrency)
             : '--'}
@@ -131,7 +134,7 @@ function buildColumns(
       accessorKey: 'status',
       header: 'Status',
       meta: {
-        className: 'w-[10%]',
+        className: role === 'ADMIN' ? 'w-[11%] overflow-hidden' : 'w-[10%] overflow-hidden',
       },
       cell: ({ row }) => {
         const status = row.original.isConverted ? 'CONVERTED' : row.original.status;
@@ -156,7 +159,7 @@ function buildColumns(
       id: 'actions',
       header: '',
       meta: {
-        className: role === 'ADMIN' ? 'w-[14%] text-right' : 'w-[10%] text-right',
+        className: 'w-[7%] text-right',
       },
       cell: ({ row }) =>
         row.original.isConverted && row.original.convertedOrder ? (
@@ -203,10 +206,10 @@ function buildColumns(
       accessorKey: 'adviserName',
       header: 'Adviser',
       meta: {
-        className: 'w-[8%]',
+        className: 'w-[8%] overflow-hidden',
       },
       cell: ({ row }) => (
-        <p className="font-medium text-slate-700 dark:text-slate-200">
+        <p className="truncate font-medium text-slate-700 dark:text-slate-200" title={row.original.adviserName}>
           {getFirstName(row.original.adviserName)}
         </p>
       ),
