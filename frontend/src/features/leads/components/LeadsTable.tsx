@@ -62,7 +62,7 @@ function buildColumns(
       accessorKey: 'date',
       header: 'Date',
       meta: {
-        className: 'w-[7%]',
+        className: role === 'ADMIN' ? 'w-[8%]' : 'w-[9%]',
       },
       cell: ({ row }) => (
         <p className="whitespace-nowrap font-semibold text-slate-950 dark:text-white">
@@ -74,7 +74,7 @@ function buildColumns(
       accessorKey: 'customerName',
       header: 'Customer',
       meta: {
-        className: 'w-[14%]',
+        className: role === 'ADMIN' ? 'w-[14%]' : 'w-[17%]',
       },
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -93,7 +93,7 @@ function buildColumns(
       accessorKey: 'customerPhone',
       header: 'Phone No.',
       meta: {
-        className: 'w-[10%]',
+        className: role === 'ADMIN' ? 'w-[11%]' : 'w-[13%]',
       },
       cell: ({ row }) => (
         <p className="whitespace-nowrap text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -105,7 +105,7 @@ function buildColumns(
       accessorKey: 'partDescription',
       header: 'Vehicle',
       meta: {
-        className: 'w-[26%]',
+        className: role === 'ADMIN' ? 'w-[25%]' : 'w-[31%]',
       },
       cell: ({ row }) => (
         <p className="truncate text-sm text-slate-700 dark:text-slate-200">
@@ -117,7 +117,7 @@ function buildColumns(
       accessorKey: 'quote',
       header: 'Quote',
       meta: {
-        className: 'w-[9%] text-right',
+        className: 'w-[10%] text-right',
       },
       cell: ({ row }) => (
         <span className="whitespace-nowrap font-semibold text-slate-950 dark:text-white">
@@ -131,7 +131,7 @@ function buildColumns(
       accessorKey: 'status',
       header: 'Status',
       meta: {
-        className: 'w-[11%]',
+        className: 'w-[10%]',
       },
       cell: ({ row }) => {
         const status = row.original.isConverted ? 'CONVERTED' : row.original.status;
@@ -140,7 +140,7 @@ function buildColumns(
           <Badge
             variant="outline"
             className={cn(
-              'max-w-full rounded-full px-2.5 py-1 text-xs font-semibold leading-tight',
+              'inline-flex max-w-full justify-center rounded-full px-2.5 py-1 text-center text-xs font-semibold leading-tight',
               status === 'CALL_BACK_LATER'
                 ? 'whitespace-normal rounded-2xl'
                 : 'whitespace-nowrap',
@@ -156,7 +156,7 @@ function buildColumns(
       id: 'actions',
       header: '',
       meta: {
-        className: 'w-[9%] text-right',
+        className: role === 'ADMIN' ? 'w-[14%] text-right' : 'w-[10%] text-right',
       },
       cell: ({ row }) =>
         row.original.isConverted && row.original.convertedOrder ? (
@@ -176,22 +176,22 @@ function buildColumns(
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 rounded-xl px-0"
+              className="h-8 rounded-xl px-2 text-xs"
               onClick={() => onEdit(row.original)}
               title="Edit"
             >
               <PencilLine className="h-4 w-4" />
-              <span className="sr-only">Edit</span>
+              <span className="hidden xl:inline">Edit</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 w-8 rounded-xl border-[#ff5a00]/25 px-0 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
+              className="h-8 rounded-xl border-[#ff5a00]/25 px-2 text-xs text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
               onClick={() => onConvert(row.original)}
               title="Convert to order"
             >
               <RefreshCw className="h-4 w-4" />
-              <span className="sr-only">Convert to order</span>
+              <span className="hidden 2xl:inline">Convert</span>
             </Button>
           </div>
         ),
