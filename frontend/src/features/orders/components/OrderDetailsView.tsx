@@ -144,7 +144,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
   return (
     <section className="space-y-6">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
         <InvoiceActions
           order={order}
           onInvoiceCreated={() => setRefreshKey((currentValue) => currentValue + 1)}
@@ -345,7 +345,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
         </div>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <Card className="lg:max-h-[calc(100vh-3rem)] lg:overflow-hidden">
+          <Card className="flex lg:max-h-[calc(100vh-3rem)] flex-col overflow-hidden">
             <CardHeader className="border-b border-border/70 pb-3">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <History className="h-5 w-5 text-primary" />
@@ -353,14 +353,29 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
               </CardTitle>
             </CardHeader>
 
-            <CardContent className="space-y-3 p-3.5 lg:max-h-[calc(100vh-7.5rem)] lg:overflow-y-auto sm:p-4">
+            <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3.5 sm:p-4">
               <RemarkTimeline
                 entries={remarksTimeline}
                 emptyMessage="No internal notes yet."
               />
 
+              <TimelineGroup
+                title="Edit History Timeline"
+                entries={editHistoryTimeline}
+                emptyMessage="No edit history has been recorded yet."
+                collapsible
+              />
+              <TimelineGroup
+                title="Status Change History"
+                entries={statusTimeline}
+                emptyMessage="No status changes have been recorded yet."
+                collapsible
+              />
+            </CardContent>
+
+            <div className="border-t border-border/70 bg-card p-3.5 sm:p-4">
               <form
-                className="space-y-2 border-t border-border/70 pt-3"
+                className="space-y-2"
                 onSubmit={(event) => {
                   event.preventDefault();
                   void handleAddNoteSubmit();
@@ -402,20 +417,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                   )}
                 </Button>
               </form>
-
-              <TimelineGroup
-                title="Edit History Timeline"
-                entries={editHistoryTimeline}
-                emptyMessage="No edit history has been recorded yet."
-                collapsible
-              />
-              <TimelineGroup
-                title="Status Change History"
-                entries={statusTimeline}
-                emptyMessage="No status changes have been recorded yet."
-                collapsible
-              />
-            </CardContent>
+            </div>
           </Card>
         </aside>
       </div>
@@ -778,6 +780,8 @@ function RemarkTimeline({
 }
 
 function RemarkItem({ entry }: { entry: TimelineEntry }) {
+  const isPlainNote = entry.action === 'Note';
+
   return (
     <li className="relative pl-6">
       <span
@@ -787,17 +791,28 @@ function RemarkItem({ entry }: { entry: TimelineEntry }) {
         )}
       />
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-foreground">{entry.actorName}</p>
-        <p className="text-xs text-muted-foreground">
-          {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
+        <p className="text-xs leading-5 text-muted-foreground">
+          <span className="font-semibold text-foreground">
+            {entry.actorName}
+          </span>{' '}
+          | {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
         </p>
-        <Badge
-          variant={entry.badgeVariant ?? 'secondary'}
-          className="h-5 rounded-md px-2 text-[10px]"
+        {!isPlainNote ? (
+          <Badge
+            variant={entry.badgeVariant ?? 'secondary'}
+            className="h-5 rounded-md px-2 text-[10px]"
+          >
+            {entry.action}
+          </Badge>
+        ) : null}
+        <div
+          className={cn(
+            'whitespace-pre-wrap text-xs leading-5',
+            isPlainNote
+              ? 'rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 font-medium text-orange-950 shadow-sm dark:border-orange-900/60 dark:bg-orange-950/25 dark:text-orange-100'
+              : 'text-foreground/85',
+          )}
         >
-          {entry.action}
-        </Badge>
-        <div className="whitespace-pre-wrap text-xs leading-5 text-foreground/85">
           {entry.body}
         </div>
       </div>

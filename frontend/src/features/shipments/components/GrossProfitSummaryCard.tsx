@@ -393,12 +393,12 @@ export function GrossProfitSummaryCard({
   };
 
   return (
-    <Card className="overflow-hidden border-border/70 shadow-sm">
-      <CardHeader className={isExpanded ? 'space-y-3 pb-3' : 'pb-4'}>
+    <Card className="self-start overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className={isExpanded ? 'space-y-3 px-4 py-3' : 'px-4 py-3'}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <CardDescription>GP calculation</CardDescription>
-            <CardTitle className="text-xl sm:text-2xl">
+            <CardDescription className="text-xs">GP calculation</CardDescription>
+            <CardTitle className="text-xl">
               <span className={grossProfitTone}>
                 {formatCurrency(grossProfit, displayCurrency)}
               </span>
@@ -413,6 +413,7 @@ export function GrossProfitSummaryCard({
             type="button"
             size="sm"
             variant="outline"
+            className="h-8 rounded-full px-3 text-xs"
             aria-expanded={isExpanded}
             onClick={() => setIsExpanded((currentValue) => !currentValue)}
           >
@@ -425,13 +426,14 @@ export function GrossProfitSummaryCard({
       </CardHeader>
 
       {isExpanded ? (
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 px-4 pb-4 pt-0">
           <div className="flex flex-wrap gap-2">
             {canOpenBaseEditForm ? (
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
+                className="h-8 rounded-lg px-3 text-xs"
                 onClick={openBaseEditForm}
               >
                 <Edit3 className="h-4 w-4" />
@@ -443,6 +445,7 @@ export function GrossProfitSummaryCard({
                 type="button"
                 size="sm"
                 variant="outline"
+                className="h-8 rounded-lg px-3 text-xs"
                 disabled={!canOpenEstimatedCostForm}
                 onClick={openEstimatedCostForm}
               >
@@ -455,6 +458,7 @@ export function GrossProfitSummaryCard({
                 type="button"
                 size="sm"
                 variant="outline"
+                className="h-8 rounded-lg px-3 text-xs"
                 disabled={!canOpenForm}
                 onClick={() => {
                   setIsAdding(true);

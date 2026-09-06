@@ -84,6 +84,7 @@ export function InvoiceActions({
   const [isCloningInvoice, setIsCloningInvoice] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isPhotoIdOpen, setIsPhotoIdOpen] = useState(false);
+  const [isAuditTrailOpen, setIsAuditTrailOpen] = useState(false);
   const [isActionsExpanded, setIsActionsExpanded] = useState(false);
   const [invoiceForPdf, setInvoiceForPdf] = useState<InvoiceRecord | null>(null);
   const [draft, setDraft] = useState<InvoiceDraft | null>(null);
@@ -160,6 +161,24 @@ export function InvoiceActions({
     } catch (caughtError) {
       toast.error(
         'Unable to open Photo ID',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    }
+  };
+
+  const openAuditTrail = async () => {
+    if (!invoice) {
+      return;
+    }
+
+    try {
+      await loadFullInvoice();
+      setIsAuditTrailOpen(true);
+    } catch (caughtError) {
+      toast.error(
+        'Unable to load audit trail',
         caughtError instanceof Error
           ? caughtError.message
           : 'Please try again in a moment.',
@@ -380,9 +399,9 @@ export function InvoiceActions({
   return (
     <>
       <Card className="overflow-hidden border-border/70 shadow-sm">
-        <CardHeader className="pb-3">
+        <CardHeader className="px-4 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
+            <CardTitle className="flex items-center gap-2 text-base">
               <FileText className="h-4 w-4 text-primary" />
               Invoice Management
             </CardTitle>
@@ -398,14 +417,14 @@ export function InvoiceActions({
             </Link>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3 pt-0">
+        <CardContent className="space-y-2 px-4 pb-4 pt-0">
           <div className="flex flex-col items-start gap-2">
             <div className="flex flex-wrap items-center gap-2">
               {canManageInvoice ? (
                 <Button
                   type="button"
                   size="sm"
-                  className="bg-[#ff5a00] text-white shadow-sm shadow-orange-600/20 hover:bg-[#e65000]"
+                  className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white shadow-sm shadow-orange-600/20 hover:bg-[#e65000]"
                   disabled={isLoadingDefaults}
                   onClick={handlePrimaryInvoiceAction}
                 >
@@ -430,6 +449,7 @@ export function InvoiceActions({
                 type="button"
                 size="sm"
                 variant="outline"
+                className="h-8 rounded-lg px-3 text-xs"
                 disabled={isLoadingInvoiceDetails}
                 onClick={() => void openInvoiceView()}
               >
@@ -469,7 +489,13 @@ export function InvoiceActions({
             invoice ? (
               <>
                 <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
-                <Button type="button" size="sm" disabled={isDownloading} onClick={() => void handleDownloadInvoice()}>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 rounded-lg px-3 text-xs"
+                  disabled={isDownloading}
+                  onClick={() => void handleDownloadInvoice()}
+                >
                   {isDownloading ? (
                     <LoaderCircle className="h-4 w-4 animate-spin" />
                   ) : (
@@ -487,6 +513,7 @@ export function InvoiceActions({
                       type="button"
                       size="sm"
                       variant="outline"
+                      className="h-8 rounded-lg px-3 text-xs"
                       disabled={isLoadingInvoiceDetails}
                       onClick={() => void openPhotoIdView()}
                     >
@@ -501,6 +528,7 @@ export function InvoiceActions({
                       type="button"
                       size="sm"
                       variant="outline"
+                      className="h-8 rounded-lg px-3 text-xs"
                       disabled={isLoadingInvoiceDetails}
                       onClick={() => void handleDownloadPhotoId()}
                     >
@@ -514,6 +542,7 @@ export function InvoiceActions({
                     type="button"
                     size="sm"
                     variant="outline"
+                    className="h-8 rounded-lg px-3 text-xs"
                     onClick={openCloneModal}
                   >
                     <Copy className="h-4 w-4" />
@@ -526,6 +555,7 @@ export function InvoiceActions({
                       type="button"
                       size="sm"
                       variant="outline"
+                      className="h-8 rounded-lg px-3 text-xs"
                       onClick={openEditModal}
                     >
                       <Pencil className="h-4 w-4" />
@@ -535,6 +565,7 @@ export function InvoiceActions({
                       type="button"
                       size="sm"
                       variant="outline"
+                      className="h-8 rounded-lg px-3 text-xs"
                       disabled={isSignatureActionRunning}
                       onClick={() => void handleSignatureAction()}
                     >
@@ -547,11 +578,22 @@ export function InvoiceActions({
                     </Button>
                   </>
                 ) : null}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-lg px-3 text-xs"
+                  disabled={isLoadingInvoiceDetails}
+                  onClick={() => void openAuditTrail()}
+                >
+                  {isLoadingInvoiceDetails ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-4 w-4" />
+                  )}
+                  View Audit Trail
+                </Button>
                 </div>
-              <InvoiceAuditTrailPanel
-                invoice={invoice}
-                onLoadFullInvoice={loadFullInvoice}
-              />
             </>
             ) : canManageInvoice ? (
               <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
@@ -595,6 +637,14 @@ export function InvoiceActions({
         />
       ) : null}
 
+      {isAuditTrailOpen && invoice ? (
+        <InvoiceAuditTrailModal
+          invoice={invoice}
+          onClose={() => setIsAuditTrailOpen(false)}
+          onLoadFullInvoice={loadFullInvoice}
+        />
+      ) : null}
+
       {printableInvoice ? (
         <div className="pointer-events-none fixed -left-[9999px] top-0">
           <InvoiceDocument ref={printableInvoiceRef} invoice={printableInvoice} />
@@ -604,15 +654,15 @@ export function InvoiceActions({
   );
 }
 
-function InvoiceAuditTrailPanel({
+function InvoiceAuditTrailModal({
   invoice,
+  onClose,
   onLoadFullInvoice,
 }: {
   invoice: InvoiceRecord;
+  onClose: () => void;
   onLoadFullInvoice: () => Promise<InvoiceRecord>;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isAuditLoading, setIsAuditLoading] = useState(false);
   const [isAuditDownloading, setIsAuditDownloading] = useState(false);
   const auditTrail = invoice.auditTrail;
   const timestamps = auditTrail?.timestamps ?? [];
@@ -638,177 +688,163 @@ function InvoiceAuditTrailPanel({
     }
   };
 
-  const handleToggleAuditTrail = async () => {
-    const nextIsOpen = !isOpen;
-    setIsOpen(nextIsOpen);
-
-    if (!nextIsOpen || isInvoiceFullyLoaded(invoice)) {
-      return;
-    }
-
-    setIsAuditLoading(true);
-
-    try {
-      await onLoadFullInvoice();
-    } catch (caughtError) {
-      toast.error(
-        'Unable to load audit trail',
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Please try again in a moment.',
-      );
-    } finally {
-      setIsAuditLoading(false);
-    }
-  };
-
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70">
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3">
-        <button
-          type="button"
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left outline-none transition hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-primary/30"
-          onClick={() => void handleToggleAuditTrail()}
-          aria-expanded={isOpen}
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-            {isAuditLoading ? (
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-            ) : (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 py-6 backdrop-blur-sm sm:py-10"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-5xl overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <ShieldCheck className="h-4 w-4" />
-            )}
-          </span>
-          <span className="min-w-0">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-            Audit Trail
-          </h3>
-            <p className="truncate text-xs text-slate-500">
-              {latestEvent
-                ? `Latest: ${latestEvent.title} - ${formatPdtDateTime(latestEvent.occurredAt)}`
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-foreground">
+                Audit Trail
+              </h2>
+              <p className="truncate text-xs text-muted-foreground">
+                {latestEvent
+                  ? `Latest: ${latestEvent.title} - ${formatPdtDateTime(latestEvent.occurredAt)}`
+                  : invoice.hasAuditTrail
+                    ? 'Saved legal activity log.'
+                    : 'Legal activity log shown in PDT timezone.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="rounded-full text-[11px]">
+              {events.length > 0
+                ? `${events.length} events`
                 : invoice.hasAuditTrail
-                  ? 'Open to load the saved legal activity log.'
-                : 'Legal activity log shown in PDT timezone.'}
-            </p>
-          </span>
-          <ChevronDown
-            className={cn(
-              'ml-auto h-4 w-4 shrink-0 text-slate-500 transition-transform',
-              isOpen ? 'rotate-180' : '',
-            )}
-          />
-        </button>
-        <div className="flex shrink-0 items-center gap-2">
-          <Badge variant="secondary" className="rounded-full text-[11px]">
-            {events.length > 0 ? `${events.length} events` : invoice.hasAuditTrail ? 'Saved events' : '0 events'}
-          </Badge>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={isAuditDownloading}
-            onClick={() => void handleDownloadAuditTrail()}
-          >
-            {isAuditDownloading ? (
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            Audit PDF
-          </Button>
+                  ? 'Saved events'
+                  : '0 events'}
+            </Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-lg px-3 text-xs"
+              disabled={isAuditDownloading}
+              onClick={() => void handleDownloadAuditTrail()}
+            >
+              {isAuditDownloading ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Download Audit PDF
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 rounded-full p-0"
+              onClick={onClose}
+              aria-label="Close audit trail"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {isOpen ? (
-      <div className="grid gap-3 border-t border-slate-200/80 p-3 pt-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="space-y-3">
-          <div className="rounded-xl border border-white bg-white/85 p-3 shadow-sm">
-            <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              <Clock3 className="h-3.5 w-3.5" />
-              Timestamps
-            </h4>
-            {timestamps.length > 0 ? (
-              <div className="space-y-1.5 text-sm text-slate-700">
-                {timestamps.map((timestamp) => (
-                  <div key={`${timestamp.label}-${timestamp.occurredAt}`}>
-                    {formatPdtDateTime(timestamp.occurredAt)} - {timestamp.label}
+        <div className="grid max-h-[75vh] gap-3 overflow-y-auto p-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-3">
+            <div className="rounded-xl border border-border/70 bg-background/70 p-3">
+              <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <Clock3 className="h-3.5 w-3.5" />
+                Timestamps
+              </h4>
+              {timestamps.length > 0 ? (
+                <div className="space-y-1.5 text-sm text-foreground">
+                  {timestamps.map((timestamp) => (
+                    <div key={`${timestamp.label}-${timestamp.occurredAt}`}>
+                      {formatPdtDateTime(timestamp.occurredAt)} - {timestamp.label}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No sent, viewed, or signed timestamp yet.
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-border/70 bg-background/70 p-3">
+              <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <Paperclip className="h-3.5 w-3.5" />
+                Attachment Details
+              </h4>
+              {attachmentDetails ? (
+                <div className="space-y-2 text-sm text-foreground">
+                  <AuditDetail label="Document Title" value={attachmentDetails.documentTitle} />
+                  <AuditDetail
+                    label="File"
+                    value={attachmentDetails.fileName ?? 'Uploaded document'}
+                  />
+                  <AuditDetail
+                    label="Uploaded"
+                    value={
+                      attachmentDetails.uploadedAt
+                        ? formatPdtDateTime(attachmentDetails.uploadedAt)
+                        : 'Pending'
+                    }
+                  />
+                  <div>
+                    <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                      <Fingerprint className="h-3.5 w-3.5" />
+                      Hash
+                    </div>
+                    <p className="break-all rounded-lg bg-secondary/60 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-foreground">
+                      {attachmentDetails.hash}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No Photo ID attachment uploaded yet.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-border/70 bg-background/70">
+            {events.length > 0 ? (
+              <div className="divide-y divide-border">
+                {events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="grid gap-0 sm:grid-cols-[145px_1fr]"
+                  >
+                    <div className="bg-secondary/40 px-3 py-2">
+                      <div className="text-sm font-semibold text-foreground">
+                        {event.title}:
+                      </div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        {formatPdtDateTime(event.occurredAt)}
+                      </div>
+                    </div>
+                    <div className="px-3 py-2">
+                      <p className="text-sm text-foreground">{event.description}</p>
+                      <div className="mt-2 grid gap-1 border-t border-border/70 pt-2 text-[11px] text-muted-foreground sm:grid-cols-2">
+                        <span>{formatAuditActor(event)}</span>
+                        <span>{event.ipAddress ? `IP: ${event.ipAddress}` : 'IP: Not captured'}</span>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500">No sent, viewed, or signed timestamp yet.</p>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-white bg-white/85 p-3 shadow-sm">
-            <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              <Paperclip className="h-3.5 w-3.5" />
-              Attachment Details
-            </h4>
-            {attachmentDetails ? (
-              <div className="space-y-2 text-sm text-slate-700">
-                <AuditDetail label="Document Title" value={attachmentDetails.documentTitle} />
-                <AuditDetail
-                  label="File"
-                  value={attachmentDetails.fileName ?? 'Uploaded document'}
-                />
-                <AuditDetail
-                  label="Uploaded"
-                  value={
-                    attachmentDetails.uploadedAt
-                      ? formatPdtDateTime(attachmentDetails.uploadedAt)
-                      : 'Pending'
-                  }
-                />
-                <div>
-                  <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                    <Fingerprint className="h-3.5 w-3.5" />
-                    Hash
-                  </div>
-                  <p className="break-all rounded-lg bg-slate-100 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-slate-700">
-                    {attachmentDetails.hash}
-                  </p>
-                </div>
+              <div className="p-4 text-sm text-muted-foreground">
+                Audit events will appear after the invoice is sent, viewed, edited, signed, or completed.
               </div>
-            ) : (
-              <p className="text-sm text-slate-500">No Photo ID attachment uploaded yet.</p>
             )}
           </div>
-        </div>
-
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          {events.length > 0 ? (
-            <div className="divide-y divide-slate-200">
-              {events.map((event) => (
-                <div
-                  key={event.id}
-                  className="grid gap-0 sm:grid-cols-[150px_1fr]"
-                >
-                  <div className="bg-slate-50 px-3 py-2">
-                    <div className="text-sm font-semibold text-slate-800">
-                      {event.title}:
-                    </div>
-                    <div className="mt-1 text-[11px] text-slate-500">
-                      {formatPdtDateTime(event.occurredAt)}
-                    </div>
-                  </div>
-                  <div className="px-3 py-2">
-                    <p className="text-sm text-slate-700">{event.description}</p>
-                    <div className="mt-2 grid gap-1 border-t border-slate-100 pt-2 text-[11px] text-slate-500 sm:grid-cols-2">
-                      <span>{formatAuditActor(event)}</span>
-                      <span>{event.ipAddress ? `IP: ${event.ipAddress}` : 'IP: Not captured'}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-4 text-sm text-slate-500">
-              Audit events will appear after the invoice is sent, viewed, edited, signed, or completed.
-            </div>
-          )}
         </div>
       </div>
-      ) : null}
     </div>
   );
 }
@@ -816,8 +852,8 @@ function InvoiceAuditTrailPanel({
 function AuditDetail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs font-semibold text-slate-500">{label}</div>
-      <div className="text-sm text-slate-800">{value}</div>
+      <div className="text-xs font-semibold text-muted-foreground">{label}</div>
+      <div className="text-sm text-foreground">{value}</div>
     </div>
   );
 }
