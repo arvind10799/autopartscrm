@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -68,16 +67,13 @@ export function LoginForm() {
   });
 
   return (
-    <Card className="w-full max-w-xl border-border/70 bg-card/95">
+    <Card className="w-full max-w-xl border-border/70 bg-card/95 shadow-xl shadow-slate-900/5">
       <CardHeader className="space-y-4">
-        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#f2702d]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[#103b57] dark:text-[#ff8a4c]">
           <ShieldCheck className="h-3.5 w-3.5" />
           Secure Sign In
         </span>
         <CardTitle>Welcome back</CardTitle>
-        <CardDescription>
-          Sign in with the account already created in the CRM database. Your workspace opens based on your role.
-        </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -122,7 +118,7 @@ export function LoginForm() {
           <Button
             type="submit"
             size="lg"
-            className="w-full"
+            className="w-full bg-gradient-to-r from-[#f2702d] to-[#103b57] text-white shadow-lg shadow-[#f2702d]/20 transition hover:from-[#ff8447] hover:to-[#164d70] focus-visible:ring-[#f2702d]"
             disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting ? 'Signing in...' : 'Sign in'}
