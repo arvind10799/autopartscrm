@@ -177,28 +177,23 @@ function buildGeneratedPartDescription({
 
 function FormSection({
   title,
-  description,
   children,
   className,
 }: {
   title: string;
-  description: string;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
     <section
       className={cn(
-        'space-y-3 rounded-[1.5rem] border border-border/70 bg-white/90 p-4 shadow-sm md:p-5',
+        'space-y-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-950/80 sm:p-4',
         className,
       )}
     >
-      <div className="space-y-1">
-        <h3 className="font-[var(--font-heading)] text-base font-semibold tracking-[-0.02em] text-foreground">
-          {title}
-        </h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
+      <h3 className="font-[var(--font-heading)] text-base font-semibold tracking-[-0.02em] text-foreground">
+        {title}
+      </h3>
       {children}
     </section>
   );
@@ -309,7 +304,7 @@ function VehicleCombobox({
       </div>
 
       {isOpen && !disabled ? (
-        <div className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-border bg-white py-1 text-sm shadow-xl">
+        <div className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-border bg-popover py-1 text-sm shadow-xl">
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option) => (
               <button
@@ -343,7 +338,7 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/60 bg-white/80 px-3.5 py-3 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </p>
@@ -782,12 +777,9 @@ export function CreateOrderForm({
       <input type="hidden" {...form.register('total')} />
       <input type="hidden" {...form.register('partDescription')} />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.95fr)]">
-        <div className="space-y-4">
-          <FormSection
-            title="Order and customer"
-            description="Front-load the information your team reaches for first."
-          >
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.95fr)]">
+        <div className="space-y-3">
+          <FormSection title="Order and customer">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <Field
                 id="advisorName"
@@ -896,12 +888,9 @@ export function CreateOrderForm({
             </div>
           </FormSection>
 
-          <FormSection
-            title="Vehicle and fitment"
-            description="Keep the fitment picture tight without stretching the popup."
-          >
+          <FormSection title="Vehicle and fitment">
             {vehicleLookupNotice ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
                 {vehicleLookupNotice}
               </div>
             ) : null}
@@ -1031,12 +1020,9 @@ export function CreateOrderForm({
             </div>
           </FormSection>
 
-          <FormSection
-            title="Addresses and fulfillment"
-            description="Billing and shipping details stay side by side for faster review."
-          >
-            <div className="grid gap-4 xl:grid-cols-2">
-              <div className="space-y-3 rounded-2xl border border-border/60 bg-secondary/20 p-3.5">
+          <FormSection title="Addresses and fulfillment">
+            <div className="grid gap-3 xl:grid-cols-2">
+              <div className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Billing
                 </p>
@@ -1085,7 +1071,7 @@ export function CreateOrderForm({
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-2xl border border-border/60 bg-secondary/20 p-3.5">
+              <div className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Shipping
                 </p>
@@ -1094,7 +1080,7 @@ export function CreateOrderForm({
                     <Label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                       Address
                     </Label>
-                    <div className="grid gap-3 rounded-2xl border border-border/60 bg-white/60 p-3">
+                    <div className="grid gap-3 rounded-xl border border-border/60 bg-background/70 p-3">
                       <Field
                         id="shippingAddress"
                         label="Business address"
@@ -1158,11 +1144,8 @@ export function CreateOrderForm({
           </FormSection>
         </div>
 
-        <div className="space-y-4 xl:sticky xl:top-0 xl:self-start">
-          <FormSection
-            title="Commercials"
-            description="Status, payment, and costing stay grouped for quick decisions."
-          >
+        <div className="space-y-3 xl:sticky xl:top-0 xl:self-start">
+          <FormSection title="Commercials">
             <div className="grid gap-3 sm:grid-cols-2">
               <Field
                 id="status"
@@ -1203,7 +1186,7 @@ export function CreateOrderForm({
                   </Select>
                 </Field>
               ) : (
-                <div className="rounded-2xl border border-dashed border-border bg-secondary/30 px-3.5 py-3">
+                <div className="rounded-xl border border-dashed border-border bg-secondary/30 px-3.5 py-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                     Payment method
                   </p>
@@ -1230,7 +1213,7 @@ export function CreateOrderForm({
                 label="Order amount"
                 error={form.formState.errors.basePrice?.message?.toString()}
               >
-                <div className="flex h-11 overflow-hidden rounded-xl border border-input bg-white shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                <div className="flex h-11 overflow-hidden rounded-xl border border-input bg-background shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                   <Select
                     id="currency"
                     aria-label="Order amount currency"
@@ -1270,11 +1253,11 @@ export function CreateOrderForm({
               ) : null}
             </div>
 
-            <div className="rounded-[1.35rem] border border-border/70 bg-secondary/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-secondary/20 p-3">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 Payment snapshot
               </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
                 <MetricCard
                   label="Total"
                   value={formatCurrency(totalValue || 0, selectedOrderCurrency)}
@@ -1297,9 +1280,9 @@ export function CreateOrderForm({
             >
               <Textarea
                 id="note"
-                rows={4}
+                rows={3}
                 placeholder="Add a handoff note, customer update, or internal context for this order"
-                className="min-h-[112px] rounded-xl"
+                className="min-h-[88px] rounded-xl"
                 {...form.register('note')}
               />
             </Field>
@@ -1311,17 +1294,14 @@ export function CreateOrderForm({
             </div>
           ) : null}
 
-          <div className="rounded-[1.5rem] border border-border/70 bg-white/90 p-4 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-950/80">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-foreground">
                   Ready to create
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Review the amounts and submit from here.
-                </p>
               </div>
-              <div className="rounded-2xl bg-primary/10 px-3 py-2 text-right text-primary">
+              <div className="rounded-xl bg-[#ff5a00]/10 px-3 py-2 text-right text-[#d94d00] dark:bg-orange-500/15 dark:text-orange-300">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
                   Order total
                 </p>
@@ -1334,7 +1314,7 @@ export function CreateOrderForm({
             <Button
               type="submit"
               size="lg"
-              className="mt-4 h-11 w-full rounded-xl"
+              className="mt-3 h-11 w-full rounded-xl bg-[#ff5a00] font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000]"
               disabled={form.formState.isSubmitting}
             >
               {form.formState.isSubmitting ? 'Creating order...' : 'Create order'}
