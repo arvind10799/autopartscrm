@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, UserRound } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -84,7 +84,7 @@ function Field({
     <div className={cn('space-y-1.5', className)}>
       <Label
         htmlFor={id}
-        className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+        className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
       >
         {label}
       </Label>
@@ -280,36 +280,16 @@ export function CreateLeadForm({
   });
 
   return (
-    <form className="space-y-4" onSubmit={onSubmit}>
-      <div className="rounded-[1.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(59,130,246,0.10),rgba(255,255,255,0.92))] p-4 shadow-sm md:p-5">
-        <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-primary/10 p-2.5 text-primary">
-            <UserRound className="h-5 w-5" />
-          </div>
-          <div className="space-y-1">
-            <p className="font-[var(--font-heading)] text-lg font-semibold tracking-[-0.03em] text-foreground">
-              Sales lead intake
-            </p>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Capture the customer conversation once, then convert it into an order
-              when it is ready to move.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <section className="space-y-3 rounded-[1.5rem] border border-border/70 bg-white/90 p-4 shadow-sm md:p-5">
-        <div className="space-y-1">
-          <h3 className="font-[var(--font-heading)] text-base font-semibold tracking-[-0.02em] text-foreground">
+    <form className="space-y-3" onSubmit={onSubmit}>
+      <section className="space-y-3 rounded-[1.25rem] border border-slate-200 bg-white/95 p-3 shadow-sm md:p-4 dark:border-slate-800 dark:bg-slate-950">
+        <div>
+          <h3 className="font-[var(--font-heading)] text-base font-semibold tracking-[-0.02em] text-slate-950 dark:text-white">
             Lead details
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Capture the essentials the team needs for qualification and order conversion.
-          </p>
         </div>
 
         {vehicleLookupNotice ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
             {vehicleLookupNotice}
           </div>
         ) : null}
@@ -324,7 +304,7 @@ export function CreateLeadForm({
               id="leadDate"
               type="date"
               max={maxLeadDate}
-              className="h-11 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               {...form.register('leadDate')}
             />
           </Field>
@@ -334,7 +314,7 @@ export function CreateLeadForm({
             label="CMPT"
             error={form.formState.errors.cmpt?.message?.toString()}
           >
-            <Select id="cmpt" className="h-11 rounded-xl" {...form.register('cmpt')}>
+            <Select id="cmpt" className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900" {...form.register('cmpt')}>
               <option value="">Select CMPT</option>
               <option value="YES">YES</option>
               <option value="NO">NO</option>
@@ -351,7 +331,7 @@ export function CreateLeadForm({
               type="tel"
               maxLength={14}
               placeholder="(555) 555-1234"
-              className="h-11 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               {...customerPhoneInput}
               onChange={handleCustomerPhoneChange}
             />
@@ -365,7 +345,7 @@ export function CreateLeadForm({
             <Input
               id="customerName"
               placeholder="Customer name"
-              className="h-11 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               {...form.register('customerName')}
             />
           </Field>
@@ -379,7 +359,7 @@ export function CreateLeadForm({
               id="customerEmail"
               type="email"
               placeholder="customer@example.com"
-              className="h-11 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               {...form.register('customerEmail')}
             />
           </Field>
@@ -392,7 +372,7 @@ export function CreateLeadForm({
             <Input
               id="state"
               placeholder="State"
-              className="h-11 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               {...form.register('state')}
             />
           </Field>
@@ -495,11 +475,11 @@ export function CreateLeadForm({
             label="Quote"
             error={form.formState.errors.quote?.message?.toString()}
           >
-            <div className="flex h-11 overflow-hidden rounded-xl border border-input bg-white shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+            <div className="flex h-10 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm focus-within:ring-2 focus-within:ring-[#ff5a00]/25 focus-within:ring-offset-2 dark:border-slate-800 dark:bg-slate-900">
               <Select
                 id="quoteCurrency"
                 aria-label="Quote currency"
-                className="h-full w-24 rounded-none border-0 bg-secondary/50 px-3 text-sm font-semibold shadow-none focus-visible:ring-0"
+                className="h-full w-24 rounded-none border-0 bg-slate-50 px-3 text-sm font-semibold shadow-none focus-visible:ring-0 dark:bg-slate-800"
                 {...form.register('quoteCurrency')}
               >
                 {LEAD_QUOTE_CURRENCIES.map((currency) => (
@@ -512,7 +492,7 @@ export function CreateLeadForm({
                 id="quote"
                 inputMode="decimal"
                 placeholder="0.00"
-                className="h-full flex-1 rounded-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-full flex-1 rounded-none border-0 bg-white shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-slate-900"
                 {...form.register('quote')}
               />
             </div>
@@ -528,7 +508,7 @@ export function CreateLeadForm({
             label="Status"
             error={form.formState.errors.status?.message?.toString()}
           >
-            <Select id="status" className="h-11 rounded-xl" {...form.register('status')}>
+            <Select id="status" className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900" {...form.register('status')}>
               {LEAD_STATUSES.map((status) => (
                 <option key={status} value={status}>
                   {formatLeadStatusLabel(status)}
@@ -547,7 +527,7 @@ export function CreateLeadForm({
               id="comments"
               rows={4}
               placeholder="Add follow-up details, fitment notes, or sales context"
-              className="min-h-[112px] rounded-xl"
+              className="min-h-[92px] rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               {...form.register('comments')}
             />
           </Field>
@@ -555,16 +535,16 @@ export function CreateLeadForm({
       </section>
 
       {formError ? (
-        <div className="rounded-[1.35rem] border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="rounded-[1.25rem] border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {formError}
         </div>
       ) : null}
 
-      <div className="rounded-[1.5rem] border border-border/70 bg-white/90 p-4 shadow-sm">
+      <div className="rounded-[1.25rem] border border-slate-200 bg-white/95 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <Button
           type="submit"
           size="lg"
-          className="h-11 w-full rounded-xl"
+          className="h-10 w-full rounded-xl bg-[#ff5a00] font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000]"
           disabled={form.formState.isSubmitting}
         >
           {form.formState.isSubmitting

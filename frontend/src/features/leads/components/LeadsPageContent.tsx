@@ -264,24 +264,20 @@ export function LeadsPageContent() {
           className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-6"
         >
           <div
-            className="w-full max-w-5xl rounded-[1.75rem] border border-border/70 bg-white shadow-2xl"
+            className="w-full max-w-5xl rounded-[1.5rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-border/70 px-6 py-5">
-              <div className="space-y-1">
-                <h2 className="font-[var(--font-heading)] text-2xl font-semibold tracking-[-0.03em] text-foreground">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-3.5 dark:border-slate-800">
+              <div>
+                <h2 className="font-[var(--font-heading)] text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
                   {selectedEditLead ? 'Edit lead' : 'Create lead'}
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  {selectedEditLead
-                    ? 'Update this lead before it is converted into an order.'
-                    : 'Capture a sales conversation and keep it ready for order conversion.'}
-                </p>
               </div>
 
               <Button
                 variant="ghost"
                 size="sm"
+                className="h-8 w-8 rounded-full px-0 text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white"
                 onClick={() => {
                   setIsCreateModalOpen(false);
                   setSelectedEditLead(null);
@@ -292,7 +288,7 @@ export function LeadsPageContent() {
               </Button>
             </div>
 
-            <div className="max-h-[calc(100vh-5.5rem)] overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+            <div className="max-h-[calc(100vh-5rem)] overflow-y-auto px-4 py-4 sm:px-5">
               <CreateLeadForm
                 initialLead={selectedEditLead}
                 onSaved={handleLeadSaved}
