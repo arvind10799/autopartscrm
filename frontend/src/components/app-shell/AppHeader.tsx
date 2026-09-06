@@ -1,7 +1,8 @@
 'use client';
 
-import { LogOut, Menu } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, LogOut, Menu } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { authApi } from '@/features/auth/api/auth-api';
 import { Badge } from '@/components/ui/badge';
@@ -25,8 +26,10 @@ export function AppHeader({
   isMenuOpen: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const clearSession = useAuthStore((state) => state.clearSession);
   const [isPending, startTransition] = useTransition();
+  const showOrdersBackLink = /^\/orders\/[^/]+/.test(pathname);
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -59,6 +62,16 @@ export function AppHeader({
           >
             <Menu className="h-4 w-4" />
           </Button>
+
+          {showOrdersBackLink ? (
+            <Link
+              href="/orders"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-[#0f6fb7] shadow-sm transition hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] dark:border-slate-800 dark:bg-slate-950 dark:text-sky-300 dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
+              aria-label="Back to orders"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          ) : null}
 
           <h1 className="truncate text-sm font-semibold text-slate-950 dark:text-white">
             {currentSection}

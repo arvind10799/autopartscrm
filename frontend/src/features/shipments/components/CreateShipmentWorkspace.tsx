@@ -316,10 +316,6 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
       <InvoiceActions
         order={order}
         onInvoiceCreated={() => setRefreshKey((currentValue) => currentValue + 1)}
-        backLink={{
-          href: '/shipments/create',
-          label: 'Back to shipment orders',
-        }}
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.9fr)]">

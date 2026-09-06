@@ -809,7 +809,7 @@ function RemarkItem({ entry }: { entry: TimelineEntry }) {
           className={cn(
             'whitespace-pre-wrap text-xs leading-5',
             isPlainNote
-              ? 'rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 font-medium text-orange-950 shadow-sm dark:border-orange-900/60 dark:bg-orange-950/25 dark:text-orange-100'
+              ? 'font-semibold text-[#d94d00] dark:text-orange-300'
               : 'text-foreground/85',
           )}
         >

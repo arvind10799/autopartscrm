@@ -2,10 +2,9 @@
 
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, ChevronDown, Clock3, Copy, Download, Eye, FileText, Fingerprint, LoaderCircle, Paperclip, Pencil, Send, ShieldCheck, X } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Clock3, Copy, Download, Eye, FileText, Fingerprint, LoaderCircle, Paperclip, Pencil, Send, ShieldCheck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { invoicesApi } from '@/features/invoices/api/invoices-api';
@@ -69,14 +68,9 @@ const DEFAULT_CANCELLATION_POLICY =
 export function InvoiceActions({
   order,
   onInvoiceCreated,
-  backLink = { href: '/orders', label: 'Back to orders' },
 }: {
   order: OrderDetail;
   onInvoiceCreated: () => void;
-  backLink?: {
-    href: string;
-    label: string;
-  };
 }) {
   const [invoice, setInvoice] = useState<InvoiceRecord | null>(order.invoice);
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
@@ -400,26 +394,12 @@ export function InvoiceActions({
     <>
       <Card className="overflow-hidden border-border/70 shadow-sm">
         <CardHeader className="px-4 py-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileText className="h-4 w-4 text-primary" />
-              Invoice Management
-            </CardTitle>
-            <Link
-              href={backLink.href}
-              className={cn(
-                buttonVariants({ variant: 'outline', size: 'sm' }),
-                'h-8 shrink-0 rounded-full px-3 text-xs',
-              )}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {backLink.label}
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2 px-4 pb-4 pt-0">
-          <div className="flex flex-col items-start gap-2">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <CardTitle className="mr-2 flex items-center gap-2 text-base">
+                <FileText className="h-4 w-4 text-primary" />
+                Invoice Management
+              </CardTitle>
               {canManageInvoice ? (
                 <Button
                   type="button"
@@ -442,52 +422,53 @@ export function InvoiceActions({
                   {invoice.status === 'SIGNED' ? 'Signed' : 'Invoiced'}
                 </Badge>
               ) : null}
-            </div>
 
-            {invoice ? (
+              {invoice ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-lg px-3 text-xs"
+                  disabled={isLoadingInvoiceDetails}
+                  onClick={() => void openInvoiceView()}
+                >
+                  {isLoadingInvoiceDetails ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                  {invoice.status === 'SIGNED' ? 'View Signed Invoice' : 'View Invoice'}
+                </Button>
+              ) : !canManageInvoice ? (
+                <span className="text-xs text-muted-foreground">
+                  Invoice is not available yet.
+                </span>
+              ) : null}
+            </div>
+            {(invoice || canManageInvoice) ? (
               <Button
                 type="button"
                 size="sm"
-                variant="outline"
-                className="h-8 rounded-lg px-3 text-xs"
-                disabled={isLoadingInvoiceDetails}
-                onClick={() => void openInvoiceView()}
+                variant="ghost"
+                className="h-8 shrink-0 px-0 text-xs font-semibold text-[#d94d00] hover:bg-transparent hover:text-[#c94700] dark:text-orange-300 dark:hover:text-orange-200"
+                aria-expanded={isActionsExpanded}
+                onClick={() => setIsActionsExpanded((currentValue) => !currentValue)}
               >
-                {isLoadingInvoiceDetails ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-                {invoice.status === 'SIGNED' ? 'View Signed Invoice' : 'View Invoice'}
+                {isActionsExpanded ? 'Hide actions' : 'View more actions'}
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 transition-transform',
+                    isActionsExpanded ? 'rotate-180' : '',
+                  )}
+                />
               </Button>
-            ) : !canManageInvoice ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                Invoice is not available yet.
-              </div>
             ) : null}
           </div>
-          {(invoice || canManageInvoice) ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-8 px-0 text-xs font-semibold text-[#d94d00] hover:bg-transparent hover:text-[#c94700] dark:text-orange-300 dark:hover:text-orange-200"
-              aria-expanded={isActionsExpanded}
-              onClick={() => setIsActionsExpanded((currentValue) => !currentValue)}
-            >
-              {isActionsExpanded ? 'Hide actions' : 'View more actions'}
-              <ChevronDown
-                className={cn(
-                  'h-4 w-4 transition-transform',
-                  isActionsExpanded ? 'rotate-180' : '',
-                )}
-              />
-            </Button>
-          ) : null}
+        </CardHeader>
 
           {isActionsExpanded ? (
             invoice ? (
-              <>
+              <CardContent className="space-y-2 px-4 pb-4 pt-0">
                 <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
                 <Button
                   type="button"
@@ -594,14 +575,15 @@ export function InvoiceActions({
                   View Audit Trail
                 </Button>
                 </div>
-            </>
+            </CardContent>
             ) : canManageInvoice ? (
+              <CardContent className="px-4 pb-4 pt-0">
               <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
                 Generate an invoice first to unlock download, audit trail, and signing actions.
               </div>
+              </CardContent>
             ) : null
           ) : null}
-        </CardContent>
       </Card>
 
       {isGenerateOpen && draft ? (

@@ -205,10 +205,6 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
           onInvoiceCreated={() =>
             setOrderRefreshKey((currentValue) => currentValue + 1)
           }
-          backLink={{
-            href: '/shipments',
-            label: 'Back to shipments',
-          }}
         />
       ) : (
         <Card>
