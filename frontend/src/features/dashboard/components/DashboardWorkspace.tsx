@@ -1,6 +1,12 @@
 'use client';
 
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  type ReactNode,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -104,7 +110,6 @@ export function DashboardWorkspace() {
   const [isLoadingOrderStatus, setIsLoadingOrderStatus] = useState(false);
   const [orderStatusError, setOrderStatusError] = useState<string | null>(null);
   const [orderSearchInput, setOrderSearchInput] = useState('');
-  const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('ALL');
   const [orderAgentFilter, setOrderAgentFilter] = useState('ALL');
   const [orderAgeingRange, setOrderAgeingRange] =
@@ -116,9 +121,12 @@ export function DashboardWorkspace() {
   const [isLoadingAgentLeads, setIsLoadingAgentLeads] = useState(false);
   const [agentLeadsError, setAgentLeadsError] = useState<string | null>(null);
   const [agentLeadSearchInput, setAgentLeadSearchInput] = useState('');
-  const [agentLeadSearch, setAgentLeadSearch] = useState('');
   const [agentLeadStatusFilter, setAgentLeadStatusFilter] = useState('ALL');
   const maxMonth = getPacificTodayDateInputValue().slice(0, 7);
+  const deferredOrderSearchInput = useDeferredValue(orderSearchInput);
+  const activeOrderSearch = deferredOrderSearchInput.trim();
+  const deferredAgentLeadSearchInput = useDeferredValue(agentLeadSearchInput);
+  const activeAgentLeadSearch = deferredAgentLeadSearchInput.trim();
 
   useEffect(() => {
     let isCancelled = false;
@@ -175,7 +183,7 @@ export function DashboardWorkspace() {
       try {
         const response = await dashboardApi.getOrderStatus({
           month: periodMode === 'all' ? null : selectedMonth || maxMonth,
-          search: orderSearch,
+          search: activeOrderSearch,
           status: orderStatusFilter,
           agentId: orderAgentFilter,
           ageingRange: orderAgeingRange,
@@ -209,10 +217,10 @@ export function DashboardWorkspace() {
     };
   }, [
     activeTab,
+    activeOrderSearch,
     maxMonth,
     orderAgeingRange,
     orderAgentFilter,
-    orderSearch,
     orderPage,
     orderStatusFilter,
     overdueDays,
@@ -235,7 +243,7 @@ export function DashboardWorkspace() {
       try {
         const response = await dashboardApi.getAgentLeads({
           month: periodMode === 'all' ? undefined : selectedMonth || maxMonth,
-          search: agentLeadSearch,
+          search: activeAgentLeadSearch,
           status: agentLeadStatusFilter,
         });
 
@@ -264,22 +272,13 @@ export function DashboardWorkspace() {
     };
   }, [
     activeTab,
-    agentLeadSearch,
+    activeAgentLeadSearch,
     agentLeadStatusFilter,
     maxMonth,
     periodMode,
     refreshKey,
     selectedMonth,
   ]);
-
-  const applyOrderSearch = () => {
-    setOrderPage(1);
-    setOrderSearch(orderSearchInput.trim());
-  };
-
-  const applyAgentLeadSearch = () => {
-    setAgentLeadSearch(agentLeadSearchInput.trim());
-  };
 
   const updateOrderStatusFilter = (value: string) => {
     setOrderPage(1);
@@ -389,8 +388,10 @@ export function DashboardWorkspace() {
           error={orderStatusError}
           periodMode={periodMode}
           searchInput={orderSearchInput}
-          onSearchInputChange={setOrderSearchInput}
-          onSearchSubmit={applyOrderSearch}
+          onSearchInputChange={(value) => {
+            setOrderSearchInput(value);
+            setOrderPage(1);
+          }}
           statusFilter={orderStatusFilter}
           onStatusFilterChange={updateOrderStatusFilter}
           agentFilter={orderAgentFilter}
@@ -410,7 +411,6 @@ export function DashboardWorkspace() {
           error={agentLeadsError}
           searchInput={agentLeadSearchInput}
           onSearchInputChange={setAgentLeadSearchInput}
-          onSearchSubmit={applyAgentLeadSearch}
           statusFilter={agentLeadStatusFilter}
           onStatusFilterChange={updateAgentLeadStatusFilter}
           onRetry={() => setRefreshKey((currentValue) => currentValue + 1)}
@@ -721,7 +721,6 @@ function OrderStatusTab({
   periodMode,
   searchInput,
   onSearchInputChange,
-  onSearchSubmit,
   statusFilter,
   onStatusFilterChange,
   agentFilter,
@@ -740,7 +739,6 @@ function OrderStatusTab({
   periodMode: 'all' | 'month';
   searchInput: string;
   onSearchInputChange: (value: string) => void;
-  onSearchSubmit: () => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
   agentFilter: string;
@@ -882,30 +880,14 @@ function OrderStatusTab({
         </CardHeader>
         <CardContent className="space-y-3 p-4">
           <div className="grid gap-2 xl:grid-cols-[1.3fr_0.85fr_0.85fr_0.75fr_0.6fr]">
-            <div className="flex gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchInput}
-                  onChange={(event) => onSearchInputChange(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      onSearchSubmit();
-                    }
-                  }}
-                  placeholder="Search order, sale no., or customer"
-                  className="h-10 rounded-xl pl-9"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 rounded-xl"
-                onClick={onSearchSubmit}
-                disabled={isLoading}
-              >
-                Search
-              </Button>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchInput}
+                onChange={(event) => onSearchInputChange(event.target.value)}
+                placeholder="Search order, sale no., or customer"
+                className="h-10 rounded-xl pl-9"
+              />
             </div>
             <Select
               value={statusFilter}
@@ -1157,7 +1139,6 @@ function AgentLeadsTab({
   error,
   searchInput,
   onSearchInputChange,
-  onSearchSubmit,
   statusFilter,
   onStatusFilterChange,
   onRetry,
@@ -1167,7 +1148,6 @@ function AgentLeadsTab({
   error: string | null;
   searchInput: string;
   onSearchInputChange: (value: string) => void;
-  onSearchSubmit: () => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
   onRetry: () => void;
@@ -1282,30 +1262,14 @@ function AgentLeadsTab({
         </CardHeader>
         <CardContent className="space-y-3 p-4">
           <div className="grid gap-2 lg:grid-cols-[1fr_260px]">
-            <div className="flex gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchInput}
-                  onChange={(event) => onSearchInputChange(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      onSearchSubmit();
-                    }
-                  }}
-                  placeholder="Search agent name"
-                  className="h-10 rounded-xl pl-9"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 rounded-xl"
-                onClick={onSearchSubmit}
-                disabled={isLoading}
-              >
-                Search
-              </Button>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchInput}
+                onChange={(event) => onSearchInputChange(event.target.value)}
+                placeholder="Search agent name"
+                className="h-10 rounded-xl pl-9"
+              />
             </div>
             <Select
               value={statusFilter}
