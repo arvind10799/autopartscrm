@@ -305,8 +305,8 @@ export function DashboardWorkspace() {
   };
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+    <section className="space-y-5">
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-950/5 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800 dark:bg-slate-950/80">
         <div className="flex flex-wrap gap-1.5">
           {DASHBOARD_TABS.map((tab) => (
             <button
@@ -314,10 +314,10 @@ export function DashboardWorkspace() {
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'rounded-xl px-3.5 py-2 text-sm font-semibold transition',
+                'rounded-xl px-5 py-3 text-sm font-semibold transition',
                 activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                  ? 'bg-[#ff5a00] text-white shadow-lg shadow-orange-600/20'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
               )}
             >
               {tab.label}
@@ -329,9 +329,9 @@ export function DashboardWorkspace() {
           <div className="min-w-36">
             <label
               htmlFor="dashboard-period-mode"
-              className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+              className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
             >
-              <CalendarDays className="h-3.5 w-3.5 text-primary" />
+              <CalendarDays className="h-3.5 w-3.5 text-[#0f6fb7]" />
               Period
             </label>
             <Select
@@ -341,7 +341,7 @@ export function DashboardWorkspace() {
                 setOrderPage(1);
                 setPeriodMode(event.target.value === 'all' ? 'all' : 'month');
               }}
-              className="h-9 rounded-xl"
+              className="h-11 rounded-xl border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900"
             >
               <option value="all">All time</option>
               <option value="month">Monthly</option>
@@ -352,7 +352,7 @@ export function DashboardWorkspace() {
             <div className="min-w-44">
               <label
                 htmlFor="dashboard-month"
-                className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
               >
                 Month
               </label>
@@ -365,7 +365,7 @@ export function DashboardWorkspace() {
                   setOrderPage(1);
                   setSelectedMonth(event.target.value || maxMonth);
                 }}
-                className="h-9 rounded-xl"
+                className="h-11 rounded-xl border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900"
               />
             </div>
           ) : null}
@@ -417,11 +417,6 @@ export function DashboardWorkspace() {
         />
       )}
 
-      {user?.role ? (
-        <p className="text-xs text-muted-foreground">
-          Visible for {user.role.toLowerCase()} workspace access.
-        </p>
-      ) : null}
     </section>
   );
 }
@@ -501,16 +496,16 @@ function SalesOverviewTab({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d94d00]">
             Sales Overview
           </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-foreground">
+          <h2 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
             {data.periodLabel}
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Leads are counted as calls. Values update from CRM records for{' '}
             {periodMode === 'all' ? 'all time' : month}.
           </p>
@@ -551,16 +546,21 @@ function SalesOverviewTab({
         />
       </div>
 
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b border-border/70 bg-secondary/35 px-4 py-4">
+      <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
+        <CardHeader className="border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg">Agent Performance</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <CardTitle className="text-xl text-slate-950 dark:text-white">
+                Agent Performance
+              </CardTitle>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Sort by agent, calls, sales, charging, or gross profit.
               </p>
             </div>
-            <Badge variant="outline" className="bg-card">
+            <Badge
+              variant="outline"
+              className="rounded-full bg-white px-3 py-1.5 dark:bg-slate-900"
+            >
               {data.agents.length} active agents
             </Badge>
           </div>
@@ -579,7 +579,7 @@ function SalesOverviewTab({
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                <thead className="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                   <tr>
                     <SortableHeader
                       label="Agent"
@@ -623,16 +623,16 @@ function SalesOverviewTab({
                     />
                   ))}
                 </tbody>
-                <tfoot className="border-t border-border bg-primary/5">
-                  <tr className="font-semibold text-foreground">
+                <tfoot className="border-t border-slate-200 bg-orange-50/60 dark:border-slate-800 dark:bg-orange-950/10">
+                  <tr className="font-semibold text-slate-950 dark:text-white">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ff5a00] text-xs font-bold text-white">
                           TT
                         </div>
                         <div>
                           <p>Team Total</p>
-                          <p className="text-xs font-normal text-muted-foreground">
+                          <p className="text-xs font-normal text-slate-500 dark:text-slate-400">
                             Complete team result
                           </p>
                         </div>
@@ -680,31 +680,51 @@ function SalesKpiCard({
   hint: string;
   tone: 'blue' | 'orange' | 'violet' | 'emerald';
 }) {
-  const toneClasses = {
-    blue: 'bg-blue-500/10 text-blue-600',
-    orange: 'bg-orange-500/10 text-orange-600',
-    violet: 'bg-violet-500/10 text-violet-600',
-    emerald: 'bg-emerald-500/10 text-emerald-600',
+  const cardClasses = {
+    blue: 'border-orange-200/80 bg-orange-50/80 shadow-orange-950/5 dark:border-orange-900/40 dark:bg-orange-950/15',
+    orange:
+      'border-teal-200/80 bg-teal-50/80 shadow-teal-950/5 dark:border-teal-900/40 dark:bg-teal-950/15',
+    violet:
+      'border-blue-200/80 bg-blue-50/80 shadow-blue-950/5 dark:border-blue-900/40 dark:bg-blue-950/15',
+    emerald:
+      'border-emerald-200/80 bg-emerald-50/85 shadow-emerald-950/5 dark:border-emerald-900/40 dark:bg-emerald-950/15',
+  }[tone];
+  const iconClasses = {
+    blue: 'bg-[#ff5a00] text-white shadow-orange-600/20',
+    orange: 'bg-teal-600 text-white shadow-teal-600/20',
+    violet: 'bg-blue-600 text-white shadow-blue-600/20',
+    emerald: 'bg-emerald-600 text-white shadow-emerald-600/20',
+  }[tone];
+  const valueClasses = {
+    blue: 'text-slate-950 dark:text-white',
+    orange: 'text-slate-950 dark:text-white',
+    violet: 'text-slate-950 dark:text-white',
+    emerald: 'text-emerald-700 dark:text-emerald-300',
   }[tone];
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="flex items-start justify-between gap-2.5 p-3">
+    <Card className={cn('overflow-hidden rounded-2xl shadow-sm', cardClasses)}>
+      <CardContent className="flex items-start justify-between gap-3 p-5">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-700 dark:text-slate-300">
             {label}
           </p>
-          <p className="mt-2 text-xl font-semibold tracking-[-0.03em] text-foreground">
+          <p
+            className={cn(
+              'mt-3 text-2xl font-semibold tracking-[-0.04em]',
+              valueClasses,
+            )}
+          >
             {value}
           </p>
-          <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+          <p className="mt-2 text-xs leading-4 text-slate-600 dark:text-slate-400">
             {hint}
           </p>
         </div>
         <div
           className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
-            toneClasses,
+            'flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-lg',
+            iconClasses,
           )}
         >
           {icon}
@@ -857,22 +877,24 @@ function OrderStatusTab({
         />
       </div>
 
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b border-border/70 bg-secondary/30 px-4 py-3">
+      <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
+        <CardHeader className="border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg">Order Status</CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <CardTitle className="text-xl text-slate-950 dark:text-white">
+                Order Status
+              </CardTitle>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {data.periodLabel} · {data.meta.total.toLocaleString()} matching orders
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {isLoading ? (
-                <Badge variant="outline" className="bg-card">
+                <Badge variant="outline" className="rounded-full bg-white px-3 py-1.5 dark:bg-slate-900">
                   Updating...
                 </Badge>
               ) : null}
-              <Badge variant="outline" className="bg-card">
+              <Badge variant="outline" className="rounded-full bg-white px-3 py-1.5 dark:bg-slate-900">
                 Overdue &gt; {data.overdueDays} days
               </Badge>
             </div>
@@ -886,13 +908,13 @@ function OrderStatusTab({
                 value={searchInput}
                 onChange={(event) => onSearchInputChange(event.target.value)}
                 placeholder="Search order, sale no., or customer"
-                className="h-10 rounded-xl pl-9"
+                className="h-10 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
               />
             </div>
             <Select
               value={statusFilter}
               onChange={(event) => onStatusFilterChange(event.target.value)}
-              className="h-10 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
             >
               <option value="ALL">All statuses</option>
               {data.statusOptions.map((status) => (
@@ -904,7 +926,7 @@ function OrderStatusTab({
             <Select
               value={agentFilter}
               onChange={(event) => onAgentFilterChange(event.target.value)}
-              className="h-10 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
             >
               <option value="ALL">All agents</option>
               {data.agents.map((agent) => (
@@ -918,7 +940,7 @@ function OrderStatusTab({
               onChange={(event) =>
                 onAgeingRangeChange(event.target.value as OrderStatusAgeingRange)
               }
-              className="h-10 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
             >
               <option value="ALL">All ageing</option>
               <option value="0-7">0-7 days</option>
@@ -939,27 +961,27 @@ function OrderStatusTab({
               onChange={(event) =>
                 onOverdueDaysChange(Math.max(1, Number(event.target.value) || 14))
               }
-              className="h-10 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
             />
           </div>
 
           {sortedOrders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-12 text-center">
-              <ClipboardList className="h-10 w-10 text-muted-foreground" />
-              <p className="font-semibold text-foreground">No matching orders</p>
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 py-12 text-center dark:border-slate-700 dark:bg-slate-900/60">
+              <ClipboardList className="h-10 w-10 text-slate-400" />
+              <p className="font-semibold text-slate-950 dark:text-white">No matching orders</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Try changing the search, status, agent, ageing, or period filter.
               </p>
             </div>
           ) : (
             <div
               className={cn(
-                'overflow-x-auto rounded-2xl border border-border/70 transition-opacity',
+                'overflow-x-auto rounded-2xl border border-slate-200 transition-opacity dark:border-slate-800',
                 isLoading ? 'opacity-70' : 'opacity-100',
               )}
             >
               <table className="w-full min-w-[920px] text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                   <tr>
                     <OrderSortableHeader
                       label="Sale"
@@ -1010,8 +1032,8 @@ function OrderStatusTab({
               </table>
             </div>
           )}
-          <div className="flex flex-col gap-3 border-t border-border/70 pt-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Showing {startItem.toLocaleString()}-{endItem.toLocaleString()} of{' '}
               {data.meta.total.toLocaleString()}
             </p>
@@ -1026,7 +1048,7 @@ function OrderStatusTab({
                 <ChevronLeft className="h-4 w-4" />
                 Previous
               </Button>
-              <span className="min-w-24 text-center text-sm text-muted-foreground">
+              <span className="min-w-24 text-center text-sm text-slate-500 dark:text-slate-400">
                 Page {data.meta.totalPages === 0 ? 0 : data.meta.page} of{' '}
                 {data.meta.totalPages}
               </span>
@@ -1065,14 +1087,21 @@ function OrderSortableHeader({
   const SortIcon = activeSort.direction === 'asc' ? ArrowUp : ArrowDown;
 
   return (
-    <th className={cn('px-4 py-3', align === 'right' ? 'text-right' : 'text-left')}>
+    <th
+      className={cn(
+        'px-4 py-3',
+        align === 'right' ? 'text-right' : 'text-left',
+      )}
+    >
       <button
         type="button"
         onClick={() => onSort(sortKey)}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-lg px-1 py-1 transition hover:text-foreground',
+          'inline-flex items-center gap-1.5 rounded-lg px-1 py-1 transition hover:text-slate-950 dark:hover:text-white',
           align === 'right' ? 'justify-end' : 'justify-start',
-          isActive ? 'text-foreground' : 'text-muted-foreground',
+          isActive
+            ? 'text-slate-950 dark:text-white'
+            : 'text-slate-500 dark:text-slate-400',
         )}
       >
         {label}
@@ -1086,42 +1115,42 @@ function OrderStatusRow({ order }: { order: OrderStatusDashboardOrder }) {
   const saleLabel = order.salesNumber || 'No sale number';
 
   return (
-    <tr className="border-t border-border/70 transition hover:bg-secondary/35">
+    <tr className="border-t border-slate-200 transition hover:bg-orange-50/35 dark:border-slate-800 dark:hover:bg-slate-900/60">
       <td className="px-4 py-3">
         <Link
           href={`/orders/${order.id}`}
-          className="font-semibold text-primary hover:underline"
+          className="font-semibold text-[#0f6fb7] hover:underline dark:text-sky-300"
         >
           {saleLabel}
         </Link>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
           {order.orderNumber}
         </p>
       </td>
       <td className="max-w-[240px] px-4 py-3">
-        <p className="truncate font-medium text-foreground">
+        <p className="truncate font-medium text-slate-950 dark:text-white">
           {order.customerName}
         </p>
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0f6fb7]/10 text-xs font-bold text-[#0f6fb7] ring-1 ring-[#0f6fb7]/15 dark:bg-sky-400/10 dark:text-sky-300">
             {order.agentInitials}
           </span>
           <div className="min-w-0">
-            <p className="truncate font-medium text-foreground">
+            <p className="truncate font-medium text-slate-950 dark:text-white">
               {order.agentName}
             </p>
           </div>
         </div>
       </td>
-      <td className="px-4 py-3 text-right text-muted-foreground">
+      <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400">
         {formatDate(order.saleDate)}
       </td>
       <td
         className={cn(
           'px-4 py-3 text-right font-semibold',
-          order.isOverdue ? 'text-destructive' : 'text-foreground',
+          order.isOverdue ? 'text-red-600' : 'text-slate-950 dark:text-white',
         )}
       >
         {order.ageingDays.toLocaleString()}
@@ -1244,17 +1273,19 @@ function AgentLeadsTab({
         />
       </div>
 
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b border-border/70 bg-secondary/30 px-4 py-3">
+      <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
+        <CardHeader className="border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg">Agent Leads</CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <CardTitle className="text-xl text-slate-950 dark:text-white">
+                Agent Leads
+              </CardTitle>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {data.periodLabel} · {data.agents.length.toLocaleString()} agents
               </p>
             </div>
             {isLoading ? (
-              <Badge variant="outline" className="bg-card">
+              <Badge variant="outline" className="rounded-full bg-white px-3 py-1.5 dark:bg-slate-900">
                 Updating...
               </Badge>
             ) : null}
@@ -1268,13 +1299,13 @@ function AgentLeadsTab({
                 value={searchInput}
                 onChange={(event) => onSearchInputChange(event.target.value)}
                 placeholder="Search agent name"
-                className="h-10 rounded-xl pl-9"
+                className="h-10 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
               />
             </div>
             <Select
               value={statusFilter}
               onChange={(event) => onStatusFilterChange(event.target.value)}
-              className="h-10 rounded-xl"
+              className="h-10 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
             >
               <option value="ALL">All lead statuses</option>
               {data.statusOptions.map((status) => (
@@ -1286,22 +1317,22 @@ function AgentLeadsTab({
           </div>
 
           {sortedAgents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-12 text-center">
-              <Users className="h-10 w-10 text-muted-foreground" />
-              <p className="font-semibold text-foreground">No matching agents</p>
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 py-12 text-center dark:border-slate-700 dark:bg-slate-900/60">
+              <Users className="h-10 w-10 text-slate-400" />
+              <p className="font-semibold text-slate-950 dark:text-white">No matching agents</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Try another month, agent search, or lead status.
               </p>
             </div>
           ) : (
             <div
               className={cn(
-                'overflow-x-auto rounded-2xl border border-border/70 transition-opacity',
+                'overflow-x-auto rounded-2xl border border-slate-200 transition-opacity dark:border-slate-800',
                 isLoading ? 'opacity-70' : 'opacity-100',
               )}
             >
               <table className="w-full min-w-[760px] text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                   <tr>
                     <AgentLeadsSortableHeader
                       label="Agent"
@@ -1361,14 +1392,21 @@ function AgentLeadsSortableHeader({
   const SortIcon = activeSort.direction === 'asc' ? ArrowUp : ArrowDown;
 
   return (
-    <th className={cn('px-4 py-3', align === 'right' ? 'text-right' : 'text-left')}>
+    <th
+      className={cn(
+        'px-4 py-3',
+        align === 'right' ? 'text-right' : 'text-left',
+      )}
+    >
       <button
         type="button"
         onClick={() => onSort(sortKey)}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-lg px-1 py-1 transition hover:text-foreground',
+          'inline-flex items-center gap-1.5 rounded-lg px-1 py-1 transition hover:text-slate-950 dark:hover:text-white',
           align === 'right' ? 'justify-end' : 'justify-start',
-          isActive ? 'text-foreground' : 'text-muted-foreground',
+          isActive
+            ? 'text-slate-950 dark:text-white'
+            : 'text-slate-500 dark:text-slate-400',
         )}
       >
         {label}
@@ -1380,24 +1418,24 @@ function AgentLeadsSortableHeader({
 
 function AgentLeadsRow({ agent }: { agent: AgentLeadsDashboardAgent }) {
   return (
-    <tr className="border-t border-border/70 transition hover:bg-secondary/35">
+    <tr className="border-t border-slate-200 transition hover:bg-orange-50/35 dark:border-slate-800 dark:hover:bg-slate-900/60">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff5a00]/10 text-xs font-bold text-[#d94d00] ring-1 ring-[#ff5a00]/15 dark:bg-orange-400/10 dark:text-orange-300">
             {agent.initials}
           </span>
-          <p className="truncate font-medium text-foreground">
+          <p className="truncate font-medium text-slate-950 dark:text-white">
             {agent.agentName}
           </p>
         </div>
       </td>
-      <td className="px-4 py-3 text-right font-semibold text-foreground">
+      <td className="px-4 py-3 text-right font-semibold text-slate-950 dark:text-white">
         {agent.totalLeads.toLocaleString()}
       </td>
-      <td className="px-4 py-3 text-right font-semibold text-foreground">
+      <td className="px-4 py-3 text-right font-semibold text-slate-950 dark:text-white">
         {agent.totalProspects.toLocaleString()}
       </td>
-      <td className="px-4 py-3 text-right text-muted-foreground">
+      <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400">
         {agent.lastUpdated ? formatDateTime(agent.lastUpdated) : 'No updates'}
       </td>
     </tr>
@@ -1422,14 +1460,21 @@ function SortableHeader({
     activeSort.direction === 'asc' ? ArrowUp : ArrowDown;
 
   return (
-    <th className={cn('px-4 py-3', align === 'right' ? 'text-right' : 'text-left')}>
+    <th
+      className={cn(
+        'px-4 py-3',
+        align === 'right' ? 'text-right' : 'text-left',
+      )}
+    >
       <button
         type="button"
         onClick={() => onSort(sortKey)}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-lg px-1 py-1 transition hover:text-foreground',
+          'inline-flex items-center gap-1.5 rounded-lg px-1 py-1 transition hover:text-slate-950 dark:hover:text-white',
           align === 'right' ? 'justify-end' : 'justify-start',
-          isActive ? 'text-foreground' : 'text-muted-foreground',
+          isActive
+            ? 'text-slate-950 dark:text-white'
+            : 'text-slate-500 dark:text-slate-400',
         )}
       >
         {label}
@@ -1447,17 +1492,17 @@ function AgentPerformanceRow({
   currency: string;
 }) {
   return (
-    <tr className="border-t border-border/70 transition hover:bg-secondary/35">
+    <tr className="border-t border-slate-200 transition hover:bg-orange-50/35 dark:border-slate-800 dark:hover:bg-slate-900/60">
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-orange-500/15 text-xs font-bold text-primary ring-1 ring-primary/15">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ff5a00] to-[#0f6fb7] text-xs font-bold text-white shadow-md shadow-slate-950/10">
             {agent.initials}
           </div>
           <div className="min-w-0">
-            <p className="truncate font-semibold text-foreground">
+            <p className="truncate font-semibold text-slate-950 dark:text-white">
               {agent.agentName}
             </p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
               {agent.agentEmail || formatRole(agent.role)}
             </p>
           </div>

@@ -47,7 +47,7 @@ export function AppSidebar({
         id="crm-sidebar"
         aria-label="CRM sidebar navigation"
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#f36f3d]/20 bg-[linear-gradient(180deg,#fff7f2_0%,#edf7fb_46%,#f8fbff_100%)] px-2 py-3.5 text-slate-900 shadow-2xl shadow-sky-950/10 transition-[width,transform,box-shadow,background-color,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width,transform] dark:border-[#f36f3d]/15 dark:bg-[linear-gradient(180deg,#071326_0%,#0b172a_48%,#020617_100%)] dark:text-slate-100 dark:shadow-black/30',
+          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-white/10 bg-[linear-gradient(180deg,#062846_0%,#031f38_48%,#021426_100%)] px-2 py-3.5 text-white shadow-2xl shadow-sky-950/20 transition-[width,transform,box-shadow,background-color,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width,transform] dark:border-white/10 dark:bg-[linear-gradient(180deg,#062846_0%,#031f38_48%,#021426_100%)] dark:text-white dark:shadow-black/30',
           'w-[min(13rem,calc(100vw-1rem))]',
           'lg:translate-x-0 lg:shadow-none',
           isOpen ? 'translate-x-0' : '-translate-x-full',
@@ -74,7 +74,7 @@ export function AppSidebar({
         >
           <div
             className={cn(
-              'relative flex items-center rounded-[1.15rem] border border-white/85 bg-white/80 shadow-sm shadow-sky-900/5 ring-1 ring-[#1f5b70]/10 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-700/70 dark:bg-slate-950/55 dark:shadow-black/20 dark:ring-[#f36f3d]/15',
+              'relative flex items-center rounded-[1.15rem] border border-white/10 bg-white/[0.03] shadow-sm shadow-black/10 ring-1 ring-white/10 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-white/10 dark:bg-white/[0.03] dark:shadow-black/20 dark:ring-white/10',
               isCollapsed
                 ? 'justify-center px-1 py-2'
                 : 'min-h-[4.75rem] justify-center px-3 py-3.5',
@@ -111,7 +111,7 @@ export function AppSidebar({
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-1.5 top-1.5 h-8 w-8 shrink-0 text-[#1f5b70] hover:bg-[#f36f3d]/10 hover:text-[#f36f3d] dark:text-sky-200 dark:hover:bg-[#f36f3d]/15 dark:hover:text-orange-200 lg:hidden"
+              className="absolute right-1.5 top-1.5 h-8 w-8 shrink-0 text-white/75 hover:bg-white/10 hover:text-white lg:hidden"
               onClick={onClose}
               aria-label="Close navigation menu"
               type="button"
@@ -125,7 +125,7 @@ export function AppSidebar({
             variant="ghost"
             size="sm"
             className={cn(
-              'absolute -right-3 top-14 z-50 hidden h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#1f5b70]/20 bg-white p-0 text-[#1f5b70] shadow-md shadow-slate-900/10 ring-2 ring-white/80 transition-all duration-300 hover:-right-3.5 hover:border-[#f36f3d]/40 hover:bg-[#fff7f2] hover:text-[#f36f3d] focus-visible:ring-[#f36f3d]/35 dark:border-[#f36f3d]/25 dark:bg-slate-950 dark:text-sky-200 dark:ring-slate-950/80 dark:hover:bg-[#f36f3d]/15 dark:hover:text-orange-200 lg:flex',
+              'absolute -right-3 top-14 z-50 hidden h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-[#073052] p-0 text-white shadow-md shadow-slate-950/20 ring-2 ring-white/80 transition-all duration-300 hover:-right-3.5 hover:border-[#ff6a1a]/60 hover:bg-[#ff5a00] hover:text-white focus-visible:ring-[#ff6a1a]/35 lg:flex',
               isCollapsed ? 'top-10' : 'top-16',
             )}
             onClick={onToggleCollapse}
@@ -139,7 +139,7 @@ export function AppSidebar({
             )}
           </Button>
 
-          <Separator className="my-2.5 bg-[#1f5b70]/15 dark:bg-slate-800" />
+          <Separator className="my-2.5 bg-white/14" />
 
           <nav
             className={cn(
@@ -167,8 +167,8 @@ export function AppSidebar({
                       ? 'justify-center px-2 py-2'
                       : 'gap-2 px-2 py-1.5',
                     isActive
-                      ? 'border-[#1f5b70]/20 bg-white text-[#123f52] shadow-sm shadow-sky-900/5 ring-1 ring-[#f36f3d]/25 dark:border-[#f36f3d]/25 dark:bg-[#123f52]/35 dark:text-orange-100 dark:ring-[#f36f3d]/20'
-                      : 'border-transparent text-slate-600 hover:border-[#1f5b70]/15 hover:bg-white/65 hover:text-[#123f52] hover:shadow-sm hover:shadow-sky-900/5 dark:text-slate-300 dark:hover:border-[#f36f3d]/15 dark:hover:bg-slate-800/70 dark:hover:text-orange-100',
+                      ? 'border-[#ff6a1a]/35 bg-[#ff5a00] text-white shadow-lg shadow-orange-950/20 ring-1 ring-white/10'
+                      : 'border-transparent text-white/82 hover:border-white/10 hover:bg-white/8 hover:text-white',
                   )}
                 >
                   <span
@@ -184,8 +184,8 @@ export function AppSidebar({
                     className={cn(
                       'flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-all duration-300 group-hover:scale-105',
                       isActive
-                        ? 'bg-[#f36f3d]/12 text-[#f36f3d] shadow-sm ring-1 ring-[#f36f3d]/25 dark:bg-[#f36f3d]/15 dark:text-orange-200 dark:ring-[#f36f3d]/25'
-                        : 'bg-white/45 text-slate-500 group-hover:bg-[#1f5b70]/10 group-hover:text-[#1f5b70] dark:bg-slate-900/60 dark:text-slate-400 dark:group-hover:bg-[#f36f3d]/15 dark:group-hover:text-orange-200',
+                        ? 'bg-white/16 text-white shadow-sm ring-1 ring-white/15'
+                        : 'bg-white/8 text-white/70 group-hover:bg-white/12 group-hover:text-white',
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -207,19 +207,19 @@ export function AppSidebar({
             })}
           </nav>
 
-          <Separator className="my-2.5 bg-[#1f5b70]/15 dark:bg-slate-800" />
+          <Separator className="my-2.5 bg-white/14" />
 
-          <div className="mt-auto border-t border-[#1f5b70]/15 pt-2.5 text-center dark:border-slate-800">
+          <div className="mt-auto border-t border-white/14 pt-2.5 text-center">
             {isCollapsed ? (
               <p
-                className="text-[10px] font-semibold leading-tight text-slate-500 dark:text-slate-400"
+                className="text-[10px] font-semibold leading-tight text-white/60"
                 title="Auto Parts CRM Version 2.0.0 © Intracia Technologies"
               >
                 CRM
               </p>
             ) : (
-              <div className="space-y-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                <p className="font-semibold text-slate-600 dark:text-slate-300">Auto Parts CRM</p>
+              <div className="space-y-1 text-[11px] leading-relaxed text-white/60">
+                <p className="font-semibold text-white/80">Auto Parts CRM</p>
                 <p>Version 2.0.0</p>
                 <p>© Intracia Technologies</p>
               </div>
