@@ -127,25 +127,25 @@ export function NotificationBell() {
       <Button
         variant="outline"
         size="sm"
-        className="relative h-9 w-9 px-0"
+        className="relative h-10 w-10 rounded-full border-slate-200 bg-white px-0 text-slate-900 shadow-sm hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
         onClick={handleToggle}
         aria-label="Open notifications"
         aria-expanded={isOpen}
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 ? (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm">
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff5a00] px-1.5 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white dark:ring-[#020b18]">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         ) : null}
       </Button>
 
       {isOpen ? (
-        <div className="absolute right-0 top-11 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border/70 bg-white shadow-2xl shadow-slate-950/15">
-          <div className="flex items-start justify-between gap-3 border-b border-border/70 px-4 py-3">
+        <div className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/40">
+          <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/70">
             <div>
-              <p className="font-semibold text-foreground">Notifications</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-semibold text-slate-950 dark:text-white">Notifications</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {unreadCount > 0
                   ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
                   : 'You are all caught up'}
@@ -155,7 +155,7 @@ export function NotificationBell() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2"
+                className="h-8 rounded-lg px-2 text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30"
                 onClick={handleMarkAllRead}
                 disabled={isMutating || unreadCount === 0}
                 title="Mark all as read"
@@ -165,7 +165,7 @@ export function NotificationBell() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                className="h-8 rounded-lg px-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
                 onClick={handleClearAll}
                 disabled={isMutating || notifications.length === 0}
                 title="Clear all"
@@ -177,7 +177,7 @@ export function NotificationBell() {
 
           <div className="max-h-[26rem] overflow-y-auto p-2">
             {isLoading ? (
-              <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground">
+              <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-slate-500 dark:text-slate-400">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading notifications...
               </div>
@@ -186,7 +186,7 @@ export function NotificationBell() {
                 {error}
               </div>
             ) : notifications.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/70 bg-secondary/25 px-4 py-8 text-center text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                 No notifications yet.
               </div>
             ) : (
@@ -197,10 +197,10 @@ export function NotificationBell() {
                     role="button"
                     tabIndex={0}
                     className={cn(
-                      'w-full cursor-pointer rounded-xl border px-3 py-3 text-left transition hover:bg-sky-50/80',
+                      'w-full cursor-pointer rounded-xl border px-3 py-3 text-left transition hover:bg-orange-50/60 dark:hover:bg-slate-900',
                       notification.isRead
-                        ? 'border-border/70 bg-white'
-                        : 'border-sky-200 bg-sky-50',
+                        ? 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950'
+                        : 'border-orange-200 bg-orange-50/80 dark:border-orange-900/50 dark:bg-orange-950/20',
                     )}
                     onClick={() => void handleOpenNotification(notification)}
                     onKeyDown={(event) => {
@@ -213,26 +213,26 @@ export function NotificationBell() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate text-sm font-semibold text-foreground">
+                          <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">
                             {notification.title}
                           </p>
                           {!notification.isRead ? (
-                            <Badge variant="info" className="px-2 py-0.5">
+                            <Badge variant="outline" className="border-[#ff5a00]/30 bg-white px-2 py-0.5 text-[#d94d00] dark:bg-slate-950 dark:text-orange-300">
                               New
                             </Badge>
                           ) : null}
                         </div>
-                        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                        <p className="line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                           {notification.message}
                         </p>
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500">
                           {formatDateTime(notification.createdAt)}
                         </p>
                       </div>
                       <button
                         type="button"
                         aria-label="Clear notification"
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white hover:text-rose-600"
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white hover:text-rose-600 dark:hover:bg-slate-800"
                         onClick={(event) => {
                           void handleClearOne(notification, event);
                         }}
