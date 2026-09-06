@@ -8,7 +8,6 @@ import {
   ChevronDown,
   History,
   LoaderCircle,
-  MessageSquarePlus,
 } from 'lucide-react';
 import { DetailPageSkeleton } from '@/components/feedback/page-skeletons';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +59,6 @@ type TimelineEntry = {
 
 export function OrderDetailsView({ orderId }: { orderId: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
   const [noteMessage, setNoteMessage] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = useState(false);
@@ -85,7 +83,6 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
         message: trimmedMessage,
       });
       setNoteMessage('');
-      setIsAddNoteOpen(false);
       setRefreshKey((currentValue) => currentValue + 1);
       toast.success('Note added', 'The order activity panel has been refreshed.');
     } catch (caughtError) {
@@ -134,6 +131,10 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   const editHistoryTimeline = buildEditHistoryTimeline(order.notes);
   const statusTimeline = buildStatusTimeline(order);
   const shipmentTimeline = buildShipmentTimeline(order.shipments);
+  const remarksTimeline = [
+    ...notesTimeline,
+    ...shipmentTimeline,
+  ].sort(compareTimelineEntriesDesc);
   const latestShipment = order.shipments[0] ?? null;
   const latestShipmentCost = order.shipments[0]?.costs?.[0] ?? null;
   const canAddAdditionalCost =
@@ -143,54 +144,53 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
   return (
     <section className="space-y-6">
-      <InvoiceActions
-        order={order}
-        onInvoiceCreated={() => setRefreshKey((currentValue) => currentValue + 1)}
-      />
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
+        <InvoiceActions
+          order={order}
+          onInvoiceCreated={() => setRefreshKey((currentValue) => currentValue + 1)}
+        />
 
-      <GrossProfitSummaryCard
-        shipmentId={latestShipment?.id}
-        orderId={order.id}
-        totalSaleAmount={financialSummary.gpSaleBasis}
-        originalSaleAmount={order.totalSaleAmount}
-        currency={order.currency}
-        cost={latestShipmentCost}
-        saleMetricLabel={order.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
-        grossProfitOverride={financialSummary.grossProfitOverride}
-        refundDetails={
-          order.status === 'REFUNDED'
-            ? {
-                refundType: order.intakeDetails.refundType,
-                refundDeductionAmount: order.intakeDetails.refundDeductionAmount,
-                refundDeductionReason: order.intakeDetails.refundDeductionReason,
-                customerRefundedAmount: financialSummary.refundedAmount,
-                refundedAt: order.intakeDetails.refundedAt,
-              }
-            : null
-        }
-        additionalCosts={latestShipment?.additionalCosts ?? []}
-        costHistories={latestShipment?.costHistories ?? []}
-        canAddAdditionalCost={canAddAdditionalCost}
-        canEditBaseCost={canEditGpCosts}
-        canEditAdditionalCosts={canEditGpCosts}
-        onAdditionalCostAdded={() =>
-          setRefreshKey((currentValue) => currentValue + 1)
-        }
-        onCostUpdated={() => setRefreshKey((currentValue) => currentValue + 1)}
-      />
+        <GrossProfitSummaryCard
+          shipmentId={latestShipment?.id}
+          orderId={order.id}
+          totalSaleAmount={financialSummary.gpSaleBasis}
+          originalSaleAmount={order.totalSaleAmount}
+          currency={order.currency}
+          cost={latestShipmentCost}
+          saleMetricLabel={order.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+          grossProfitOverride={financialSummary.grossProfitOverride}
+          refundDetails={
+            order.status === 'REFUNDED'
+              ? {
+                  refundType: order.intakeDetails.refundType,
+                  refundDeductionAmount: order.intakeDetails.refundDeductionAmount,
+                  refundDeductionReason: order.intakeDetails.refundDeductionReason,
+                  customerRefundedAmount: financialSummary.refundedAmount,
+                  refundedAt: order.intakeDetails.refundedAt,
+                }
+              : null
+          }
+          additionalCosts={latestShipment?.additionalCosts ?? []}
+          costHistories={latestShipment?.costHistories ?? []}
+          canAddAdditionalCost={canAddAdditionalCost}
+          canEditBaseCost={canEditGpCosts}
+          canEditAdditionalCosts={canEditGpCosts}
+          onAdditionalCostAdded={() =>
+            setRefreshKey((currentValue) => currentValue + 1)
+          }
+          onCostUpdated={() => setRefreshKey((currentValue) => currentValue + 1)}
+        />
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] xl:grid-cols-[minmax(0,1.08fr)_minmax(430px,0.92fr)]">
         <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl sm:text-2xl">Order details</CardTitle>
-              <CardDescription>
-                Compact order, customer, vehicle, pricing, billing, and shipping details.
-              </CardDescription>
+          <Card className="overflow-hidden border-border/70 shadow-sm">
+            <CardHeader className="border-b border-border/70 pb-3">
+              <CardTitle className="text-xl">Order details</CardTitle>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              <DetailSection title="Basic Order Info">
+            <CardContent className="space-y-3 p-3.5 sm:p-4">
+              <DetailSection title="Basic Order Info" tone="orange">
                 <DetailBlock label="Order number" value={order.orderNumber} />
                 <DetailBlock
                   label="Sales Number"
@@ -206,7 +206,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 />
               </DetailSection>
 
-              <DetailSection title="Customer Info">
+              <DetailSection title="Customer Info" tone="blue">
                 <DetailBlock label="Name" value={order.customerName} />
                 <DetailBlock
                   label="Mobile"
@@ -218,7 +218,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 />
               </DetailSection>
 
-              <DetailSection title="Vehicle / Part Info">
+              <DetailSection title="Vehicle / Part Info" tone="teal">
                 <DetailBlock label="Parts" value={order.partDescription} />
                 <DetailBlock label="Make" value={intake.vehicleMake ?? 'Not provided'} />
                 <DetailBlock label="Model" value={intake.vehicleModel ?? 'Not provided'} />
@@ -231,7 +231,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 />
               </DetailSection>
 
-              <CollapsibleDetailSection title="Billing Information">
+              <CollapsibleDetailSection title="Billing Information" tone="amber">
                 <DetailBlock
                   label="Billing Address"
                   value={intake.billingAddress ?? 'Not provided'}
@@ -246,7 +246,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 />
               </CollapsibleDetailSection>
 
-              <CollapsibleDetailSection title="Shipping Information">
+              <CollapsibleDetailSection title="Shipping Information" tone="sky">
                 <DetailBlock
                   label="Shipping Address"
                   value={
@@ -288,7 +288,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
                 ) : null}
               </CollapsibleDetailSection>
 
-              <DetailSection title="Pricing / Sales Info">
+              <DetailSection title="Pricing / Sales Info" tone="green">
                 <DetailBlock
                   label="Miles Offered"
                   value={formatNullableText(intake.milesOffered)}
@@ -346,104 +346,74 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <Card className="lg:max-h-[calc(100vh-3rem)] lg:overflow-hidden">
-            <CardHeader className="space-y-3 pb-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <History className="h-5 w-5 text-primary" />
-                    Notes & Edit History
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Newest activity stays visible while reviewing order details.
-                  </CardDescription>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setIsAddNoteOpen((currentValue) => !currentValue);
-                    setNoteError(null);
-                  }}
-                >
-                  <MessageSquarePlus className="h-4 w-4" />
-                  Add Note
-                </Button>
-              </div>
+            <CardHeader className="border-b border-border/70 pb-3">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <History className="h-5 w-5 text-primary" />
+                Remarks
+              </CardTitle>
             </CardHeader>
 
-            <CardContent className="space-y-4 lg:max-h-[calc(100vh-10.5rem)] lg:overflow-y-auto">
-              {isAddNoteOpen ? (
-                <form
-                  className="space-y-2.5 rounded-2xl border border-border/70 bg-secondary/20 p-3"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void handleAddNoteSubmit();
-                  }}
-                >
-                  <label
-                    htmlFor="order-detail-note"
-                    className="text-sm font-semibold text-foreground"
-                  >
-                    New note
-                  </label>
-                  <textarea
-                    id="order-detail-note"
-                    value={noteMessage}
-                    rows={3}
-                    onChange={(event) => setNoteMessage(event.target.value)}
-                    placeholder="Add a customer update, handoff, or follow-up note."
-                    className={cn(
-                      'w-full rounded-2xl border border-input bg-white/90 px-4 py-3 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                      noteError ? 'border-destructive/60' : null,
-                    )}
-                  />
-                  {noteError ? (
-                    <p className="text-sm text-destructive">{noteError}</p>
-                  ) : null}
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="submit" size="sm" disabled={isSavingNote}>
-                      {isSavingNote ? (
-                        <>
-                          <LoaderCircle className="h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        'Save note'
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setIsAddNoteOpen(false);
-                        setNoteError(null);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              ) : null}
-
-              <TimelineGroup
-                title="Notes Timeline"
-                entries={notesTimeline}
-                emptyMessage="No notes have been added yet."
+            <CardContent className="space-y-3 p-3.5 lg:max-h-[calc(100vh-7.5rem)] lg:overflow-y-auto sm:p-4">
+              <RemarkTimeline
+                entries={remarksTimeline}
+                emptyMessage="No internal notes yet."
               />
+
+              <form
+                className="space-y-2 border-t border-border/70 pt-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void handleAddNoteSubmit();
+                }}
+              >
+                <label
+                  htmlFor="order-detail-note"
+                  className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                >
+                  Add Remark
+                </label>
+                <textarea
+                  id="order-detail-note"
+                  value={noteMessage}
+                  rows={3}
+                  onChange={(event) => setNoteMessage(event.target.value)}
+                  placeholder="Add Remark"
+                  className={cn(
+                    'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    noteError ? 'border-destructive/60' : null,
+                  )}
+                />
+                {noteError ? (
+                  <p className="text-sm text-destructive">{noteError}</p>
+                ) : null}
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="w-full bg-[#ff5a00] text-white hover:bg-[#e65000]"
+                  disabled={isSavingNote}
+                >
+                  {isSavingNote ? (
+                    <>
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Submit'
+                  )}
+                </Button>
+              </form>
+
               <TimelineGroup
                 title="Edit History Timeline"
                 entries={editHistoryTimeline}
                 emptyMessage="No edit history has been recorded yet."
+                collapsible
               />
               <TimelineGroup
                 title="Status Change History"
                 entries={statusTimeline}
                 emptyMessage="No status changes have been recorded yet."
-              />
-              <TimelineGroup
-                title="Shipment Updates"
-                entries={shipmentTimeline}
-                emptyMessage="Shipment is not created yet."
+                collapsible
               />
             </CardContent>
           </Card>
@@ -614,33 +584,39 @@ function ShippingStatusValue({
 
 function DetailSection({
   title,
+  tone = 'slate',
   children,
 }: {
   title: string;
+  tone?: DetailTone;
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-2.5">
-      <h3 className="text-base font-semibold text-foreground">{title}</h3>
-      <div className="grid gap-2.5 sm:grid-cols-2 2xl:grid-cols-3">{children}</div>
+    <section className={cn('rounded-xl border p-3 shadow-sm', getDetailToneClassName(tone))}>
+      <h3 className="text-xs font-bold uppercase tracking-[0.16em]">
+        {title}
+      </h3>
+      <div className="mt-2 grid gap-x-4 gap-y-1.5 sm:grid-cols-2">{children}</div>
     </section>
   );
 }
 
 function CollapsibleDetailSection({
   title,
+  tone = 'slate',
   children,
 }: {
   title: string;
+  tone?: DetailTone;
   children: React.ReactNode;
 }) {
   return (
-    <details className="group rounded-2xl border border-border/70 bg-background/70 shadow-sm">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 text-base font-semibold text-foreground marker:hidden">
+    <details className={cn('group rounded-xl border p-3 shadow-sm', getDetailToneClassName(tone))}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-bold uppercase tracking-[0.16em] marker:hidden">
         {title}
-        <ChevronDown className="h-5 w-5 text-muted-foreground transition group-open:rotate-180" />
+        <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
       </summary>
-      <div className="grid gap-2.5 px-3.5 pb-3.5 sm:grid-cols-2 2xl:grid-cols-3">
+      <div className="mt-2 grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
         {children}
       </div>
     </details>
@@ -655,15 +631,38 @@ function DetailBlock({
   value: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border/70 bg-secondary/20 p-2.5">
-      <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="grid min-w-0 grid-cols-[7.25rem_minmax(0,1fr)] gap-2 text-xs leading-5">
+      <p className="font-bold uppercase text-foreground/85">
         {label}
       </p>
-      <div className="mt-1 whitespace-pre-wrap text-sm leading-5 text-foreground">
+      <div className="min-w-0 whitespace-pre-wrap font-medium text-foreground">
         {value}
       </div>
     </div>
   );
+}
+
+type DetailTone = 'orange' | 'blue' | 'teal' | 'amber' | 'sky' | 'green' | 'slate';
+
+function getDetailToneClassName(tone: DetailTone) {
+  const classes: Record<DetailTone, string> = {
+    orange:
+      'border-orange-200 bg-orange-50/70 text-orange-800 dark:border-orange-900/50 dark:bg-orange-950/20 dark:text-orange-200',
+    blue:
+      'border-blue-200 bg-blue-50/70 text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-200',
+    teal:
+      'border-teal-200 bg-teal-50/70 text-teal-800 dark:border-teal-900/50 dark:bg-teal-950/20 dark:text-teal-200',
+    amber:
+      'border-amber-200 bg-amber-50/70 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200',
+    sky:
+      'border-sky-200 bg-sky-50/70 text-sky-800 dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-200',
+    green:
+      'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-200',
+    slate:
+      'border-border bg-secondary/20 text-foreground',
+  };
+
+  return classes[tone];
 }
 
 function ShippingAddressValue({
@@ -696,11 +695,48 @@ function TimelineGroup({
   title,
   entries,
   emptyMessage,
+  collapsible = false,
 }: {
   title: string;
   entries: TimelineEntry[];
   emptyMessage: string;
+  collapsible?: boolean;
 }) {
+  const content = (
+    <>
+      {entries.length > 0 ? (
+        <ol className="space-y-2 pt-2">
+          {entries.map((entry) => (
+            <TimelineItem key={entry.id} entry={entry} />
+          ))}
+        </ol>
+      ) : (
+        <div className="mt-2 rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
+          {emptyMessage}
+        </div>
+      )}
+    </>
+  );
+
+  if (collapsible) {
+    return (
+      <details className="group rounded-xl border border-border/70 bg-secondary/10 px-3 py-2">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 marker:hidden">
+          <span>
+            <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              {title}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {entries.length} record{entries.length === 1 ? '' : 's'}
+            </span>
+          </span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
+        </summary>
+        {content}
+      </details>
+    );
+  }
+
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between gap-3">
@@ -712,19 +748,76 @@ function TimelineGroup({
         </Badge>
       </div>
 
-      {entries.length > 0 ? (
-        <ol className="space-y-2">
-          {entries.map((entry) => (
-            <TimelineItem key={entry.id} entry={entry} />
-          ))}
-        </ol>
-      ) : (
-        <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
-          {emptyMessage}
-        </div>
-      )}
+      {content}
     </section>
   );
+}
+
+function RemarkTimeline({
+  entries,
+  emptyMessage,
+}: {
+  entries: TimelineEntry[];
+  emptyMessage: string;
+}) {
+  if (entries.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
+        {emptyMessage}
+      </p>
+    );
+  }
+
+  return (
+    <ol className="relative space-y-3 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-border">
+      {entries.map((entry) => (
+        <RemarkItem key={entry.id} entry={entry} />
+      ))}
+    </ol>
+  );
+}
+
+function RemarkItem({ entry }: { entry: TimelineEntry }) {
+  return (
+    <li className="relative pl-6">
+      <span
+        className={cn(
+          'absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-background',
+          getTimelineDotClassName(entry.badgeVariant),
+        )}
+      />
+      <div className="space-y-1">
+        <p className="text-sm font-semibold text-foreground">{entry.actorName}</p>
+        <p className="text-xs text-muted-foreground">
+          {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
+        </p>
+        <Badge
+          variant={entry.badgeVariant ?? 'secondary'}
+          className="h-5 rounded-md px-2 text-[10px]"
+        >
+          {entry.action}
+        </Badge>
+        <div className="whitespace-pre-wrap text-xs leading-5 text-foreground/85">
+          {entry.body}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function getTimelineDotClassName(variant?: TimelineEntry['badgeVariant']) {
+  switch (variant) {
+    case 'warning':
+      return 'bg-amber-500';
+    case 'success':
+      return 'bg-emerald-500';
+    case 'danger':
+      return 'bg-red-500';
+    case 'info':
+      return 'bg-sky-500';
+    default:
+      return 'bg-teal-500';
+  }
 }
 
 function TimelineItem({ entry }: { entry: TimelineEntry }) {

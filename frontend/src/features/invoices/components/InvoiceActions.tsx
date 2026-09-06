@@ -84,6 +84,7 @@ export function InvoiceActions({
   const [isCloningInvoice, setIsCloningInvoice] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isPhotoIdOpen, setIsPhotoIdOpen] = useState(false);
+  const [isActionsExpanded, setIsActionsExpanded] = useState(false);
   const [invoiceForPdf, setInvoiceForPdf] = useState<InvoiceRecord | null>(null);
   const [draft, setDraft] = useState<InvoiceDraft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -356,54 +357,118 @@ export function InvoiceActions({
     }
   };
 
+  const primaryInvoiceActionLabel = !invoice
+    ? 'Generate Invoice'
+    : invoice.status === 'SIGNED'
+      ? 'Generate Invoice'
+      : 'Edit Invoice';
+
+  const handlePrimaryInvoiceAction = () => {
+    if (!invoice) {
+      void openGenerateModal();
+      return;
+    }
+
+    if (invoice.status === 'SIGNED') {
+      openCloneModal();
+      return;
+    }
+
+    openEditModal();
+  };
+
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1.5">
+      <Card className="overflow-hidden border-border/70 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <CardTitle className="flex items-center gap-2 text-lg">
               <FileText className="h-4 w-4 text-primary" />
               Invoice Management
             </CardTitle>
-            <CardDescription className="text-sm">
-              {canManageInvoice
-                ? 'Generate, view, and download the purchase invoice.'
-                : 'View and download the purchase invoice and audit trail.'}
-            </CardDescription>
+            <Link
+              href={backLink.href}
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'sm' }),
+                'h-8 shrink-0 rounded-full px-3 text-xs',
+              )}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              {backLink.label}
+            </Link>
           </div>
-          <Link
-            href={backLink.href}
-            className={cn(
-              buttonVariants({ variant: 'outline', size: 'sm' }),
-              'h-8 shrink-0 rounded-full px-3 text-xs',
-            )}
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            {backLink.label}
-          </Link>
         </CardHeader>
-        <CardContent className="space-y-3 pt-1">
-          {invoice ? (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
+        <CardContent className="space-y-3 pt-0">
+          <div className="flex flex-col items-start gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {canManageInvoice ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="bg-[#ff5a00] text-white shadow-sm shadow-orange-600/20 hover:bg-[#e65000]"
+                  disabled={isLoadingDefaults}
+                  onClick={handlePrimaryInvoiceAction}
+                >
+                  {isLoadingDefaults ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4" />
+                  )}
+                  {isLoadingDefaults ? 'Loading...' : primaryInvoiceActionLabel}
+                </Button>
+              ) : null}
+              {invoice ? (
                 <Badge variant="success" className="gap-1">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   {invoice.status === 'SIGNED' ? 'Signed' : 'Invoiced'}
                 </Badge>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={isLoadingInvoiceDetails}
-                  onClick={() => void openInvoiceView()}
-                >
-                  {isLoadingInvoiceDetails ? (
-                    <LoaderCircle className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                  {invoice.status === 'SIGNED' ? 'View Signed Invoice' : 'View Invoice'}
-                </Button>
+              ) : null}
+            </div>
+
+            {invoice ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={isLoadingInvoiceDetails}
+                onClick={() => void openInvoiceView()}
+              >
+                {isLoadingInvoiceDetails ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                {invoice.status === 'SIGNED' ? 'View Signed Invoice' : 'View Invoice'}
+              </Button>
+            ) : !canManageInvoice ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                Invoice is not available yet.
+              </div>
+            ) : null}
+          </div>
+          {(invoice || canManageInvoice) ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 px-0 text-xs font-semibold text-[#d94d00] hover:bg-transparent hover:text-[#c94700] dark:text-orange-300 dark:hover:text-orange-200"
+              aria-expanded={isActionsExpanded}
+              onClick={() => setIsActionsExpanded((currentValue) => !currentValue)}
+            >
+              {isActionsExpanded ? 'Hide actions' : 'View more actions'}
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transition-transform',
+                  isActionsExpanded ? 'rotate-180' : '',
+                )}
+              />
+            </Button>
+          ) : null}
+
+          {isActionsExpanded ? (
+            invoice ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
                 <Button type="button" size="sm" disabled={isDownloading} onClick={() => void handleDownloadInvoice()}>
                   {isDownloading ? (
                     <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -482,26 +547,18 @@ export function InvoiceActions({
                     </Button>
                   </>
                 ) : null}
-              </div>
+                </div>
               <InvoiceAuditTrailPanel
                 invoice={invoice}
                 onLoadFullInvoice={loadFullInvoice}
               />
             </>
-          ) : canManageInvoice ? (
-            <Button type="button" size="sm" onClick={openGenerateModal} disabled={isLoadingDefaults}>
-              {isLoadingDefaults ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-              ) : (
-                <FileText className="h-4 w-4" />
-              )}
-              Generate Invoice
-            </Button>
-          ) : (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              Invoice is not available yet. Sales users can view and download invoices once created.
-            </div>
-          )}
+            ) : canManageInvoice ? (
+              <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
+                Generate an invoice first to unlock download, audit trail, and signing actions.
+              </div>
+            ) : null
+          ) : null}
         </CardContent>
       </Card>
 
