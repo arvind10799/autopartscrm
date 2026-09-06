@@ -62,10 +62,13 @@ function buildColumns(
       accessorKey: 'date',
       header: 'Date',
       meta: {
-        className: 'w-[12%] overflow-hidden',
+        className: role === 'ADMIN' ? 'w-[10%] overflow-hidden px-2' : 'w-[11%] overflow-hidden px-2',
       },
       cell: ({ row }) => (
-        <p className="truncate font-semibold text-slate-950 dark:text-white" title={formatDate(row.original.date)}>
+        <p
+          className="truncate font-semibold text-slate-950 dark:text-white"
+          title={formatDate(row.original.date)}
+        >
           {formatDate(row.original.date)}
         </p>
       ),
@@ -74,7 +77,7 @@ function buildColumns(
       accessorKey: 'customerName',
       header: 'Customer',
       meta: {
-        className: role === 'ADMIN' ? 'w-[15%] overflow-hidden' : 'w-[18%] overflow-hidden',
+        className: role === 'ADMIN' ? 'w-[15%] overflow-hidden px-2' : 'w-[18%] overflow-hidden px-2',
       },
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -93,7 +96,7 @@ function buildColumns(
       accessorKey: 'customerPhone',
       header: 'Phone No.',
       meta: {
-        className: 'w-[14%] overflow-hidden',
+        className: role === 'ADMIN' ? 'w-[13%] overflow-hidden px-2' : 'w-[14%] overflow-hidden px-2',
       },
       cell: ({ row }) => (
         <p
@@ -108,10 +111,13 @@ function buildColumns(
       accessorKey: 'partDescription',
       header: 'Vehicle',
       meta: {
-        className: role === 'ADMIN' ? 'w-[22%] overflow-hidden' : 'w-[28%] overflow-hidden',
+        className: role === 'ADMIN' ? 'w-[24%] overflow-hidden px-2' : 'w-[27%] overflow-hidden px-2',
       },
       cell: ({ row }) => (
-        <p className="truncate text-sm text-slate-700 dark:text-slate-200" title={formatVehicleSummary(row.original)}>
+        <p
+          className="truncate text-sm text-slate-700 dark:text-slate-200"
+          title={formatVehicleSummary(row.original)}
+        >
           {formatVehicleSummary(row.original)}
         </p>
       ),
@@ -120,7 +126,7 @@ function buildColumns(
       accessorKey: 'quote',
       header: 'Quote',
       meta: {
-        className: 'w-[11%] overflow-hidden text-right',
+        className: 'w-[10%] overflow-hidden px-2 text-right',
       },
       cell: ({ row }) => (
         <span className="block truncate font-semibold text-slate-950 dark:text-white">
@@ -134,7 +140,7 @@ function buildColumns(
       accessorKey: 'status',
       header: 'Status',
       meta: {
-        className: role === 'ADMIN' ? 'w-[11%] overflow-hidden' : 'w-[10%] overflow-hidden',
+        className: 'w-[12%] overflow-hidden px-2',
       },
       cell: ({ row }) => {
         const status = row.original.isConverted ? 'CONVERTED' : row.original.status;
@@ -142,11 +148,9 @@ function buildColumns(
         return (
           <Badge
             variant="outline"
+            title={status === 'CONVERTED' ? 'Converted' : formatLeadStatusLabel(status)}
             className={cn(
-              'inline-flex max-w-full justify-center rounded-full px-2.5 py-1 text-center text-xs font-semibold leading-tight',
-              status === 'CALL_BACK_LATER'
-                ? 'whitespace-normal rounded-2xl'
-                : 'whitespace-nowrap',
+              'inline-flex max-w-full truncate whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold leading-tight',
               getLeadStatusTone(status),
             )}
           >
@@ -159,7 +163,7 @@ function buildColumns(
       id: 'actions',
       header: '',
       meta: {
-        className: 'w-[7%] text-right',
+        className: 'w-[8%] overflow-hidden px-2 text-right',
       },
       cell: ({ row }) =>
         row.original.isConverted && row.original.convertedOrder ? (
@@ -167,7 +171,7 @@ function buildColumns(
             href={`/orders/${row.original.convertedOrder.id}`}
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'h-8 rounded-xl px-2 text-xs text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
+              'h-8 w-8 rounded-xl px-0 text-xs text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
             )}
             title="View order"
           >
@@ -175,26 +179,26 @@ function buildColumns(
             <span className="sr-only">View order</span>
           </Link>
         ) : (
-          <div className="flex items-center justify-end gap-1">
+          <div className="flex min-w-0 items-center justify-end gap-1">
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 rounded-xl px-2 text-xs"
+              className="h-8 w-8 rounded-xl px-0 text-xs"
               onClick={() => onEdit(row.original)}
               title="Edit"
             >
               <PencilLine className="h-4 w-4" />
-              <span className="hidden xl:inline">Edit</span>
+              <span className="sr-only">Edit</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 rounded-xl border-[#ff5a00]/25 px-2 text-xs text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
+              className="h-8 w-8 rounded-xl border-[#ff5a00]/25 px-0 text-xs text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
               onClick={() => onConvert(row.original)}
               title="Convert to order"
             >
               <RefreshCw className="h-4 w-4" />
-              <span className="hidden 2xl:inline">Convert</span>
+              <span className="sr-only">Convert to order</span>
             </Button>
           </div>
         ),
@@ -206,10 +210,13 @@ function buildColumns(
       accessorKey: 'adviserName',
       header: 'Adviser',
       meta: {
-        className: 'w-[8%] overflow-hidden',
+        className: 'hidden w-[8%] overflow-hidden px-2 2xl:table-cell',
       },
       cell: ({ row }) => (
-        <p className="truncate font-medium text-slate-700 dark:text-slate-200" title={row.original.adviserName}>
+        <p
+          className="truncate font-medium text-slate-700 dark:text-slate-200"
+          title={row.original.adviserName}
+        >
           {getFirstName(row.original.adviserName)}
         </p>
       ),
