@@ -896,7 +896,7 @@ function buildReplacementStatusHistoryEntries(
       id: `order-status-${note.id}`,
       timestamp: note.createdAt,
       authorName: note.author.name,
-      label: 'Status changed',
+      label: getStatusActivityLabel(note.content),
       badgeVariant: 'warning' as const,
       body: formatNoteBody(note.content),
     })),
@@ -904,7 +904,7 @@ function buildReplacementStatusHistoryEntries(
       id: `shipment-status-${note.id}`,
       timestamp: note.createdAt,
       authorName: note.author.name,
-      label: 'Status changed',
+      label: getStatusActivityLabel(note.message),
       badgeVariant: 'warning' as const,
       body: formatNoteBody(note.message),
     })),
@@ -955,7 +955,17 @@ function isEditHistoryNote(note: { content: string }) {
 function isReplacementStatusNote(note: { content: string }) {
   const trimmedContent = note.content.trim();
 
-  return /^Replacement (request created|updated):/i.test(trimmedContent) && /^- Status:/im.test(trimmedContent);
+  return (
+    (/^Replacement (request created|updated):/i.test(trimmedContent) &&
+      /^- Status:/im.test(trimmedContent)) ||
+    /^Shipment status updated:/i.test(trimmedContent)
+  );
+}
+
+function getStatusActivityLabel(content: string) {
+  return /^Shipment status updated:/i.test(content.trim())
+    ? 'Shipment status'
+    : 'Status changed';
 }
 
 function getActivityLabel(content: string) {
@@ -996,6 +1006,7 @@ function formatNoteBody(content: string) {
   return content
     .replace(/^Order updated:\s*/i, '')
     .replace(/^Shipment updated:\s*/i, '')
+    .replace(/^Shipment status updated:\s*/i, '')
     .replace(/^Invoice generated:\s*/i, '')
     .replace(/^Invoice signature request sent:\s*/i, '')
     .replace(/^Invoice signature request resent:\s*/i, '')
