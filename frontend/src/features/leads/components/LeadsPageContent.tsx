@@ -85,6 +85,10 @@ export function LeadsPageContent() {
     useState<LeadSummary | null>(null);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const activeSearch = deferredSearchTerm.trim();
+  const searchPlaceholder =
+    authUser?.role === 'SALES'
+      ? 'Search by customer, email, phone, state, or vehicle'
+      : 'Search by customer, email, phone, adviser, state, or vehicle';
   const dateRangeQuery = useMemo(
     () => buildTimestampRangeQuery(dateFilter),
     [dateFilter],
@@ -206,7 +210,7 @@ export function LeadsPageContent() {
                   value={searchTerm}
                   onChange={(event) => handleSearchChange(event.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
-                  placeholder="Search by customer, email, phone, adviser, state, or vehicle"
+                  placeholder={searchPlaceholder}
                 />
               </div>
 

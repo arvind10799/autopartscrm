@@ -213,15 +213,15 @@ export function AppSidebar({
             {isCollapsed ? (
               <p
                 className="text-[10px] font-semibold leading-tight text-white/60"
-                title="Auto Parts CRM Version 2.0.0 © Intracia Technologies"
+                title="Auto Parts CRM Version 5.0 Powered by Rock One Solutions"
               >
                 CRM
               </p>
             ) : (
               <div className="space-y-1 text-[11px] leading-relaxed text-white/60">
                 <p className="font-semibold text-white/80">Auto Parts CRM</p>
-                <p>Version 2.0.0</p>
-                <p>© Intracia Technologies</p>
+                <p>Version 5.0</p>
+                <p>Powered by Rock One Solutions</p>
               </div>
             )}
           </div>
