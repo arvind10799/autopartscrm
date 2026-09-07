@@ -3,12 +3,11 @@
 import type { ReactNode } from 'react';
 import {
   ArrowLeft,
-  FileStack,
+  ChevronDown,
   History,
   LoaderCircle,
-  MessageSquarePlus,
   PackageCheck,
-  TrendingUp,
+  Plus,
   Search,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -37,12 +36,16 @@ import {
   createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
 import { toast } from '@/lib/stores/toast.store';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { notesApi } from '@/features/notes/api/notes-api';
 import {
   OrderResolutionActions,
   OrderResolutionDetails,
 } from '@/features/orders/components/OrderResolutionActions';
+import { GrossProfitSummaryCard } from '@/features/shipments/components/GrossProfitSummaryCard';
+import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
+import { cn } from '@/lib/utils/cn';
 import { useOrderDetailWithRefresh } from '@/features/orders/hooks/useOrderDetail';
 import { useOrdersList } from '@/features/orders/hooks/useOrdersList';
 import {
@@ -68,11 +71,17 @@ import type {
   OrderShipmentStatus,
 } from '@/features/orders/types/order.types';
 import type { ShipmentSummary } from '../types/shipment.types';
-import {
-  CreateShipmentForm,
-  type CreateShipmentCostDraft,
-} from './CreateShipmentForm';
+import { CreateShipmentForm } from './CreateShipmentForm';
 import { ShipmentEligibleOrdersTable } from './ShipmentEligibleOrdersTable';
+
+type TimelineEntry = {
+  id: string;
+  timestamp: string;
+  actorName: string;
+  action: string;
+  body: ReactNode;
+  badgeVariant?: 'default' | 'secondary' | 'outline' | 'neutral' | 'success' | 'warning' | 'danger' | 'info';
+};
 
 const SHIPMENT_ORDER_STATUS_FILTERS = [
   REPLACEMENT_SHIPMENT_STATUS_FILTER,
@@ -225,15 +234,7 @@ export function CreateShipmentWorkspace() {
 export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
   const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [costDraft, setCostDraft] = useState<CreateShipmentCostDraft>({
-    purchaseAmount: 0,
-    shippingAmount: 0,
-    estimatedPurchaseAmount: 0,
-    estimatedShippingAmount: 0,
-    hasActualPurchaseAmount: false,
-    hasActualShippingAmount: false,
-    additionalAmount: 0,
-  });
+  const authUser = useAuthStore((state) => state.user);
   const { order, isLoading, error } = useOrderDetailWithRefresh(
     orderId,
     refreshKey,
@@ -307,49 +308,90 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
     );
   }
 
-  const shipmentStatusNotes = buildShipmentStatusNotes(order.notes);
   const isOrderResolvedForShipment =
     order.status === 'CANCELLED' || order.status === 'REFUNDED';
+  const financialSummary = getOrderFinancialSummary(order);
+  const latestShipment = order.shipments[0] ?? null;
+  const latestShipmentCost = latestShipment?.costs[0] ?? null;
+  const canManageGpCosts =
+    authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
 
   return (
-    <section className="grid gap-6">
-      <InvoiceActions
-        order={order}
-        onInvoiceCreated={() => setRefreshKey((currentValue) => currentValue + 1)}
-      />
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.9fr)]">
-        <ShipmentOrderDetailsPanel
+    <section className="grid gap-5">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
+        <InvoiceActions
           order={order}
-          costDraft={costDraft}
-          onRefresh={() => setRefreshKey((currentValue) => currentValue + 1)}
+          onInvoiceCreated={() => setRefreshKey((currentValue) => currentValue + 1)}
         />
 
-        <div className="xl:sticky xl:top-6 xl:self-start">
+        <GrossProfitSummaryCard
+          shipmentId={latestShipment?.id}
+          orderId={order.id}
+          totalSaleAmount={financialSummary.gpSaleBasis}
+          originalSaleAmount={order.totalSaleAmount}
+          currency={order.currency}
+          cost={latestShipmentCost}
+          saleMetricLabel={order.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+          grossProfitOverride={financialSummary.grossProfitOverride}
+          refundDetails={
+            order.status === 'REFUNDED'
+              ? {
+                  refundType: order.intakeDetails.refundType,
+                  refundDeductionAmount:
+                    order.intakeDetails.refundDeductionAmount,
+                  refundDeductionReason:
+                    order.intakeDetails.refundDeductionReason,
+                  customerRefundedAmount: financialSummary.refundedAmount,
+                  refundedAt: order.intakeDetails.refundedAt,
+                }
+              : null
+          }
+          additionalCosts={latestShipment?.additionalCosts ?? []}
+          costHistories={latestShipment?.costHistories ?? []}
+          canAddAdditionalCost={canManageGpCosts}
+          canEditBaseCost={canManageGpCosts}
+          canEditAdditionalCosts={canManageGpCosts}
+          onAdditionalCostAdded={() =>
+            setRefreshKey((currentValue) => currentValue + 1)
+          }
+          onCostUpdated={() => setRefreshKey((currentValue) => currentValue + 1)}
+        />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
+        <div className="grid gap-5">
+          <ShipmentOrderDetailsPanel
+            order={order}
+            onRefresh={() => setRefreshKey((currentValue) => currentValue + 1)}
+          />
+
           <Card className="overflow-hidden border-border/70 shadow-sm">
-            <CardHeader className="border-b border-border/70 bg-[linear-gradient(135deg,rgba(59,130,246,0.08),rgba(255,255,255,0.98))]">
-              <CardDescription>Create shipment</CardDescription>
-              <CardTitle className="text-2xl sm:text-[1.75rem]">
-                Dispatch this order
-              </CardTitle>
+            <CardHeader className="border-b border-border/70 px-4 py-3">
+              <CardTitle className="text-lg">Create shipment</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-5 p-5">
-              <ShipmentStatusHistoryPanel notes={shipmentStatusNotes} />
+            <CardContent className="space-y-4 p-4">
               {isOrderResolvedForShipment ? (
-                <div className="rounded-2xl border border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
                   Status updates are disabled because this order is{' '}
                   {formatOrderStatus(order.status)}.
                 </div>
               ) : (
                 <CreateShipmentForm
                   selectedOrder={order}
-                  onCostDraftChange={setCostDraft}
                   onCreated={handleShipmentCreated}
                 />
               )}
             </CardContent>
           </Card>
         </div>
+
+        <aside className="xl:sticky xl:top-6 xl:self-start">
+          <ShipmentWorkspaceNotesCard
+            order={order}
+            shipment={latestShipment}
+            onRefresh={() => setRefreshKey((currentValue) => currentValue + 1)}
+          />
+        </aside>
       </div>
     </section>
   );
@@ -357,17 +399,308 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
 
 export function ShipmentOrderDetailsPanel({
   order,
-  costDraft,
   onRefresh,
 }: {
   order: OrderDetail;
-  costDraft: CreateShipmentCostDraft;
+  onRefresh: () => void;
+}) {
+  const intake = order.intakeDetails;
+  const financialSummary = getOrderFinancialSummary(order);
+
+  return (
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className="border-b border-border/70 px-4 py-3">
+        <CardTitle className="text-lg">Order details</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 p-3.5 sm:p-4">
+        <DetailGroup title="Basic Order Info" tone="orange">
+            <DetailBlock label="Order number" value={order.orderNumber} />
+            <DetailBlock
+              label="Sales Number"
+              value={order.salesNumber ?? 'Not provided'}
+            />
+            <DetailBlock
+              label="Date"
+              value={intake.orderDate ? formatDate(intake.orderDate) : 'Not provided'}
+            />
+            <DetailBlock label="Customer" value={order.customerName} />
+            <DetailBlock
+              label="Sales agent"
+              value={intake.advisorName ?? order.createdBy.name}
+            />
+        </DetailGroup>
+
+        <DetailGroup title="Customer Info" tone="blue">
+          <DetailBlock label="Name" value={order.customerName} />
+          <DetailBlock label="Mobile" value={order.customerPhone ?? 'Not provided'} />
+          <DetailBlock label="Email" value={order.customerEmail ?? 'Not provided'} />
+        </DetailGroup>
+
+        <DetailGroup title="Vehicle / Part Info" tone="teal">
+            <DetailBlock label="Parts" value={order.partDescription} />
+            <DetailBlock label="Make" value={intake.vehicleMake ?? 'Not provided'} />
+            <DetailBlock label="Model" value={intake.vehicleModel ?? 'Not provided'} />
+            <DetailBlock label="Year" value={intake.vehicleYear ?? 'Not provided'} />
+            <DetailBlock label="Part" value={intake.vehicleVariant ?? 'Not provided'} />
+            <DetailBlock label="VIN" value={intake.vehicleVin ?? 'Not provided'} />
+            <DetailBlock
+              label="Part Description"
+              value={intake.vehicleNotes ?? 'Not provided'}
+            />
+        </DetailGroup>
+
+        <CollapsibleDetailSection title="Billing Information" tone="amber">
+            <DetailBlock
+              label="Billing address"
+              value={intake.billingAddress ?? 'Not provided'}
+            />
+            <DetailBlock
+              label="Billing person"
+              value={intake.billingPerson ?? 'Not provided'}
+            />
+            <DetailBlock
+              label="Billing phone"
+              value={intake.billingPhone ?? 'Not provided'}
+            />
+        </CollapsibleDetailSection>
+
+        <CollapsibleDetailSection title="Shipping Information" tone="sky">
+            <DetailBlock
+              label="Shipping address"
+              value={
+                <ShippingAddressValue
+                  businessName={intake.companyName}
+                  shippingAddress={intake.shippingAddress}
+                />
+              }
+            />
+            <DetailBlock
+              label="Shipping person"
+              value={intake.shippingPerson ?? 'Not provided'}
+            />
+            <DetailBlock
+              label="Shipping phone"
+              value={intake.shippingPhone ?? 'Not provided'}
+            />
+            <DetailBlock
+              label="Shipping status"
+              value={
+                <ShippingStatusValue
+                  shipmentCount={order.counts.shipments}
+                  status={order.latestShipmentStatus}
+                  orderStatus={order.status}
+                />
+              }
+            />
+        </CollapsibleDetailSection>
+
+        <DetailGroup title="Pricing / Sales Info" tone="green">
+            <DetailBlock
+              label="Price offered"
+              value={formatCurrency(order.salePrice, order.currency)}
+            />
+            <DetailBlock label="Quantity" value={String(order.quantity)} />
+            <DetailBlock
+              label="Total sale"
+              value={formatCurrency(order.totalSaleAmount, order.currency)}
+            />
+            <DetailBlock
+              label="Miles offered"
+              value={formatNullableText(intake.milesOffered)}
+            />
+            <DetailBlock
+              label="Base price"
+              value={formatNullableCurrency(intake.basePrice, order.currency)}
+            />
+            <DetailBlock
+              label="Sales tax"
+              value={formatNullableCurrency(intake.salesTax, order.currency)}
+            />
+            <DetailBlock
+              label="Shipping charges"
+              value={formatNullableCurrency(intake.shippingCharges, order.currency)}
+            />
+            <DetailBlock
+              label="Profit"
+              value={formatNullableCurrency(intake.profit, order.currency)}
+            />
+            <DetailBlock
+              label="Paid"
+              value={formatCurrency(financialSummary.retainedPaidAmount, order.currency)}
+            />
+            <DetailBlock
+              label="Remaining amount"
+              value={formatCurrency(financialSummary.remainingAmount, order.currency)}
+            />
+            <DetailBlock
+              label="Payment method"
+              value={
+                order.paymentMethod
+                  ? formatOrderPaymentMethod(order.paymentMethod)
+                  : 'Not required'
+              }
+            />
+        </DetailGroup>
+
+      <OrderResolutionDetails order={order} />
+
+      <OrderResolutionActions
+        order={order}
+        onResolved={onRefresh}
+        className="rounded-2xl border border-border/70 bg-secondary/10 p-3"
+      />
+      </CardContent>
+    </Card>
+  );
+}
+
+function DetailGroup({
+  title,
+  tone = 'slate',
+  children,
+}: {
+  title: string;
+  tone?: DetailTone;
+  children: ReactNode;
+}) {
+  return (
+    <section className={cn('rounded-xl border p-3 shadow-sm', getDetailToneClassName(tone))}>
+      <h3 className="text-xs font-bold uppercase tracking-[0.16em]">
+        {title}
+      </h3>
+      <DetailGrid>{children}</DetailGrid>
+    </section>
+  );
+}
+
+function CollapsibleDetailSection({
+  title,
+  tone = 'slate',
+  children,
+}: {
+  title: string;
+  tone?: DetailTone;
+  children: ReactNode;
+}) {
+  return (
+    <details className={cn('group rounded-xl border p-3 shadow-sm', getDetailToneClassName(tone))}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-bold uppercase tracking-[0.16em] marker:hidden">
+        {title}
+        <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+      </summary>
+      <DetailGrid>{children}</DetailGrid>
+    </details>
+  );
+}
+
+function DetailGrid({ children }: { children: ReactNode }) {
+  return <div className="mt-2 grid gap-x-4 gap-y-1.5 sm:grid-cols-2">{children}</div>;
+}
+
+function DetailBlock({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className="grid min-w-0 grid-cols-[7.25rem_minmax(0,1fr)] gap-2 text-xs leading-5">
+      <p className="font-bold uppercase text-foreground/85">
+        {label}
+      </p>
+      <div className="min-w-0 whitespace-pre-wrap break-words font-medium text-foreground">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+type DetailTone = 'orange' | 'blue' | 'teal' | 'amber' | 'sky' | 'green' | 'slate';
+
+function getDetailToneClassName(tone: DetailTone) {
+  const classes: Record<DetailTone, string> = {
+    orange:
+      'border-orange-200 bg-orange-50/70 text-orange-800 dark:border-orange-900/50 dark:bg-orange-950/20 dark:text-orange-200',
+    blue:
+      'border-blue-200 bg-blue-50/70 text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-200',
+    teal:
+      'border-teal-200 bg-teal-50/70 text-teal-800 dark:border-teal-900/50 dark:bg-teal-950/20 dark:text-teal-200',
+    amber:
+      'border-amber-200 bg-amber-50/70 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200',
+    sky:
+      'border-sky-200 bg-sky-50/70 text-sky-800 dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-200',
+    green:
+      'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-200',
+    slate:
+      'border-border bg-secondary/20 text-foreground',
+  };
+
+  return classes[tone];
+}
+
+function ShippingAddressValue({
+  businessName,
+  shippingAddress,
+}: {
+  businessName?: string | null;
+  shippingAddress?: string | null;
+}) {
+  const trimmedBusinessName = businessName?.trim();
+  const trimmedShippingAddress = shippingAddress?.trim();
+
+  if (!trimmedBusinessName && !trimmedShippingAddress) {
+    return 'Not provided';
+  }
+
+  return (
+    <div className="space-y-1">
+      {trimmedBusinessName ? (
+        <p className="font-semibold text-foreground">{trimmedBusinessName}</p>
+      ) : null}
+      {trimmedShippingAddress ? (
+        <p className="whitespace-pre-wrap text-foreground">{trimmedShippingAddress}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function ShippingStatusValue({
+  status,
+  orderStatus,
+  shipmentCount,
+}: {
+  status: OrderShipmentStatus | null;
+  orderStatus: OrderDetail['status'];
+  shipmentCount: number;
+}) {
+  if (orderStatus === 'CANCELLED' || orderStatus === 'REFUNDED') {
+    return <ShipmentStatusBadge status={orderStatus} />;
+  }
+
+  if (!status || shipmentCount === 0) {
+    return <span className="text-sm text-muted-foreground">Shipment is not created yet</span>;
+  }
+
+  return <ShipmentStatusBadge status={status} />;
+}
+
+function ShipmentWorkspaceNotesCard({
+  order,
+  shipment,
+  onRefresh,
+}: {
+  order: OrderDetail;
+  shipment: OrderDetail['shipments'][number] | null;
   onRefresh: () => void;
 }) {
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
   const [noteMessage, setNoteMessage] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const noteEntries = buildNoteTimeline(order);
+  const editHistoryEntries = buildEditHistoryTimeline(order, shipment);
+  const statusHistoryEntries = buildStatusTimeline(order);
 
   const handleAddNoteSubmit = async () => {
     const trimmedMessage = noteMessage.trim();
@@ -401,522 +734,399 @@ export function ShipmentOrderDetailsPanel({
     }
   };
 
-  const intake = order.intakeDetails;
-  const financialSummary = getOrderFinancialSummary(order);
-
   return (
-    <div className="space-y-3">
-      <ShipmentWorkspaceGpCard
-        order={order}
-        costDraft={costDraft}
-        retainedAmount={financialSummary.gpSaleBasis}
-      />
-
-      <div className="grid gap-3 2xl:grid-cols-2">
-        <DetailGroup title="Order and customer" icon={<FileStack className="h-4 w-4 text-primary" />}>
-          <DetailGrid>
-            <DetailBlock label="Order number" value={order.orderNumber} />
-            <DetailBlock
-              label="Sales Number"
-              value={order.salesNumber ?? 'Not provided'}
-            />
-            <DetailBlock
-              label="Order date"
-              value={intake.orderDate ? formatDate(intake.orderDate) : 'Not provided'}
-            />
-            <DetailBlock label="Customer" value={order.customerName} />
-            <DetailBlock label="Mobile" value={order.customerPhone ?? 'Not provided'} />
-            <DetailBlock
-              label="Email"
-              value={order.customerEmail ?? 'Not provided'}
-              breakAnywhere
-            />
-            <DetailBlock
-              label="Sales agent"
-              value={`${order.createdBy.name}\n${order.createdBy.email}`}
-              breakAnywhere
-            />
-          </DetailGrid>
-        </DetailGroup>
-
-        <DetailGroup title="Part and vehicle" icon={<PackageCheck className="h-4 w-4 text-primary" />}>
-          <DetailGrid>
-            <DetailBlock label="Part" value={order.partDescription} />
-            <DetailBlock label="Make" value={intake.vehicleMake ?? 'Not provided'} />
-            <DetailBlock label="Model" value={intake.vehicleModel ?? 'Not provided'} />
-            <DetailBlock label="Year" value={intake.vehicleYear ?? 'Not provided'} />
-            <DetailBlock label="Part" value={intake.vehicleVariant ?? 'Not provided'} />
-            <DetailBlock label="VIN" value={intake.vehicleVin ?? 'Not provided'} />
-            <DetailBlock
-              label="Part Description"
-              value={intake.vehicleNotes ?? 'Not provided'}
-              className="2xl:col-span-2"
-            />
-          </DetailGrid>
-        </DetailGroup>
-
-        <DetailGroup title="Billing and shipping" icon={<History className="h-4 w-4 text-primary" />}>
-          <DetailGrid>
-            <DetailBlock
-              label="Billing address"
-              value={intake.billingAddress ?? 'Not provided'}
-              className="2xl:col-span-2"
-            />
-            <DetailBlock
-              label="Billing person"
-              value={intake.billingPerson ?? 'Not provided'}
-            />
-            <DetailBlock
-              label="Billing phone"
-              value={intake.billingPhone ?? 'Not provided'}
-            />
-            <DetailBlock
-              label="Shipping address"
-              value={
-                <ShippingAddressValue
-                  businessName={intake.companyName}
-                  shippingAddress={intake.shippingAddress}
-                />
-              }
-              className="2xl:col-span-2"
-            />
-            <DetailBlock
-              label="Shipping person"
-              value={intake.shippingPerson ?? 'Not provided'}
-            />
-            <DetailBlock
-              label="Shipping phone"
-              value={intake.shippingPhone ?? 'Not provided'}
-            />
-          </DetailGrid>
-        </DetailGroup>
-
-        <DetailGroup title="Commercials" icon={<FileStack className="h-4 w-4 text-primary" />}>
-          <DetailGrid>
-            <DetailBlock
-              label="Price offered"
-              value={formatCurrency(order.salePrice, order.currency)}
-            />
-            <DetailBlock label="Quantity" value={String(order.quantity)} />
-            <DetailBlock
-              label="Total sale"
-              value={formatCurrency(order.totalSaleAmount, order.currency)}
-            />
-            <DetailBlock
-              label="Miles offered"
-              value={formatNullableText(intake.milesOffered)}
-            />
-            <DetailBlock
-              label="Base price"
-              value={formatNullableCurrency(intake.basePrice, order.currency)}
-            />
-            <DetailBlock
-              label="Sales tax"
-              value={formatNullableCurrency(intake.salesTax, order.currency)}
-            />
-            <DetailBlock
-              label="Shipping charges"
-              value={formatNullableCurrency(intake.shippingCharges, order.currency)}
-            />
-            <DetailBlock
-              label="Profit"
-              value={formatNullableCurrency(intake.profit, order.currency)}
-            />
-            <DetailBlock
-              label="Paid"
-              value={formatPaidAmount(order)}
-            />
-            <DetailBlock
-              label="Payment method"
-              value={
-                order.paymentMethod
-                  ? formatOrderPaymentMethod(order.paymentMethod)
-                  : 'Not required'
-              }
-            />
-          </DetailGrid>
-        </DetailGroup>
-      </div>
-
-      <OrderResolutionDetails order={order} />
-
-      <OrderResolutionActions
-        order={order}
-        onResolved={onRefresh}
-        className="rounded-2xl border border-border/70 bg-secondary/10 p-3"
-      />
-
-      <Card className="border-border/70 shadow-sm">
-        <CardHeader className="p-4 pb-2">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-lg">Notes and edit history</CardTitle>
-              <CardDescription className="text-xs">
-                Shipping can review and add customer notes before dispatch.
-              </CardDescription>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => {
-                setIsAddNoteOpen((currentValue) => !currentValue);
-                setNoteError(null);
-              }}
-            >
-              <MessageSquarePlus className="h-4 w-4" />
-              Add Note
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3 p-4 pt-2">
-          {isAddNoteOpen ? (
-            <form
-              className="space-y-2.5 rounded-xl border border-border/70 bg-secondary/20 p-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void handleAddNoteSubmit();
-              }}
-            >
-              <label
-                htmlFor="shipment-workspace-order-note"
-                className="text-sm font-semibold text-foreground"
-              >
-                New note
-              </label>
-              <textarea
-                id="shipment-workspace-order-note"
-                value={noteMessage}
-                rows={3}
-                onChange={(event) => setNoteMessage(event.target.value)}
-                placeholder="Add a shipping handoff, customer update, or dispatch note."
-                className={`w-full rounded-2xl border bg-white/90 px-4 py-3 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  noteError ? 'border-destructive/60' : 'border-input'
-                }`}
-              />
-              {noteError ? (
-                <p className="text-sm text-destructive">{noteError}</p>
-              ) : null}
-              <div className="flex flex-wrap gap-2">
-                <Button type="submit" size="sm" disabled={isSavingNote}>
-                  {isSavingNote ? (
-                    <>
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Save note'
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setIsAddNoteOpen(false);
-                    setNoteError(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          ) : null}
-
-          {order.notes.length > 0 ? (
-            <div className="space-y-2">
-              {order.notes.map((note) => (
-                <div
-                  key={note.id}
-                  className="rounded-xl border border-border/70 bg-background/85 px-3 py-2.5 shadow-sm"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="min-w-0 truncate text-sm font-semibold text-foreground">
-                      {note.author.name}
-                      <span className="mx-1.5 text-muted-foreground">|</span>
-                      <span className="text-[11px] font-medium text-muted-foreground">
-                        {formatDateTime(note.createdAt)} ({formatRelativeTime(note.createdAt)})
-                      </span>
-                    </p>
-                    <Badge
-                      variant={
-                        isShipmentStatusHistoryNote(note)
-                          ? 'warning'
-                          : isHistoryNote(note)
-                            ? 'info'
-                            : 'secondary'
-                      }
-                    >
-                      {isShipmentStatusHistoryNote(note)
-                        ? 'Shipment status'
-                        : isHistoryNote(note)
-                          ? 'Edit history'
-                          : 'Note'}
-                    </Badge>
-                  </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
-                    {note.content}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
-              No notes or edit history entries have been recorded for this order yet.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function DetailGroup({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <Card className="border-border/70 shadow-sm">
-      <CardHeader className="p-3 pb-2">
-        <div className="flex items-center gap-2">
-          {icon}
-          <CardTitle className="text-base">{title}</CardTitle>
+    <Card className="flex overflow-hidden border-border/70 shadow-sm xl:max-h-[calc(100vh-3rem)] xl:flex-col">
+      <CardHeader className="border-b border-border/70 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <History className="h-4 w-4 text-primary" />
+            NOTES
+          </CardTitle>
+          <Button
+            type="button"
+            size="sm"
+            className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white hover:bg-[#e65000]"
+            onClick={() => {
+              setIsAddNoteOpen((currentValue) => !currentValue);
+              setNoteError(null);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Add note
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-3 pt-0">{children}</CardContent>
-    </Card>
-  );
-}
 
-function DetailGrid({ children }: { children: ReactNode }) {
-  return <div className="grid gap-2 md:grid-cols-2">{children}</div>;
-}
-
-function DetailBlock({
-  label,
-  value,
-  className,
-  breakAnywhere = false,
-}: {
-  label: string;
-  value: ReactNode;
-  className?: string;
-  breakAnywhere?: boolean;
-}) {
-  return (
-    <div className={`min-w-0 ${className ?? ''}`}>
-      <div className="h-full min-w-0 rounded-xl border border-border/70 bg-secondary/20 px-3 py-2.5">
-        <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          {label}
-        </p>
-        <div
-          className={`mt-1 min-w-0 whitespace-pre-wrap text-sm leading-5 text-foreground ${
-            breakAnywhere ? 'break-all' : 'break-words'
-          }`}
-        >
-          {value}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ShippingAddressValue({
-  businessName,
-  shippingAddress,
-}: {
-  businessName?: string | null;
-  shippingAddress?: string | null;
-}) {
-  const trimmedBusinessName = businessName?.trim();
-  const trimmedShippingAddress = shippingAddress?.trim();
-
-  if (!trimmedBusinessName && !trimmedShippingAddress) {
-    return 'Not provided';
-  }
-
-  return (
-    <div className="space-y-1">
-      {trimmedBusinessName ? (
-        <p className="font-semibold text-foreground">{trimmedBusinessName}</p>
-      ) : null}
-      {trimmedShippingAddress ? (
-        <p className="whitespace-pre-wrap text-foreground">{trimmedShippingAddress}</p>
-      ) : null}
-    </div>
-  );
-}
-
-function ShipmentWorkspaceGpCard({
-  order,
-  costDraft,
-  retainedAmount,
-}: {
-  order: OrderDetail;
-  costDraft: CreateShipmentCostDraft;
-  retainedAmount: number;
-}) {
-  const totalCosts =
-    (costDraft.hasActualPurchaseAmount
-      ? costDraft.purchaseAmount
-      : costDraft.estimatedPurchaseAmount) +
-    (costDraft.hasActualShippingAmount
-      ? costDraft.shippingAmount
-      : costDraft.estimatedShippingAmount) +
-    costDraft.additionalAmount;
-  const grossProfit = retainedAmount - totalCosts;
-  const isRefunded = order.status === 'REFUNDED';
-
-  return (
-    <Card className="overflow-hidden border-border/70 shadow-sm">
-      <CardHeader className="bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(255,255,255,0.98))] p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <TrendingUp className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <CardDescription className="text-xs">GP calculation</CardDescription>
-                <CardTitle className="truncate text-xl">
-                  {formatCurrency(grossProfit, order.currency)}
-                </CardTitle>
-              </div>
-            </div>
-            <p className="mt-2 line-clamp-1 text-xs text-muted-foreground">
-              {order.orderNumber} · {order.customerName}
-            </p>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[24rem]">
-            <MetricCard
-              label="Sale Amount"
-              value={formatCurrency(order.totalSaleAmount, order.currency)}
+      {isAddNoteOpen ? (
+        <div className="border-b border-border/70 bg-card p-3.5 sm:p-4">
+          <form
+            className="space-y-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleAddNoteSubmit();
+            }}
+          >
+            <label
+              htmlFor="shipment-workspace-note"
+              className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              Add note
+            </label>
+            <textarea
+              id="shipment-workspace-note"
+              value={noteMessage}
+              rows={3}
+              onChange={(event) => setNoteMessage(event.target.value)}
+              placeholder="Add note"
+              className={cn(
+                'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                noteError ? 'border-destructive/60' : null,
+              )}
             />
-            {isRefunded ? (
-              <MetricCard
-                label="Refund retained"
-                value={formatCurrency(retainedAmount, order.currency)}
-              />
+            {noteError ? (
+              <p className="text-sm text-destructive">{noteError}</p>
             ) : null}
-            <MetricCard
-              label="Total costs"
-              value={formatCurrency(totalCosts, order.currency)}
-            />
-          </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-lg px-3 text-xs"
+                disabled={isSavingNote}
+                onClick={() => {
+                  setIsAddNoteOpen(false);
+                  setNoteError(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white hover:bg-[#e65000]"
+                disabled={isSavingNote}
+              >
+                {isSavingNote ? (
+                  <>
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Submit'
+                )}
+              </Button>
+            </div>
+          </form>
         </div>
-      </CardHeader>
-      <CardContent className="grid gap-2 p-4 sm:grid-cols-3">
-        <MetricCard
-          label={costDraft.hasActualPurchaseAmount ? 'Part cost' : 'Est. part cost'}
-          value={formatCurrency(
-            costDraft.hasActualPurchaseAmount
-              ? costDraft.purchaseAmount
-              : costDraft.estimatedPurchaseAmount,
-            order.currency,
-          )}
+      ) : null}
+
+      <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3.5 sm:p-4">
+        <ActivityTimeline
+          entries={noteEntries}
+          emptyMessage="No internal notes yet."
         />
-        <MetricCard
-          label={
-            costDraft.hasActualShippingAmount
-              ? 'Actual shipping'
-              : 'Est. shipping'
-          }
-          value={formatCurrency(
-            costDraft.hasActualShippingAmount
-              ? costDraft.shippingAmount
-              : costDraft.estimatedShippingAmount,
-            order.currency,
-          )}
+        <TimelineGroup
+          title="Edit History Timeline"
+          entries={editHistoryEntries}
+          emptyMessage="No edit history has been recorded yet."
         />
-        <MetricCard
-          label="Additional costs"
-          value={formatCurrency(costDraft.additionalAmount, order.currency)}
+        <TimelineGroup
+          title="Status Change History"
+          entries={statusHistoryEntries}
+          emptyMessage="No status changes have been recorded yet."
         />
       </CardContent>
     </Card>
   );
 }
 
-function MetricCard({
-  label,
-  value,
+function TimelineGroup({
+  title,
+  entries,
+  emptyMessage,
 }: {
-  label: string;
-  value: string;
+  title: string;
+  entries: TimelineEntry[];
+  emptyMessage: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/70 bg-white/85 px-3 py-2 shadow-sm">
-      <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-0.5 text-sm font-semibold text-foreground">{value}</p>
-    </div>
+    <details className="group rounded-xl border border-border/70 bg-secondary/10 px-3 py-2.5">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 marker:hidden">
+        <span className="min-w-0">
+          <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            {title}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {entries.length} record{entries.length === 1 ? '' : 's'}
+          </span>
+        </span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
+      </summary>
+      <div className="border-t border-border/60 pt-1 group-open:mt-2">
+        <ActivityTimeline
+          entries={entries}
+          emptyMessage={emptyMessage}
+          showBadges
+        />
+      </div>
+    </details>
   );
 }
 
-function ShipmentStatusHistoryPanel({ notes }: { notes: OrderNote[] }) {
-  const latestNote = notes[0];
+function ActivityTimeline({
+  entries,
+  emptyMessage,
+  showBadges = false,
+}: {
+  entries: TimelineEntry[];
+  emptyMessage: string;
+  showBadges?: boolean;
+}) {
+  if (entries.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
+        {emptyMessage}
+      </p>
+    );
+  }
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-secondary/20 p-4">
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <History className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">
-            Last Status Update
-          </p>
-          {latestNote ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {latestNote.author.name} · {formatDateTime(latestNote.createdAt)}
-            </p>
-          ) : (
-            <p className="mt-1 text-sm text-muted-foreground">
-              No shipment status updates yet.
-            </p>
-          )}
-        </div>
-      </div>
-
-      {notes.length > 0 ? (
-        <div className="mt-4 space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Status update history
-          </p>
-          <div className="space-y-2">
-            {notes.slice(0, 4).map((note) => (
-              <div
-                key={note.id}
-                className="rounded-xl border border-border/60 bg-white/80 px-3 py-2"
-              >
-                <p className="whitespace-pre-wrap text-xs font-medium text-foreground">
-                  {formatShipmentStatusHistoryBody(note.content)}
-                </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {note.author.name} · {formatDateTime(note.createdAt)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </div>
+    <ol className="relative space-y-3 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-border">
+      {entries.map((entry) => (
+        <ActivityTimelineItem
+          key={entry.id}
+          entry={entry}
+          showBadge={showBadges}
+        />
+      ))}
+    </ol>
   );
 }
 
-function buildShipmentStatusNotes(notes: OrderNote[]): OrderNote[] {
-  return notes
-    .filter(isShipmentStatusHistoryNote)
-    .sort(
-      (firstNote, secondNote) =>
-        new Date(secondNote.createdAt).getTime() -
-        new Date(firstNote.createdAt).getTime(),
-    );
+function ActivityTimelineItem({
+  entry,
+  showBadge,
+}: {
+  entry: TimelineEntry;
+  showBadge: boolean;
+}) {
+  return (
+    <li className="relative pl-6">
+      <span
+        className={cn(
+          'absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-background',
+          getTimelineDotClassName(entry.badgeVariant),
+        )}
+      />
+      <div className="space-y-1">
+        <p className="text-xs leading-5 text-muted-foreground">
+          <span
+            className={cn(
+              'font-semibold',
+              showBadge ? 'text-foreground' : 'text-[#d94d00] dark:text-orange-300',
+            )}
+          >
+            {entry.actorName}
+          </span>{' '}
+          | {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
+        </p>
+        {showBadge ? (
+          <Badge
+            variant={entry.badgeVariant ?? 'secondary'}
+            className="h-5 rounded-md px-2 text-[10px]"
+          >
+            {entry.action}
+          </Badge>
+        ) : null}
+        <div className="whitespace-pre-wrap text-xs font-medium leading-5 text-foreground">
+          {entry.body}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function buildNoteTimeline(order: OrderDetail): TimelineEntry[] {
+  return order.notes
+    .filter(isPlainOrderNote)
+    .map((note) => ({
+      id: note.id,
+      timestamp: note.createdAt,
+      actorName: note.author.name,
+      action: 'Note',
+      body: formatOrderNoteBody(note.content, order),
+      badgeVariant: 'secondary' as const,
+    }))
+    .sort(compareTimelineEntriesDesc);
+}
+
+function buildEditHistoryTimeline(
+  order: OrderDetail,
+  shipment: OrderDetail['shipments'][number] | null,
+): TimelineEntry[] {
+  return [
+    ...order.notes
+      .filter(isOrderUpdateNote)
+      .map((note) => ({
+        id: note.id,
+        timestamp: note.createdAt,
+        actorName: note.author.name,
+        action: 'Order edit',
+        body: formatOrderHistoryBody(note.content),
+        badgeVariant: 'info' as const,
+      })),
+    ...order.notes
+      .filter(isInvoiceActivityNote)
+      .map((note) => ({
+        id: note.id,
+        timestamp: note.createdAt,
+        actorName: note.author.name,
+        action: getInvoiceActivityLabel(note.content) ?? 'Invoice activity',
+        body: formatInvoiceActivityBody(note.content),
+        badgeVariant: 'info' as const,
+      })),
+    ...(shipment?.costHistories ?? []).map((history) => ({
+      id: history.id,
+      timestamp: history.createdAt,
+      actorName: history.createdBy.name,
+      action: 'GP edit',
+      body: history.summary,
+      badgeVariant: 'success' as const,
+    })),
+  ].sort(compareTimelineEntriesDesc);
+}
+
+function buildStatusTimeline(order: OrderDetail): TimelineEntry[] {
+  return order.notes
+    .filter((note) => isOrderStatusHistoryNote(note) || isShipmentStatusHistoryNote(note))
+    .map((note) => ({
+      id: note.id,
+      timestamp: note.createdAt,
+      actorName: note.author.name,
+      action: isShipmentStatusHistoryNote(note) ? 'Status change' : 'Order status',
+      body: isShipmentStatusHistoryNote(note)
+        ? formatShipmentStatusHistoryBody(note.content)
+        : formatOrderHistoryBody(note.content),
+      badgeVariant: 'warning' as const,
+    }))
+    .sort(compareTimelineEntriesDesc);
+}
+
+function compareTimelineEntriesDesc(
+  firstEntry: TimelineEntry,
+  secondEntry: TimelineEntry,
+) {
+  return (
+    new Date(secondEntry.timestamp).getTime() -
+    new Date(firstEntry.timestamp).getTime()
+  );
+}
+
+function getTimelineDotClassName(variant?: TimelineEntry['badgeVariant']) {
+  switch (variant) {
+    case 'warning':
+      return 'bg-amber-500';
+    case 'success':
+      return 'bg-emerald-500';
+    case 'danger':
+      return 'bg-red-500';
+    case 'info':
+      return 'bg-sky-500';
+    default:
+      return 'bg-teal-500';
+  }
+}
+
+function formatOrderNoteBody(content: string, order: OrderDetail): string {
+  const trimmedContent = content.trim();
+
+  if (!/^Order refunded:/i.test(trimmedContent)) {
+    return trimmedContent;
+  }
+
+  return trimmedContent.replace(
+    /- GP adjusted to \$0\.00/i,
+    `- GP: ${formatCurrency(calculateOrderActualGp(order), order.currency)}`,
+  );
+}
+
+function calculateOrderActualGp(order: OrderDetail): number {
+  const financialSummary = getOrderFinancialSummary(order);
+  const shipment = order.shipments[0] ?? null;
+  const cost = shipment?.costs[0] ?? null;
+  const additionalAmount =
+    shipment && shipment.additionalCosts.length > 0
+      ? shipment.additionalCosts.reduce((total, entry) => total + entry.amount, 0)
+      : cost?.additionalAmount ?? 0;
+  const totalCosts =
+    (cost?.hasActualPurchaseAmount
+      ? cost.purchaseAmount
+      : cost?.estimatedPurchaseAmount ?? 0) +
+    (cost?.hasActualShippingAmount
+      ? cost.shippingAmount
+      : cost?.estimatedShippingAmount ?? 0) +
+    additionalAmount;
+
+  return financialSummary.gpSaleBasis - totalCosts;
+}
+
+function isPlainOrderNote(note: OrderNote): boolean {
+  return (
+    !isShipmentStatusHistoryNote(note) &&
+    !isOrderUpdateNote(note) &&
+    !isOrderStatusHistoryNote(note) &&
+    !isInvoiceActivityNote(note)
+  );
+}
+
+function isOrderUpdateNote(note: OrderNote): boolean {
+  return note.content.startsWith('Order updated:');
+}
+
+function isOrderStatusHistoryNote(note: OrderNote): boolean {
+  return (
+    !isShipmentStatusHistoryNote(note) &&
+    !isOrderUpdateNote(note) &&
+    /status\s*(changed|:)|\bstatus\b.*->/i.test(note.content)
+  );
+}
+
+function isInvoiceActivityNote(note: OrderNote): boolean {
+  return Boolean(getInvoiceActivityLabel(note.content));
+}
+
+function getInvoiceActivityLabel(content: string): string | null {
+  const trimmedContent = content.trim();
+
+  if (/^Invoice generated:/i.test(trimmedContent)) {
+    return 'Invoice generated';
+  }
+
+  if (/^Invoice signature request sent:/i.test(trimmedContent)) {
+    return 'Invoice signature request sent';
+  }
+
+  if (/^Invoice signature request resent:/i.test(trimmedContent)) {
+    return 'Invoice signature request resent';
+  }
+
+  if (/^Invoice updated:/i.test(trimmedContent)) {
+    return 'Invoice updated';
+  }
+
+  if (/^Signed invoice cloned and signature request sent:/i.test(trimmedContent)) {
+    return 'Signed invoice cloned';
+  }
+
+  return null;
+}
+
+function formatInvoiceActivityBody(content: string): string {
+  return content.replace(/^([^:]+):\s*/i, '').trim();
+}
+
+function formatOrderHistoryBody(content: string): string {
+  return content.replace(/^Order updated:\s*/i, '').trim();
 }
 
 function formatShipmentStatusHistoryBody(content: string): string {
@@ -927,23 +1137,8 @@ function formatNullableCurrency(value: number | null, currency = 'USD'): string 
   return value === null ? 'Not provided' : formatCurrency(value, currency);
 }
 
-function formatNullableNumber(value: number | null): string {
-  return value === null ? 'Not provided' : String(value);
-}
-
 function formatNullableText(value: string | null): string {
   return value?.trim() ? value : 'Not provided';
-}
-
-function formatPaidAmount(order: OrderDetail): string {
-  return formatCurrency(
-    getOrderFinancialSummary(order).retainedPaidAmount,
-    order.currency,
-  );
-}
-
-function isHistoryNote(note: OrderNote): boolean {
-  return note.content.startsWith('Order updated:');
 }
 
 function isShipmentStatusHistoryNote(note: OrderNote): boolean {
