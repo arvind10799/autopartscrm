@@ -171,7 +171,7 @@ export function CreateShipmentWorkspace() {
                 value={searchTerm}
                 onChange={(event) => handleSearchChange(event.target.value)}
                 className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
-                placeholder="Search by order number, customer, part, or sales agent"
+                placeholder="Search by order number, customer, part, or adviser"
               />
             </div>
 

@@ -282,6 +282,42 @@ export class ShipmentsRepository {
               },
             },
           },
+          {
+            order: {
+              partDescription: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+          {
+            order: {
+              createdBy: {
+                name: {
+                  contains: search,
+                  mode: 'insensitive',
+                },
+              },
+            },
+          },
+          {
+            order: {
+              createdBy: {
+                email: {
+                  contains: search,
+                  mode: 'insensitive',
+                },
+              },
+            },
+          },
+          {
+            order: {
+              intakeDetails: {
+                path: ['advisorName'],
+                string_contains: search,
+              },
+            },
+          },
         ];
       }
     }

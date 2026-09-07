@@ -589,6 +589,12 @@ export class OrdersRepository {
               },
             },
           },
+          {
+            intakeDetails: {
+              path: ['advisorName'],
+              string_contains: search,
+            },
+          },
         ];
       }
     }
