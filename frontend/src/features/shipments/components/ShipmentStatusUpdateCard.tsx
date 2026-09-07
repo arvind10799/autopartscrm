@@ -57,18 +57,18 @@ export function ShipmentStatusUpdateCard({
   onSubmit: () => Promise<void>;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl">Status update</CardTitle>
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className="border-b border-border/70 px-4 py-3">
+        <CardTitle className="text-lg">Status update</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 p-4">
         {lockedReason ? (
-          <div className="rounded-2xl border border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border/70 bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
             {lockedReason}
           </div>
         ) : nextStatuses.length > 0 ? (
           <>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {isAdminOverride ? 'Shipment status' : 'Next allowed status'}
               </p>
@@ -82,6 +82,7 @@ export function ShipmentStatusUpdateCard({
                   }
                 }}
                 disabled={isUpdatingStatus}
+                className="h-9"
               >
                 {nextStatuses.map((status) => (
                   <option key={status} value={status}>
@@ -92,7 +93,7 @@ export function ShipmentStatusUpdateCard({
             </div>
 
             {isAdminOverride ? (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2.5 sm:grid-cols-2">
                 <ShipmentDataInput
                   label="BOL number"
                   value={bolNumber ?? ''}
@@ -125,7 +126,7 @@ export function ShipmentStatusUpdateCard({
             ) : null}
 
             {requiresProNumber && !isAdminOverride ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   PRO number
                 </p>
@@ -134,12 +135,14 @@ export function ShipmentStatusUpdateCard({
                   onChange={(event) => onProNumberChange(event.target.value)}
                   disabled={isUpdatingStatus}
                   placeholder="PRO-2026-001"
+                  className="h-9"
                 />
               </div>
             ) : null}
 
             <Button
-              className="w-full"
+              size="sm"
+              className="h-9 w-full rounded-lg bg-[#ff5a00] text-xs text-white hover:bg-[#e65000]"
               disabled={
                 !selectedStatus ||
                 isUpdatingStatus ||
@@ -154,13 +157,13 @@ export function ShipmentStatusUpdateCard({
             </Button>
           </>
         ) : (
-          <div className="rounded-2xl border border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border/70 bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
             This shipment is in a terminal state and has no further status transitions.
           </div>
         )}
 
         {statusError ? (
-          <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {statusError}
           </div>
         ) : null}
@@ -183,7 +186,7 @@ function ShipmentDataInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </p>
@@ -192,6 +195,7 @@ function ShipmentDataInput({
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled}
         placeholder={placeholder}
+        className="h-9"
       />
     </div>
   );

@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
+  ChevronDown,
   Eye,
   History,
   LoaderCircle,
-  MessageSquarePlus,
+  Plus,
   X,
 } from 'lucide-react';
 import { DetailPageSkeleton } from '@/components/feedback/page-skeletons';
@@ -53,6 +54,7 @@ import {
 } from '../types/shipment.types';
 import { GrossProfitSummaryCard } from './GrossProfitSummaryCard';
 import { ShipmentDetailGrid } from './ShipmentDetailGrid';
+import { ShipmentStatusBadge } from './ShipmentStatusBadge';
 import { ShipmentStatusUpdateCard } from './ShipmentStatusUpdateCard';
 
 const SHIPMENT_DETAIL_ALLOWED_NEXT_STATUSES = ['IN_TRANSIT', 'DELIVERED'] as const;
@@ -170,6 +172,50 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   const shipmentFinancialSummary = invoiceOrder
     ? getOrderFinancialSummary(invoiceOrder)
     : null;
+  const gpCard = (
+    <GrossProfitSummaryCard
+      shipmentId={shipment.id}
+      totalSaleAmount={
+        shipmentFinancialSummary?.gpSaleBasis ??
+        shipment.order.totalSaleAmount ??
+        0
+      }
+      originalSaleAmount={
+        invoiceOrder?.totalSaleAmount ?? shipment.order.totalSaleAmount ?? 0
+      }
+      currency={shipment.order.currency}
+      cost={shipmentCost}
+      saleMetricLabel={invoiceOrder?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+      grossProfitOverride={shipmentFinancialSummary?.grossProfitOverride}
+      refundDetails={
+        invoiceOrder?.status === 'REFUNDED'
+          ? {
+              refundType: invoiceOrder.intakeDetails.refundType,
+              refundDeductionAmount:
+                invoiceOrder.intakeDetails.refundDeductionAmount,
+              refundDeductionReason:
+                invoiceOrder.intakeDetails.refundDeductionReason,
+              customerRefundedAmount:
+                shipmentFinancialSummary?.refundedAmount ?? 0,
+              refundedAt: invoiceOrder.intakeDetails.refundedAt,
+            }
+          : null
+      }
+      additionalCosts={shipment.additionalCosts}
+      costHistories={shipment.costHistories}
+      canAddAdditionalCost={canAddAdditionalCost}
+      canEditBaseCost={canEditGpCosts}
+      canEditAdditionalCosts={canEditGpCosts}
+      onAdditionalCostAdded={async () => {
+        await refreshShipment();
+        setOrderRefreshKey((currentValue) => currentValue + 1);
+      }}
+      onCostUpdated={async () => {
+        await refreshShipment();
+        setOrderRefreshKey((currentValue) => currentValue + 1);
+      }}
+    />
+  );
 
   const handleStatusSubmit = async () => {
     if (isOrderResolvedForShipment) {
@@ -198,79 +244,42 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
   };
 
   return (
-    <section className="grid gap-6">
-      {invoiceOrder ? (
-        <InvoiceActions
-          order={invoiceOrder}
-          onInvoiceCreated={() =>
-            setOrderRefreshKey((currentValue) => currentValue + 1)
-          }
-        />
-      ) : (
-        <Card>
-          <CardHeader className="space-y-3">
-            <Link
-              href="/shipments"
-              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-fit px-0')}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to shipments
-            </Link>
-            <CardTitle className="text-2xl">Invoice Management</CardTitle>
-            <CardDescription>
-              {isInvoiceOrderLoading
-                ? 'Loading invoice management...'
-                : invoiceOrderError ?? 'Invoice management is unavailable.'}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
-
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="grid gap-6">
-          <GrossProfitSummaryCard
-            shipmentId={shipment.id}
-            totalSaleAmount={
-              shipmentFinancialSummary?.gpSaleBasis ??
-              shipment.order.totalSaleAmount ??
-              0
+    <section className="grid gap-5">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
+        {invoiceOrder ? (
+          <InvoiceActions
+            order={invoiceOrder}
+            onInvoiceCreated={() =>
+              setOrderRefreshKey((currentValue) => currentValue + 1)
             }
-            originalSaleAmount={
-              invoiceOrder?.totalSaleAmount ?? shipment.order.totalSaleAmount ?? 0
-            }
-            currency={shipment.order.currency}
-            cost={shipmentCost}
-            saleMetricLabel={invoiceOrder?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
-            grossProfitOverride={shipmentFinancialSummary?.grossProfitOverride}
-            refundDetails={
-              invoiceOrder?.status === 'REFUNDED'
-                ? {
-                    refundType: invoiceOrder.intakeDetails.refundType,
-                    refundDeductionAmount:
-                      invoiceOrder.intakeDetails.refundDeductionAmount,
-                    refundDeductionReason:
-                      invoiceOrder.intakeDetails.refundDeductionReason,
-                    customerRefundedAmount:
-                      shipmentFinancialSummary?.refundedAmount ?? 0,
-                    refundedAt: invoiceOrder.intakeDetails.refundedAt,
-                  }
-                : null
-            }
-            additionalCosts={shipment.additionalCosts}
-            costHistories={shipment.costHistories}
-            canAddAdditionalCost={canAddAdditionalCost}
-            canEditBaseCost={canEditGpCosts}
-            canEditAdditionalCosts={canEditGpCosts}
-            onAdditionalCostAdded={async () => {
-              await refreshShipment();
-              setOrderRefreshKey((currentValue) => currentValue + 1);
-            }}
-            onCostUpdated={async () => {
-              await refreshShipment();
-              setOrderRefreshKey((currentValue) => currentValue + 1);
-            }}
           />
+        ) : (
+          <Card className="overflow-hidden border-border/70 shadow-sm">
+            <CardHeader className="px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="text-base">Invoice Management</CardTitle>
+                <Link
+                  href="/shipments"
+                  className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 rounded-full px-3 text-xs')}
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back
+                </Link>
+              </div>
+              <CardDescription className="text-xs">
+                {isInvoiceOrderLoading
+                  ? 'Loading invoice management...'
+                  : invoiceOrderError ?? 'Invoice management is unavailable.'}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
 
+        {gpCard}
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid gap-5">
           <ShipmentDetailGrid
             shipment={shipment}
             action={
@@ -279,6 +288,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="h-8 rounded-lg px-3 text-xs"
                   disabled={!invoiceOrder}
                   onClick={() => setIsOrderDetailsOpen(true)}
                 >
@@ -316,7 +326,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
           />
         </div>
 
-        <div className="grid gap-6">
+        <div className="grid gap-5 xl:sticky xl:top-6 xl:self-start">
           <ShipmentStatusUpdateCard
             nextStatuses={nextStatuses}
             selectedStatus={selectedStatus}
@@ -602,7 +612,7 @@ function ShipmentNotesHistoryCard({
   const [noteMessage, setNoteMessage] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = useState(false);
-  const timelineEntries: ShipmentActivityEntry[] = [
+  const noteEntries: ShipmentActivityEntry[] = [
     ...notes.map((note) => ({
       id: note.id,
       timestamp: note.createdAt,
@@ -621,6 +631,8 @@ function ShipmentNotesHistoryCard({
         badgeVariant: 'neutral' as const,
         body: formatOrderNoteBody(note.content, order, shipment),
       })),
+  ].sort(compareShipmentActivityEntriesDesc);
+  const editHistoryEntries: ShipmentActivityEntry[] = [
     ...orderNotes
       .filter(isOrderUpdateNote)
       .map((note) => ({
@@ -631,6 +643,26 @@ function ShipmentNotesHistoryCard({
         badgeVariant: 'info' as const,
         body: formatOrderHistoryBody(note.content),
       })),
+    ...orderNotes
+      .filter(isInvoiceActivityNote)
+      .map((note) => ({
+        id: note.id,
+        timestamp: note.createdAt,
+        authorName: note.author.name,
+        label: getInvoiceActivityLabel(note.content) ?? 'Invoice activity',
+        badgeVariant: 'info' as const,
+        body: formatInvoiceActivityBody(note.content),
+      })),
+    ...shipment.costHistories.map((history) => ({
+      id: history.id,
+      timestamp: history.createdAt,
+      authorName: history.createdBy.name,
+      label: 'GP edit',
+      badgeVariant: 'success' as const,
+      body: history.summary,
+    })),
+  ].sort(compareShipmentActivityEntriesDesc);
+  const statusHistoryEntries: ShipmentActivityEntry[] = [
     ...orderNotes
       .filter(isOrderStatusHistoryNote)
       .map((note) => ({
@@ -649,19 +681,7 @@ function ShipmentNotesHistoryCard({
       badgeVariant: 'warning' as const,
       body: formatShipmentStatusHistoryBody(note.content),
     })),
-    ...shipment.costHistories.map((history) => ({
-      id: history.id,
-      timestamp: history.createdAt,
-      authorName: history.createdBy.name,
-      label: 'GP edit',
-      badgeVariant: 'success' as const,
-      body: history.summary,
-    })),
-  ].sort(
-    (firstEntry, secondEntry) =>
-      new Date(secondEntry.timestamp).getTime() -
-      new Date(firstEntry.timestamp).getTime(),
-  );
+  ].sort(compareShipmentActivityEntriesDesc);
 
   useEffect(() => {
     let isMounted = true;
@@ -730,35 +750,33 @@ function ShipmentNotesHistoryCard({
   };
 
   return (
-    <Card>
-      <CardHeader className="space-y-3 pb-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <Card className="flex overflow-hidden border-border/70 shadow-sm xl:max-h-[calc(100vh-3rem)] xl:flex-col">
+      <CardHeader className="border-b border-border/70 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <History className="h-5 w-5 text-primary" />
-              Notes & Edit History
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <History className="h-4 w-4 text-primary" />
+              NOTES
             </CardTitle>
-            <CardDescription className="text-xs">
-              All order notes, shipment notes, edit history, status updates, and GP changes.
-            </CardDescription>
           </div>
           <Button
             type="button"
             size="sm"
+            className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white hover:bg-[#e65000]"
             onClick={() => {
               setIsAddNoteOpen((currentValue) => !currentValue);
               setNoteError(null);
             }}
           >
-            <MessageSquarePlus className="h-4 w-4" />
-            Add Note
+            <Plus className="h-4 w-4" />
+            Add note
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {isAddNoteOpen ? (
+      {isAddNoteOpen ? (
+        <div className="border-b border-border/70 bg-card p-3.5 sm:p-4">
           <form
-            className="space-y-2.5 rounded-2xl border border-border/70 bg-secondary/20 p-3"
+            className="space-y-2"
             onSubmit={(event) => {
               event.preventDefault();
               void handleAddNoteSubmit();
@@ -766,39 +784,31 @@ function ShipmentNotesHistoryCard({
           >
             <label
               htmlFor="shipment-detail-note"
-              className="text-sm font-semibold text-foreground"
+              className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
             >
-              New shipment note
+              Add note
             </label>
             <textarea
               id="shipment-detail-note"
               value={noteMessage}
               rows={3}
               onChange={(event) => setNoteMessage(event.target.value)}
-              placeholder="Add a shipping update, carrier note, or handoff detail."
+              placeholder="Add note"
               className={cn(
-                'w-full rounded-2xl border border-input bg-white/90 px-4 py-3 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 noteError ? 'border-destructive/60' : null,
               )}
             />
             {noteError ? (
               <p className="text-sm text-destructive">{noteError}</p>
             ) : null}
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" size="sm" disabled={isSavingNote}>
-                {isSavingNote ? (
-                  <>
-                    <LoaderCircle className="h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save note'
-                )}
-              </Button>
+            <div className="flex justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
+                className="h-8 rounded-lg px-3 text-xs"
+                disabled={isSavingNote}
                 onClick={() => {
                   setIsAddNoteOpen(false);
                   setNoteError(null);
@@ -806,54 +816,54 @@ function ShipmentNotesHistoryCard({
               >
                 Cancel
               </Button>
+              <Button
+                type="submit"
+                size="sm"
+                className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white hover:bg-[#e65000]"
+                disabled={isSavingNote}
+              >
+                {isSavingNote ? (
+                  <>
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Submit'
+                )}
+              </Button>
             </div>
           </form>
-        ) : null}
+        </div>
+      ) : null}
+      <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3.5 sm:p-4">
 
         {notesError ? (
-          <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {notesError}
           </div>
         ) : null}
 
         {isLoadingNotes || isOrderNotesLoading ? (
-          <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
             Loading notes and edit history...
           </div>
-        ) : timelineEntries.length > 0 ? (
-          <div className="space-y-2">
-            {timelineEntries.map((entry) => (
-              <div
-                key={entry.id}
-                className="rounded-xl border border-border/70 bg-background/85 px-3 py-2.5 shadow-sm"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-foreground">
-                      {entry.authorName}
-                      <span className="mx-1.5 text-muted-foreground">|</span>
-                      <span className="text-[11px] font-medium text-muted-foreground">
-                        {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
-                      </span>
-                    </p>
-                  </div>
-                  <Badge
-                    variant={entry.badgeVariant}
-                    className="h-5 shrink-0 rounded-full px-2 text-[11px]"
-                  >
-                    {entry.label}
-                  </Badge>
-                </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
-                  {entry.body}
-                </p>
-              </div>
-            ))}
-          </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
-            No notes or edit history has been recorded yet.
-          </div>
+          <>
+            <ShipmentActivityTimeline
+              entries={noteEntries}
+              emptyMessage="No internal notes yet."
+            />
+            <ShipmentTimelineGroup
+              title="Edit History Timeline"
+              entries={editHistoryEntries}
+              emptyMessage="No edit history has been recorded yet."
+            />
+            <ShipmentTimelineGroup
+              title="Status Change History"
+              entries={statusHistoryEntries}
+              emptyMessage="No status changes have been recorded yet."
+            />
+          </>
         )}
       </CardContent>
     </Card>
@@ -877,52 +887,187 @@ function ShipmentStatusHistoryCard({
         new Date(firstNote.createdAt).getTime(),
     );
   const latestNote = statusNotes[0];
+  const statusEntries: ShipmentActivityEntry[] = statusNotes.slice(0, 6).map((note) => ({
+    id: note.id,
+    timestamp: note.createdAt,
+    authorName: note.author.name,
+    label: 'Shipment status',
+    badgeVariant: 'warning' as const,
+    body: formatShipmentStatusHistoryBody(note.content),
+  }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-2xl">
-          <History className="h-5 w-5 text-primary" />
-          Last Status Update
-        </CardTitle>
-        <CardDescription>
-          {latestNote
-            ? `${latestNote.author.name} · ${formatDateTime(latestNote.createdAt)}`
-            : isLoading
-              ? 'Loading status history...'
-              : `Current status: ${formatShipmentStatusOptionLabel(
-                  shipment.currentStatus,
-                )}`}
-        </CardDescription>
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className="border-b border-border/70 px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <History className="h-4 w-4 text-primary" />
+              Last Status Update
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {latestNote
+                ? `${latestNote.author.name} | ${formatDateTime(
+                    latestNote.createdAt,
+                  )} (${formatRelativeTime(latestNote.createdAt)})`
+                : isLoading
+                  ? 'Loading status history...'
+                  : `Current status: ${formatShipmentStatusOptionLabel(
+                      shipment.currentStatus,
+                    )}`}
+            </CardDescription>
+          </div>
+          <ShipmentStatusBadge status={shipment.currentStatus} />
+        </div>
       </CardHeader>
-      <CardContent>
-        {statusNotes.length > 0 ? (
-          <div className="space-y-3">
-            {statusNotes.slice(0, 6).map((note) => (
-              <div
-                key={note.id}
-                className="rounded-2xl border border-border/70 bg-secondary/20 p-4"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="warning">Shipment status</Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {note.author.name} | {formatDateTime(note.createdAt)}
-                  </span>
-                </div>
-                <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">
-                  {formatShipmentStatusHistoryBody(note.content)}
-                </p>
-              </div>
-            ))}
+      <CardContent className="p-4">
+        {isLoading ? (
+          <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
+            Loading status history...
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-4 text-sm text-muted-foreground">
-            No shipment status history has been recorded yet.
-          </div>
+          <ShipmentActivityTimeline
+            entries={statusEntries}
+            emptyMessage="No shipment status history has been recorded yet."
+            showBadges
+          />
         )}
       </CardContent>
     </Card>
   );
+}
+
+function ShipmentTimelineGroup({
+  title,
+  entries,
+  emptyMessage,
+}: {
+  title: string;
+  entries: ShipmentActivityEntry[];
+  emptyMessage: string;
+}) {
+  return (
+    <details className="group rounded-xl border border-border/70 bg-secondary/10 px-3 py-2.5">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 marker:hidden">
+        <span className="min-w-0">
+          <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            {title}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {entries.length} record{entries.length === 1 ? '' : 's'}
+          </span>
+        </span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
+      </summary>
+      <div className="border-t border-border/60 pt-1 group-open:mt-2">
+        <ShipmentActivityTimeline
+          entries={entries}
+          emptyMessage={emptyMessage}
+          showBadges
+        />
+      </div>
+    </details>
+  );
+}
+
+function ShipmentActivityTimeline({
+  entries,
+  emptyMessage,
+  showBadges = false,
+}: {
+  entries: ShipmentActivityEntry[];
+  emptyMessage: string;
+  showBadges?: boolean;
+}) {
+  if (entries.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
+        {emptyMessage}
+      </p>
+    );
+  }
+
+  return (
+    <ol className="relative space-y-3 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-border">
+      {entries.map((entry) => (
+        <ShipmentActivityItem
+          key={entry.id}
+          entry={entry}
+          showBadge={showBadges}
+        />
+      ))}
+    </ol>
+  );
+}
+
+function ShipmentActivityItem({
+  entry,
+  showBadge,
+}: {
+  entry: ShipmentActivityEntry;
+  showBadge: boolean;
+}) {
+  return (
+    <li className="relative pl-6">
+      <span
+        className={cn(
+          'absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-background',
+          getShipmentTimelineDotClassName(entry.badgeVariant),
+        )}
+      />
+      <div className="space-y-1">
+        <p className="text-xs leading-5 text-muted-foreground">
+          <span
+            className={cn(
+              'font-semibold',
+              showBadge ? 'text-foreground' : 'text-[#d94d00] dark:text-orange-300',
+            )}
+          >
+            {entry.authorName}
+          </span>{' '}
+          | {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
+        </p>
+        {showBadge ? (
+          <Badge
+            variant={entry.badgeVariant}
+            className="h-5 rounded-md px-2 text-[10px]"
+          >
+            {entry.label}
+          </Badge>
+        ) : null}
+        <div className="whitespace-pre-wrap text-xs font-medium leading-5 text-foreground">
+          {entry.body}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function compareShipmentActivityEntriesDesc(
+  firstEntry: ShipmentActivityEntry,
+  secondEntry: ShipmentActivityEntry,
+) {
+  return (
+    new Date(secondEntry.timestamp).getTime() -
+    new Date(firstEntry.timestamp).getTime()
+  );
+}
+
+function getShipmentTimelineDotClassName(
+  variant?: ShipmentActivityEntry['badgeVariant'],
+) {
+  switch (variant) {
+    case 'warning':
+      return 'bg-amber-500';
+    case 'success':
+      return 'bg-emerald-500';
+    case 'danger':
+      return 'bg-red-500';
+    case 'info':
+      return 'bg-sky-500';
+    default:
+      return 'bg-teal-500';
+  }
 }
 
 function isShipmentStatusHistoryNote(note: OrderNote): boolean {
@@ -945,12 +1090,47 @@ function isPlainOrderNote(note: OrderNote): boolean {
   return (
     !isShipmentStatusHistoryNote(note) &&
     !isOrderUpdateNote(note) &&
-    !isOrderStatusHistoryNote(note)
+    !isOrderStatusHistoryNote(note) &&
+    !isInvoiceActivityNote(note)
   );
 }
 
 function formatOrderHistoryBody(content: string): string {
   return content.replace(/^Order updated:\s*/i, '').trim();
+}
+
+function isInvoiceActivityNote(note: OrderNote): boolean {
+  return Boolean(getInvoiceActivityLabel(note.content));
+}
+
+function getInvoiceActivityLabel(content: string): string | null {
+  const trimmedContent = content.trim();
+
+  if (/^Invoice generated:/i.test(trimmedContent)) {
+    return 'Invoice generated';
+  }
+
+  if (/^Invoice signature request sent:/i.test(trimmedContent)) {
+    return 'Invoice signature request sent';
+  }
+
+  if (/^Invoice signature request resent:/i.test(trimmedContent)) {
+    return 'Invoice signature request resent';
+  }
+
+  if (/^Invoice updated:/i.test(trimmedContent)) {
+    return 'Invoice updated';
+  }
+
+  if (/^Signed invoice cloned and signature request sent:/i.test(trimmedContent)) {
+    return 'Signed invoice cloned';
+  }
+
+  return null;
+}
+
+function formatInvoiceActivityBody(content: string): string {
+  return content.replace(/^([^:]+):\s*/i, '').trim();
 }
 
 function formatOrderNoteBody(
