@@ -206,7 +206,7 @@ export function LeadsPageContent() {
                   value={searchTerm}
                   onChange={(event) => handleSearchChange(event.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
-                  placeholder="Search by customer, email, phone, adviser, CMPT, state, or vehicle"
+                  placeholder="Search by customer, email, phone, adviser, state, or vehicle"
                 />
               </div>
 

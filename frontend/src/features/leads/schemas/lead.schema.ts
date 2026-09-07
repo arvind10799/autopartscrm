@@ -184,7 +184,7 @@ export const createLeadSchema = z.object({
   vehicleVariant: z
     .string()
     .trim()
-    .max(80, 'Variant must be 80 characters or fewer.')
+    .max(80, 'Part must be 80 characters or fewer.')
     .optional(),
   quote: optionalNumericValueSchema,
   quoteCurrency: leadQuoteCurrencySchema.optional().default('USD'),
@@ -228,7 +228,7 @@ export const createLeadFormSchema = z.object({
     .max(80, 'Model must be 80 characters or fewer.'),
   vehicleVariant: z
     .string()
-    .max(80, 'Variant must be 80 characters or fewer.')
+    .max(80, 'Part must be 80 characters or fewer.')
     .optional(),
   quote: z.preprocess(
     (value) => (value === '' ? undefined : value),
