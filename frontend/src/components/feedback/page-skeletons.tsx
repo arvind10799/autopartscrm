@@ -2,9 +2,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const premiumSkeletonClassName =
-  'bg-gradient-to-r from-slate-100 via-sky-50 to-slate-100 shadow-inner';
+  'bg-gradient-to-r from-slate-100 via-sky-50 to-slate-100 shadow-inner dark:from-slate-800 dark:via-slate-700/70 dark:to-slate-800';
 const premiumCardClassName =
-  'border-sky-100/80 bg-[radial-gradient(circle_at_top_left,#f0f9ff_0%,#ffffff_44%,#f8fafc_100%)] shadow-sm shadow-sky-950/5';
+  'border-sky-100/80 bg-[radial-gradient(circle_at_top_left,#f0f9ff_0%,#ffffff_44%,#f8fafc_100%)] shadow-sm shadow-sky-950/5 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(14,116,144,0.16)_0%,rgba(15,23,42,0.96)_44%,rgba(2,6,23,1)_100%)] dark:shadow-black/20';
 
 export function MetricsGridSkeleton({ count = 3 }: { count?: number }) {
   return (
