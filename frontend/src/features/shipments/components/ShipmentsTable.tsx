@@ -21,7 +21,7 @@ const columns: ColumnDef<ShipmentSummary>[] = [
       <div className="space-y-1">
         <Link
           href={`/shipments/${row.original.id}`}
-          className="font-semibold text-primary transition hover:text-primary/80"
+          className="font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
         >
           {row.original.order.orderNumber}
         </Link>
@@ -47,7 +47,7 @@ const columns: ColumnDef<ShipmentSummary>[] = [
       <div className="space-y-1">
         <Link
           href={`/shipments/${row.original.id}`}
-          className="font-semibold text-primary transition hover:text-primary/80"
+          className="font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
         >
           {row.original.bolNumber ?? 'BOL pending'}
         </Link>
@@ -101,7 +101,10 @@ const columns: ColumnDef<ShipmentSummary>[] = [
     cell: ({ row }) => (
       <Link
         href={`/shipments/${row.original.id}`}
-        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}
+        className={cn(
+          buttonVariants({ variant: 'ghost', size: 'sm' }),
+          'rounded-lg px-2 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20',
+        )}
       >
         View
         <ArrowRight className="h-4 w-4" />

@@ -19,7 +19,6 @@ import {
   useState,
 } from 'react';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
-import { EmptyState } from '@/components/feedback/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -156,16 +155,13 @@ export function CreateShipmentWorkspace() {
   };
 
   return (
-    <section className="grid gap-6">
-      <Card>
-        <CardHeader className="space-y-4">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-            <div className="space-y-2">
-              <CardTitle className="text-2xl sm:text-[1.75rem]">Shipment orders</CardTitle>
-              <CardDescription>
-                Click an order to open a full shipment workspace with order context.
-              </CardDescription>
-            </div>
+    <section className="grid gap-4">
+      <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
+        <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+            <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
+              Shipment orders
+            </CardTitle>
             <div className="w-full xl:max-w-xl">
               <DateRangeFilter
                 value={dateFilter}
@@ -181,7 +177,7 @@ export function CreateShipmentWorkspace() {
               <Input
                 value={searchTerm}
                 onChange={(event) => handleSearchChange(event.target.value)}
-                className="pl-9"
+                className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
                 placeholder="Search by order number, customer, part, or sales agent"
               />
             </div>
@@ -189,6 +185,7 @@ export function CreateShipmentWorkspace() {
             <Select
               value={shipmentStatusFilter}
               aria-label="Shipping status filter"
+              className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               onChange={(event) =>
                 handleShipmentStatusChange(
                   parseShipmentStatusFilter(event.target.value),
@@ -207,7 +204,7 @@ export function CreateShipmentWorkspace() {
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-4">
           <ShipmentEligibleOrdersTable
             orders={ordersResponse.items}
             meta={ordersResponse.meta}
@@ -220,13 +217,6 @@ export function CreateShipmentWorkspace() {
           />
         </CardContent>
       </Card>
-
-      <EmptyState
-        icon={<PackageCheck className="h-5 w-5" />}
-        title="Open a shipment workspace from the table"
-        description="Selecting an eligible order opens a full page with order details, notes, and shipment creation tools."
-        className="max-w-none bg-white"
-      />
     </section>
   );
 }

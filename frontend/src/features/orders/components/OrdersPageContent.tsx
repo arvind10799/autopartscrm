@@ -207,13 +207,15 @@ export function OrdersPageContent() {
 
   return (
     <>
-      <section className="grid gap-6">
-        <Card>
-          <CardHeader className="space-y-4">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <CardTitle className="text-2xl sm:text-[1.75rem]">Orders table</CardTitle>
+      <section className="grid gap-4">
+        <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
+          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+              <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
+                Orders table
+              </CardTitle>
 
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                 <DateRangeFilter
                   value={dateFilter}
                   onChange={setDateFilter}
@@ -227,7 +229,7 @@ export function OrdersPageContent() {
                   <Select
                     value={selectedAgentFilter}
                     aria-label="Agent filter"
-                    className="h-11 min-w-[220px]"
+                    className="h-11 min-w-[220px] rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                     onChange={(event) => handleAgentFilterChange(event.target.value)}
                   >
                     <option value={ALL_AGENTS_FILTER}>All agents</option>
@@ -241,7 +243,7 @@ export function OrdersPageContent() {
 
                 <Button
                   size="lg"
-                  className="h-11 whitespace-nowrap"
+                  className="h-11 whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000]"
                   onClick={() => setIsCreateModalOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
@@ -256,7 +258,7 @@ export function OrdersPageContent() {
                 <Input
                   value={searchTerm}
                   onChange={(event) => handleSearchChange(event.target.value)}
-                  className="pl-9"
+                  className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
                   placeholder="Search by order number, sales number, customer, phone, email, or part"
                 />
               </div>
@@ -264,6 +266,7 @@ export function OrdersPageContent() {
               <Select
                 value={shipmentStatusFilter}
                 aria-label="Shipping status filter"
+                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                 onChange={(event) =>
                   handleShipmentStatusChange(
                     parseShipmentStatusFilter(event.target.value),
@@ -282,7 +285,7 @@ export function OrdersPageContent() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4">
             <OrdersTable
               orders={ordersResponse.items}
               meta={ordersResponse.meta}

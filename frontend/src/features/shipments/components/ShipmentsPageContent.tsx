@@ -6,7 +6,6 @@ import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -103,16 +102,13 @@ export function ShipmentsPageContent() {
   };
 
   return (
-    <section className="grid gap-6">
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader className="space-y-4">
-            <div className="space-y-2">
-              <CardTitle className="text-2xl sm:text-[1.75rem]">Shipment table</CardTitle>
-              <CardDescription>
-                Track BOL and PRO numbers, carrier details, and shipment progress.
-              </CardDescription>
-            </div>
+    <section className="grid gap-4">
+      <div className="grid gap-4">
+        <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
+          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+            <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
+              Shipment table
+            </CardTitle>
 
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_minmax(22rem,28rem)] lg:items-start">
               <div className="relative">
@@ -120,13 +116,14 @@ export function ShipmentsPageContent() {
                 <Input
                   value={searchTerm}
                   onChange={(event) => handleSearchChange(event.target.value)}
-                  className="pl-9"
+                  className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
                   placeholder="Search by BOL, Pickup No., PRO, carrier, order, or customer"
                 />
               </div>
 
               <Select
                 value={statusFilter}
+                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                 onChange={(event) =>
                   handleStatusChange(parseShipmentStatusFilter(event.target.value))
                 }
@@ -150,7 +147,7 @@ export function ShipmentsPageContent() {
             </div>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-4">
             <ShipmentsTable
               shipments={shipmentsResponse.items}
               meta={shipmentsResponse.meta}

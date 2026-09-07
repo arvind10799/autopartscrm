@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -41,7 +40,7 @@ const columns: ColumnDef<ReplacementRequest>[] = [
       <div className="min-w-0">
         <Link
           href={`/orders/${row.original.order.id}`}
-          className="block truncate font-semibold text-primary hover:text-primary/80"
+          className="block truncate font-semibold text-[#d94d00] hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
         >
           {row.original.order.salesNumber ?? '—'}
         </Link>
@@ -125,7 +124,11 @@ const columns: ColumnDef<ReplacementRequest>[] = [
     meta: { className: 'w-[8%]' },
     cell: ({ row }) => (
       <Link href={`/replacement-orders/${row.original.id}`}>
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 rounded-lg border-[#ff5a00]/25 px-3 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
+        >
           Open
           <ArrowUpRight className="h-4 w-4" />
         </Button>
@@ -175,19 +178,27 @@ export function ReplacementOrdersPageContent() {
   }, [isLoading, page, totalPages]);
 
   return (
-    <section className="grid gap-6">
-      <Card>
-        <CardHeader className="space-y-4">
-          <div className="space-y-2">
-            <CardTitle className="text-2xl sm:text-[1.75rem]">
+    <section className="grid gap-4">
+      <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
+        <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+            <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
               Replacement Orders
             </CardTitle>
-            <CardDescription>
-              Track replacement requests, customer reasons, yard updates, and status history.
-            </CardDescription>
+            <div className="w-full xl:max-w-md">
+              <DateRangeFilter
+                value={dateFilter}
+                onChange={(value) => {
+                  setDateFilter(value);
+                  startTransition(() => setPage(1));
+                }}
+                variant="inline"
+                showPresetLabel={false}
+              />
+            </div>
           </div>
 
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_230px_minmax(22rem,28rem)] xl:items-start">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_260px] xl:items-start">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -196,13 +207,14 @@ export function ReplacementOrdersPageContent() {
                   setSearchTerm(event.target.value);
                   startTransition(() => setPage(1));
                 }}
-                className="pl-9"
+                className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
                 placeholder="Search by sale, order, customer, phone, part, carrier, PRO, or yard update"
               />
             </div>
 
             <Select
               value={statusFilter}
+              className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               onChange={(event) => {
                 setStatusFilter(parseReplacementStatusFilter(event.target.value));
                 startTransition(() => setPage(1));
@@ -215,20 +227,10 @@ export function ReplacementOrdersPageContent() {
                 </option>
               ))}
             </Select>
-
-            <DateRangeFilter
-              value={dateFilter}
-              onChange={(value) => {
-                setDateFilter(value);
-                startTransition(() => setPage(1));
-              }}
-              variant="inline"
-              showPresetLabel={false}
-            />
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-4">
           <DataTable
             columns={columns}
             data={replacementsResponse.items}

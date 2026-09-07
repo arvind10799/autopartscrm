@@ -126,7 +126,9 @@ export function ShipmentEligibleOrdersTable({
                 variant: isSelected ? 'default' : 'ghost',
                 size: 'sm',
               }),
-              'px-3',
+              isSelected
+                ? 'rounded-lg bg-[#ff5a00] px-3 text-white hover:bg-[#e65000]'
+                : 'rounded-lg px-3 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20',
             )}
           >
             {isSelected ? 'Open' : 'Open workspace'}

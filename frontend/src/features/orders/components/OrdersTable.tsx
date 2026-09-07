@@ -31,7 +31,7 @@ function buildColumns(
         <div className="min-w-0 space-y-0.5">
           <Link
             href={`/orders/${row.original.id}`}
-            className="block truncate font-semibold text-primary transition hover:text-primary/80"
+            className="block truncate font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
           >
             {row.original.salesNumber ?? '—'}
           </Link>
@@ -126,14 +126,22 @@ function buildColumns(
         return (
           <div className="flex items-center justify-end gap-1">
             {canEdit ? (
-              <Button className="h-8 px-2" variant="outline" size="sm" onClick={() => onEdit(row.original.id)}>
+              <Button
+                className="h-8 rounded-lg border-[#ff5a00]/25 px-2 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(row.original.id)}
+              >
                 <PencilLine className="h-4 w-4" />
                 <span className="hidden xl:inline">Edit</span>
               </Button>
             ) : null}
             <Link
               href={`/orders/${row.original.id}`}
-              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'h-8 px-2')}
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'sm' }),
+                'h-8 rounded-lg px-2 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20',
+              )}
             >
               View
               <ArrowRight className="h-4 w-4" />

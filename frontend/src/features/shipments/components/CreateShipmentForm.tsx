@@ -416,7 +416,7 @@ export function CreateShipmentForm({
       <Button
         type="submit"
         size="lg"
-        className="h-11 w-full rounded-xl"
+        className="h-11 w-full rounded-xl bg-[#ff5a00] text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000] focus-visible:ring-[#ff5a00]"
         disabled={form.formState.isSubmitting}
       >
         {form.formState.isSubmitting

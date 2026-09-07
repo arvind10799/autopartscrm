@@ -118,7 +118,7 @@ export function LoginForm() {
           <Button
             type="submit"
             size="lg"
-            className="w-full bg-gradient-to-r from-[#f2702d] to-[#103b57] text-white shadow-lg shadow-[#f2702d]/20 transition hover:from-[#ff8447] hover:to-[#164d70] focus-visible:ring-[#f2702d]"
+            className="w-full bg-[#ff5a00] text-white shadow-lg shadow-orange-600/20 transition hover:bg-[#e65000] focus-visible:ring-[#ff5a00]"
             disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting ? 'Signing in...' : 'Sign in'}
