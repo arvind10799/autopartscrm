@@ -5,15 +5,16 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
-import {
-  formatCurrency,
-  formatDateTime,
-} from '@/features/orders/lib/order-formatters';
+import { formatCurrency } from '@/features/orders/lib/order-formatters';
 import type {
   OrderSummary,
   PaginationMeta,
 } from '@/features/orders/types/order.types';
 import { ShippingStatusCell } from './ShippingStatusCell';
+
+function getFirstName(name: string) {
+  return name.trim().split(/\s+/)[0] || name;
+}
 
 function getRangeLabel(meta: PaginationMeta, currentCount: number) {
   if (meta.total === 0 || currentCount === 0) {
@@ -47,18 +48,18 @@ export function ShipmentEligibleOrdersTable({
 }) {
   const columns: ColumnDef<OrderSummary>[] = [
     {
-      accessorKey: 'orderNumber',
-      header: 'Order',
+      accessorKey: 'salesNumber',
+      header: 'Sale',
+      meta: {
+        className: 'w-[12%]',
+      },
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <p className="font-semibold text-foreground">{row.original.orderNumber}</p>
-          {row.original.salesNumber ? (
-            <p className="text-xs text-muted-foreground">
-              Sales Number: {row.original.salesNumber}
-            </p>
-          ) : null}
-          <p className="text-xs text-muted-foreground">
-            Updated {formatDateTime(row.original.updatedAt)}
+        <div className="min-w-0 space-y-0.5">
+          <p className="truncate font-semibold text-[#d94d00] dark:text-orange-300">
+            {row.original.salesNumber ?? '—'}
+          </p>
+          <p className="truncate text-xs font-medium text-muted-foreground">
+            {row.original.orderNumber}
           </p>
         </div>
       ),
@@ -66,39 +67,57 @@ export function ShipmentEligibleOrdersTable({
     {
       accessorKey: 'customerName',
       header: 'Customer',
+      meta: {
+        className: 'w-[16%]',
+      },
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <p className="font-medium text-foreground">{row.original.customerName}</p>
-          <p className="max-w-xs text-xs text-muted-foreground">
-            {row.original.partDescription}
-          </p>
-        </div>
+        <p className="truncate font-medium text-foreground">
+          {row.original.customerName}
+        </p>
       ),
     },
     {
       id: 'agent',
-      header: 'Sales agent',
+      header: 'Advisor',
+      meta: {
+        className: 'w-[10%]',
+      },
       cell: ({ row }) => (
-        <div className="space-y-1">
-          <p className="font-medium text-foreground">{row.original.createdBy.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {row.original.createdBy.email}
-          </p>
-        </div>
+        <p className="truncate font-medium text-foreground">
+          {getFirstName(row.original.createdBy.name)}
+        </p>
+      ),
+    },
+    {
+      accessorKey: 'partDescription',
+      header: 'Part',
+      meta: {
+        className: 'w-[30%]',
+      },
+      cell: ({ row }) => (
+        <p className="truncate text-sm text-foreground" title={row.original.partDescription}>
+          {row.original.partDescription}
+        </p>
       ),
     },
     {
       accessorKey: 'totalSaleAmount',
-      header: 'Total sale',
+      header: 'Sale Amount',
+      meta: {
+        className: 'w-[12%]',
+      },
       cell: ({ row }) => (
-        <span className="font-semibold text-foreground">
+        <span className="block truncate font-semibold text-foreground">
           {formatCurrency(row.original.totalSaleAmount, row.original.currency)}
         </span>
       ),
     },
     {
       accessorKey: 'latestShipmentStatus',
-      header: 'Shipping status',
+      header: 'Status',
+      meta: {
+        className: 'w-[12%]',
+      },
       cell: ({ row }) => (
         <ShippingStatusCell
           status={row.original.latestShipmentStatus}
@@ -114,6 +133,9 @@ export function ShipmentEligibleOrdersTable({
     {
       id: 'action',
       header: '',
+      meta: {
+        className: 'w-[8%]',
+      },
       cell: ({ row }) => {
         const isSelected = row.original.id === selectedOrderId;
 
@@ -131,7 +153,7 @@ export function ShipmentEligibleOrdersTable({
                 : 'rounded-lg px-3 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20',
             )}
           >
-            {isSelected ? 'Open' : 'Open workspace'}
+            {isSelected ? 'Open' : 'View'}
             <ArrowRight className="h-4 w-4" />
           </button>
         );
@@ -149,6 +171,8 @@ export function ShipmentEligibleOrdersTable({
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
+      density="compact"
+      layout="fit"
       emptyTitle="No eligible orders"
       emptyDescription="Orders without a shipment will appear here."
       footer={

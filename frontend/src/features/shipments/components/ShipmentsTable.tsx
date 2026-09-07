@@ -6,83 +6,96 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
-import { formatShipmentDateTime } from '../lib/shipment-formatters';
 import type {
   ShipmentPaginationMeta,
   ShipmentSummary,
 } from '../types/shipment.types';
 import { ShippingStatusCell } from './ShippingStatusCell';
 
+function getFirstName(name: string) {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
 const columns: ColumnDef<ShipmentSummary>[] = [
-  {
-    accessorKey: 'order.orderNumber',
-    header: 'Order',
-    cell: ({ row }) => (
-      <div className="space-y-1">
-        <Link
-          href={`/shipments/${row.original.id}`}
-          className="font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
-        >
-          {row.original.order.orderNumber}
-        </Link>
-        <p className="truncate text-xs text-muted-foreground">
-          {row.original.order.customerName}
-        </p>
-      </div>
-    ),
-  },
   {
     accessorKey: 'order.salesNumber',
     header: 'Sale',
+    meta: {
+      className: 'w-[12%]',
+    },
     cell: ({ row }) => (
-      <span className="block truncate text-sm font-semibold text-foreground">
-        {row.original.order.salesNumber ?? '—'}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'bolNumber',
-    header: 'BOL',
-    cell: ({ row }) => (
-      <div className="space-y-1">
+      <div className="min-w-0 space-y-0.5">
         <Link
           href={`/shipments/${row.original.id}`}
-          className="font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
+          className="block truncate font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
         >
-          {row.original.bolNumber ?? 'BOL pending'}
+          {row.original.order.salesNumber ?? '—'}
         </Link>
-        <p className="text-xs text-muted-foreground">
-          Updated {formatShipmentDateTime(row.original.updatedAt)}
+        <p className="truncate text-xs font-medium text-muted-foreground">
+          {row.original.order.orderNumber}
         </p>
       </div>
     ),
   },
   {
-    accessorKey: 'proNumber',
-    header: 'PRO',
+    accessorKey: 'order.customerName',
+    header: 'Customer',
+    meta: {
+      className: 'w-[16%]',
+    },
     cell: ({ row }) => (
-      <span className="font-medium text-foreground">
-        {row.original.proNumber ?? 'Pending'}
-      </span>
+      <p className="truncate font-medium text-foreground">
+        {row.original.order.customerName}
+      </p>
+    ),
+  },
+  {
+    accessorKey: 'order.createdBy.name',
+    header: 'Advisor',
+    meta: {
+      className: 'w-[10%]',
+    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium text-foreground">
+        {getFirstName(row.original.order.createdBy.name)}
+      </p>
+    ),
+  },
+  {
+    accessorKey: 'order.partDescription',
+    header: 'Part',
+    meta: {
+      className: 'w-[28%]',
+    },
+    cell: ({ row }) => (
+      <p className="truncate text-sm text-foreground" title={row.original.order.partDescription}>
+        {row.original.order.partDescription}
+      </p>
     ),
   },
   {
     accessorKey: 'carrierName',
-    header: 'Carrier',
+    header: 'PRO Details',
+    meta: {
+      className: 'w-[14%]',
+    },
     cell: ({ row }) => (
-      <div className="space-y-1">
-        <p className="font-medium text-foreground">
+      <div className="min-w-0 space-y-0.5">
+        <p className="truncate text-sm font-medium text-foreground">
           {row.original.carrierName ?? 'Carrier pending'}
         </p>
-        <p className="text-xs text-muted-foreground">
-          Order {row.original.order.orderNumber}
+        <p className="truncate text-xs text-muted-foreground">
+          {row.original.proNumber ?? 'PRO pending'}
         </p>
       </div>
     ),
   },
   {
     accessorKey: 'currentStatus',
-    header: 'Current status',
+    header: 'Status',
+    meta: {
+      className: 'w-[12%]',
+    },
     cell: ({ row }) => (
       <ShippingStatusCell
         status={row.original.currentStatus}
@@ -98,6 +111,9 @@ const columns: ColumnDef<ShipmentSummary>[] = [
   {
     id: 'details',
     header: '',
+    meta: {
+      className: 'w-[8%]',
+    },
     cell: ({ row }) => (
       <Link
         href={`/shipments/${row.original.id}`}
@@ -151,6 +167,8 @@ export function ShipmentsTable({
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
+      density="compact"
+      layout="fit"
       emptyTitle="No shipments found"
       emptyDescription="Try a different search term or clear the current status filter."
       footer={

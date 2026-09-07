@@ -34,10 +34,19 @@ const shipmentSummarySelect = {
       orderNumber: true,
       salesNumber: true,
       customerName: true,
+      partDescription: true,
       status: true,
       totalSaleAmount: true,
       currency: true,
       intakeDetails: true,
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      },
       createdAt: true,
       _count: {
         select: {

@@ -16,6 +16,7 @@ const shipmentOrderSummarySchema = z.object({
   orderNumber: z.string(),
   salesNumber: z.string().nullable().optional(),
   customerName: z.string(),
+  partDescription: z.string(),
   status: orderStatusSchema,
   totalSaleAmount: z.coerce.number().optional(),
   currency: z.string().optional().default('USD'),
@@ -26,6 +27,12 @@ const shipmentOrderSummarySchema = z.object({
     .nullable()
     .optional(),
   createdAt: isoDateTimeSchema,
+  createdBy: z.object({
+    id: entityIdSchema,
+    name: z.string(),
+    email: z.string(),
+    role: z.string(),
+  }),
   _count: z
     .object({
       replacementRequests: z.number().int().min(0).optional().default(0),
@@ -37,11 +44,13 @@ const shipmentOrderSummarySchema = z.object({
   orderNumber: order.orderNumber,
   salesNumber: order.salesNumber ?? null,
   customerName: order.customerName,
+  partDescription: order.partDescription,
   status: order.status,
   totalSaleAmount: order.totalSaleAmount,
   currency: order.currency,
   orderDate: order.intakeDetails?.orderDate ?? null,
   createdAt: order.createdAt,
+  createdBy: order.createdBy,
   counts: {
     replacementRequests: order._count.replacementRequests,
   },

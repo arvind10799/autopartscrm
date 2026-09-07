@@ -21,11 +21,18 @@ export interface ShipmentOrderSummary {
   orderNumber: string;
   salesNumber: string | null;
   customerName: string;
+  partDescription: string;
   status: OrderStatus;
   totalSaleAmount?: number;
   currency: string;
   orderDate: string | null;
   createdAt: string;
+  createdBy: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
   counts: {
     replacementRequests: number;
   };
