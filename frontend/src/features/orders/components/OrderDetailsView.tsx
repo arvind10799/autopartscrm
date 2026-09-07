@@ -24,7 +24,6 @@ import { notesApi } from '@/features/notes/api/notes-api';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { GrossProfitSummaryCard } from '@/features/shipments/components/GrossProfitSummaryCard';
-import { ReplacementTracker } from '@/features/replacements/components/ReplacementTracker';
 import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
 import { formatShipmentStatus } from '@/features/shipments/lib/shipment-formatters';
 import { toast } from '@/lib/stores/toast.store';
@@ -339,10 +338,6 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
               </DetailSection>
 
               <OrderResolutionDetails order={order} />
-
-              {canAddAdditionalCost ? (
-                <ReplacementTracker orderId={order.id} compact />
-              ) : null}
             </CardContent>
           </Card>
         </div>

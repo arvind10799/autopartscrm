@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { formatDateTime, formatRelativeTime } from '@/features/orders/lib/order-formatters';
 import { toast } from '@/lib/stores/toast.store';
+import { cn } from '@/lib/utils/cn';
 import { replacementsApi } from '../api/replacements-api';
 import { useReplacementsList } from '../hooks/useReplacementsList';
 import { formatReplacementStatus } from '../lib/replacements.helpers';
@@ -26,12 +27,16 @@ type ReplacementTrackerProps = {
   orderId: string;
   shipmentId?: string;
   compact?: boolean;
+  buttonOnly?: boolean;
+  onChanged?: () => void | Promise<void>;
 };
 
 export function ReplacementTracker({
   orderId,
   shipmentId,
   compact = false,
+  buttonOnly = false,
+  onChanged,
 }: ReplacementTrackerProps) {
   const authUser = useAuthStore((state) => state.user);
   const canManage = authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
@@ -94,6 +99,7 @@ export function ReplacementTracker({
       setIsModalOpen(false);
       setEditingReplacement(null);
       setRefreshKey((currentValue) => currentValue + 1);
+      await onChanged?.();
     } catch (caughtError) {
       setSaveError(
         caughtError instanceof Error
@@ -104,6 +110,47 @@ export function ReplacementTracker({
       setIsSaving(false);
     }
   };
+
+  if (buttonOnly) {
+    if (!canManage) {
+      return null;
+    }
+
+    return (
+      <>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={cn(
+            'h-8 rounded-lg px-3 text-xs',
+            !hasExistingReplacement &&
+              'border-orange-200 text-[#d94d00] hover:bg-orange-50 hover:text-[#c34400] dark:border-orange-900/50 dark:text-orange-300 dark:hover:bg-orange-950/30',
+          )}
+          onClick={openCreateModal}
+          disabled={isLoading || hasExistingReplacement}
+          title={
+            hasExistingReplacement
+              ? 'Replacement already initiated for this shipment.'
+              : 'Create replacement request'
+          }
+        >
+          <RotateCcw className="h-4 w-4" />
+          {hasExistingReplacement ? 'Replacement initiated' : 'Replacement'}
+        </Button>
+
+        {isModalOpen ? (
+          <ReplacementRequestModal
+            replacement={editingReplacement}
+            isSaving={isSaving}
+            error={saveError}
+            onClose={() => setIsModalOpen(false)}
+            onSubmit={handleSubmit}
+          />
+        ) : null}
+      </>
+    );
+  }
 
   return (
     <>

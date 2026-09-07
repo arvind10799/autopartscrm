@@ -169,6 +169,10 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
   const canEditGpCosts =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
+  const canCreateReplacementFromShipment =
+    canAddAdditionalCost &&
+    shipment.currentStatus === 'DELIVERED' &&
+    resolvedOrderStatus !== 'REFUNDED';
   const shipmentFinancialSummary = invoiceOrder
     ? getOrderFinancialSummary(invoiceOrder)
     : null;
@@ -256,16 +260,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
         ) : (
           <Card className="overflow-hidden border-border/70 shadow-sm">
             <CardHeader className="px-4 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle className="text-base">Invoice Management</CardTitle>
-                <Link
-                  href="/shipments"
-                  className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 rounded-full px-3 text-xs')}
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Back
-                </Link>
-              </div>
+              <CardTitle className="text-base">Invoice Management</CardTitle>
               <CardDescription className="text-xs">
                 {isInvoiceOrderLoading
                   ? 'Loading invoice management...'
@@ -304,19 +299,22 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
                     }}
                   />
                 ) : null}
+                {invoiceOrder && canCreateReplacementFromShipment ? (
+                  <ReplacementTracker
+                    orderId={invoiceOrder.id}
+                    shipmentId={shipment.id}
+                    buttonOnly
+                    onChanged={async () => {
+                      await refreshShipment();
+                      setOrderRefreshKey((currentValue) => currentValue + 1);
+                    }}
+                  />
+                ) : null}
               </div>
             }
           />
 
           {invoiceOrder ? <OrderResolutionDetails order={invoiceOrder} /> : null}
-
-          {invoiceOrder && canAddAdditionalCost ? (
-            <ReplacementTracker
-              orderId={invoiceOrder.id}
-              shipmentId={shipment.id}
-              compact
-            />
-          ) : null}
 
           <ShipmentNotesHistoryCard
             shipment={shipment}

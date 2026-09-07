@@ -29,7 +29,7 @@ export function AppHeader({
   const pathname = usePathname();
   const clearSession = useAuthStore((state) => state.clearSession);
   const [isPending, startTransition] = useTransition();
-  const showOrdersBackLink = /^\/orders\/[^/]+/.test(pathname);
+  const backLink = getHeaderBackLink(pathname);
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -63,11 +63,11 @@ export function AppHeader({
             <Menu className="h-4 w-4" />
           </Button>
 
-          {showOrdersBackLink ? (
+          {backLink ? (
             <Link
-              href="/orders"
+              href={backLink.href}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-[#0f6fb7] shadow-sm transition hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] dark:border-slate-800 dark:bg-slate-950 dark:text-sky-300 dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
-              aria-label="Back to orders"
+              aria-label={backLink.label}
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -117,4 +117,20 @@ export function AppHeader({
       </div>
     </header>
   );
+}
+
+function getHeaderBackLink(pathname: string): { href: string; label: string } | null {
+  if (/^\/orders\/[^/]+/.test(pathname)) {
+    return { href: '/orders', label: 'Back to orders' };
+  }
+
+  if (/^\/shipments\/[^/]+/.test(pathname) && !pathname.startsWith('/shipments/create')) {
+    return { href: '/shipments', label: 'Back to shipments' };
+  }
+
+  if (/^\/replacement-orders\/[^/]+/.test(pathname)) {
+    return { href: '/replacement-orders', label: 'Back to replacement orders' };
+  }
+
+  return null;
 }
