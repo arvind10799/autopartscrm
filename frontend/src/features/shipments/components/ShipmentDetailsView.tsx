@@ -273,7 +273,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
         {gpCard}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
         <div className="grid gap-5">
           <ShipmentDetailGrid
             shipment={shipment}
@@ -316,15 +316,6 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
 
           {invoiceOrder ? <OrderResolutionDetails order={invoiceOrder} /> : null}
 
-          <ShipmentNotesHistoryCard
-            shipment={shipment}
-            order={invoiceOrder}
-            orderNotes={invoiceOrder?.notes ?? []}
-            isOrderNotesLoading={isInvoiceOrderLoading}
-          />
-        </div>
-
-        <div className="grid gap-5 xl:sticky xl:top-6 xl:self-start">
           <ShipmentStatusUpdateCard
             nextStatuses={nextStatuses}
             selectedStatus={selectedStatus}
@@ -362,6 +353,15 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
               setCarrierName(value);
             }}
             onSubmit={handleStatusSubmit}
+          />
+        </div>
+
+        <div className="grid gap-5 xl:sticky xl:top-6 xl:self-start">
+          <ShipmentNotesHistoryCard
+            shipment={shipment}
+            order={invoiceOrder}
+            orderNotes={invoiceOrder?.notes ?? []}
+            isOrderNotesLoading={isInvoiceOrderLoading}
           />
         </div>
       </div>

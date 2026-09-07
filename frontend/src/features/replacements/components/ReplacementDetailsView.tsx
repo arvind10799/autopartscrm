@@ -253,11 +253,98 @@ export function ReplacementDetailsView({
     orderNotes: order?.notes ?? [],
     shipmentNotes,
   });
-  const statusHistoryEntries = buildReplacementStatusHistoryEntries(replacement);
+  const statusHistoryEntries = buildReplacementStatusHistoryEntries(
+    replacement,
+    order?.notes ?? [],
+    shipmentNotes,
+  );
+  const replacementUpdateCard = canManage ? (
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className="border-b border-border/70 px-4 py-2.5">
+        <CardTitle className="text-base">Update Replacement</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2.5 p-3">
+        <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Replacement Status
+          <Select
+            className="h-10 py-2 leading-6 normal-case tracking-normal"
+            value={replacementStatus}
+            onChange={(event) =>
+              setReplacementStatus(event.target.value as ReplacementStatus)
+            }
+          >
+            {REPLACEMENT_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {formatReplacementStatus(status)}
+              </option>
+            ))}
+          </Select>
+        </label>
+
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Freight Carrier
+            <Input
+              className="h-8 normal-case tracking-normal"
+              value={replacementCarrierName}
+              onChange={(event) => setReplacementCarrierName(event.target.value)}
+              placeholder="FedEx Freight"
+            />
+          </label>
+          <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            PRO Number
+            <Input
+              className="h-8 normal-case tracking-normal"
+              value={replacementProNumber}
+              onChange={(event) => setReplacementProNumber(event.target.value)}
+              placeholder="PRO123456"
+            />
+          </label>
+        </div>
+
+        <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Customer Reason
+          <textarea
+            value={customerReason}
+            rows={2}
+            onChange={(event) => setCustomerReason(event.target.value)}
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground shadow-sm outline-none transition focus:ring-2 focus:ring-ring"
+          />
+        </label>
+
+        <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Yard Update
+          <textarea
+            value={yardUpdate}
+            rows={2}
+            onChange={(event) => setYardUpdate(event.target.value)}
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground shadow-sm outline-none transition focus:ring-2 focus:ring-ring"
+          />
+        </label>
+
+        {formError || updateError ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {formError ?? updateError}
+          </div>
+        ) : null}
+
+        <Button
+          size="sm"
+          className="h-8 w-full rounded-lg bg-[#ff5a00] text-xs text-white hover:bg-[#e65000]"
+          disabled={isUpdating}
+          onClick={() => void handleUpdate()}
+        >
+          {isUpdating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+          Update replacement
+        </Button>
+      </CardContent>
+    </Card>
+  ) : null;
 
   return (
     <section className="space-y-5">
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(390px,0.92fr)]">
+        <div className="space-y-5">
         <Card className="overflow-hidden border-border/70 shadow-sm">
           <CardHeader className="border-b border-border/70 px-4 py-3">
             <CardTitle className="text-lg">Replacement order details</CardTitle>
@@ -413,6 +500,8 @@ export function ReplacementDetailsView({
             </DetailSection>
           </CardContent>
         </Card>
+        {replacementUpdateCard}
+        </div>
 
         <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
           <GrossProfitSummaryCard
@@ -449,93 +538,6 @@ export function ReplacementDetailsView({
               setOrderRefreshKey((currentValue) => currentValue + 1)
             }
           />
-
-          {canManage ? (
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <CardHeader className="border-b border-border/70 px-4 py-2.5">
-                <CardTitle className="text-base">Update Replacement</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2.5 p-3">
-                <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Replacement Status
-                  <Select
-                    className="h-10 py-2 leading-6 normal-case tracking-normal"
-                    value={replacementStatus}
-                    onChange={(event) =>
-                      setReplacementStatus(event.target.value as ReplacementStatus)
-                    }
-                  >
-                    {REPLACEMENT_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {formatReplacementStatus(status)}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                    Freight Carrier
-                    <Input
-                      className="h-8 normal-case tracking-normal"
-                      value={replacementCarrierName}
-                      onChange={(event) =>
-                        setReplacementCarrierName(event.target.value)
-                      }
-                      placeholder="FedEx Freight"
-                    />
-                  </label>
-                  <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                    PRO Number
-                    <Input
-                      className="h-8 normal-case tracking-normal"
-                      value={replacementProNumber}
-                      onChange={(event) =>
-                        setReplacementProNumber(event.target.value)
-                      }
-                      placeholder="PRO123456"
-                    />
-                  </label>
-                </div>
-
-                <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Customer Reason
-                  <textarea
-                    value={customerReason}
-                    rows={2}
-                    onChange={(event) => setCustomerReason(event.target.value)}
-                    className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground shadow-sm outline-none transition focus:ring-2 focus:ring-ring"
-                  />
-                </label>
-
-                <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Yard Update
-                  <textarea
-                    value={yardUpdate}
-                    rows={2}
-                    onChange={(event) => setYardUpdate(event.target.value)}
-                    className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground shadow-sm outline-none transition focus:ring-2 focus:ring-ring"
-                  />
-                </label>
-
-                {formError || updateError ? (
-                  <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                    {formError ?? updateError}
-                  </div>
-                ) : null}
-
-                <Button
-                  size="sm"
-                  className="h-8 w-full rounded-lg bg-[#ff5a00] text-xs text-white hover:bg-[#e65000]"
-                  disabled={isUpdating}
-                  onClick={() => void handleUpdate()}
-                >
-                  {isUpdating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-                  Update replacement
-                </Button>
-              </CardContent>
-            </Card>
-          ) : null}
 
           <ReplacementNotesHistoryCard
             noteEntries={noteEntries}
@@ -846,7 +848,7 @@ function buildReplacementEditHistoryEntries({
       id: `order-edit-${note.id}`,
       timestamp: note.createdAt,
       authorName: note.author.name,
-      label: getInvoiceActivityLabel(note.content) ?? 'Order updated',
+      label: getActivityLabel(note.content) ?? 'Order updated',
       badgeVariant: 'info' as const,
       body: formatNoteBody(note.content),
     })),
@@ -863,6 +865,8 @@ function buildReplacementEditHistoryEntries({
 
 function buildReplacementStatusHistoryEntries(
   replacement: NonNullable<ReturnType<typeof useReplacementDetail>['replacement']>,
+  orderNotes: { id: string; content: string; createdAt: string; author: { name: string } }[] = [],
+  shipmentNotes: NoteRecord[] = [],
 ): ReplacementActivityEntry[] {
   return [
     ...replacement.histories
@@ -888,6 +892,22 @@ function buildReplacementStatusHistoryEntries(
           </span>
         ),
       })),
+    ...orderNotes.filter(isReplacementStatusNote).map((note) => ({
+      id: `order-status-${note.id}`,
+      timestamp: note.createdAt,
+      authorName: note.author.name,
+      label: 'Status changed',
+      badgeVariant: 'warning' as const,
+      body: formatNoteBody(note.content),
+    })),
+    ...shipmentNotes.filter((note) => isReplacementStatusNote({ content: note.message })).map((note) => ({
+      id: `shipment-status-${note.id}`,
+      timestamp: note.createdAt,
+      authorName: note.author.name,
+      label: 'Status changed',
+      badgeVariant: 'warning' as const,
+      body: formatNoteBody(note.message),
+    })),
     {
       id: `${replacement.id}-created`,
       timestamp: replacement.createdAt,
@@ -914,6 +934,7 @@ function isPlainReplacementNote(note: { content: string }) {
 
   return (
     !isEditHistoryNote(note) &&
+    !isReplacementStatusNote(note) &&
     !/^Replacement (request created|updated):/i.test(trimmedContent)
   );
 }
@@ -924,13 +945,29 @@ function isEditHistoryNote(note: { content: string }) {
   return (
     /^Order updated:/i.test(trimmedContent) ||
     /^Shipment updated:/i.test(trimmedContent) ||
+    (/^Replacement (request created|updated):/i.test(trimmedContent) &&
+      !isReplacementStatusNote(note)) ||
     /^Invoice (generated|signature request sent|signature request resent|updated):/i.test(trimmedContent) ||
     /^Signed invoice cloned and signature request sent:/i.test(trimmedContent)
   );
 }
 
-function getInvoiceActivityLabel(content: string) {
+function isReplacementStatusNote(note: { content: string }) {
+  const trimmedContent = note.content.trim();
+
+  return /^Replacement (request created|updated):/i.test(trimmedContent) && /^- Status:/im.test(trimmedContent);
+}
+
+function getActivityLabel(content: string) {
   const trimmedContent = content.trim();
+
+  if (/^Replacement request created:/i.test(trimmedContent)) {
+    return 'Replacement created';
+  }
+
+  if (/^Replacement updated:/i.test(trimmedContent)) {
+    return 'Replacement updated';
+  }
 
   if (/^Invoice generated:/i.test(trimmedContent)) {
     return 'Invoice generated';
