@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   ClipboardList,
-  FileText,
   Gauge,
   Phone,
   RotateCcw,
@@ -70,14 +69,6 @@ export const navigationConfig: NavigationItemConfig[] = [
     description: 'Track replacement requests, yard updates, and replacement history.',
     icon: RotateCcw,
     roles: ['ADMIN', 'SHIPPING'],
-    group: 'workspace',
-  },
-  {
-    href: '/notes',
-    label: 'Notes',
-    description: 'Cross-team notes and entity-level collaboration records.',
-    icon: FileText,
-    roles: ['ADMIN', 'SALES', 'SHIPPING'],
     group: 'workspace',
   },
   {

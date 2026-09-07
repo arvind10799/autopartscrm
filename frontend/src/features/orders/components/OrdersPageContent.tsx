@@ -340,7 +340,7 @@ export function OrdersPageContent() {
           onClick={() => setSelectedOrderId(null)}
         >
           <div
-            className="w-full max-w-3xl rounded-[1.75rem] border border-border/70 bg-white shadow-2xl"
+            className="w-full max-w-3xl rounded-[1.75rem] border border-border/70 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-border/70 px-6 py-5">

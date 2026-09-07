@@ -162,16 +162,9 @@ export function CreateShipmentWorkspace() {
             <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
               Shipment orders
             </CardTitle>
-            <div className="w-full xl:max-w-xl">
-              <DateRangeFilter
-                value={dateFilter}
-                onChange={setDateFilter}
-                variant="inline"
-              />
-            </div>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
+          <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -201,6 +194,13 @@ export function CreateShipmentWorkspace() {
                 </option>
               ))}
             </Select>
+
+            <DateRangeFilter
+              value={dateFilter}
+              onChange={setDateFilter}
+              variant="inline"
+              showPresetLabel={false}
+            />
           </div>
         </CardHeader>
 

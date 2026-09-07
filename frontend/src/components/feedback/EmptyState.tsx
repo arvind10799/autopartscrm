@@ -18,7 +18,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'mx-auto flex max-w-md flex-col items-center rounded-[1.5rem] border border-dashed border-sky-200/90 bg-[radial-gradient(circle_at_top,#eff8ff_0%,#ffffff_52%,#f8fafc_100%)] px-6 py-10 text-center shadow-sm shadow-sky-950/5 ring-1 ring-white/80',
+        'mx-auto flex max-w-md flex-col items-center rounded-[1.5rem] border border-dashed border-sky-200/90 bg-[radial-gradient(circle_at_top,#eff8ff_0%,#ffffff_52%,#f8fafc_100%)] px-6 py-10 text-center shadow-sm shadow-sky-950/5 ring-1 ring-white/80 dark:border-slate-700 dark:bg-[radial-gradient(circle_at_top,rgba(14,116,144,0.18)_0%,rgba(15,23,42,0.95)_52%,rgba(2,6,23,1)_100%)] dark:shadow-black/20 dark:ring-white/10',
         className,
       )}
     >

@@ -185,20 +185,9 @@ export function ReplacementOrdersPageContent() {
             <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
               Replacement Orders
             </CardTitle>
-            <div className="w-full xl:max-w-md">
-              <DateRangeFilter
-                value={dateFilter}
-                onChange={(value) => {
-                  setDateFilter(value);
-                  startTransition(() => setPage(1));
-                }}
-                variant="inline"
-                showPresetLabel={false}
-              />
-            </div>
           </div>
 
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_260px] xl:items-start">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_260px_260px] xl:items-start">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -227,6 +216,16 @@ export function ReplacementOrdersPageContent() {
                 </option>
               ))}
             </Select>
+
+            <DateRangeFilter
+              value={dateFilter}
+              onChange={(value) => {
+                setDateFilter(value);
+                startTransition(() => setPage(1));
+              }}
+              variant="inline"
+              showPresetLabel={false}
+            />
           </div>
         </CardHeader>
 

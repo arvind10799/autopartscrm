@@ -59,7 +59,7 @@ export function DataTable<TData>({
   const skeletonCellClassName =
     density === 'compact' ? 'px-3 py-1.5 align-top' : 'px-4 py-3.5 align-top';
   const skeletonClassName =
-    'rounded-lg bg-gradient-to-r from-slate-100 via-sky-50 to-slate-100 shadow-inner';
+    'rounded-lg bg-gradient-to-r from-slate-100 via-sky-50 to-slate-100 shadow-inner dark:from-slate-800 dark:via-slate-700/70 dark:to-slate-800';
   const getColumnClassName = (meta: unknown) =>
     typeof meta === 'object' &&
     meta !== null &&
