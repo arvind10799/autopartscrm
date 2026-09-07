@@ -74,7 +74,7 @@ export function AppSidebar({
         >
           <div
             className={cn(
-              'relative flex items-center rounded-[1.15rem] border border-white/10 bg-white/[0.03] shadow-sm shadow-black/10 ring-1 ring-white/10 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-white/10 dark:bg-white/[0.03] dark:shadow-black/20 dark:ring-white/10',
+              'relative flex items-center rounded-[1.15rem] border border-white/18 bg-white/[0.14] shadow-sm shadow-black/10 ring-1 ring-white/15 backdrop-blur-md transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-white/18 dark:bg-white/[0.14] dark:shadow-black/20 dark:ring-white/15',
               isCollapsed
                 ? 'justify-center px-1 py-2'
                 : 'min-h-[4.75rem] justify-center px-3 py-3.5',
