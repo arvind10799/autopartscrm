@@ -447,7 +447,7 @@ export function InvoiceActions({
                 </span>
               ) : null}
             </div>
-            {(invoice || canManageInvoice) ? (
+            {invoice ? (
               <Button
                 type="button"
                 size="sm"
@@ -468,8 +468,7 @@ export function InvoiceActions({
           </div>
         </CardHeader>
 
-          {isActionsExpanded ? (
-            invoice ? (
+          {isActionsExpanded && invoice ? (
               <CardContent className="space-y-2 px-4 pb-4 pt-0">
                 <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
                 <Button
@@ -578,13 +577,6 @@ export function InvoiceActions({
                 </Button>
                 </div>
             </CardContent>
-            ) : canManageInvoice ? (
-              <CardContent className="px-4 pb-4 pt-0">
-              <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
-                Generate an invoice first to unlock download, audit trail, and signing actions.
-              </div>
-              </CardContent>
-            ) : null
           ) : null}
       </Card>
 

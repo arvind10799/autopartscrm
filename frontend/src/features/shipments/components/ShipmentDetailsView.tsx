@@ -363,12 +363,6 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             }}
             onSubmit={handleStatusSubmit}
           />
-
-          <ShipmentStatusHistoryCard
-            shipment={shipment}
-            notes={invoiceOrder?.notes ?? []}
-            isLoading={isInvoiceOrderLoading}
-          />
         </div>
       </div>
 
@@ -862,73 +856,6 @@ function ShipmentNotesHistoryCard({
               emptyMessage="No status changes have been recorded yet."
             />
           </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function ShipmentStatusHistoryCard({
-  shipment,
-  notes,
-  isLoading,
-}: {
-  shipment: ShipmentDetail;
-  notes: OrderNote[];
-  isLoading: boolean;
-}) {
-  const statusNotes = notes
-    .filter(isShipmentStatusHistoryNote)
-    .sort(
-      (firstNote, secondNote) =>
-        new Date(secondNote.createdAt).getTime() -
-        new Date(firstNote.createdAt).getTime(),
-    );
-  const latestNote = statusNotes[0];
-  const statusEntries: ShipmentActivityEntry[] = statusNotes.slice(0, 6).map((note) => ({
-    id: note.id,
-    timestamp: note.createdAt,
-    authorName: note.author.name,
-    label: 'Shipment status',
-    badgeVariant: 'warning' as const,
-    body: formatShipmentStatusHistoryBody(note.content),
-  }));
-
-  return (
-    <Card className="overflow-hidden border-border/70 shadow-sm">
-      <CardHeader className="border-b border-border/70 px-4 py-3">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <History className="h-4 w-4 text-primary" />
-              Last Status Update
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {latestNote
-                ? `${latestNote.author.name} | ${formatDateTime(
-                    latestNote.createdAt,
-                  )} (${formatRelativeTime(latestNote.createdAt)})`
-                : isLoading
-                  ? 'Loading status history...'
-                  : `Current status: ${formatShipmentStatusOptionLabel(
-                      shipment.currentStatus,
-                    )}`}
-            </CardDescription>
-          </div>
-          <ShipmentStatusBadge status={shipment.currentStatus} />
-        </div>
-      </CardHeader>
-      <CardContent className="p-4">
-        {isLoading ? (
-          <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
-            Loading status history...
-          </div>
-        ) : (
-          <ShipmentActivityTimeline
-            entries={statusEntries}
-            emptyMessage="No shipment status history has been recorded yet."
-            showBadges
-          />
         )}
       </CardContent>
     </Card>

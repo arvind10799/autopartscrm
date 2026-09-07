@@ -40,7 +40,6 @@ import { toast } from '@/lib/stores/toast.store';
 import { useReplacementDetail } from '../hooks/useReplacementDetail';
 import { formatReplacementStatus } from '../lib/replacements.helpers';
 import { REPLACEMENT_STATUSES, type ReplacementStatus } from '../types/replacement.types';
-import { ReplacementStatusBadge } from './ReplacementStatusBadge';
 
 type ReplacementActivityEntry = {
   id: string;
@@ -258,138 +257,10 @@ export function ReplacementDetailsView({
 
   return (
     <section className="space-y-5">
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
-        <ReplacementSummaryCard replacement={replacement} />
-
-        <div className="space-y-4">
-          <GrossProfitSummaryCard
-            shipmentId={gpShipment?.id}
-            orderId={replacement.orderId}
-            totalSaleAmount={
-              financialSummary?.gpSaleBasis ?? replacement.order.totalSaleAmount
-            }
-            originalSaleAmount={order?.totalSaleAmount ?? replacement.order.totalSaleAmount}
-            currency={order?.currency ?? replacement.order.currency}
-            cost={gpShipmentCost}
-            saleMetricLabel={order?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
-            grossProfitOverride={financialSummary?.grossProfitOverride}
-            refundDetails={
-              order?.status === 'REFUNDED'
-                ? {
-                    refundType: order.intakeDetails.refundType,
-                    refundDeductionAmount: order.intakeDetails.refundDeductionAmount,
-                    refundDeductionReason: order.intakeDetails.refundDeductionReason,
-                    customerRefundedAmount: financialSummary?.refundedAmount ?? 0,
-                    refundedAt: order.intakeDetails.refundedAt,
-                  }
-                : null
-            }
-            additionalCosts={gpShipment?.additionalCosts ?? []}
-            costHistories={gpShipment?.costHistories ?? []}
-            canAddAdditionalCost={canManage}
-            canEditBaseCost={canManage}
-            canEditAdditionalCosts={canManage}
-            onAdditionalCostAdded={() =>
-              setOrderRefreshKey((currentValue) => currentValue + 1)
-            }
-            onCostUpdated={() =>
-              setOrderRefreshKey((currentValue) => currentValue + 1)
-            }
-          />
-
-          {canManage ? (
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <CardHeader className="border-b border-border/70 px-4 py-2.5">
-                <CardTitle className="text-base">Update Replacement</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2.5 p-3">
-                <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Replacement Status
-                  <Select
-                    className="h-8 normal-case tracking-normal"
-                    value={replacementStatus}
-                    onChange={(event) =>
-                      setReplacementStatus(event.target.value as ReplacementStatus)
-                    }
-                  >
-                    {REPLACEMENT_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {formatReplacementStatus(status)}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                    Freight Carrier
-                    <Input
-                      className="h-8 normal-case tracking-normal"
-                      value={replacementCarrierName}
-                      onChange={(event) =>
-                        setReplacementCarrierName(event.target.value)
-                      }
-                      placeholder="FedEx Freight"
-                    />
-                  </label>
-                  <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                    PRO Number
-                    <Input
-                      className="h-8 normal-case tracking-normal"
-                      value={replacementProNumber}
-                      onChange={(event) =>
-                        setReplacementProNumber(event.target.value)
-                      }
-                      placeholder="PRO123456"
-                    />
-                  </label>
-                </div>
-
-                <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Customer Reason
-                  <textarea
-                    value={customerReason}
-                    rows={2}
-                    onChange={(event) => setCustomerReason(event.target.value)}
-                    className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground shadow-sm outline-none transition focus:ring-2 focus:ring-ring"
-                  />
-                </label>
-
-                <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Yard Update
-                  <textarea
-                    value={yardUpdate}
-                    rows={2}
-                    onChange={(event) => setYardUpdate(event.target.value)}
-                    className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground shadow-sm outline-none transition focus:ring-2 focus:ring-ring"
-                  />
-                </label>
-
-                {formError || updateError ? (
-                  <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                    {formError ?? updateError}
-                  </div>
-                ) : null}
-
-                <Button
-                  size="sm"
-                  className="h-8 w-full rounded-lg bg-[#ff5a00] text-xs text-white hover:bg-[#e65000]"
-                  disabled={isUpdating}
-                  onClick={() => void handleUpdate()}
-                >
-                  {isUpdating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-                  Update replacement
-                </Button>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
-      </div>
-
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(390px,0.92fr)]">
         <Card className="overflow-hidden border-border/70 shadow-sm">
           <CardHeader className="border-b border-border/70 px-4 py-3">
-            <CardTitle className="text-lg">Linked Details</CardTitle>
+            <CardTitle className="text-lg">Replacement order details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 p-3.5 sm:p-4">
             {orderError ? (
@@ -402,6 +273,25 @@ export function ReplacementDetailsView({
                 Loading full order details...
               </div>
             ) : null}
+
+            <DetailSection title="Replacement Summary" tone="orange">
+              <DetailBlock
+                label="Status"
+                value={formatReplacementStatus(replacement.replacementStatus)}
+              />
+              <DetailBlock
+                label="Customer Reason"
+                value={formatNullableText(replacement.customerReason)}
+              />
+              <DetailBlock
+                label="Yard Update"
+                value={formatNullableText(replacement.yardUpdate)}
+              />
+              <DetailBlock
+                label="Created By"
+                value={replacement.createdBy.name}
+              />
+            </DetailSection>
 
             <DetailSection title="Order / Payment" tone="orange">
               <DetailBlock label="Order Number" value={replacement.order.orderNumber} />
@@ -525,6 +415,128 @@ export function ReplacementDetailsView({
         </Card>
 
         <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+          <GrossProfitSummaryCard
+            shipmentId={gpShipment?.id}
+            orderId={replacement.orderId}
+            totalSaleAmount={
+              financialSummary?.gpSaleBasis ?? replacement.order.totalSaleAmount
+            }
+            originalSaleAmount={order?.totalSaleAmount ?? replacement.order.totalSaleAmount}
+            currency={order?.currency ?? replacement.order.currency}
+            cost={gpShipmentCost}
+            saleMetricLabel={order?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+            grossProfitOverride={financialSummary?.grossProfitOverride}
+            refundDetails={
+              order?.status === 'REFUNDED'
+                ? {
+                    refundType: order.intakeDetails.refundType,
+                    refundDeductionAmount: order.intakeDetails.refundDeductionAmount,
+                    refundDeductionReason: order.intakeDetails.refundDeductionReason,
+                    customerRefundedAmount: financialSummary?.refundedAmount ?? 0,
+                    refundedAt: order.intakeDetails.refundedAt,
+                  }
+                : null
+            }
+            additionalCosts={gpShipment?.additionalCosts ?? []}
+            costHistories={gpShipment?.costHistories ?? []}
+            canAddAdditionalCost={canManage}
+            canEditBaseCost={canManage}
+            canEditAdditionalCosts={canManage}
+            onAdditionalCostAdded={() =>
+              setOrderRefreshKey((currentValue) => currentValue + 1)
+            }
+            onCostUpdated={() =>
+              setOrderRefreshKey((currentValue) => currentValue + 1)
+            }
+          />
+
+          {canManage ? (
+            <Card className="overflow-hidden border-border/70 shadow-sm">
+              <CardHeader className="border-b border-border/70 px-4 py-2.5">
+                <CardTitle className="text-base">Update Replacement</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2.5 p-3">
+                <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Replacement Status
+                  <Select
+                    className="h-10 py-2 leading-6 normal-case tracking-normal"
+                    value={replacementStatus}
+                    onChange={(event) =>
+                      setReplacementStatus(event.target.value as ReplacementStatus)
+                    }
+                  >
+                    {REPLACEMENT_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {formatReplacementStatus(status)}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Freight Carrier
+                    <Input
+                      className="h-8 normal-case tracking-normal"
+                      value={replacementCarrierName}
+                      onChange={(event) =>
+                        setReplacementCarrierName(event.target.value)
+                      }
+                      placeholder="FedEx Freight"
+                    />
+                  </label>
+                  <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    PRO Number
+                    <Input
+                      className="h-8 normal-case tracking-normal"
+                      value={replacementProNumber}
+                      onChange={(event) =>
+                        setReplacementProNumber(event.target.value)
+                      }
+                      placeholder="PRO123456"
+                    />
+                  </label>
+                </div>
+
+                <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Customer Reason
+                  <textarea
+                    value={customerReason}
+                    rows={2}
+                    onChange={(event) => setCustomerReason(event.target.value)}
+                    className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground shadow-sm outline-none transition focus:ring-2 focus:ring-ring"
+                  />
+                </label>
+
+                <label className="grid gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Yard Update
+                  <textarea
+                    value={yardUpdate}
+                    rows={2}
+                    onChange={(event) => setYardUpdate(event.target.value)}
+                    className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground shadow-sm outline-none transition focus:ring-2 focus:ring-ring"
+                  />
+                </label>
+
+                {formError || updateError ? (
+                  <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                    {formError ?? updateError}
+                  </div>
+                ) : null}
+
+                <Button
+                  size="sm"
+                  className="h-8 w-full rounded-lg bg-[#ff5a00] text-xs text-white hover:bg-[#e65000]"
+                  disabled={isUpdating}
+                  onClick={() => void handleUpdate()}
+                >
+                  {isUpdating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+                  Update replacement
+                </Button>
+              </CardContent>
+            </Card>
+          ) : null}
+
           <ReplacementNotesHistoryCard
             noteEntries={noteEntries}
             editHistoryEntries={editHistoryEntries}
@@ -550,43 +562,6 @@ export function ReplacementDetailsView({
         </aside>
       </div>
     </section>
-  );
-}
-
-function ReplacementSummaryCard({
-  replacement,
-}: {
-  replacement: NonNullable<ReturnType<typeof useReplacementDetail>['replacement']>;
-}) {
-  return (
-    <Card className="overflow-hidden border-border/70 shadow-sm">
-      <CardHeader className="border-b border-border/70 px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle className="text-lg">Replacement Summary</CardTitle>
-          <ReplacementStatusBadge status={replacement.replacementStatus} />
-        </div>
-      </CardHeader>
-      <CardContent className="p-3.5 sm:p-4">
-        <DetailSection title="Replacement Summary" tone="orange">
-          <DetailBlock
-            label="Status"
-            value={formatReplacementStatus(replacement.replacementStatus)}
-          />
-          <DetailBlock
-            label="Customer Reason"
-            value={formatNullableText(replacement.customerReason)}
-          />
-          <DetailBlock
-            label="Yard Update"
-            value={formatNullableText(replacement.yardUpdate)}
-          />
-          <DetailBlock
-            label="Created By"
-            value={replacement.createdBy.name}
-          />
-        </DetailSection>
-      </CardContent>
-    </Card>
   );
 }
 
