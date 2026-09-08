@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsEnum, IsOptional, MaxLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsEnum, IsOptional, MaxLength } from 'class-validator';
 import { Role } from '../../../common/enums/role.enum';
 import { trimToLowerCaseEmail } from '../../../common/utils/transform.util';
 
@@ -13,4 +13,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(Role)
   role?: Role;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

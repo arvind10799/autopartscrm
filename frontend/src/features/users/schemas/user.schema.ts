@@ -36,10 +36,19 @@ export const updateUserPasswordPayloadSchema = z.object({
   password: passwordSchema,
 });
 
-export const updateUserSchema = z.object({
-  email: z.string().trim().email('Enter a valid email address.'),
-  role: z.enum(['SALES', 'SHIPPING']).optional(),
-});
+export const updateUserSchema = z
+  .object({
+    email: z.string().trim().email('Enter a valid email address.').optional(),
+    role: z.enum(['SALES', 'SHIPPING']).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (values) =>
+      values.email !== undefined ||
+      values.role !== undefined ||
+      values.isActive !== undefined,
+    'Email, role, or account status is required.',
+  );
 
 export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
 
@@ -48,8 +57,12 @@ export const userRecordSchema = z.object({
   name: z.string(),
   email: z.string(),
   role: z.enum(['ADMIN', 'SALES', 'SHIPPING']),
+  isActive: z.boolean().optional().default(true),
   createdAt: z.string(),
-  status: z.literal('ACTIVE').optional().default('ACTIVE'),
-});
+  status: z.enum(['ACTIVE', 'DISABLED']).optional(),
+}).transform((user) => ({
+  ...user,
+  status: user.isActive ? ('ACTIVE' as const) : ('DISABLED' as const),
+}));
 
 export const userListSchema = z.array(userRecordSchema);

@@ -30,6 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         name: true,
         email: true,
         role: true,
+        isActive: true,
       },
     });
 
@@ -37,6 +38,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException(
         'User associated with token no longer exists.',
       );
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('This account is disabled.');
     }
 
     return {

@@ -70,6 +70,7 @@ export function UserManagement() {
   const [roleValue, setRoleValue] = useState<'SALES' | 'SHIPPING'>('SALES');
   const [isUpdatingAccount, setIsUpdatingAccount] = useState(false);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const form = useForm<CreateUserSchema>({
     resolver: zodResolver(createUserSchema),
@@ -116,6 +117,7 @@ export function UserManagement() {
     });
     setPasswordError(null);
     setAccountError(null);
+    setIsUpdatingStatus(false);
     setEmailValue(selectedUser.email);
     if (selectedUser.role !== 'ADMIN') {
       setRoleValue(selectedUser.role);
@@ -238,6 +240,46 @@ export function UserManagement() {
       );
     } finally {
       setIsDeletingUser(false);
+    }
+  };
+
+  const handleUserStatusUpdate = async (isActive: boolean) => {
+    if (!selectedUser || selectedUser.role === 'ADMIN') {
+      return;
+    }
+
+    const action = isActive ? 'activate' : 'disable';
+    const confirmed = window.confirm(
+      `${isActive ? 'Activate' : 'Disable'} ${selectedUser.name}? ${
+        isActive
+          ? 'They will be able to sign in again.'
+          : 'They will no longer be able to sign in, but their CRM history will be preserved.'
+      }`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setAccountError(null);
+    setIsUpdatingStatus(true);
+
+    try {
+      const updatedUser = await usersApi.update(selectedUser.id, { isActive });
+      setSelectedUser(updatedUser);
+      toast.success(
+        `User ${isActive ? 'activated' : 'disabled'}.`,
+        `${updatedUser.name}'s account is now ${isActive ? 'active' : 'disabled'}.`,
+      );
+      await loadUsers();
+    } catch (error) {
+      setAccountError(
+        error instanceof HttpError
+          ? error.message
+          : `Failed to ${action} user. Please try again.`,
+      );
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -425,7 +467,7 @@ export function UserManagement() {
                         <RoleBadge role={user.role} />
                       </span>
                       <span>
-                        <Badge variant="success">Active</Badge>
+                        <UserStatusBadge user={user} />
                       </span>
                       <span className="flex justify-end text-muted-foreground">
                         <Eye className="h-4 w-4" aria-hidden="true" />
@@ -486,7 +528,10 @@ export function UserManagement() {
                   label="Role"
                   value={roleLabels[selectedUser.role]}
                 />
-                <UserDetailBlock label="Account Status" value="Active" />
+                <UserDetailBlock
+                  label="Account Status"
+                  value={<UserStatusBadge user={selectedUser} />}
+                />
                 <UserDetailBlock
                   label="Created Date"
                   value={formatUserDate(selectedUser.createdAt)}
@@ -631,7 +676,7 @@ export function UserManagement() {
                   <Button
                     type="button"
                     onClick={handleAccountUpdate}
-                    disabled={isUpdatingAccount || isDeletingUser}
+                    disabled={isUpdatingAccount || isDeletingUser || isUpdatingStatus}
                   >
                     {isUpdatingAccount ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -648,7 +693,8 @@ export function UserManagement() {
                     disabled={
                       selectedUser.role === 'ADMIN' ||
                       isUpdatingAccount ||
-                      isDeletingUser
+                      isDeletingUser ||
+                      isUpdatingStatus
                     }
                   >
                     {isDeletingUser ? (
@@ -671,21 +717,51 @@ export function UserManagement() {
               <section className="rounded-2xl border border-dashed border-border/70 bg-secondary/20 p-5">
                 <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <Lock className="h-4 w-4" />
-                  Future actions
+                  Account access
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {['Disable User', 'Activate User'].map((action) => (
-                    <Button
-                      key={action}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled
-                    >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10"
+                    disabled={
+                      selectedUser.role === 'ADMIN' ||
+                      !selectedUser.isActive ||
+                      isUpdatingAccount ||
+                      isDeletingUser ||
+                      isUpdatingStatus
+                    }
+                    onClick={() => void handleUserStatusUpdate(false)}
+                  >
+                    {isUpdatingStatus && selectedUser.isActive ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
                       <Lock className="h-3.5 w-3.5" />
-                      {action}
-                    </Button>
-                  ))}
+                    )}
+                    Disable User
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-500/30 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+                    disabled={
+                      selectedUser.role === 'ADMIN' ||
+                      selectedUser.isActive ||
+                      isUpdatingAccount ||
+                      isDeletingUser ||
+                      isUpdatingStatus
+                    }
+                    onClick={() => void handleUserStatusUpdate(true)}
+                  >
+                    {isUpdatingStatus && !selectedUser.isActive ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    )}
+                    Activate User
+                  </Button>
                 </div>
               </section>
             </div>
@@ -704,6 +780,14 @@ function RoleBadge({ role }: { role: UserRecord['role'] }) {
     >
       {roleLabels[role]}
     </Badge>
+  );
+}
+
+function UserStatusBadge({ user }: { user: UserRecord }) {
+  return user.isActive ? (
+    <Badge variant="success">Active</Badge>
+  ) : (
+    <Badge variant="danger">Disabled</Badge>
   );
 }
 

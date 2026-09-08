@@ -77,6 +77,7 @@ model User {
   email        String   @unique @db.VarChar(160)
   passwordHash String   @db.VarChar(255)
   role         Role     @default(SALES)
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

@@ -84,6 +84,7 @@ export class AuthService {
         name: true,
         email: true,
         role: true,
+        isActive: true,
         createdAt: true,
       },
     });
@@ -108,6 +109,7 @@ export class AuthService {
         name: true,
         email: true,
         role: true,
+        isActive: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -134,19 +136,24 @@ export class AuthService {
         name: true,
         email: true,
         role: true,
+        isActive: true,
         createdAt: true,
       },
     });
   }
 
   async updateUser(id: string, dto: UpdateUserDto) {
-    if (dto.email === undefined && dto.role === undefined) {
-      throw new BadRequestException('Email or role is required.');
+    if (
+      dto.email === undefined &&
+      dto.role === undefined &&
+      dto.isActive === undefined
+    ) {
+      throw new BadRequestException('Email, role, or account status is required.');
     }
 
     const existingUser = await this.prismaService.user.findUnique({
       where: { id },
-      select: { id: true, email: true, role: true },
+      select: { id: true, email: true, role: true, isActive: true },
     });
 
     if (!existingUser) {
@@ -155,6 +162,10 @@ export class AuthService {
 
     if (existingUser.role === Role.ADMIN && dto.role !== undefined) {
       throw new BadRequestException('Admin roles cannot be changed.');
+    }
+
+    if (existingUser.role === Role.ADMIN && dto.isActive === false) {
+      throw new BadRequestException('Admin users cannot be disabled.');
     }
 
     const normalizedEmail = dto.email?.trim().toLowerCase();
@@ -175,12 +186,14 @@ export class AuthService {
       data: {
         email: normalizedEmail,
         role: dto.role,
+        isActive: dto.isActive,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        isActive: true,
         createdAt: true,
       },
     });
@@ -240,6 +253,7 @@ export class AuthService {
         email: true,
         passwordHash: true,
         role: true,
+        isActive: true,
       },
     });
 
@@ -249,6 +263,10 @@ export class AuthService {
 
     if (!user.passwordHash) {
       throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('This account is disabled. Contact an administrator.');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);

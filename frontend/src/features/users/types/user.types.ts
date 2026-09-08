@@ -3,8 +3,9 @@ export interface UserRecord {
   name: string;
   email: string;
   role: 'ADMIN' | 'SALES' | 'SHIPPING';
+  isActive: boolean;
   createdAt: string;
-  status?: 'ACTIVE';
+  status: 'ACTIVE' | 'DISABLED';
 }
 
 export interface CreateUserPayload {
@@ -21,4 +22,5 @@ export interface UpdateUserPasswordPayload {
 export interface UpdateUserPayload {
   email?: string;
   role?: 'SALES' | 'SHIPPING';
+  isActive?: boolean;
 }
