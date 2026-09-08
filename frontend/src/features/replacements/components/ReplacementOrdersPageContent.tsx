@@ -180,7 +180,7 @@ export function ReplacementOrdersPageContent() {
   return (
     <section className="grid gap-4">
       <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-        <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+        <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
             <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
               Replacement Orders
@@ -229,7 +229,7 @@ export function ReplacementOrdersPageContent() {
           </div>
         </CardHeader>
 
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           <DataTable
             columns={columns}
             data={replacementsResponse.items}
@@ -239,6 +239,47 @@ export function ReplacementOrdersPageContent() {
             emptyTitle="No replacement orders"
             emptyDescription="Replacement requests created from orders or shipments will appear here."
             density="compact"
+            layout="fit"
+            renderMobileCard={(replacement) => (
+              <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/replacement-orders/${replacement.id}`}
+                      className="block truncate text-base font-semibold text-[#d94d00] dark:text-orange-300"
+                    >
+                      {replacement.order.salesNumber ?? '—'}
+                    </Link>
+                    <p className="truncate text-xs font-medium text-muted-foreground">
+                      {replacement.order.orderNumber}
+                    </p>
+                  </div>
+                  <ReplacementStatusBadge status={replacement.replacementStatus} />
+                </div>
+
+                <div className="mt-3 grid gap-2 text-sm">
+                  <MobileField label="Customer" value={replacement.order.customerName} />
+                  <MobileField label="Phone" value={replacement.order.customerPhone ?? 'No phone'} />
+                  <MobileField label="Part" value={replacement.order.partDescription} />
+                  <MobileField label="Reason" value={replacement.customerReason} />
+                  <MobileField label="Yard" value={replacement.yardUpdate ?? 'No yard update yet'} />
+                  <MobileField label="Carrier" value={replacement.replacementCarrierName ?? 'Carrier pending'} />
+                  <MobileField label="PRO" value={replacement.replacementProNumber ?? 'PRO pending'} />
+                  <MobileField label="Updated" value={formatRelativeTime(replacement.updatedAt)} />
+                </div>
+
+                <Link href={`/replacement-orders/${replacement.id}`}>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="mt-3 h-9 w-full rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]"
+                  >
+                    Open replacement
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </article>
+            )}
             footer={
               <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
                 <span>
@@ -270,5 +311,18 @@ export function ReplacementOrdersPageContent() {
         </CardContent>
       </Card>
     </section>
+  );
+}
+
+function MobileField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid min-w-0 grid-cols-[5rem_minmax(0,1fr)] gap-2">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </span>
+      <span className="truncate font-medium text-foreground" title={value}>
+        {value || '—'}
+      </span>
+    </div>
   );
 }

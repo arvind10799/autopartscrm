@@ -200,6 +200,80 @@ export function OrdersTable({
       onRetry={onRetry}
       density="compact"
       layout="fit"
+      renderMobileCard={(order) => {
+        const canEdit =
+          role === 'ADMIN' ||
+          role === 'SHIPPING' ||
+          (role === 'SALES' && order.createdBy.id === currentUserId);
+
+        return (
+          <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <Link
+                  href={`/orders/${order.id}`}
+                  className="block truncate text-base font-semibold text-[#d94d00] dark:text-orange-300"
+                >
+                  {order.salesNumber ?? '—'}
+                </Link>
+                <p className="truncate text-xs font-medium text-muted-foreground">
+                  {order.orderNumber}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-orange-50 px-2.5 py-1 text-sm font-semibold text-[#d94d00] dark:bg-orange-950/25 dark:text-orange-300">
+                {formatCurrency(order.totalSaleAmount, order.currency)}
+              </span>
+            </div>
+
+            <div className="mt-3 grid gap-2 text-sm">
+              <MobileField label="Customer" value={order.customerName} />
+              {role === 'ADMIN' ? (
+                <MobileField label="Advisor" value={getFirstName(order.createdBy.name)} />
+              ) : null}
+              <MobileField label="Part" value={order.partDescription} />
+              <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  Shipping
+                </span>
+                <ShippingStatusCell
+                  status={order.latestShipmentStatus}
+                  orderStatus={order.status}
+                  orderDate={order.intakeDetails?.orderDate}
+                  fallbackDate={order.createdAt}
+                  bolNumber={order.latestShipment?.bolNumber}
+                  proNumber={order.latestShipment?.proNumber}
+                  hasReplacement={order.counts.replacementRequests > 0}
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {canEdit ? (
+                <Button
+                  className="h-9 rounded-xl border-[#ff5a00]/25 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(order.id)}
+                >
+                  <PencilLine className="h-4 w-4" />
+                  Edit
+                </Button>
+              ) : null}
+              <Link
+                href={`/orders/${order.id}`}
+                className={cn(
+                  buttonVariants({ variant: 'default', size: 'sm' }),
+                  canEdit ? '' : 'col-span-2',
+                  'h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',
+                )}
+              >
+                View
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </article>
+        );
+      }}
       emptyTitle="No orders found"
       emptyDescription="Try a different search term or clear the current status filter."
       footer={
@@ -236,5 +310,18 @@ export function OrdersTable({
         </div>
       }
     />
+  );
+}
+
+function MobileField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid min-w-0 grid-cols-[5rem_minmax(0,1fr)] gap-2">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </span>
+      <span className="truncate font-medium text-foreground" title={value}>
+        {value || '—'}
+      </span>
+    </div>
   );
 }

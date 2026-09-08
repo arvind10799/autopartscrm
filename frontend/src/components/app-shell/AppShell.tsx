@@ -124,7 +124,7 @@ export function AppShell({
             isMenuOpen={sidebarOpen}
           />
 
-          <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <main className="flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <div className="mx-auto flex w-full max-w-[var(--app-shell-max-width)] min-w-0 flex-col gap-6">
               <div className="min-w-0">{children}</div>
             </div>

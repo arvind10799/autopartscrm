@@ -178,7 +178,7 @@ export function LeadsPageContent() {
     <>
       <section className="grid gap-4">
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
               <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
                 Leads Workspace
@@ -194,7 +194,7 @@ export function LeadsPageContent() {
 
                 <Button
                   size="lg"
-                  className="h-11 whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000]"
+                  className="h-11 w-full whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000] sm:w-auto"
                   onClick={() => setIsCreateModalOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
@@ -249,7 +249,7 @@ export function LeadsPageContent() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4 p-4">
+          <CardContent className="space-y-4 p-3 sm:p-4">
             <LeadsTable
               leads={leadsResponse.items}
               meta={leadsResponse.meta}
@@ -267,13 +267,13 @@ export function LeadsPageContent() {
 
       {isCreateModalOpen || selectedEditLead ? (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-6"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6"
         >
           <div
-            className="w-full max-w-5xl rounded-[1.5rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+            className="w-full max-w-5xl rounded-[1.25rem] border border-slate-200 bg-white shadow-2xl sm:rounded-[1.5rem] dark:border-slate-800 dark:bg-slate-950"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-3.5 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-5 sm:py-3.5">
               <div>
                 <h2 className="font-[var(--font-heading)] text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
                   {selectedEditLead ? 'Edit lead' : 'Create lead'}
@@ -294,7 +294,7 @@ export function LeadsPageContent() {
               </Button>
             </div>
 
-            <div className="max-h-[calc(100vh-5rem)] overflow-y-auto px-4 py-4 sm:px-5">
+            <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto px-3 py-3 sm:px-5 sm:py-4">
               <CreateLeadForm
                 initialLead={selectedEditLead}
                 onSaved={handleLeadSaved}
@@ -306,15 +306,15 @@ export function LeadsPageContent() {
 
       {selectedConversionLead ? (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-6"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6"
         >
           <div
-            className="w-full max-w-6xl rounded-[1.75rem] border border-border/70 bg-white shadow-2xl"
+            className="w-full max-w-6xl rounded-[1.25rem] border border-border/70 bg-white shadow-2xl sm:rounded-[1.75rem]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-border/70 px-6 py-5">
+            <div className="flex items-start justify-between gap-4 border-b border-border/70 px-4 py-3 sm:px-6 sm:py-5">
               <div className="space-y-1">
-                <h2 className="font-[var(--font-heading)] text-2xl font-semibold tracking-[-0.03em] text-foreground">
+                <h2 className="font-[var(--font-heading)] text-xl font-semibold tracking-[-0.03em] text-foreground sm:text-2xl">
                   Convert lead to order
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -332,7 +332,7 @@ export function LeadsPageContent() {
               </Button>
             </div>
 
-            <div className="max-h-[calc(100vh-5.5rem)] overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+            <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto px-3 py-3 sm:max-h-[calc(100vh-5.5rem)] sm:px-6 sm:py-6">
               <CreateOrderForm
                 initialValues={buildOrderInitialValues(selectedConversionLead)}
                 onCreated={handleOrderCreated}

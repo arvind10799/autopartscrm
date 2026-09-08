@@ -127,7 +127,7 @@ export function NotificationBell() {
       <Button
         variant="outline"
         size="sm"
-        className="relative h-10 w-10 rounded-full border-slate-200 bg-white px-0 text-slate-900 shadow-sm hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
+        className="relative h-9 w-9 rounded-full border-slate-200 bg-white px-0 text-slate-900 shadow-sm hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] sm:h-10 sm:w-10 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
         onClick={handleToggle}
         aria-label="Open notifications"
         aria-expanded={isOpen}
@@ -141,7 +141,7 @@ export function NotificationBell() {
       </Button>
 
       {isOpen ? (
-        <div className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/40">
+        <div className="absolute right-0 top-11 z-50 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 sm:top-12 dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/40">
           <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/70">
             <div>
               <p className="font-semibold text-slate-950 dark:text-white">Notifications</p>

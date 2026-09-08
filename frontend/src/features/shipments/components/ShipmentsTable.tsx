@@ -169,6 +169,51 @@ export function ShipmentsTable({
       onRetry={onRetry}
       density="compact"
       layout="fit"
+      renderMobileCard={(shipment) => (
+        <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <Link
+                href={`/shipments/${shipment.id}`}
+                className="block truncate text-base font-semibold text-[#d94d00] dark:text-orange-300"
+              >
+                {shipment.order.salesNumber ?? '—'}
+              </Link>
+              <p className="truncate text-xs font-medium text-muted-foreground">
+                {shipment.order.orderNumber}
+              </p>
+            </div>
+            <ShippingStatusCell
+              status={shipment.currentStatus}
+              orderStatus={shipment.order.status}
+              orderDate={shipment.order.orderDate}
+              fallbackDate={shipment.order.createdAt}
+              bolNumber={shipment.bolNumber}
+              proNumber={shipment.proNumber}
+              hasReplacement={shipment.order.counts.replacementRequests > 0}
+            />
+          </div>
+
+          <div className="mt-3 grid gap-2 text-sm">
+            <MobileField label="Customer" value={shipment.order.customerName} />
+            <MobileField label="Advisor" value={getFirstName(shipment.order.createdBy.name)} />
+            <MobileField label="Part" value={shipment.order.partDescription} />
+            <MobileField label="Carrier" value={shipment.carrierName ?? 'Carrier pending'} />
+            <MobileField label="PRO" value={shipment.proNumber ?? 'PRO pending'} />
+          </div>
+
+          <Link
+            href={`/shipments/${shipment.id}`}
+            className={cn(
+              buttonVariants({ variant: 'default', size: 'sm' }),
+              'mt-3 h-9 w-full rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',
+            )}
+          >
+            View shipment
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </article>
+      )}
       emptyTitle="No shipments found"
       emptyDescription="Try a different search term or clear the current status filter."
       footer={
@@ -205,5 +250,18 @@ export function ShipmentsTable({
         </div>
       }
     />
+  );
+}
+
+function MobileField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid min-w-0 grid-cols-[5rem_minmax(0,1fr)] gap-2">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </span>
+      <span className="truncate font-medium text-foreground" title={value}>
+        {value || '—'}
+      </span>
+    </div>
   );
 }

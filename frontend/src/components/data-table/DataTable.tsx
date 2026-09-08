@@ -27,6 +27,7 @@ type DataTableProps<TData> = {
   skeletonRowCount?: number;
   density?: 'normal' | 'compact';
   layout?: 'scroll' | 'fit';
+  renderMobileCard?: (row: TData) => ReactNode;
 };
 
 export function DataTable<TData>({
@@ -42,6 +43,7 @@ export function DataTable<TData>({
   skeletonRowCount = DEFAULT_TABLE_SKELETON_ROWS,
   density = 'normal',
   layout = 'scroll',
+  renderMobileCard,
 }: DataTableProps<TData>) {
   const table = useReactTable({
     data,
@@ -70,12 +72,53 @@ export function DataTable<TData>({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm">
-      {layout === 'scroll' ? (
+      {renderMobileCard ? (
+        <div className="grid gap-3 p-3 sm:hidden">
+          {isLoading ? (
+            Array.from({ length: Math.min(skeletonRowCount, 5) }).map((_, index) => (
+              <div
+                key={`mobile-skeleton-${index}`}
+                className="rounded-2xl border border-border/70 bg-secondary/20 p-3"
+              >
+                <Skeleton className={cn(skeletonClassName, 'mb-3 h-5 w-28')} />
+                <Skeleton className={cn(skeletonClassName, 'mb-2 h-4 w-full')} />
+                <Skeleton className={cn(skeletonClassName, 'h-4 w-2/3')} />
+              </div>
+            ))
+          ) : error ? (
+            <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-5 text-center text-sm text-destructive">
+              <p>{error}</p>
+              {onRetry ? (
+                <Button variant="outline" size="sm" onClick={onRetry} className="mt-3">
+                  <RefreshCcw className="h-4 w-4" />
+                  Retry
+                </Button>
+              ) : null}
+            </div>
+          ) : data.length === 0 ? (
+            <EmptyState
+              icon={<Database className="h-5 w-5" />}
+              title={emptyTitle}
+              description={emptyDescription}
+              className="border-sky-100/90 px-5 py-8"
+            />
+          ) : (
+            data.map((row, index) => (
+              <div key={getRowId?.(row, index) ?? index}>{renderMobileCard(row)}</div>
+            ))
+          )}
+        </div>
+      ) : layout === 'scroll' ? (
         <div className="border-b border-border/70 bg-secondary/35 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:hidden">
           Swipe horizontally to view all table columns
         </div>
       ) : null}
-      <div className={layout === 'fit' ? 'overflow-hidden' : 'overflow-x-auto'}>
+      <div
+        className={cn(
+          renderMobileCard && 'hidden sm:block',
+          layout === 'fit' ? 'overflow-hidden' : 'overflow-x-auto',
+        )}
+      >
         <table
           className={
             layout === 'fit'
@@ -179,7 +222,7 @@ export function DataTable<TData>({
       </div>
 
       {footer ? (
-        <div className="border-t border-border/70 bg-card px-4 py-4">
+        <div className="border-t border-border/70 bg-card px-3 py-3 sm:px-4 sm:py-4">
           {footer}
         </div>
       ) : null}

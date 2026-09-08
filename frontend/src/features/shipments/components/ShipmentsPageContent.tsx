@@ -105,7 +105,7 @@ export function ShipmentsPageContent() {
     <section className="grid gap-4">
       <div className="grid gap-4">
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
             <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
               Shipment table
             </CardTitle>
@@ -147,7 +147,7 @@ export function ShipmentsPageContent() {
             </div>
           </CardHeader>
 
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <ShipmentsTable
               shipments={shipmentsResponse.items}
               meta={shipmentsResponse.meta}

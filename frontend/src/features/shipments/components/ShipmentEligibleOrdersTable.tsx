@@ -173,6 +173,72 @@ export function ShipmentEligibleOrdersTable({
       onRetry={onRetry}
       density="compact"
       layout="fit"
+      renderMobileCard={(order) => {
+        const isSelected = order.id === selectedOrderId;
+
+        return (
+          <article
+            className={cn(
+              'rounded-2xl border bg-card p-3 shadow-sm',
+              isSelected
+                ? 'border-[#ff5a00]/50 ring-2 ring-orange-100 dark:ring-orange-950/30'
+                : 'border-border/70',
+            )}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold text-[#d94d00] dark:text-orange-300">
+                  {order.salesNumber ?? '—'}
+                </p>
+                <p className="truncate text-xs font-medium text-muted-foreground">
+                  {order.orderNumber}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-orange-50 px-2.5 py-1 text-sm font-semibold text-[#d94d00] dark:bg-orange-950/25 dark:text-orange-300">
+                {formatCurrency(order.totalSaleAmount, order.currency)}
+              </span>
+            </div>
+
+            <div className="mt-3 grid gap-2 text-sm">
+              <MobileField label="Customer" value={order.customerName} />
+              <MobileField label="Advisor" value={getFirstName(order.createdBy.name)} />
+              <MobileField label="Part" value={order.partDescription} />
+              <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  Status
+                </span>
+                <ShippingStatusCell
+                  status={order.latestShipmentStatus}
+                  orderStatus={order.status}
+                  orderDate={order.intakeDetails?.orderDate}
+                  fallbackDate={order.createdAt}
+                  bolNumber={order.latestShipment?.bolNumber}
+                  proNumber={order.latestShipment?.proNumber}
+                  hasReplacement={order.counts.replacementRequests > 0}
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onSelectOrder(order)}
+              className={cn(
+                buttonVariants({
+                  variant: isSelected ? 'default' : 'outline',
+                  size: 'sm',
+                }),
+                'mt-3 h-9 w-full rounded-xl',
+                isSelected
+                  ? 'bg-[#ff5a00] text-white hover:bg-[#e65000]'
+                  : 'border-[#ff5a00]/25 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20',
+              )}
+            >
+              {isSelected ? 'Selected' : 'View'}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </article>
+        );
+      }}
       emptyTitle="No eligible orders"
       emptyDescription="Orders without a shipment will appear here."
       footer={
@@ -209,5 +275,18 @@ export function ShipmentEligibleOrdersTable({
         </div>
       }
     />
+  );
+}
+
+function MobileField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid min-w-0 grid-cols-[5rem_minmax(0,1fr)] gap-2">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </span>
+      <span className="truncate font-medium text-foreground" title={value}>
+        {value || '—'}
+      </span>
+    </div>
   );
 }

@@ -271,6 +271,85 @@ export function LeadsTable({
       onRetry={onRetry}
       density="compact"
       layout="fit"
+      renderMobileCard={(lead) => {
+        const status = lead.isConverted ? 'CONVERTED' : lead.status;
+
+        return (
+          <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold text-foreground">
+                  {lead.customerName}
+                </p>
+                <p className="truncate text-xs font-medium text-muted-foreground">
+                  {formatDate(lead.date)}
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  'shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold',
+                  getLeadStatusTone(status),
+                )}
+              >
+                {status === 'CONVERTED' ? 'Converted' : formatLeadStatusLabel(status)}
+              </Badge>
+            </div>
+
+            <div className="mt-3 grid gap-2 text-sm">
+              {role === 'ADMIN' ? (
+                <MobileField label="Adviser" value={getFirstName(lead.adviserName)} />
+              ) : null}
+              <MobileField label="Phone" value={lead.customerPhone} />
+              <MobileField label="Vehicle" value={formatVehicleSummary(lead)} />
+              <MobileField
+                label="Quote"
+                value={
+                  lead.quote !== null
+                    ? formatLeadCurrency(lead.quote, lead.quoteCurrency)
+                    : '—'
+                }
+              />
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {lead.isConverted && lead.convertedOrder ? (
+                <Link
+                  href={`/orders/${lead.convertedOrder.id}`}
+                  className={cn(
+                    buttonVariants({ variant: 'default', size: 'sm' }),
+                    'col-span-2 h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',
+                  )}
+                >
+                  View order
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-xl"
+                    onClick={() => onEdit(lead)}
+                  >
+                    <PencilLine className="h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]"
+                    onClick={() => onConvert(lead)}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Convert
+                  </Button>
+                </>
+              )}
+            </div>
+          </article>
+        );
+      }}
       emptyTitle="No leads found"
       emptyDescription="Create a new lead or clear the current search and conversion filters."
       footer={
@@ -307,5 +386,18 @@ export function LeadsTable({
         </div>
       }
     />
+  );
+}
+
+function MobileField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid min-w-0 grid-cols-[5rem_minmax(0,1fr)] gap-2">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </span>
+      <span className="truncate font-medium text-foreground" title={value}>
+        {value || '—'}
+      </span>
+    </div>
   );
 }

@@ -209,7 +209,7 @@ export function OrdersPageContent() {
     <>
       <section className="grid gap-4">
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
               <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
                 Orders table
@@ -229,7 +229,7 @@ export function OrdersPageContent() {
                   <Select
                     value={selectedAgentFilter}
                     aria-label="Agent filter"
-                    className="h-11 min-w-[220px] rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                    className="h-11 w-full rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 sm:min-w-[220px]"
                     onChange={(event) => handleAgentFilterChange(event.target.value)}
                   >
                     <option value={ALL_AGENTS_FILTER}>All agents</option>
@@ -243,7 +243,7 @@ export function OrdersPageContent() {
 
                 <Button
                   size="lg"
-                  className="h-11 whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000]"
+                  className="h-11 w-full whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000] sm:w-auto"
                   onClick={() => setIsCreateModalOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
@@ -285,7 +285,7 @@ export function OrdersPageContent() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4 p-4">
+          <CardContent className="space-y-4 p-3 sm:p-4">
             <OrdersTable
               orders={ordersResponse.items}
               meta={ordersResponse.meta}
@@ -303,13 +303,13 @@ export function OrdersPageContent() {
 
       {isCreateModalOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-6"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6"
         >
           <div
-            className="w-full max-w-6xl rounded-[1.5rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+            className="w-full max-w-6xl rounded-[1.25rem] border border-slate-200 bg-white shadow-2xl sm:rounded-[1.5rem] dark:border-slate-800 dark:bg-slate-950"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-3.5 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-5 sm:py-3.5">
               <div>
                 <h2 className="font-[var(--font-heading)] text-xl font-semibold tracking-[-0.03em] text-foreground">
                   Create order
@@ -327,7 +327,7 @@ export function OrdersPageContent() {
               </Button>
             </div>
 
-            <div className="max-h-[calc(100vh-5rem)] overflow-y-auto px-4 py-4 sm:px-5">
+            <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto px-3 py-3 sm:px-5 sm:py-4">
               <CreateOrderForm onCreated={handleCreated} />
             </div>
           </div>
@@ -336,19 +336,19 @@ export function OrdersPageContent() {
 
       {selectedOrderId ? (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-sm sm:py-10"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-10"
           onClick={() => setSelectedOrderId(null)}
         >
           <div
-            className="w-full max-w-3xl rounded-[1.75rem] border border-border/70 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+            className="w-full max-w-3xl rounded-[1.25rem] border border-border/70 bg-white shadow-2xl sm:rounded-[1.75rem] dark:border-slate-800 dark:bg-slate-950"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-border/70 px-6 py-5">
+            <div className="flex items-start justify-between gap-4 border-b border-border/70 px-4 py-3 sm:px-6 sm:py-5">
               <div className="space-y-1">
-                <h2 className="font-[var(--font-heading)] text-2xl font-semibold tracking-[-0.03em] text-foreground">
+                <h2 className="font-[var(--font-heading)] text-xl font-semibold tracking-[-0.03em] text-foreground sm:text-2xl">
                   Edit order
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="hidden text-sm text-muted-foreground sm:block">
                   Update order details, customer contact information, and notes with full history.
                 </p>
               </div>
@@ -363,7 +363,7 @@ export function OrdersPageContent() {
               </Button>
             </div>
 
-            <div className="max-h-[calc(100vh-8rem)] overflow-y-auto px-6 py-6">
+            <div className="max-h-[calc(100vh-5rem)] overflow-y-auto px-3 py-3 sm:max-h-[calc(100vh-8rem)] sm:px-6 sm:py-6">
               <UpdateOrderForm
                 orderId={selectedOrderId}
                 onUpdated={handleUpdated}

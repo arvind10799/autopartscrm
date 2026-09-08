@@ -71,7 +71,7 @@ export function ThemeToggle() {
       <Button
         variant="outline"
         size="sm"
-        className="h-10 w-10 rounded-full border-slate-200 bg-white px-0 font-semibold text-slate-900 shadow-sm hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] sm:w-auto sm:px-3 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
+        className="h-9 w-9 rounded-full border-slate-200 bg-white px-0 font-semibold text-slate-900 shadow-sm hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] sm:h-10 sm:w-auto sm:px-3 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
         onClick={() => setIsOpen((current) => !current)}
         aria-haspopup="menu"
         aria-expanded={isOpen}
