@@ -325,8 +325,8 @@ export function DashboardWorkspace() {
           ))}
         </div>
 
-        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="w-full sm:min-w-36">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-end">
+          <div className="w-full sm:w-36">
             <label
               htmlFor="dashboard-period-mode"
               className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
@@ -349,7 +349,7 @@ export function DashboardWorkspace() {
           </div>
 
           {periodMode === 'month' ? (
-            <div className="w-full sm:min-w-44">
+            <div className="w-full sm:w-44">
               <label
                 htmlFor="dashboard-month"
                 className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
