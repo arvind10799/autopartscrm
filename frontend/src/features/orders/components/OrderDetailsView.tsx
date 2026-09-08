@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -21,11 +21,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { notesApi } from '@/features/notes/api/notes-api';
+import type { NoteRecord } from '@/features/notes/types/note.types';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { GrossProfitSummaryCard } from '@/features/shipments/components/GrossProfitSummaryCard';
 import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
-import { formatShipmentStatus } from '@/features/shipments/lib/shipment-formatters';
 import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
 import { useOrderDetailWithRefresh } from '../hooks/useOrderDetail';
@@ -44,7 +44,6 @@ import {
 import type {
   OrderDetail,
   OrderNote,
-  OrderShipment,
   OrderShipmentStatus,
 } from '../types/order.types';
 
@@ -63,8 +62,58 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [shipmentNotes, setShipmentNotes] = useState<NoteRecord[]>([]);
+  const [isShipmentNotesLoading, setIsShipmentNotesLoading] = useState(false);
+  const [shipmentNotesError, setShipmentNotesError] = useState<string | null>(null);
   const authUser = useAuthStore((state) => state.user);
   const { order, isLoading, error } = useOrderDetailWithRefresh(orderId, refreshKey);
+  const shipmentIds = order?.shipments.map((shipment) => shipment.id).join('|') ?? '';
+
+  useEffect(() => {
+    if (!order || shipmentIds.length === 0) {
+      setShipmentNotes([]);
+      setIsShipmentNotesLoading(false);
+      setShipmentNotesError(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadShipmentNotes = async () => {
+      setIsShipmentNotesLoading(true);
+      setShipmentNotesError(null);
+
+      try {
+        const loadedNoteGroups = await Promise.all(
+          order.shipments.map((shipment) =>
+            notesApi.listByEntity('SHIPMENT', shipment.id),
+          ),
+        );
+
+        if (isMounted) {
+          setShipmentNotes(loadedNoteGroups.flat());
+        }
+      } catch (caughtError) {
+        if (isMounted) {
+          setShipmentNotesError(
+            caughtError instanceof Error
+              ? caughtError.message
+              : 'Unable to load shipment notes.',
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsShipmentNotesLoading(false);
+        }
+      }
+    };
+
+    void loadShipmentNotes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [order, shipmentIds]);
 
   const handleAddNoteSubmit = async () => {
     const trimmedMessage = noteMessage.trim();
@@ -129,14 +178,10 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
 
   const intake = order.intakeDetails;
   const financialSummary = getOrderFinancialSummary(order);
-  const notesTimeline = buildNoteTimeline(order);
+  const notesTimeline = buildNoteTimeline(order, shipmentNotes);
   const editHistoryTimeline = buildEditHistoryTimeline(order.notes);
   const statusTimeline = buildStatusTimeline(order);
-  const shipmentTimeline = buildShipmentTimeline(order.shipments);
-  const remarksTimeline = [
-    ...notesTimeline,
-    ...shipmentTimeline,
-  ].sort(compareTimelineEntriesDesc);
+  const remarksTimeline = notesTimeline;
   const latestShipment = order.shipments[0] ?? null;
   const latestShipmentCost = order.shipments[0]?.costs?.[0] ?? null;
   const canAddAdditionalCost =
@@ -429,10 +474,22 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
             ) : null}
 
             <CardContent className="min-h-0 space-y-3 p-3.5 sm:p-4 lg:flex-1 lg:overflow-y-auto">
-              <RemarkTimeline
-                entries={remarksTimeline}
-                emptyMessage="No internal notes yet."
-              />
+              {shipmentNotesError ? (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {shipmentNotesError}
+                </div>
+              ) : null}
+
+              {isShipmentNotesLoading ? (
+                <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
+                  Loading notes...
+                </div>
+              ) : (
+                <RemarkTimeline
+                  entries={remarksTimeline}
+                  emptyMessage="No internal notes yet."
+                />
+              )}
 
               <TimelineGroup
                 title="Edit History Timeline"
@@ -454,8 +511,11 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
   );
 }
 
-function buildNoteTimeline(order: OrderDetail): TimelineEntry[] {
-  return order.notes
+function buildNoteTimeline(
+  order: OrderDetail,
+  shipmentNotes: NoteRecord[],
+): TimelineEntry[] {
+  const orderNoteEntries = order.notes
     .filter(
       (note) =>
         !isHistoryNote(note) &&
@@ -470,7 +530,20 @@ function buildNoteTimeline(order: OrderDetail): TimelineEntry[] {
       body: formatOrderNoteBody(note.content, order),
       badgeVariant: 'secondary' as const,
     }))
-    .sort(compareTimelineEntriesDesc);
+  const shipmentNoteEntries = shipmentNotes
+    .filter((note) => isPlainUserNoteContent(note.message))
+    .map((note) => ({
+      id: `shipment-${note.id}`,
+      timestamp: note.createdAt,
+      actorName: note.author.name,
+      action: 'Note',
+      body: note.message,
+      badgeVariant: 'secondary' as const,
+    }));
+
+  return [...orderNoteEntries, ...shipmentNoteEntries].sort(
+    compareTimelineEntriesDesc,
+  );
 }
 
 function buildEditHistoryTimeline(notes: OrderNote[]): TimelineEntry[] {
@@ -516,25 +589,6 @@ function buildStatusTimeline(order: OrderDetail): TimelineEntry[] {
       badgeVariant: 'success' as const,
     },
   ].sort(compareTimelineEntriesDesc);
-}
-
-function buildShipmentTimeline(shipments: OrderShipment[]): TimelineEntry[] {
-  return shipments
-    .map((shipment) => ({
-      id: shipment.id,
-      timestamp: shipment.updatedAt,
-      actorName: 'System',
-      action: 'Shipment updated',
-      body: (
-        <span>
-          {shipment.proNumber ?? 'PRO pending'} ·{' '}
-          {shipment.carrierName ?? 'Carrier pending'} ·{' '}
-          {formatShipmentStatus(shipment.status as OrderShipmentStatus)}
-        </span>
-      ),
-      badgeVariant: 'neutral' as const,
-    }))
-    .sort(compareTimelineEntriesDesc);
 }
 
 function compareTimelineEntriesDesc(
@@ -583,6 +637,22 @@ function getInvoiceActivityAction(content: string): string | null {
 
 function isStatusHistoryNote(note: OrderNote): boolean {
   return /status\s*(changed|:)|\bstatus\b.*->/i.test(note.content);
+}
+
+function isPlainUserNoteContent(content: string): boolean {
+  const trimmedContent = content.trim();
+
+  return (
+    !/^Order updated:/i.test(trimmedContent) &&
+    !/^Shipment updated:/i.test(trimmedContent) &&
+    !/^Shipment status updated:/i.test(trimmedContent) &&
+    !/^Replacement (request created|updated):/i.test(trimmedContent) &&
+    !/^Invoice (generated|signature request sent|signature request resent|updated):/i.test(
+      trimmedContent,
+    ) &&
+    !/^Signed invoice cloned and signature request sent:/i.test(trimmedContent) &&
+    !/status\s*(changed|:)|\bstatus\b.*->/i.test(trimmedContent)
+  );
 }
 
 function formatHistoryBody(content: string): string {

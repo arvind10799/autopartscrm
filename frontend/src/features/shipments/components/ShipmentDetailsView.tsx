@@ -605,14 +605,16 @@ function ShipmentNotesHistoryCard({
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const noteEntries: ShipmentActivityEntry[] = [
-    ...notes.map((note) => ({
-      id: note.id,
-      timestamp: note.createdAt,
-      authorName: note.author.name,
-      label: 'Shipment note',
-      badgeVariant: 'secondary' as const,
-      body: note.message,
-    })),
+    ...notes
+      .filter((note) => isPlainUserNoteContent(note.message))
+      .map((note) => ({
+        id: note.id,
+        timestamp: note.createdAt,
+        authorName: note.author.name,
+        label: 'Shipment note',
+        badgeVariant: 'secondary' as const,
+        body: note.message,
+      })),
     ...orderNotes
       .filter(isPlainOrderNote)
       .map((note) => ({
@@ -995,15 +997,15 @@ function getShipmentTimelineDotClassName(
   }
 }
 
-function isShipmentStatusHistoryNote(note: OrderNote): boolean {
+function isShipmentStatusHistoryNote(note: { content: string }): boolean {
   return note.content.startsWith('Shipment status updated:');
 }
 
-function isOrderUpdateNote(note: OrderNote): boolean {
+function isOrderUpdateNote(note: { content: string }): boolean {
   return note.content.startsWith('Order updated:');
 }
 
-function isOrderStatusHistoryNote(note: OrderNote): boolean {
+function isOrderStatusHistoryNote(note: { content: string }): boolean {
   return (
     !isShipmentStatusHistoryNote(note) &&
     !isOrderUpdateNote(note) &&
@@ -1012,11 +1014,20 @@ function isOrderStatusHistoryNote(note: OrderNote): boolean {
 }
 
 function isPlainOrderNote(note: OrderNote): boolean {
+  return isPlainUserNoteContent(note.content);
+}
+
+function isPlainUserNoteContent(content: string): boolean {
+  const trimmedContent = content.trim();
+  const note = { content };
+
   return (
     !isShipmentStatusHistoryNote(note) &&
     !isOrderUpdateNote(note) &&
     !isOrderStatusHistoryNote(note) &&
-    !isInvoiceActivityNote(note)
+    !isInvoiceActivityNote(note) &&
+    !/^Shipment updated:/i.test(trimmedContent) &&
+    !/^Replacement (request created|updated):/i.test(trimmedContent)
   );
 }
 
@@ -1024,7 +1035,7 @@ function formatOrderHistoryBody(content: string): string {
   return content.replace(/^Order updated:\s*/i, '').trim();
 }
 
-function isInvoiceActivityNote(note: OrderNote): boolean {
+function isInvoiceActivityNote(note: { content: string }): boolean {
   return Boolean(getInvoiceActivityLabel(note.content));
 }
 

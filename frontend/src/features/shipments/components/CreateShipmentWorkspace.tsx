@@ -38,6 +38,7 @@ import { toast } from '@/lib/stores/toast.store';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
 import { notesApi } from '@/features/notes/api/notes-api';
+import type { NoteRecord } from '@/features/notes/types/note.types';
 import {
   OrderResolutionActions,
   OrderResolutionDetails,
@@ -688,9 +689,55 @@ function ShipmentWorkspaceNotesCard({
   const [noteMessage, setNoteMessage] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = useState(false);
-  const noteEntries = buildNoteTimeline(order);
+  const [shipmentNotes, setShipmentNotes] = useState<NoteRecord[]>([]);
+  const [isLoadingShipmentNotes, setIsLoadingShipmentNotes] = useState(false);
+  const [shipmentNotesError, setShipmentNotesError] = useState<string | null>(null);
+  const shipmentId = shipment?.id;
+  const noteEntries = buildNoteTimeline(order, shipmentNotes);
   const editHistoryEntries = buildEditHistoryTimeline(order, shipment);
   const statusHistoryEntries = buildStatusTimeline(order);
+
+  useEffect(() => {
+    if (!shipmentId) {
+      setShipmentNotes([]);
+      setIsLoadingShipmentNotes(false);
+      setShipmentNotesError(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadShipmentNotes = async () => {
+      setIsLoadingShipmentNotes(true);
+      setShipmentNotesError(null);
+
+      try {
+        const notes = await notesApi.listByEntity('SHIPMENT', shipmentId);
+
+        if (isMounted) {
+          setShipmentNotes(notes);
+        }
+      } catch (caughtError) {
+        if (isMounted) {
+          setShipmentNotesError(
+            caughtError instanceof Error
+              ? caughtError.message
+              : 'Unable to load shipment notes.',
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingShipmentNotes(false);
+        }
+      }
+    };
+
+    void loadShipmentNotes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [shipmentId]);
 
   const handleAddNoteSubmit = async () => {
     const trimmedMessage = noteMessage.trim();
@@ -811,10 +858,22 @@ function ShipmentWorkspaceNotesCard({
       ) : null}
 
       <CardContent className="min-h-0 space-y-3 p-3.5 sm:p-4 xl:flex-1 xl:overflow-y-auto">
-        <ActivityTimeline
-          entries={noteEntries}
-          emptyMessage="No internal notes yet."
-        />
+        {shipmentNotesError ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {shipmentNotesError}
+          </div>
+        ) : null}
+
+        {isLoadingShipmentNotes ? (
+          <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
+            Loading notes...
+          </div>
+        ) : (
+          <ActivityTimeline
+            entries={noteEntries}
+            emptyMessage="No internal notes yet."
+          />
+        )}
         <TimelineGroup
           title="Edit History Timeline"
           entries={editHistoryEntries}
@@ -936,8 +995,11 @@ function ActivityTimelineItem({
   );
 }
 
-function buildNoteTimeline(order: OrderDetail): TimelineEntry[] {
-  return order.notes
+function buildNoteTimeline(
+  order: OrderDetail,
+  shipmentNotes: NoteRecord[],
+): TimelineEntry[] {
+  const orderNoteEntries = order.notes
     .filter(isPlainOrderNote)
     .map((note) => ({
       id: note.id,
@@ -946,8 +1008,21 @@ function buildNoteTimeline(order: OrderDetail): TimelineEntry[] {
       action: 'Note',
       body: formatOrderNoteBody(note.content, order),
       badgeVariant: 'secondary' as const,
-    }))
-    .sort(compareTimelineEntriesDesc);
+    }));
+  const shipmentNoteEntries = shipmentNotes
+    .filter((note) => isPlainUserNoteContent(note.message))
+    .map((note) => ({
+      id: `shipment-${note.id}`,
+      timestamp: note.createdAt,
+      actorName: note.author.name,
+      action: 'Note',
+      body: note.message,
+      badgeVariant: 'secondary' as const,
+    }));
+
+  return [...orderNoteEntries, ...shipmentNoteEntries].sort(
+    compareTimelineEntriesDesc,
+  );
 }
 
 function buildEditHistoryTimeline(
@@ -1061,19 +1136,27 @@ function calculateOrderActualGp(order: OrderDetail): number {
 }
 
 function isPlainOrderNote(note: OrderNote): boolean {
+  return isPlainUserNoteContent(note.content);
+}
+
+function isPlainUserNoteContent(content: string): boolean {
+  const note = { content };
+
   return (
     !isShipmentStatusHistoryNote(note) &&
     !isOrderUpdateNote(note) &&
     !isOrderStatusHistoryNote(note) &&
-    !isInvoiceActivityNote(note)
+    !isInvoiceActivityNote(note) &&
+    !/^Shipment updated:/i.test(content.trim()) &&
+    !/^Replacement (request created|updated):/i.test(content.trim())
   );
 }
 
-function isOrderUpdateNote(note: OrderNote): boolean {
+function isOrderUpdateNote(note: { content: string }): boolean {
   return note.content.startsWith('Order updated:');
 }
 
-function isOrderStatusHistoryNote(note: OrderNote): boolean {
+function isOrderStatusHistoryNote(note: { content: string }): boolean {
   return (
     !isShipmentStatusHistoryNote(note) &&
     !isOrderUpdateNote(note) &&
@@ -1081,7 +1164,7 @@ function isOrderStatusHistoryNote(note: OrderNote): boolean {
   );
 }
 
-function isInvoiceActivityNote(note: OrderNote): boolean {
+function isInvoiceActivityNote(note: { content: string }): boolean {
   return Boolean(getInvoiceActivityLabel(note.content));
 }
 
@@ -1131,6 +1214,6 @@ function formatNullableText(value: string | null): string {
   return value?.trim() ? value : 'Not provided';
 }
 
-function isShipmentStatusHistoryNote(note: OrderNote): boolean {
+function isShipmentStatusHistoryNote(note: { content: string }): boolean {
   return note.content.startsWith('Shipment status updated:');
 }
