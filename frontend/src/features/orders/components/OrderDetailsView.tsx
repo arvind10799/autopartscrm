@@ -343,7 +343,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
         </div>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <Card className="flex lg:max-h-[calc(100vh-3rem)] flex-col overflow-hidden">
+          <Card className="overflow-hidden lg:flex lg:max-h-[calc(100vh-3rem)] lg:flex-col">
             <CardHeader className="border-b border-border/70 px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -428,7 +428,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
             </div>
             ) : null}
 
-            <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3.5 sm:p-4">
+            <CardContent className="min-h-0 space-y-3 p-3.5 sm:p-4 lg:flex-1 lg:overflow-y-auto">
               <RemarkTimeline
                 entries={remarksTimeline}
                 emptyMessage="No internal notes yet."

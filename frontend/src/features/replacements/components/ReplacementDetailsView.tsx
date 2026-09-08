@@ -599,7 +599,7 @@ function ReplacementNotesHistoryCard({
   onAddNoteSubmit: () => Promise<void>;
 }) {
   return (
-    <Card className="flex overflow-hidden border-border/70 shadow-sm lg:max-h-[calc(100vh-3rem)] lg:flex-col">
+    <Card className="overflow-hidden border-border/70 shadow-sm lg:flex lg:max-h-[calc(100vh-3rem)] lg:flex-col">
       <CardHeader className="border-b border-border/70 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -678,7 +678,7 @@ function ReplacementNotesHistoryCard({
         </div>
       ) : null}
 
-      <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3.5 sm:p-4">
+      <CardContent className="min-h-0 space-y-3 p-3.5 sm:p-4 lg:flex-1 lg:overflow-y-auto">
         {error ? (
           <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {error}

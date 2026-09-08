@@ -742,7 +742,7 @@ function ShipmentNotesHistoryCard({
   };
 
   return (
-    <Card className="flex overflow-hidden border-border/70 shadow-sm xl:max-h-[calc(100vh-3rem)] xl:flex-col">
+    <Card className="overflow-hidden border-border/70 shadow-sm xl:flex xl:max-h-[calc(100vh-3rem)] xl:flex-col">
       <CardHeader className="border-b border-border/70 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -827,7 +827,7 @@ function ShipmentNotesHistoryCard({
           </form>
         </div>
       ) : null}
-      <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3.5 sm:p-4">
+      <CardContent className="min-h-0 space-y-3 p-3.5 sm:p-4 xl:flex-1 xl:overflow-y-auto">
 
         {notesError ? (
           <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

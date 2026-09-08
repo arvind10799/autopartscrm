@@ -305,16 +305,16 @@ export function DashboardWorkspace() {
   };
 
   return (
-    <section className="space-y-5">
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-950/5 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800 dark:bg-slate-950/80">
-        <div className="flex flex-wrap gap-1.5">
+    <section className="space-y-4 sm:space-y-5">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm shadow-slate-950/5 sm:p-4 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800 dark:bg-slate-950/80">
+        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {DASHBOARD_TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'rounded-xl px-5 py-3 text-sm font-semibold transition',
+                'shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition sm:px-5 sm:py-3',
                 activeTab === tab.id
                   ? 'bg-[#ff5a00] text-white shadow-lg shadow-orange-600/20'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
@@ -325,8 +325,8 @@ export function DashboardWorkspace() {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="min-w-36">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="w-full sm:min-w-36">
             <label
               htmlFor="dashboard-period-mode"
               className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
@@ -341,7 +341,7 @@ export function DashboardWorkspace() {
                 setOrderPage(1);
                 setPeriodMode(event.target.value === 'all' ? 'all' : 'month');
               }}
-              className="h-11 rounded-xl border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900"
+              className="h-11 w-full rounded-xl border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900"
             >
               <option value="all">All time</option>
               <option value="month">Monthly</option>
@@ -349,7 +349,7 @@ export function DashboardWorkspace() {
           </div>
 
           {periodMode === 'month' ? (
-            <div className="min-w-44">
+            <div className="w-full sm:min-w-44">
               <label
                 htmlFor="dashboard-month"
                 className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
@@ -365,7 +365,7 @@ export function DashboardWorkspace() {
                   setOrderPage(1);
                   setSelectedMonth(event.target.value || maxMonth);
                 }}
-                className="h-11 rounded-xl border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900"
+                className="h-11 w-full rounded-xl border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900"
               />
             </div>
           ) : null}
@@ -502,7 +502,7 @@ function SalesOverviewTab({
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d94d00]">
             Sales Overview
           </p>
-          <h2 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
+          <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-3xl dark:text-white">
             {data.periodLabel}
           </h2>
         </div>
@@ -543,13 +543,13 @@ function SalesOverviewTab({
       </div>
 
       <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-        <CardHeader className="border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
+        <CardHeader className="border-b border-slate-200 bg-white px-3 py-3 sm:px-5 sm:py-4 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="text-xl text-slate-950 dark:text-white">
                 Agent Performance
               </CardTitle>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 hidden text-sm text-slate-500 sm:block dark:text-slate-400">
                 Sort by agent, calls, sales, charging, or gross profit.
               </p>
             </div>
@@ -573,7 +573,18 @@ function SalesOverviewTab({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="grid gap-3 p-3 sm:hidden">
+              {sortedAgents.map((agent) => (
+                <AgentPerformanceMobileCard
+                  key={agent.agentId}
+                  agent={agent}
+                  currency={data.currency}
+                />
+              ))}
+              <TeamTotalMobileCard data={data} />
+            </div>
+            <div className="hidden overflow-x-auto sm:block">
               <table className="w-full min-w-[820px] text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                   <tr>
@@ -656,6 +667,7 @@ function SalesOverviewTab({
                 </tfoot>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -700,26 +712,26 @@ function SalesKpiCard({
 
   return (
     <Card className={cn('overflow-hidden rounded-2xl shadow-sm', cardClasses)}>
-      <CardContent className="flex items-start justify-between gap-3 p-5">
+      <CardContent className="flex items-start justify-between gap-3 p-3.5 sm:p-5">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-700 dark:text-slate-300">
             {label}
           </p>
           <p
             className={cn(
-              'mt-3 text-2xl font-semibold tracking-[-0.04em]',
+              'mt-2 text-xl font-semibold tracking-[-0.04em] sm:mt-3 sm:text-2xl',
               valueClasses,
             )}
           >
             {value}
           </p>
-          <p className="mt-2 text-xs leading-4 text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-xs leading-4 text-slate-600 sm:mt-2 dark:text-slate-400">
             {hint}
           </p>
         </div>
         <div
           className={cn(
-            'flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-lg',
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-lg sm:h-12 sm:w-12',
             iconClasses,
           )}
         >
@@ -874,7 +886,7 @@ function OrderStatusTab({
       </div>
 
       <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-        <CardHeader className="border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
+        <CardHeader className="border-b border-slate-200 bg-white px-3 py-3 sm:px-5 sm:py-4 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="text-xl text-slate-950 dark:text-white">
@@ -896,7 +908,7 @@ function OrderStatusTab({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3 p-4">
+        <CardContent className="space-y-3 p-3 sm:p-4">
           <div className="grid gap-2 xl:grid-cols-[1.3fr_0.85fr_0.85fr_0.75fr_0.6fr]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -970,9 +982,20 @@ function OrderStatusTab({
               </p>
             </div>
           ) : (
+            <>
             <div
               className={cn(
-                'overflow-x-auto rounded-2xl border border-slate-200 transition-opacity dark:border-slate-800',
+                'grid gap-3 transition-opacity sm:hidden',
+                isLoading ? 'opacity-70' : 'opacity-100',
+              )}
+            >
+              {sortedOrders.map((order) => (
+                <OrderStatusMobileCard key={order.id} order={order} />
+              ))}
+            </div>
+            <div
+              className={cn(
+                'hidden overflow-x-auto rounded-2xl border border-slate-200 transition-opacity sm:block dark:border-slate-800',
                 isLoading ? 'opacity-70' : 'opacity-100',
               )}
             >
@@ -1027,6 +1050,7 @@ function OrderStatusTab({
                 </tbody>
               </table>
             </div>
+            </>
           )}
           <div className="flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
             <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -1270,7 +1294,7 @@ function AgentLeadsTab({
       </div>
 
       <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-        <CardHeader className="border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
+        <CardHeader className="border-b border-slate-200 bg-white px-3 py-3 sm:px-5 sm:py-4 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="text-xl text-slate-950 dark:text-white">
@@ -1287,7 +1311,7 @@ function AgentLeadsTab({
             ) : null}
           </div>
         </CardHeader>
-        <CardContent className="space-y-3 p-4">
+        <CardContent className="space-y-3 p-3 sm:p-4">
           <div className="grid gap-2 lg:grid-cols-[1fr_260px]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -1321,9 +1345,20 @@ function AgentLeadsTab({
               </p>
             </div>
           ) : (
+            <>
             <div
               className={cn(
-                'overflow-x-auto rounded-2xl border border-slate-200 transition-opacity dark:border-slate-800',
+                'grid gap-3 transition-opacity sm:hidden',
+                isLoading ? 'opacity-70' : 'opacity-100',
+              )}
+            >
+              {sortedAgents.map((agent) => (
+                <AgentLeadsMobileCard key={agent.agentId} agent={agent} />
+              ))}
+            </div>
+            <div
+              className={cn(
+                'hidden overflow-x-auto rounded-2xl border border-slate-200 transition-opacity sm:block dark:border-slate-800',
                 isLoading ? 'opacity-70' : 'opacity-100',
               )}
             >
@@ -1364,6 +1399,7 @@ function AgentLeadsTab({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -1522,6 +1558,183 @@ function AgentPerformanceRow({
         {formatDashboardCurrency(agent.grossProfit, currency)}
       </td>
     </tr>
+  );
+}
+
+function AgentPerformanceMobileCard({
+  agent,
+  currency,
+}: {
+  agent: SalesOverviewAgent;
+  currency: string;
+}) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ff5a00] to-[#0f6fb7] text-xs font-bold text-white shadow-md shadow-slate-950/10">
+          {agent.initials}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-slate-950 dark:text-white">
+            {agent.agentName}
+          </p>
+          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+            {agent.agentEmail || formatRole(agent.role)}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <MobileMetric label="Calls" value={agent.totalCalls.toLocaleString()} />
+        <MobileMetric label="Sales" value={agent.totalSales.toLocaleString()} />
+        <MobileMetric
+          label="Charging"
+          value={formatDashboardCurrency(agent.totalCharging, currency)}
+        />
+        <MobileMetric
+          label="Gross Profit"
+          value={formatDashboardCurrency(agent.grossProfit, currency)}
+          valueClassName={agent.grossProfit >= 0 ? 'text-emerald-600' : 'text-destructive'}
+        />
+      </div>
+    </article>
+  );
+}
+
+function TeamTotalMobileCard({ data }: { data: SalesOverviewResponse }) {
+  return (
+    <article className="rounded-2xl border border-orange-200 bg-orange-50/70 p-3 shadow-sm dark:border-orange-900/40 dark:bg-orange-950/15">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ff5a00] text-xs font-bold text-white">
+          TT
+        </div>
+        <div>
+          <p className="font-semibold text-slate-950 dark:text-white">Team Total</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Complete team result
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <MobileMetric label="Calls" value={data.totals.totalCalls.toLocaleString()} />
+        <MobileMetric label="Sales" value={data.totals.totalSales.toLocaleString()} />
+        <MobileMetric
+          label="Charging"
+          value={formatDashboardCurrency(data.totals.totalCharging, data.currency)}
+        />
+        <MobileMetric
+          label="Gross Profit"
+          value={formatDashboardCurrency(data.totals.grossProfit, data.currency)}
+          valueClassName="text-emerald-600"
+        />
+      </div>
+    </article>
+  );
+}
+
+function OrderStatusMobileCard({ order }: { order: OrderStatusDashboardOrder }) {
+  const saleLabel = order.salesNumber || 'No sale number';
+
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Link
+            href={`/orders/${order.id}`}
+            className="block truncate font-semibold text-[#d94d00] dark:text-orange-300"
+          >
+            {saleLabel}
+          </Link>
+          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+            {order.orderNumber}
+          </p>
+        </div>
+        <ShipmentStatusBadge status={order.status} />
+      </div>
+      <div className="mt-3 grid gap-2">
+        <MobileInfo label="Customer" value={order.customerName} />
+        <MobileInfo label="Agent" value={order.agentName} />
+        <MobileInfo label="Sale Date" value={formatDate(order.saleDate)} />
+        <MobileInfo
+          label="Ageing"
+          value={`${order.ageingDays.toLocaleString()} days`}
+          valueClassName={order.isOverdue ? 'text-red-600' : undefined}
+        />
+      </div>
+    </article>
+  );
+}
+
+function AgentLeadsMobileCard({ agent }: { agent: AgentLeadsDashboardAgent }) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ff5a00]/10 text-xs font-bold text-[#d94d00] ring-1 ring-[#ff5a00]/15 dark:bg-orange-400/10 dark:text-orange-300">
+          {agent.initials}
+        </span>
+        <p className="min-w-0 truncate font-semibold text-slate-950 dark:text-white">
+          {agent.agentName}
+        </p>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <MobileMetric label="Total Leads" value={agent.totalLeads.toLocaleString()} />
+        <MobileMetric
+          label="Prospects"
+          value={agent.totalProspects.toLocaleString()}
+          valueClassName="text-emerald-600"
+        />
+      </div>
+      <div className="mt-2">
+        <MobileInfo
+          label="Updated"
+          value={agent.lastUpdated ? formatDateTime(agent.lastUpdated) : 'No updates'}
+        />
+      </div>
+    </article>
+  );
+}
+
+function MobileMetric({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 dark:border-slate-800 dark:bg-slate-950/60">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <p className={cn('mt-1 truncate text-sm font-semibold text-slate-950 dark:text-white', valueClassName)}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function MobileInfo({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="grid min-w-0 grid-cols-[5.25rem_minmax(0,1fr)] gap-2 text-sm">
+      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+        {label}
+      </span>
+      <span
+        className={cn('truncate font-medium text-slate-950 dark:text-white', valueClassName)}
+        title={value}
+      >
+        {value}
+      </span>
+    </div>
   );
 }
 
