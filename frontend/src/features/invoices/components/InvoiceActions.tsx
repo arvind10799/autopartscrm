@@ -862,16 +862,16 @@ function InvoiceFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 py-4 backdrop-blur-sm sm:py-8"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-2 py-2 backdrop-blur-sm sm:px-4 sm:py-8"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-6xl rounded-[2rem] border border-border bg-card p-5 shadow-2xl shadow-slate-950/20 dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/30"
+        className="w-full max-w-6xl rounded-[1.25rem] border border-border bg-card p-3 shadow-2xl shadow-slate-950/20 dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/30 sm:rounded-[2rem] sm:p-5"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/70 pb-3 sm:gap-4 sm:pb-4">
           <div>
-            <h2 className="font-[var(--font-heading)] text-2xl font-semibold text-foreground">
+            <h2 className="font-[var(--font-heading)] text-xl font-semibold text-foreground sm:text-2xl">
               {mode === 'edit'
                 ? 'Edit Invoice'
                 : mode === 'clone'
@@ -892,9 +892,9 @@ function InvoiceFormModal({
           </Button>
         </div>
 
-        <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="mt-4 grid gap-4 sm:mt-5 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <form
-            className="space-y-5"
+            className="space-y-4 sm:space-y-5"
             onSubmit={(event) => {
               event.preventDefault();
               onSubmit();
@@ -981,8 +981,8 @@ function InvoiceFormModal({
               </div>
             ) : null}
 
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={isSaving}>
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
+              <Button type="submit" className="w-full sm:w-auto" disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -992,18 +992,18 @@ function InvoiceFormModal({
                   mode === 'edit' ? 'Save Changes' : 'Generate Invoice'
                 )}
               </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={onClose}>
                 Cancel
               </Button>
             </div>
           </form>
 
-          <div className="rounded-3xl border border-border/70 bg-secondary/20 p-3 dark:border-slate-800 dark:bg-slate-900/50">
+          <div className="rounded-2xl border border-border/70 bg-secondary/20 p-2 dark:border-slate-800 dark:bg-slate-900/50 sm:rounded-3xl sm:p-3">
             <p className="mb-3 text-sm font-semibold text-muted-foreground">Live Preview</p>
-            <div className="max-h-[78vh] overflow-auto rounded-2xl bg-slate-100 p-3 dark:bg-slate-900">
-              <div className="mx-auto w-[381px] max-w-full">
-                <div className="h-[1096px] w-[381px] max-w-full overflow-hidden">
-                  <div className="origin-top-left scale-[0.48]">
+            <div className="max-h-[62vh] overflow-auto rounded-xl bg-slate-100 p-2 dark:bg-slate-900 sm:max-h-[78vh] sm:rounded-2xl sm:p-3">
+              <div className="mx-auto w-[254px] max-w-full sm:w-[381px]">
+                <div className="h-[724px] w-[254px] max-w-full overflow-hidden sm:h-[1096px] sm:w-[381px]">
+                  <div className="origin-top-left scale-[0.32] sm:scale-[0.48]">
                     <InvoiceDocument invoice={draftToInvoicePreview('preview', draft)} />
                   </div>
                 </div>

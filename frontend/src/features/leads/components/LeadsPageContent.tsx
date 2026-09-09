@@ -309,7 +309,7 @@ export function LeadsPageContent() {
           className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6"
         >
           <div
-            className="w-full max-w-6xl rounded-[1.25rem] border border-border/70 bg-white shadow-2xl sm:rounded-[1.75rem]"
+            className="w-full max-w-6xl rounded-[1.25rem] border border-border/70 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:rounded-[1.75rem]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-border/70 px-4 py-3 sm:px-6 sm:py-5">
@@ -325,6 +325,7 @@ export function LeadsPageContent() {
               <Button
                 variant="ghost"
                 size="sm"
+                className="h-8 w-8 rounded-full px-0 text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white"
                 onClick={() => setSelectedConversionLead(null)}
                 aria-label="Close convert lead popup"
               >
