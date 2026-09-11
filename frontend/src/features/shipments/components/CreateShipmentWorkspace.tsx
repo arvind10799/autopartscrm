@@ -165,7 +165,13 @@ export function CreateShipmentWorkspace() {
             </CardTitle>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px]">
+          <div
+            className={
+              dateFilter.preset === 'CUSTOM'
+                ? 'grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start xl:grid-cols-[minmax(0,1fr)_220px_34rem]'
+                : 'grid gap-3 lg:grid-cols-[1fr_220px_220px]'
+            }
+          >
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -196,12 +202,21 @@ export function CreateShipmentWorkspace() {
               ))}
             </Select>
 
-            <DateRangeFilter
-              value={dateFilter}
-              onChange={setDateFilter}
-              variant="inline"
-              showPresetLabel={false}
-            />
+            <div
+              className={
+                dateFilter.preset === 'CUSTOM'
+                  ? 'min-w-0 lg:col-span-2 xl:col-span-1'
+                  : 'min-w-0'
+              }
+            >
+              <DateRangeFilter
+                value={dateFilter}
+                onChange={setDateFilter}
+                variant="inline"
+                showPresetLabel={false}
+                inlineCustomLayout="row"
+              />
+            </div>
           </div>
         </CardHeader>
 

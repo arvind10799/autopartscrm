@@ -187,7 +187,13 @@ export function ReplacementOrdersPageContent() {
             </CardTitle>
           </div>
 
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_260px_260px] xl:items-start">
+          <div
+            className={
+              dateFilter.preset === 'CUSTOM'
+                ? 'grid gap-3 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start xl:grid-cols-[minmax(0,1fr)_260px_34rem]'
+                : 'grid gap-3 xl:grid-cols-[minmax(0,1fr)_260px_260px] xl:items-start'
+            }
+          >
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -217,15 +223,24 @@ export function ReplacementOrdersPageContent() {
               ))}
             </Select>
 
-            <DateRangeFilter
-              value={dateFilter}
-              onChange={(value) => {
-                setDateFilter(value);
-                startTransition(() => setPage(1));
-              }}
-              variant="inline"
-              showPresetLabel={false}
-            />
+            <div
+              className={
+                dateFilter.preset === 'CUSTOM'
+                  ? 'min-w-0 lg:col-span-2 xl:col-span-1'
+                  : 'min-w-0'
+              }
+            >
+              <DateRangeFilter
+                value={dateFilter}
+                onChange={(value) => {
+                  setDateFilter(value);
+                  startTransition(() => setPage(1));
+                }}
+                variant="inline"
+                showPresetLabel={false}
+                inlineCustomLayout="row"
+              />
+            </div>
           </div>
         </CardHeader>
 

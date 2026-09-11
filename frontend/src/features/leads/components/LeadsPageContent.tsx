@@ -184,11 +184,18 @@ export function LeadsPageContent() {
                 Leads Workspace
               </CardTitle>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <div className="w-full sm:w-60">
+                <div
+                  className={
+                    dateFilter.preset === 'CUSTOM'
+                      ? 'w-full xl:w-[34rem]'
+                      : 'w-full sm:w-60'
+                  }
+                >
                   <DateRangeFilter
                     value={dateFilter}
                     onChange={setDateFilter}
                     variant="inline"
+                    inlineCustomLayout="row"
                   />
                 </div>
 

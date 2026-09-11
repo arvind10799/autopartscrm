@@ -23,11 +23,13 @@ export function DateRangeFilter({
   onChange,
   variant = 'card',
   showPresetLabel = true,
+  inlineCustomLayout = 'stack',
 }: {
   value: DateRangeFilterState;
   onChange: (value: DateRangeFilterState) => void;
   variant?: 'card' | 'inline';
   showPresetLabel?: boolean;
+  inlineCustomLayout?: 'stack' | 'row';
 }) {
   const isCustom = value.preset === 'CUSTOM';
   const isInline = variant === 'inline';
@@ -65,7 +67,9 @@ export function DateRangeFilter({
           className={
             isInline
               ? isCustom
-                ? 'grid w-full min-w-0 gap-2'
+                ? inlineCustomLayout === 'row'
+                  ? 'grid w-full min-w-0 gap-3 xl:grid-cols-3'
+                  : 'grid w-full min-w-0 gap-2'
                 : 'grid gap-3 sm:min-w-[12rem]'
               : isCustom
                 ? 'grid gap-3 md:grid-cols-3 xl:min-w-[44rem]'

@@ -215,12 +215,21 @@ export function OrdersPageContent() {
                 Orders table
               </CardTitle>
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <DateRangeFilter
-                  value={dateFilter}
-                  onChange={setDateFilter}
-                  variant="inline"
-                />
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
+                <div
+                  className={
+                    dateFilter.preset === 'CUSTOM'
+                      ? 'w-full xl:w-[34rem]'
+                      : 'w-full sm:w-60'
+                  }
+                >
+                  <DateRangeFilter
+                    value={dateFilter}
+                    onChange={setDateFilter}
+                    variant="inline"
+                    inlineCustomLayout="row"
+                  />
+                </div>
 
                 <label className="grid gap-2">
                   <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
