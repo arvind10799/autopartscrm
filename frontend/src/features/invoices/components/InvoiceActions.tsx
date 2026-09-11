@@ -1157,99 +1157,101 @@ function InvoiceDocument({ invoice }, ref) {
       <InvoiceWatermark />
       <InvoiceTemplateHeader invoice={invoice} title="PURCHASE INVOICE" showMeta />
 
-      <section className="invoice-address-panel">
-        <div className="invoice-address-cell invoice-address-cell--shipping">
-          <p>
-            <strong>Shipping Address :</strong>
-            <span className="invoice-shipping-address">
-              {shippingAddress.businessName ? <b>{shippingAddress.businessName}</b> : null}
-              {shippingAddress.businessAddress ? <span>{shippingAddress.businessAddress}</span> : null}
-            </span>
-          </p>
-          <p>
-            <strong>Shipping Vendor :</strong>
-            <span>{invoice.shippingVendor || 'LTL'}</span>
-          </p>
-        </div>
-        <div className="invoice-address-divider" />
-        <div className="invoice-address-cell invoice-address-cell--customer">
-          <p>
-            <strong>Customer Name :</strong>
-            <span>{invoice.customerName || ''}</span>
-          </p>
-          <p>
-            <strong>Billing Address :</strong>
-            <span className="invoice-address-value">{invoice.billingAddress || ''}</span>
-          </p>
-          <p>
-            <strong>Contact Number :</strong>
-            <span>{invoice.contactNumber || ''}</span>
-          </p>
-        </div>
-      </section>
+      <div className="invoice-purchase-flow">
+        <section className="invoice-address-panel">
+          <div className="invoice-address-cell invoice-address-cell--shipping">
+            <p>
+              <strong>Shipping Address :</strong>
+              <span className="invoice-shipping-address">
+                {shippingAddress.businessName ? <b>{shippingAddress.businessName}</b> : null}
+                {shippingAddress.businessAddress ? <span>{shippingAddress.businessAddress}</span> : null}
+              </span>
+            </p>
+            <p>
+              <strong>Shipping Vendor :</strong>
+              <span>{invoice.shippingVendor || 'LTL'}</span>
+            </p>
+          </div>
+          <div className="invoice-address-divider" />
+          <div className="invoice-address-cell invoice-address-cell--customer">
+            <p>
+              <strong>Customer Name :</strong>
+              <span>{invoice.customerName || ''}</span>
+            </p>
+            <p>
+              <strong>Billing Address :</strong>
+              <span className="invoice-address-value">{invoice.billingAddress || ''}</span>
+            </p>
+            <p>
+              <strong>Contact Number :</strong>
+              <span>{invoice.contactNumber || ''}</span>
+            </p>
+          </div>
+        </section>
 
-      <p className="invoice-delivery-note">
-        Delivery timeline is {invoice.deliveryTimeline}, may vary due to distance and shipping vendor
-      </p>
+        <p className="invoice-delivery-note">
+          Delivery timeline is {invoice.deliveryTimeline}, may vary due to distance and shipping vendor
+        </p>
 
-      <section className="invoice-item-box">
-        <div className="invoice-table-head">
-          <strong>Item Descriptions</strong>
-          <strong>Qty</strong>
-          <strong>Amount</strong>
-        </div>
-        <div className="invoice-table-row">
-          <span>{invoice.itemDescription}</span>
-          <span>{invoice.quantity}</span>
-          <span>{formatMoney(invoice.saleAmount, invoice.currency)}</span>
-        </div>
-      </section>
+        <section className="invoice-item-box">
+          <div className="invoice-table-head">
+            <strong>Item Descriptions</strong>
+            <strong>Qty</strong>
+            <strong>Amount</strong>
+          </div>
+          <div className="invoice-table-row">
+            <span>{invoice.itemDescription}</span>
+            <span>{invoice.quantity}</span>
+            <span>{formatMoney(invoice.saleAmount, invoice.currency)}</span>
+          </div>
+        </section>
 
-      <section className="invoice-payment-box">
-        <div className="invoice-payment-summary">
-          <p>
-            <strong>Payment Status</strong>
-            <span>{invoice.paymentStatus || ''}</span>
-          </p>
-          <p>
-            <strong>Date</strong>
-            <span>{invoice.paymentDate ? formatInvoiceDate(invoice.paymentDate) : ''}</span>
-          </p>
-          <p>
-            <strong>Payment Source</strong>
-            <span>{invoice.paymentSource || ''}</span>
-          </p>
-        </div>
-        <div className="invoice-charge-summary">
-          <p>
-            <span>Shipping Cost</span>
-            <span>{formatMoney(invoice.shippingCost, invoice.currency)}</span>
-          </p>
-          <p>
-            <span>Sales Taxes</span>
-            <span>{formatMoney(invoice.salesTaxes, invoice.currency)}</span>
-          </p>
-          <p>
-            <span>Core Charge</span>
-            <span>{formatMoney(invoice.coreCharge, invoice.currency)}</span>
-          </p>
-          <p className="invoice-total-line">
-            <strong>TOTAL</strong>
-            <strong>{formatMoney(invoice.totalAmount, invoice.currency)}</strong>
-          </p>
-        </div>
-        <div className="invoice-additional-charges">
-          <p>Additional charges will be applicable :</p>
-          <ul>
-            <li>
-              If <strong>unloading equipment</strong> is unavailable at the time of delivery (Freight&apos;s only)
-            </li>
-            <li>
-              <strong>Reschedule delivery</strong> (Missed or reattempt delivery)
-            </li>
-          </ul>
-        </div>
-      </section>
+        <section className="invoice-payment-box">
+          <div className="invoice-payment-summary">
+            <p>
+              <strong>Payment Status</strong>
+              <span>{invoice.paymentStatus || ''}</span>
+            </p>
+            <p>
+              <strong>Date</strong>
+              <span>{invoice.paymentDate ? formatInvoiceDate(invoice.paymentDate) : ''}</span>
+            </p>
+            <p>
+              <strong>Payment Source</strong>
+              <span>{invoice.paymentSource || ''}</span>
+            </p>
+          </div>
+          <div className="invoice-charge-summary">
+            <p>
+              <span>Shipping Cost</span>
+              <span>{formatMoney(invoice.shippingCost, invoice.currency)}</span>
+            </p>
+            <p>
+              <span>Sales Taxes</span>
+              <span>{formatMoney(invoice.salesTaxes, invoice.currency)}</span>
+            </p>
+            <p>
+              <span>Core Charge</span>
+              <span>{formatMoney(invoice.coreCharge, invoice.currency)}</span>
+            </p>
+            <p className="invoice-total-line">
+              <strong>TOTAL</strong>
+              <strong>{formatMoney(invoice.totalAmount, invoice.currency)}</strong>
+            </p>
+          </div>
+          <div className="invoice-additional-charges">
+            <p>Additional charges will be applicable :</p>
+            <ul>
+              <li>
+                If <strong>unloading equipment</strong> is unavailable at the time of delivery (Freight&apos;s only)
+              </li>
+              <li>
+                <strong>Reschedule delivery</strong> (Missed or reattempt delivery)
+              </li>
+            </ul>
+          </div>
+        </section>
+      </div>
       <InvoiceSignature invoice={invoice} />
       <InvoiceFooter />
     </div>
@@ -2635,14 +2637,19 @@ const INVOICE_DOCUMENT_CSS = `
     overflow-wrap: anywhere;
   }
 
-  .invoice-address-panel {
+  .invoice-purchase-flow {
     position: absolute;
     left: 26px;
     top: 166px;
     z-index: 2;
+    display: flex;
+    flex-direction: column;
+    width: 742px;
+  }
+
+  .invoice-address-panel {
     display: grid;
     grid-template-columns: 1fr 2px 1fr;
-    width: 742px;
     min-height: 128px;
     border-top: 4px solid #929293;
   }
@@ -2723,11 +2730,6 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-delivery-note {
-    position: absolute;
-    left: 26px;
-    top: 300px;
-    z-index: 2;
-    width: 742px;
     margin: 0;
     padding: 4px 0 12px;
     border-bottom: 4px solid #929293;
@@ -2740,17 +2742,15 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-item-box,
   .invoice-payment-box {
-    position: absolute;
-    left: 26px;
-    z-index: 2;
-    width: 742px;
+    position: relative;
+    width: 100%;
     border: 2px solid #111;
     border-radius: 8px;
     background: rgba(252, 252, 250, 0.72);
   }
 
   .invoice-item-box {
-    top: 346px;
+    margin-top: 14px;
     height: 122px;
     padding: 10px 10px;
   }
@@ -2792,7 +2792,7 @@ const INVOICE_DOCUMENT_CSS = `
   }
 
   .invoice-payment-box {
-    top: 477px;
+    margin-top: 9px;
     height: 142px;
     display: grid;
     grid-template-columns: 1fr 276px;
