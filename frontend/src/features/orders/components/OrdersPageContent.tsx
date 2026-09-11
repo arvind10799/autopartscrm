@@ -211,7 +211,7 @@ export function OrdersPageContent() {
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
           <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-              <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
+              <CardTitle className="shrink-0 text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
                 Orders table
               </CardTitle>
 
@@ -231,14 +231,14 @@ export function OrdersPageContent() {
                   />
                 </div>
 
-                <label className="grid gap-2">
+                <label className="grid w-full gap-2 sm:w-44">
                   <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                     Agent filter
                   </span>
                   <Select
                     value={selectedAgentFilter}
                     aria-label="Agent filter"
-                    className="h-11 w-full rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 sm:min-w-[220px]"
+                    className="h-11 w-full rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                     onChange={(event) => handleAgentFilterChange(event.target.value)}
                   >
                     <option value={ALL_AGENTS_FILTER}>All agents</option>
