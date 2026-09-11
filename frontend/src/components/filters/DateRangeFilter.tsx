@@ -65,7 +65,7 @@ export function DateRangeFilter({
           className={
             isInline
               ? isCustom
-                ? 'grid gap-3 sm:grid-cols-3 lg:min-w-[34rem]'
+                ? 'grid w-full min-w-0 gap-3 sm:grid-cols-2 xl:min-w-[34rem] xl:grid-cols-3'
                 : 'grid gap-3 sm:min-w-[12rem]'
               : isCustom
                 ? 'grid gap-3 md:grid-cols-3 xl:min-w-[44rem]'
