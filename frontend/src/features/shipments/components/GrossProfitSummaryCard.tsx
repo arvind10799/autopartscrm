@@ -475,7 +475,7 @@ export function GrossProfitSummaryCard({
             ) : null}
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-2">
             <GpMetric
               label="Sale Amount"
               value={formatCurrency(originalSaleAmount, displayCurrency)}
@@ -491,7 +491,7 @@ export function GrossProfitSummaryCard({
                 <GpMetric
                   label="Processing fee"
                   value={`-${formatCurrency(paymentProcessingFee, displayCurrency)}`}
-                  hint="2% Credit Card / Invoice"
+                  hint="2% fee applied"
                 />
                 {!hasRefundDetails ? (
                   <GpMetric
@@ -954,13 +954,15 @@ function GpMetric({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border/70 bg-secondary/20 px-3 py-2">
-      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="min-h-[5.75rem] rounded-xl border border-border/70 bg-secondary/20 px-3 py-2">
+      <p className="max-w-full text-[0.62rem] font-semibold uppercase leading-4 tracking-[0.08em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
+      <p className="mt-1 whitespace-nowrap text-sm font-semibold text-foreground">
+        {value}
+      </p>
       {hint ? (
-        <p className="mt-1 text-[0.65rem] font-medium text-muted-foreground">
+        <p className="mt-1 text-[0.65rem] font-medium leading-4 text-muted-foreground">
           {hint}
         </p>
       ) : null}
