@@ -1103,9 +1103,15 @@ export class InvoicesService {
     const partDescriptionNotes = this.getString(intakeDetails.vehicleNotes);
     const vehicleVin = this.getString(intakeDetails.vehicleVin);
 
-    return [
+    const itemDescriptionLines = [
       vehiclePartDescription,
       partDescriptionNotes,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    return [
+      itemDescriptionLines,
       vehicleVin ? `VIN #${vehicleVin}` : null,
     ]
       .filter(Boolean)
