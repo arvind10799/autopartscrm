@@ -105,7 +105,7 @@ export class InvoicesService {
       ),
       shippingVendor: 'LTL',
       deliveryTimeline: '7-8 Business Days',
-      itemDescription: order.partDescription,
+      itemDescription: this.buildInvoiceItemDescription(order),
       vehiclePartDescription: this.buildVehiclePartDescription(order),
       warrantyPartsOnly: DEFAULT_WARRANTY_PARTS_ONLY,
       cancellationPolicy: DEFAULT_CANCELLATION_POLICY,
@@ -1095,6 +1095,19 @@ export class InvoicesService {
     ].filter(Boolean);
 
     return parts.length > 0 ? parts.join(' ') : order.partDescription;
+  }
+
+  private buildInvoiceItemDescription(order: InvoiceOrder): string {
+    const intakeDetails = this.normalizeIntakeDetails(order.intakeDetails);
+    const vehiclePartDescription = this.buildVehiclePartDescription(order);
+    const vehicleVin = this.getString(intakeDetails.vehicleVin);
+
+    return [
+      vehiclePartDescription,
+      vehicleVin ? `VIN #${vehicleVin}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
   }
 
   private normalizeIntakeDetails(value: Prisma.JsonValue): Record<string, unknown> {
