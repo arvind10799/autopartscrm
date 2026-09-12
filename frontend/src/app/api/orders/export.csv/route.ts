@@ -29,12 +29,12 @@ export async function GET(request: Request) {
     },
   );
   const responseBody = await backendResponse.text();
-  const response = new NextResponse(responseBody, {
+  const csvBody = unwrapCsvResponse(responseBody);
+  const response = new NextResponse(csvBody, {
     status: backendResponse.status,
     headers: {
       'Cache-Control': 'no-store',
-      'Content-Type':
-        backendResponse.headers.get('content-type') ?? 'text/csv; charset=utf-8',
+      'Content-Type': 'text/csv; charset=utf-8',
     },
   });
   const contentDisposition = backendResponse.headers.get('content-disposition');
@@ -44,4 +44,27 @@ export async function GET(request: Request) {
   }
 
   return response;
+}
+
+function unwrapCsvResponse(responseBody: string): string {
+  const parsedBody = safeParseJson(responseBody);
+
+  if (
+    parsedBody &&
+    typeof parsedBody === 'object' &&
+    'data' in parsedBody &&
+    typeof parsedBody.data === 'string'
+  ) {
+    return parsedBody.data;
+  }
+
+  return responseBody;
+}
+
+function safeParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }
