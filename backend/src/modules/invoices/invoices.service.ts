@@ -1100,10 +1100,12 @@ export class InvoicesService {
   private buildInvoiceItemDescription(order: InvoiceOrder): string {
     const intakeDetails = this.normalizeIntakeDetails(order.intakeDetails);
     const vehiclePartDescription = this.buildVehiclePartDescription(order);
+    const partDescriptionNotes = this.getString(intakeDetails.vehicleNotes);
     const vehicleVin = this.getString(intakeDetails.vehicleVin);
 
     return [
       vehiclePartDescription,
+      partDescriptionNotes,
       vehicleVin ? `VIN #${vehicleVin}` : null,
     ]
       .filter(Boolean)
