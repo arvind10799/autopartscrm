@@ -8,6 +8,9 @@ import {
 import { buildUnauthorizedApiResponse } from '@/lib/api/server-proxy';
 import { getBackendApiTimeoutMs, getBackendApiUrl } from '@/lib/config/env.server';
 
+const XLSX_MIME_TYPE =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
 export async function GET(request: Request) {
   const session = readSessionFromCookies(await cookies());
 
@@ -18,23 +21,23 @@ export async function GET(request: Request) {
   const normalizedQuery = parseOrdersQueryParams(new URL(request.url).searchParams);
   const queryString = buildOrdersQueryString(normalizedQuery);
   const backendResponse = await fetch(
-    `${getBackendApiUrl()}/orders/export.csv?${queryString}`,
+    `${getBackendApiUrl()}/orders/export.xlsx?${queryString}`,
     {
       headers: {
-        Accept: 'text/csv',
+        Accept: XLSX_MIME_TYPE,
         Authorization: `Bearer ${session.accessToken}`,
       },
       cache: 'no-store',
       signal: AbortSignal.timeout(getBackendApiTimeoutMs()),
     },
   );
-  const responseBody = await backendResponse.text();
-  const csvBody = unwrapCsvResponse(responseBody);
-  const response = new NextResponse(csvBody, {
+  const responseBody = await backendResponse.arrayBuffer();
+  const response = new NextResponse(responseBody, {
     status: backendResponse.status,
     headers: {
       'Cache-Control': 'no-store',
-      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Type':
+        backendResponse.headers.get('content-type') ?? XLSX_MIME_TYPE,
     },
   });
   const contentDisposition = backendResponse.headers.get('content-disposition');
@@ -44,27 +47,4 @@ export async function GET(request: Request) {
   }
 
   return response;
-}
-
-function unwrapCsvResponse(responseBody: string): string {
-  const parsedBody = safeParseJson(responseBody);
-
-  if (
-    parsedBody &&
-    typeof parsedBody === 'object' &&
-    'data' in parsedBody &&
-    typeof parsedBody.data === 'string'
-  ) {
-    return parsedBody.data;
-  }
-
-  return responseBody;
-}
-
-function safeParseJson(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
 }

@@ -2,13 +2,14 @@ import {
   Body,
   Controller,
   Get,
-  Header,
   Param,
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidParamDto } from '../../common/dto/uuid-param.dto';
@@ -21,6 +22,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { RefundOrderDto } from './dto/refund-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { XLSX_MIME_TYPE } from './orders-export-workbook.builder';
 import { OrdersService } from './orders.service';
 
 @Roles(Role.ADMIN, Role.SALES)
@@ -58,14 +60,20 @@ export class OrdersController {
   }
 
   @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
-  @Get('export.csv')
-  @Header('Content-Type', 'text/csv; charset=utf-8')
-  @Header('Content-Disposition', 'attachment; filename="orders-export.csv"')
-  exportCsv(
+  @Get('export.xlsx')
+  async exportExcel(
     @Query() queryOrdersDto: QueryOrdersDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Res() response: Response,
   ) {
-    return this.ordersService.exportCsv(queryOrdersDto, user);
+    const workbook = await this.ordersService.exportExcel(queryOrdersDto, user);
+
+    response.setHeader('Content-Type', XLSX_MIME_TYPE);
+    response.setHeader(
+      'Content-Disposition',
+      'attachment; filename="orders-export.xlsx"',
+    );
+    response.send(workbook);
   }
 
   @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)

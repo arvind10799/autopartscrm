@@ -13,6 +13,10 @@ import { NotesService } from '../notes/notes.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersCacheService } from './orders-cache.service';
 import { OrderListRecord, OrdersRepository } from './orders.repository';
+import {
+  buildOrdersExportWorkbook,
+  OrdersExportWorkbookInput,
+} from './orders-export-workbook.builder';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
@@ -101,16 +105,16 @@ export class OrdersService {
     );
   }
 
-  async exportCsv(
+  async exportExcel(
     queryOrdersDto: QueryOrdersDto,
     user: AuthenticatedUser,
-  ): Promise<string> {
+  ): Promise<Buffer> {
     const orders = await this.ordersRepository.findAllForExport(
       queryOrdersDto,
       user,
     );
 
-    return this.buildOrdersCsv(orders);
+    return this.buildOrdersWorkbook(orders, queryOrdersDto);
   }
 
   async findOne(id: string, user: AuthenticatedUser) {
@@ -409,56 +413,86 @@ export class OrdersService {
     }).format(amount);
   }
 
-  private buildOrdersCsv(orders: OrderListRecord[]): string {
-    const headers = [
-      'Order Number',
-      'Sales Number',
-      'Order Date',
-      'Created Date',
-      'Updated Date',
-      'Order Status',
-      'Customer Name',
-      'Customer Phone',
-      'Customer Email',
-      'Billing Address',
-      'Shipping Address',
-      'Vehicle Year',
-      'Vehicle Make',
-      'Vehicle Model',
-      'VIN',
-      'Part Description',
-      'Quantity',
-      'Sale Price',
-      'Total Sale Amount',
-      'Currency',
-      'Payment Method',
-      'Shipping Status',
-      'BOL Number',
-      'Pickup Number',
-      'PRO Number',
-      'Carrier Name',
-      'Shipped At',
-      'Delivered At',
-      'Advisor Name',
-      'Advisor Email',
-      'Advisor Role',
-      'Estimated Part Cost',
-      'Actual Part Cost',
-      'Estimated Shipping Cost',
-      'Actual Shipping Cost',
-      'Additional Cost',
-      'Total Cost',
-      'Gross Profit',
+  private buildOrdersWorkbook(
+    orders: OrderListRecord[],
+    queryOrdersDto: QueryOrdersDto,
+  ): Buffer {
+    const columns: OrdersExportWorkbookInput['columns'] = [
+      { header: 'Order Number', width: 16 },
+      { header: 'Sales Number', width: 14 },
+      { header: 'Order Date', width: 13 },
+      { header: 'Created Date', width: 22 },
+      { header: 'Updated Date', width: 22 },
+      { header: 'Order Status', width: 16 },
+      { header: 'Customer Name', width: 24 },
+      { header: 'Customer Phone', width: 18 },
+      { header: 'Customer Email', width: 28 },
+      { header: 'Billing Address', width: 44, wrap: true },
+      { header: 'Shipping Address', width: 48, wrap: true },
+      { header: 'Vehicle Year', width: 12 },
+      { header: 'Vehicle Make', width: 16 },
+      { header: 'Vehicle Model', width: 18 },
+      { header: 'VIN', width: 20 },
+      { header: 'Part Description', width: 28 },
+      { header: 'Quantity', width: 10 },
+      { header: 'Sale Price', width: 14, money: true },
+      { header: 'Total Sale Amount', width: 18, money: true },
+      { header: 'Currency', width: 10 },
+      { header: 'Payment Method', width: 18 },
+      { header: 'Shipping Status', width: 18 },
+      { header: 'BOL Number', width: 16 },
+      { header: 'Pickup Number', width: 18 },
+      { header: 'PRO Number', width: 16 },
+      { header: 'Carrier Name', width: 22 },
+      { header: 'Shipped At', width: 22 },
+      { header: 'Delivered At', width: 22 },
+      { header: 'Advisor Name', width: 22 },
+      { header: 'Advisor Email', width: 28 },
+      { header: 'Advisor Role', width: 14 },
+      { header: 'Estimated Part Cost', width: 20, money: true },
+      { header: 'Actual Part Cost', width: 18, money: true },
+      { header: 'Estimated Shipping Cost', width: 24, money: true },
+      { header: 'Actual Shipping Cost', width: 22, money: true },
+      { header: 'Additional Cost', width: 18, money: true },
+      { header: 'Total Cost', width: 16, money: true },
+      { header: 'Gross Profit', width: 16, money: true },
     ];
-    const rows = orders.map((order) => this.buildOrderCsvRow(order));
 
-    return [
-      `\uFEFF${this.buildCsvRow(headers)}`,
-      ...rows.map((row) => this.buildCsvRow(row)),
-    ].join('\n');
+    return buildOrdersExportWorkbook({
+      columns,
+      rows: orders.map((order) => this.buildOrderExportRow(order)),
+      sheetName: this.buildExportSheetName(queryOrdersDto),
+    });
   }
 
-  private buildOrderCsvRow(
+  private buildExportSheetName(queryOrdersDto: QueryOrdersDto): string {
+    const exportDate = this.formatExportDate(new Date());
+    const hasActiveFilter = [
+      queryOrdersDto.search,
+      queryOrdersDto.orderNumber,
+      queryOrdersDto.status,
+      queryOrdersDto.shipmentStatus,
+      queryOrdersDto.hasShipment,
+      queryOrdersDto.hasReplacement,
+      queryOrdersDto.createdFrom,
+      queryOrdersDto.createdTo,
+      queryOrdersDto.createdById,
+    ].some((value) => value !== undefined && String(value).trim().length > 0);
+
+    return hasActiveFilter
+      ? `Filtered Orders ${exportDate}`
+      : `All Orders ${exportDate}`;
+  }
+
+  private formatExportDate(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${month}-${day}-${year}`;
+  }
+
+  private buildOrderExportRow(
     order: OrderListRecord,
   ): Array<string | number | null | undefined> {
     const intakeDetails = this.normalizeIntakeDetails(order.intakeDetails);
@@ -493,7 +527,7 @@ export class OrdersService {
       this.getJsonString(intakeDetails, 'orderDate'),
       this.formatDateTime(order.createdAt),
       this.formatDateTime(order.updatedAt),
-      order.status,
+      this.formatExportOrderStatus(order.status),
       order.customerName,
       order.customerPhone,
       order.customerEmail,
@@ -505,8 +539,8 @@ export class OrdersService {
       this.getJsonString(intakeDetails, 'vehicleVin'),
       order.partDescription,
       order.quantity,
-      this.formatNumber(order.price),
-      this.formatNumber(order.totalSaleAmount),
+      Number(order.price),
+      Number(order.totalSaleAmount),
       order.currency,
       order.paymentMethod,
       latestShipment?.status ?? '',
@@ -519,14 +553,31 @@ export class OrdersService {
       order.createdBy.name,
       order.createdBy.email,
       order.createdBy.role,
-      this.formatNullableNumber(estimatedPartCost),
-      this.formatNullableNumber(actualPartCost),
-      this.formatNullableNumber(estimatedShippingCost),
-      this.formatNullableNumber(actualShippingCost),
-      this.formatNumber(additionalCost),
-      this.formatNumber(totalCost),
-      this.formatNumber(grossProfit),
+      estimatedPartCost,
+      actualPartCost,
+      estimatedShippingCost,
+      actualShippingCost,
+      additionalCost,
+      totalCost,
+      grossProfit,
     ];
+  }
+
+  private formatExportOrderStatus(status: string): string {
+    if (status === OrderStatus.PARTIALLY_PAID) {
+      return OrderStatus.PARTIALLY_PAID;
+    }
+
+    if (
+      status === OrderStatus.CONFIRMED ||
+      status === OrderStatus.PROCESSING ||
+      status === OrderStatus.SHIPPED ||
+      status === OrderStatus.DELIVERED
+    ) {
+      return 'paid';
+    }
+
+    return '';
   }
 
   private resolveAdditionalCost(
@@ -594,28 +645,6 @@ export class OrdersService {
     }
 
     return null;
-  }
-
-  private buildCsvRow(values: Array<string | number | null | undefined>): string {
-    return values
-      .map((value) => {
-        const stringValue =
-          value === null || value === undefined ? '' : String(value);
-        const escapedValue = stringValue.replace(/"/g, '""');
-
-        return /[",\n\r]/.test(escapedValue)
-          ? `"${escapedValue}"`
-          : escapedValue;
-      })
-      .join(',');
-  }
-
-  private formatNumber(value: Prisma.Decimal | number): string {
-    return this.roundCurrencyAmount(Number(value)).toFixed(2);
-  }
-
-  private formatNullableNumber(value: number | null): string {
-    return value === null ? '' : this.formatNumber(value);
   }
 
   private formatDateTime(value: Date | string | null): string {

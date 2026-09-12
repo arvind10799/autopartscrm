@@ -42,15 +42,15 @@ export const ordersApi = {
     });
   },
 
-  async exportCsv(params: OrdersListQuery): Promise<void> {
+  async exportExcel(params: OrdersListQuery): Promise<void> {
     const normalizedParams = normalizeOrdersListQuery(params);
-    const response = await axiosBrowser.get<Blob>('/api/orders/export.csv', {
+    const response = await axiosBrowser.get<Blob>('/api/orders/export.xlsx', {
       params: normalizedParams,
       responseType: 'blob',
     });
     const filename =
       getDownloadFilename(response.headers['content-disposition']) ??
-      `orders-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      `orders-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
     const url = URL.createObjectURL(response.data);
     const link = document.createElement('a');
 

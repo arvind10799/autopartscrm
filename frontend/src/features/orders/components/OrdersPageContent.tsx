@@ -159,7 +159,7 @@ export function OrdersPageContent() {
     setSelectedOrderId(orderId);
   };
 
-  const handleExportCsv = async () => {
+  const handleExportExcel = async () => {
     const isResolutionShipmentFilter =
       shipmentStatusFilter === 'CANCELLED' ||
       shipmentStatusFilter === REFUNDED_SHIPMENT_STATUS_FILTER;
@@ -172,7 +172,7 @@ export function OrdersPageContent() {
     setIsExporting(true);
 
     try {
-      await ordersApi.exportCsv({
+      await ordersApi.exportExcel({
         page: 1,
         limit: ORDER_PAGE_SIZE,
         search: activeSearch,
@@ -190,7 +190,7 @@ export function OrdersPageContent() {
       });
       toast.success(
         'Orders export started',
-        'The CSV file includes all orders matching the current filters.',
+        'The Excel file includes all orders matching the current filters.',
       );
     } catch (error) {
       toast.error(
@@ -302,10 +302,10 @@ export function OrdersPageContent() {
                   variant="outline"
                   className="h-11 w-full whitespace-nowrap rounded-xl px-5 font-semibold sm:w-auto"
                   disabled={isExporting}
-                  onClick={() => void handleExportCsv()}
+                  onClick={() => void handleExportExcel()}
                 >
                   <Download className="h-4 w-4" />
-                  {isExporting ? 'Exporting...' : 'Export CSV'}
+                  {isExporting ? 'Exporting...' : 'Export Excel'}
                 </Button>
 
                 <Button
