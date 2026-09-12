@@ -1099,7 +1099,7 @@ export class InvoicesService {
 
   private buildInvoiceItemDescription(order: InvoiceOrder): string {
     const intakeDetails = this.normalizeIntakeDetails(order.intakeDetails);
-    const vehiclePartDescription = this.buildVehiclePartDescription(order);
+    const vehiclePartDescription = this.buildInvoiceItemTitle(order);
     const partDescriptionNotes = this.getString(intakeDetails.vehicleNotes);
     const vehicleVin = this.getString(intakeDetails.vehicleVin);
 
@@ -1110,6 +1110,18 @@ export class InvoicesService {
     ]
       .filter(Boolean)
       .join('\n\n');
+  }
+
+  private buildInvoiceItemTitle(order: InvoiceOrder): string {
+    const intakeDetails = this.normalizeIntakeDetails(order.intakeDetails);
+    const parts = [
+      this.getString(intakeDetails.vehicleYear),
+      this.getString(intakeDetails.vehicleMake),
+      this.getString(intakeDetails.vehicleModel),
+      this.getString(intakeDetails.vehicleVariant),
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(' ') : order.partDescription;
   }
 
   private normalizeIntakeDetails(value: Prisma.JsonValue): Record<string, unknown> {
