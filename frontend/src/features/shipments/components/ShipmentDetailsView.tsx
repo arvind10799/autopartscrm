@@ -190,6 +190,7 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
       currency={shipment.order.currency}
       cost={shipmentCost}
       saleMetricLabel={invoiceOrder?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+      paymentProcessingFee={shipmentFinancialSummary?.paymentProcessingFee}
       grossProfitOverride={shipmentFinancialSummary?.grossProfitOverride}
       refundDetails={
         invoiceOrder?.status === 'REFUNDED'

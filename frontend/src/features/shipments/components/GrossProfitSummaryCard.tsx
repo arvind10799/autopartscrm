@@ -69,6 +69,7 @@ export function GrossProfitSummaryCard({
   currency,
   cost,
   saleMetricLabel = 'Sale',
+  paymentProcessingFee = 0,
   grossProfitOverride,
   refundDetails,
   additionalCosts = [],
@@ -86,6 +87,7 @@ export function GrossProfitSummaryCard({
   currency: string;
   cost: ShipmentCostLike;
   saleMetricLabel?: string;
+  paymentProcessingFee?: number;
   grossProfitOverride?: number;
   refundDetails?: RefundDetailsLike | null;
   additionalCosts?: ShipmentAdditionalCostLike[];
@@ -139,6 +141,7 @@ export function GrossProfitSummaryCard({
   const grossProfit = grossProfitOverride ?? totalSaleAmount - totalCosts;
   const grossProfitTone =
     grossProfit >= 0 ? 'text-emerald-600' : 'text-destructive';
+  const hasPaymentProcessingFee = paymentProcessingFee > 0;
   const canOpenForm = canAddAdditionalCost && Boolean(shipmentId) && Boolean(cost);
   const canOpenBaseEditForm =
     canEditBaseCost && Boolean(shipmentId) && Boolean(cost);
@@ -483,6 +486,21 @@ export function GrossProfitSummaryCard({
                 value={formatCurrency(totalSaleAmount, displayCurrency)}
               />
             ) : null}
+            {hasPaymentProcessingFee ? (
+              <>
+                <GpMetric
+                  label="Processing fee"
+                  value={`-${formatCurrency(paymentProcessingFee, displayCurrency)}`}
+                  hint="2% Credit Card / Invoice"
+                />
+                {!hasRefundDetails ? (
+                  <GpMetric
+                    label="GP sale basis"
+                    value={formatCurrency(totalSaleAmount, displayCurrency)}
+                  />
+                ) : null}
+              </>
+            ) : null}
             <GpMetric
               label={hasActualPurchaseAmount ? 'Part cost' : 'Est. part cost'}
               value={formatCurrency(effectivePurchaseAmount, displayCurrency)}
@@ -509,7 +527,9 @@ export function GrossProfitSummaryCard({
               ? 'deduction amount - part cost - actual shipping cost - additional costs.'
               : refundDetails?.refundType === 'FULL'
                 ? 'retained amount - part cost - actual shipping cost - additional costs.'
-                : 'sale - effective part cost - effective shipping cost - additional costs.'}
+                : hasPaymentProcessingFee
+                  ? 'sale after 2% processing fee - effective part cost - effective shipping cost - additional costs.'
+                  : 'sale - effective part cost - effective shipping cost - additional costs.'}
           </p>
 
           {hasRefundDetails ? (

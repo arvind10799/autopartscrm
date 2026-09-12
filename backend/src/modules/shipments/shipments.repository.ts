@@ -37,6 +37,7 @@ const shipmentSummarySelect = {
       partDescription: true,
       status: true,
       totalSaleAmount: true,
+      paymentMethod: true,
       currency: true,
       intakeDetails: true,
       createdBy: {

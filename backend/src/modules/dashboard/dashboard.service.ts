@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   LeadStatus,
+  OrderPaymentMethod,
   OrderStatus,
   Prisma,
   Role,
@@ -22,6 +23,11 @@ const COMPLETED_SALE_STATUSES = [
   OrderStatus.SHIPPED,
   OrderStatus.DELIVERED,
 ] satisfies OrderStatus[];
+const PAYMENT_PROCESSING_FEE_RATE = 0.02;
+const PAYMENT_PROCESSING_FEE_METHODS = new Set<OrderPaymentMethod>([
+  OrderPaymentMethod.CREDIT_CARD,
+  OrderPaymentMethod.INVOICE,
+]);
 
 type AgentMetric = {
   agentId: string;
@@ -125,6 +131,7 @@ export class DashboardService {
           id: true,
           createdById: true,
           totalSaleAmount: true,
+          paymentMethod: true,
           shipments: {
             orderBy: {
               createdAt: 'desc',
@@ -549,6 +556,7 @@ export class DashboardService {
 
   private calculateOrderGrossProfit(order: {
     totalSaleAmount: Prisma.Decimal;
+    paymentMethod: OrderPaymentMethod | null;
     shipments: Array<{
       costs: Array<{
         purchaseAmount: Prisma.Decimal;
@@ -564,7 +572,10 @@ export class DashboardService {
       }>;
     }>;
   }): number {
-    const saleAmount = Number(order.totalSaleAmount);
+    const saleAmount = this.getGpSaleBasis(
+      order.totalSaleAmount,
+      order.paymentMethod,
+    );
     const shipment = order.shipments[0];
     const cost = shipment?.costs[0];
 
@@ -587,6 +598,19 @@ export class DashboardService {
         : Number(cost.additionalAmount);
 
     return saleAmount - effectivePurchaseAmount - effectiveShippingAmount - additionalAmount;
+  }
+
+  private getGpSaleBasis(
+    totalSaleAmount: Prisma.Decimal,
+    paymentMethod: OrderPaymentMethod | null,
+  ): number {
+    const saleAmount = Number(totalSaleAmount);
+
+    if (!paymentMethod || !PAYMENT_PROCESSING_FEE_METHODS.has(paymentMethod)) {
+      return saleAmount;
+    }
+
+    return Math.max(saleAmount - saleAmount * PAYMENT_PROCESSING_FEE_RATE, 0);
   }
 
   private resolveSalesOverviewPeriod(month?: string) {

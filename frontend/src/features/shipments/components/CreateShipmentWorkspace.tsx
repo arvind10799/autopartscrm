@@ -338,6 +338,7 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
           currency={order.currency}
           cost={latestShipmentCost}
           saleMetricLabel={order.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+          paymentProcessingFee={financialSummary.paymentProcessingFee}
           grossProfitOverride={financialSummary.grossProfitOverride}
           refundDetails={
             order.status === 'REFUNDED'

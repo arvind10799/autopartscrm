@@ -514,6 +514,7 @@ export function ReplacementDetailsView({
             currency={order?.currency ?? replacement.order.currency}
             cost={gpShipmentCost}
             saleMetricLabel={order?.status === 'REFUNDED' ? 'Refund retained' : 'Sale'}
+            paymentProcessingFee={financialSummary?.paymentProcessingFee}
             grossProfitOverride={financialSummary?.grossProfitOverride}
             refundDetails={
               order?.status === 'REFUNDED'

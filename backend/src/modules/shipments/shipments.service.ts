@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
+  OrderPaymentMethod,
   Prisma,
   ShipmentStatus as PrismaShipmentStatus,
 } from '@prisma/client';
@@ -64,6 +65,11 @@ const ALLOWED_STATUS_TRANSITIONS: Record<
   [PrismaShipmentStatus.DELIVERED]: [],
   [PrismaShipmentStatus.CANCELLED]: [],
 };
+const PAYMENT_PROCESSING_FEE_RATE = new Prisma.Decimal(0.02);
+const PAYMENT_PROCESSING_FEE_METHODS = new Set<OrderPaymentMethod>([
+  OrderPaymentMethod.CREDIT_CARD,
+  OrderPaymentMethod.INVOICE,
+]);
 
 @Injectable()
 export class ShipmentsService {
@@ -95,6 +101,7 @@ export class ShipmentsService {
     await this.upsertShipmentCostIfNeeded(
       shipment.id,
       shipment.order.totalSaleAmount,
+      shipment.order.paymentMethod,
       shipment.order.currency,
       createShipmentDto,
       shipment.costs[0] ?? null,
@@ -171,6 +178,7 @@ export class ShipmentsService {
       await this.upsertShipmentCostIfNeeded(
         shipment.id,
         shipment.order.totalSaleAmount,
+        shipment.order.paymentMethod,
         shipment.order.currency,
         updateShipmentStatusDto,
         existingCost,
@@ -255,6 +263,7 @@ export class ShipmentsService {
     await this.upsertShipmentCostIfNeeded(
       shipment.id,
       shipment.order.totalSaleAmount,
+      shipment.order.paymentMethod,
       shipment.order.currency,
       updateShipmentStatusDto,
       shipment.costs[0] ?? existingCost,
@@ -332,6 +341,7 @@ export class ShipmentsService {
   private async upsertShipmentCostIfNeeded(
     shipmentId: string,
     totalSaleAmount: Prisma.Decimal,
+    paymentMethod: OrderPaymentMethod | null,
     currency: string,
     payload: Pick<
       CreateShipmentDto | UpdateShipmentStatusDto,
@@ -380,7 +390,7 @@ export class ShipmentsService {
     const effectiveShippingAmount = hasActualShippingAmount
       ? shippingAmount
       : estimatedShippingAmount;
-    const grossProfit = new Prisma.Decimal(totalSaleAmount)
+    const grossProfit = this.resolveGpSaleBasis(totalSaleAmount, paymentMethod)
       .sub(effectivePurchaseAmount)
       .sub(effectiveShippingAmount)
       .sub(additionalAmount);
@@ -413,6 +423,19 @@ export class ShipmentsService {
         ...(payload.costNotes !== undefined ? { notes: payload.costNotes } : {}),
       },
     });
+  }
+
+  private resolveGpSaleBasis(
+    totalSaleAmount: Prisma.Decimal,
+    paymentMethod: OrderPaymentMethod | null,
+  ): Prisma.Decimal {
+    if (!paymentMethod || !PAYMENT_PROCESSING_FEE_METHODS.has(paymentMethod)) {
+      return new Prisma.Decimal(totalSaleAmount);
+    }
+
+    return new Prisma.Decimal(totalSaleAmount).sub(
+      new Prisma.Decimal(totalSaleAmount).mul(PAYMENT_PROCESSING_FEE_RATE),
+    );
   }
 
   private hasCostPayload(

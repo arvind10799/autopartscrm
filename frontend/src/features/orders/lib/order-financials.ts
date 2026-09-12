@@ -12,8 +12,15 @@ export type OrderFinancialSummary = {
   retainedPaidAmount: number;
   remainingAmount: number;
   gpSaleBasis: number;
+  paymentProcessingFee: number;
   grossProfitOverride?: number;
 };
+
+const PAYMENT_PROCESSING_FEE_RATE = 0.02;
+const PAYMENT_PROCESSING_FEE_METHODS = new Set<OrderFinancialInput['paymentMethod']>([
+  'CREDIT_CARD',
+  'INVOICE',
+]);
 
 function clampCurrencyAmount(value: number): number {
   if (!Number.isFinite(value)) {
@@ -21,6 +28,20 @@ function clampCurrencyAmount(value: number): number {
   }
 
   return Math.max(value, 0);
+}
+
+function roundCurrencyAmount(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+export function getPaymentProcessingFee(order: OrderFinancialInput): number {
+  if (!PAYMENT_PROCESSING_FEE_METHODS.has(order.paymentMethod)) {
+    return 0;
+  }
+
+  return roundCurrencyAmount(
+    clampCurrencyAmount(order.totalSaleAmount) * PAYMENT_PROCESSING_FEE_RATE,
+  );
 }
 
 export function getOriginalPaidAmount(order: OrderFinancialInput): number {
@@ -81,12 +102,17 @@ export function getOrderFinancialSummary(
   const remainingAmount = isResolvedOrder
     ? 0
     : Math.max(order.totalSaleAmount - originalPaidAmount, 0);
-  const gpSaleBasis =
+  const paymentProcessingFee = getPaymentProcessingFee(order);
+  const baseGpSaleBasis =
     order.status === 'REFUNDED' && order.intakeDetails.refundType === 'PARTIAL'
       ? refundDeductionAmount
       : order.status === 'REFUNDED'
         ? 0
-      : order.totalSaleAmount;
+        : order.totalSaleAmount;
+  const gpSaleBasis = Math.max(
+    roundCurrencyAmount(baseGpSaleBasis - paymentProcessingFee),
+    0,
+  );
 
   return {
     originalPaidAmount,
@@ -95,5 +121,6 @@ export function getOrderFinancialSummary(
     retainedPaidAmount,
     remainingAmount,
     gpSaleBasis,
+    paymentProcessingFee,
   };
 }
