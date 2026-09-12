@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Search, X } from 'lucide-react';
+import { Download, Plus, Search, X } from 'lucide-react';
 import {
   startTransition,
   useDeferredValue,
@@ -24,12 +24,14 @@ import {
   createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
 import { toast } from '@/lib/stores/toast.store';
+import { getErrorMessage } from '@/lib/utils/error';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { ordersApi } from '../api/orders-api';
 import { useOrdersList } from '../hooks/useOrdersList';
 import {
   ALL_SHIPMENT_STATUS_FILTER,
   formatShipmentStatusOptionLabel,
+  ORDER_PAGE_SIZE,
   parseShipmentStatusFilter,
   REFUNDED_SHIPMENT_STATUS_FILTER,
   REPLACEMENT_SHIPMENT_STATUS_FILTER,
@@ -38,6 +40,7 @@ import {
 import {
   ORDER_SHIPMENT_STATUSES,
   type OrderSummary,
+  type OrderStatus,
   type OrderUser,
 } from '../types/order.types';
 import { CreateOrderForm } from './CreateOrderForm';
@@ -70,6 +73,7 @@ export function OrdersPageContent() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const activeSearch = deferredSearchTerm.trim();
   const dateRangeQuery = useMemo(
@@ -153,6 +157,49 @@ export function OrdersPageContent() {
   const handleEditStart = (orderId: string) => {
     setIsCreateModalOpen(false);
     setSelectedOrderId(orderId);
+  };
+
+  const handleExportCsv = async () => {
+    const isResolutionShipmentFilter =
+      shipmentStatusFilter === 'CANCELLED' ||
+      shipmentStatusFilter === REFUNDED_SHIPMENT_STATUS_FILTER;
+    const isReplacementShipmentFilter =
+      shipmentStatusFilter === REPLACEMENT_SHIPMENT_STATUS_FILTER;
+    const resolvedOrderStatus = isResolutionShipmentFilter
+      ? (shipmentStatusFilter as OrderStatus)
+      : undefined;
+
+    setIsExporting(true);
+
+    try {
+      await ordersApi.exportCsv({
+        page: 1,
+        limit: ORDER_PAGE_SIZE,
+        search: activeSearch,
+        status: resolvedOrderStatus,
+        shipmentStatus:
+          shipmentStatusFilter === ALL_SHIPMENT_STATUS_FILTER ||
+          isResolutionShipmentFilter ||
+          isReplacementShipmentFilter
+            ? undefined
+            : shipmentStatusFilter,
+        hasReplacement: isReplacementShipmentFilter || undefined,
+        createdFrom: dateRangeQuery.createdFrom,
+        createdTo: dateRangeQuery.createdTo,
+        createdById,
+      });
+      toast.success(
+        'Orders export started',
+        'The CSV file includes all orders matching the current filters.',
+      );
+    } catch (error) {
+      toast.error(
+        'Export failed',
+        getErrorMessage(error, 'Unable to export orders right now.'),
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleUpdated = (order: OrderSummary) => {
@@ -249,6 +296,17 @@ export function OrdersPageContent() {
                     ))}
                   </Select>
                 </label>
+
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-11 w-full whitespace-nowrap rounded-xl px-5 font-semibold sm:w-auto"
+                  disabled={isExporting}
+                  onClick={() => void handleExportCsv()}
+                >
+                  <Download className="h-4 w-4" />
+                  {isExporting ? 'Exporting...' : 'Export CSV'}
+                </Button>
 
                 <Button
                   size="lg"

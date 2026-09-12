@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Param,
   Patch,
   Post,
@@ -54,6 +55,17 @@ export class OrdersController {
   @Get('agents')
   findOrderAgents() {
     return this.ordersService.findOrderAgents();
+  }
+
+  @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
+  @Get('export.csv')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="orders-export.csv"')
+  exportCsv(
+    @Query() queryOrdersDto: QueryOrdersDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.ordersService.exportCsv(queryOrdersDto, user);
   }
 
   @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)

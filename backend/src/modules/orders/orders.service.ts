@@ -12,7 +12,7 @@ import { LeadsRepository } from '../leads/leads.repository';
 import { NotesService } from '../notes/notes.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersCacheService } from './orders-cache.service';
-import { OrdersRepository } from './orders.repository';
+import { OrderListRecord, OrdersRepository } from './orders.repository';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
@@ -22,10 +22,15 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 @Injectable()
 export class OrdersService {
   private static readonly maxOrderNumberAttempts = 5;
+  private static readonly paymentProcessingFeeRate = 0.02;
 
   private static readonly paymentRequiredStatuses = new Set<string>([
     OrderStatus.PARTIALLY_PAID,
     OrderStatus.CONFIRMED,
+  ]);
+  private static readonly paymentProcessingFeeMethods = new Set<string>([
+    OrderPaymentMethod.CREDIT_CARD,
+    OrderPaymentMethod.INVOICE,
   ]);
 
   constructor(
@@ -94,6 +99,18 @@ export class OrdersService {
     return this.ordersCacheService.rememberList(queryOrdersDto, user, () =>
       this.ordersRepository.findAll(queryOrdersDto, user),
     );
+  }
+
+  async exportCsv(
+    queryOrdersDto: QueryOrdersDto,
+    user: AuthenticatedUser,
+  ): Promise<string> {
+    const orders = await this.ordersRepository.findAllForExport(
+      queryOrdersDto,
+      user,
+    );
+
+    return this.buildOrdersCsv(orders);
   }
 
   async findOne(id: string, user: AuthenticatedUser) {
@@ -390,6 +407,229 @@ export class OrdersService {
       style: 'currency',
       currency: currency || 'USD',
     }).format(amount);
+  }
+
+  private buildOrdersCsv(orders: OrderListRecord[]): string {
+    const headers = [
+      'Order Number',
+      'Sales Number',
+      'Order Date',
+      'Created Date',
+      'Updated Date',
+      'Order Status',
+      'Customer Name',
+      'Customer Phone',
+      'Customer Email',
+      'Billing Address',
+      'Shipping Address',
+      'Vehicle Year',
+      'Vehicle Make',
+      'Vehicle Model',
+      'VIN',
+      'Part Description',
+      'Quantity',
+      'Sale Price',
+      'Total Sale Amount',
+      'Currency',
+      'Payment Method',
+      'Shipping Status',
+      'BOL Number',
+      'Pickup Number',
+      'PRO Number',
+      'Carrier Name',
+      'Shipped At',
+      'Delivered At',
+      'Advisor Name',
+      'Advisor Email',
+      'Advisor Role',
+      'Estimated Part Cost',
+      'Actual Part Cost',
+      'Estimated Shipping Cost',
+      'Actual Shipping Cost',
+      'Additional Cost',
+      'Total Cost',
+      'Gross Profit',
+    ];
+    const rows = orders.map((order) => this.buildOrderCsvRow(order));
+
+    return [
+      `\uFEFF${this.buildCsvRow(headers)}`,
+      ...rows.map((row) => this.buildCsvRow(row)),
+    ].join('\n');
+  }
+
+  private buildOrderCsvRow(
+    order: OrderListRecord,
+  ): Array<string | number | null | undefined> {
+    const intakeDetails = this.normalizeIntakeDetails(order.intakeDetails);
+    const latestShipment = order.shipments[0] ?? null;
+    const latestCost = latestShipment?.costs[0] ?? null;
+    const additionalCost = latestShipment
+      ? this.resolveAdditionalCost(latestShipment)
+      : 0;
+    const estimatedPartCost = latestCost
+      ? Number(latestCost.estimatedPurchaseAmount)
+      : null;
+    const actualPartCost =
+      latestCost?.hasActualPurchaseAmount && latestCost.purchaseAmount
+        ? Number(latestCost.purchaseAmount)
+        : null;
+    const estimatedShippingCost = latestCost
+      ? Number(latestCost.estimatedShippingAmount)
+      : null;
+    const actualShippingCost =
+      latestCost?.hasActualShippingAmount && latestCost.shippingAmount
+        ? Number(latestCost.shippingAmount)
+        : null;
+    const effectivePartCost = actualPartCost ?? estimatedPartCost ?? 0;
+    const effectiveShippingCost =
+      actualShippingCost ?? estimatedShippingCost ?? 0;
+    const totalCost = effectivePartCost + effectiveShippingCost + additionalCost;
+    const grossProfit = this.resolveGpSaleBasis(order) - totalCost;
+
+    return [
+      order.orderNumber,
+      order.salesNumber,
+      this.getJsonString(intakeDetails, 'orderDate'),
+      this.formatDateTime(order.createdAt),
+      this.formatDateTime(order.updatedAt),
+      order.status,
+      order.customerName,
+      order.customerPhone,
+      order.customerEmail,
+      this.getJsonString(intakeDetails, 'billingAddress'),
+      this.getJsonString(intakeDetails, 'shippingAddress'),
+      this.getJsonString(intakeDetails, 'vehicleYear'),
+      this.getJsonString(intakeDetails, 'vehicleMake'),
+      this.getJsonString(intakeDetails, 'vehicleModel'),
+      this.getJsonString(intakeDetails, 'vehicleVin'),
+      order.partDescription,
+      order.quantity,
+      this.formatNumber(order.price),
+      this.formatNumber(order.totalSaleAmount),
+      order.currency,
+      order.paymentMethod,
+      latestShipment?.status ?? '',
+      latestShipment?.bolNumber ?? '',
+      latestShipment?.pickupNumber ?? '',
+      latestShipment?.proNumber ?? '',
+      latestShipment?.carrierName ?? '',
+      this.formatDateTime(latestShipment?.shippedAt ?? null),
+      this.formatDateTime(latestShipment?.deliveredAt ?? null),
+      order.createdBy.name,
+      order.createdBy.email,
+      order.createdBy.role,
+      this.formatNullableNumber(estimatedPartCost),
+      this.formatNullableNumber(actualPartCost),
+      this.formatNullableNumber(estimatedShippingCost),
+      this.formatNullableNumber(actualShippingCost),
+      this.formatNumber(additionalCost),
+      this.formatNumber(totalCost),
+      this.formatNumber(grossProfit),
+    ];
+  }
+
+  private resolveAdditionalCost(
+    shipment: OrderListRecord['shipments'][number],
+  ): number {
+    if (shipment.additionalCosts.length > 0) {
+      return shipment.additionalCosts.reduce(
+        (total, additionalCost) => total + Number(additionalCost.amount),
+        0,
+      );
+    }
+
+    return Number(shipment.costs[0]?.additionalAmount ?? 0);
+  }
+
+  private resolveGpSaleBasis(order: OrderListRecord): number {
+    const intakeDetails = this.normalizeIntakeDetails(order.intakeDetails);
+    const refundType = this.getJsonString(intakeDetails, 'refundType');
+    const refundDeductionAmount = this.getJsonNumber(
+      intakeDetails,
+      'refundDeductionAmount',
+    );
+    const totalSaleAmount = Number(order.totalSaleAmount);
+    const baseGpSaleBasis =
+      order.status === OrderStatus.REFUNDED && refundType === RefundType.PARTIAL
+        ? refundDeductionAmount ?? 0
+        : order.status === OrderStatus.REFUNDED
+          ? 0
+          : totalSaleAmount;
+    const paymentProcessingFee =
+      order.paymentMethod &&
+      OrdersService.paymentProcessingFeeMethods.has(order.paymentMethod)
+        ? totalSaleAmount * OrdersService.paymentProcessingFeeRate
+        : 0;
+
+    return Math.max(
+      this.roundCurrencyAmount(baseGpSaleBasis - paymentProcessingFee),
+      0,
+    );
+  }
+
+  private getJsonString(
+    objectValue: Record<string, unknown>,
+    key: string,
+  ): string {
+    const value = objectValue[key];
+
+    return typeof value === 'string' ? value : '';
+  }
+
+  private getJsonNumber(
+    objectValue: Record<string, unknown>,
+    key: string,
+  ): number | null {
+    const value = objectValue[key];
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      const parsedValue = Number(value);
+
+      return Number.isFinite(parsedValue) ? parsedValue : null;
+    }
+
+    return null;
+  }
+
+  private buildCsvRow(values: Array<string | number | null | undefined>): string {
+    return values
+      .map((value) => {
+        const stringValue =
+          value === null || value === undefined ? '' : String(value);
+        const escapedValue = stringValue.replace(/"/g, '""');
+
+        return /[",\n\r]/.test(escapedValue)
+          ? `"${escapedValue}"`
+          : escapedValue;
+      })
+      .join(',');
+  }
+
+  private formatNumber(value: Prisma.Decimal | number): string {
+    return this.roundCurrencyAmount(Number(value)).toFixed(2);
+  }
+
+  private formatNullableNumber(value: number | null): string {
+    return value === null ? '' : this.formatNumber(value);
+  }
+
+  private formatDateTime(value: Date | string | null): string {
+    if (!value) {
+      return '';
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+
+    return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+  }
+
+  private roundCurrencyAmount(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 
   private validatePaymentMethodForStatus(

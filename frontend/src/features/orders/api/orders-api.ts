@@ -42,6 +42,26 @@ export const ordersApi = {
     });
   },
 
+  async exportCsv(params: OrdersListQuery): Promise<void> {
+    const normalizedParams = normalizeOrdersListQuery(params);
+    const response = await axiosBrowser.get<Blob>('/api/orders/export.csv', {
+      params: normalizedParams,
+      responseType: 'blob',
+    });
+    const filename =
+      getDownloadFilename(response.headers['content-disposition']) ??
+      `orders-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
+
   async create(payload: CreateOrderInput): Promise<OrderSummary> {
     const requestPayload = createOrderSchema.parse(payload);
     const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
@@ -143,3 +163,15 @@ export const ordersApi = {
     });
   },
 };
+
+function getDownloadFilename(contentDisposition: unknown): string | null {
+  if (typeof contentDisposition !== 'string') {
+    return null;
+  }
+
+  const utf8FilenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const plainFilenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  const filename = utf8FilenameMatch?.[1] ?? plainFilenameMatch?.[1];
+
+  return filename ? decodeURIComponent(filename) : null;
+}

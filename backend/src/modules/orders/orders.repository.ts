@@ -175,6 +175,10 @@ const orderListSelect = {
   },
 } satisfies Prisma.OrderSelect;
 
+export type OrderListRecord = Prisma.OrderGetPayload<{
+  select: typeof orderListSelect;
+}>;
+
 const orderDetailInclude = {
   createdBy: {
     select: {
@@ -422,182 +426,7 @@ export class OrdersRepository {
       queryOrdersDto.page,
       queryOrdersDto.limit,
     );
-
-    const where: Prisma.OrderWhereInput = this.buildOrderAccessWhere(user);
-    const orderNumber = queryOrdersDto.orderNumber?.trim();
-    const search = queryOrdersDto.search?.trim();
-    const createdById = queryOrdersDto.createdById?.trim();
-    const phoneSearchTerms = search ? this.buildPhoneSearchTerms(search) : [];
-
-    if (createdById) {
-      where.createdById = createdById;
-    }
-
-    if (orderNumber) {
-      where.orderNumber = {
-        contains: orderNumber,
-        mode: 'insensitive',
-      };
-    }
-
-    if (queryOrdersDto.status) {
-      where.status = queryOrdersDto.status;
-    }
-
-    if (queryOrdersDto.shipmentStatus) {
-      if (queryOrdersDto.shipmentStatus === PrismaShipmentStatus.PENDING) {
-        where.AND = [
-          ...(Array.isArray(where.AND) ? where.AND : []),
-          {
-            OR: [
-              {
-                shipments: {
-                  none: {},
-                },
-              },
-              {
-                shipments: {
-                  some: {
-                    status: PrismaShipmentStatus.PENDING,
-                  },
-                },
-              },
-            ],
-          },
-        ];
-      } else {
-        where.shipments = {
-          some: {
-            status: queryOrdersDto.shipmentStatus,
-          },
-        };
-      }
-    }
-
-    const hasShipmentFilter = this.normalizeHasShipmentFilter(
-      queryOrdersDto.hasShipment,
-    );
-    const hasReplacementFilter = this.normalizeHasShipmentFilter(
-      queryOrdersDto.hasReplacement,
-    );
-
-    if (hasReplacementFilter) {
-      where.AND = [
-        ...(Array.isArray(where.AND) ? where.AND : []),
-        {
-          replacementRequests: {
-            some: {},
-          },
-        },
-      ];
-    }
-
-    if (hasShipmentFilter !== undefined && !queryOrdersDto.shipmentStatus) {
-      if (hasShipmentFilter) {
-        where.shipments = { some: {} };
-      } else {
-        where.AND = [
-          ...(Array.isArray(where.AND) ? where.AND : []),
-          {
-            OR: [
-              {
-                shipments: {
-                  none: {},
-                },
-              },
-              {
-                shipments: {
-                  some: {
-                    status: {
-                      in: SHIPMENT_WORKFLOW_STATUSES,
-                    },
-                  },
-                },
-              },
-            ],
-          },
-        ];
-      }
-    }
-
-    const createdAtFilter = buildCreatedAtFilter(
-      queryOrdersDto.createdFrom,
-      queryOrdersDto.createdTo,
-    );
-
-    if (createdAtFilter) {
-      where.createdAt = createdAtFilter;
-    }
-
-    if (search) {
-      if (this.isExactSalesNumberSearch(search)) {
-        where.salesNumber = {
-          equals: search,
-          mode: 'insensitive',
-        };
-      } else {
-        where.OR = [
-          {
-            orderNumber: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            salesNumber: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            customerName: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            partDescription: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            customerEmail: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          ...phoneSearchTerms.map((phoneSearchTerm) => ({
-            customerPhone: {
-              contains: phoneSearchTerm,
-              mode: 'insensitive' as const,
-            },
-          })),
-          {
-            createdBy: {
-              name: {
-                contains: search,
-                mode: 'insensitive',
-              },
-            },
-          },
-          {
-            createdBy: {
-              email: {
-                contains: search,
-                mode: 'insensitive',
-              },
-            },
-          },
-          {
-            intakeDetails: {
-              path: ['advisorName'],
-              string_contains: search,
-            },
-          },
-        ];
-      }
-    }
+    const where = this.buildFindAllWhere(queryOrdersDto, user);
 
     const [data, total] = await this.prismaService.$transaction([
       this.prismaService.order.findMany({
@@ -613,6 +442,19 @@ export class OrdersRepository {
     ]);
 
     return createPaginatedResponse(data, total, page, limit);
+  }
+
+  findAllForExport(
+    queryOrdersDto: QueryOrdersDto,
+    user: AuthenticatedUser,
+  ): Promise<OrderListRecord[]> {
+    return this.prismaService.order.findMany({
+      where: this.buildFindAllWhere(queryOrdersDto, user),
+      select: orderListSelect,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 
   async findOne(id: string, user: AuthenticatedUser) {
@@ -819,6 +661,189 @@ export class OrdersRepository {
     }
 
     return {};
+  }
+
+  private buildFindAllWhere(
+    queryOrdersDto: QueryOrdersDto,
+    user: AuthenticatedUser,
+  ): Prisma.OrderWhereInput {
+    const where: Prisma.OrderWhereInput = this.buildOrderAccessWhere(user);
+    const orderNumber = queryOrdersDto.orderNumber?.trim();
+    const search = queryOrdersDto.search?.trim();
+    const createdById = queryOrdersDto.createdById?.trim();
+    const phoneSearchTerms = search ? this.buildPhoneSearchTerms(search) : [];
+
+    if (createdById) {
+      where.createdById = createdById;
+    }
+
+    if (orderNumber) {
+      where.orderNumber = {
+        contains: orderNumber,
+        mode: 'insensitive',
+      };
+    }
+
+    if (queryOrdersDto.status) {
+      where.status = queryOrdersDto.status;
+    }
+
+    if (queryOrdersDto.shipmentStatus) {
+      if (queryOrdersDto.shipmentStatus === PrismaShipmentStatus.PENDING) {
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : []),
+          {
+            OR: [
+              {
+                shipments: {
+                  none: {},
+                },
+              },
+              {
+                shipments: {
+                  some: {
+                    status: PrismaShipmentStatus.PENDING,
+                  },
+                },
+              },
+            ],
+          },
+        ];
+      } else {
+        where.shipments = {
+          some: {
+            status: queryOrdersDto.shipmentStatus,
+          },
+        };
+      }
+    }
+
+    const hasShipmentFilter = this.normalizeHasShipmentFilter(
+      queryOrdersDto.hasShipment,
+    );
+    const hasReplacementFilter = this.normalizeHasShipmentFilter(
+      queryOrdersDto.hasReplacement,
+    );
+
+    if (hasReplacementFilter) {
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          replacementRequests: {
+            some: {},
+          },
+        },
+      ];
+    }
+
+    if (hasShipmentFilter !== undefined && !queryOrdersDto.shipmentStatus) {
+      if (hasShipmentFilter) {
+        where.shipments = { some: {} };
+      } else {
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : []),
+          {
+            OR: [
+              {
+                shipments: {
+                  none: {},
+                },
+              },
+              {
+                shipments: {
+                  some: {
+                    status: {
+                      in: SHIPMENT_WORKFLOW_STATUSES,
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ];
+      }
+    }
+
+    const createdAtFilter = buildCreatedAtFilter(
+      queryOrdersDto.createdFrom,
+      queryOrdersDto.createdTo,
+    );
+
+    if (createdAtFilter) {
+      where.createdAt = createdAtFilter;
+    }
+
+    if (search) {
+      if (this.isExactSalesNumberSearch(search)) {
+        where.salesNumber = {
+          equals: search,
+          mode: 'insensitive',
+        };
+      } else {
+        where.OR = [
+          {
+            orderNumber: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            salesNumber: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            customerName: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            partDescription: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            customerEmail: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          ...phoneSearchTerms.map((phoneSearchTerm) => ({
+            customerPhone: {
+              contains: phoneSearchTerm,
+              mode: 'insensitive' as const,
+            },
+          })),
+          {
+            createdBy: {
+              name: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+          {
+            createdBy: {
+              email: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+          {
+            intakeDetails: {
+              path: ['advisorName'],
+              string_contains: search,
+            },
+          },
+        ];
+      }
+    }
+
+    return where;
   }
 
   private normalizeHasShipmentFilter(value: unknown): boolean | undefined {
