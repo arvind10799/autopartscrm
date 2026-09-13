@@ -345,6 +345,16 @@ export class InvoiceMailService {
       });
 
     document
+      .fontSize(11)
+      .fillColor('#56575c')
+      .font('Helvetica-Bold')
+      .text('Shipping Vendor:', left + 10, 222)
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor('#111827')
+      .text(invoice.shippingVendor || 'LTL', left + 116, 223, { width: 168 });
+
+    document
       .moveTo(309, 160)
       .lineTo(309, 252)
       .lineWidth(1.5)
@@ -355,19 +365,11 @@ export class InvoiceMailService {
     this.drawLabelValue(document, 'Billing Address:', invoice.billingAddress, 330, 158);
     this.drawCompactLabelValue(
       document,
-      'Shipping Vendor:',
-      invoice.shippingVendor || 'LTL',
-      330,
-      222,
-      92,
-    );
-    this.drawCompactLabelValue(
-      document,
       'Contact Number:',
       invoice.contactNumber,
-      478,
+      330,
       222,
-      88,
+      188,
     );
 
     document
