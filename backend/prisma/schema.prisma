@@ -415,15 +415,3 @@ model Notification {
   @@index([recipientUserId, isRead, clearedAt])
   @@index([entityType, entityId])
 }
-
-model RingCentralCallEvent {
-  id                 String   @id @default(uuid()) @db.Uuid
-  telephonySessionId String   @unique @db.VarChar(160)
-  callerPhone        String   @db.VarChar(40)
-  matchedRecordType  String?  @db.VarChar(20)
-  matchedRecordId    String?  @db.Uuid
-  createdAt          DateTime @default(now())
-
-  @@index([createdAt])
-  @@index([matchedRecordType, matchedRecordId])
-}

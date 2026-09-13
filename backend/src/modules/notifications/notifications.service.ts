@@ -233,28 +233,6 @@ export class NotificationsService {
     }
   }
 
-  async notifyIncomingCustomerCall(options: {
-    customerName: string;
-    callerPhone: string;
-    recordType: 'order' | 'lead';
-    recordId: string;
-    recordLabel: string;
-  }) {
-    const recipients = await this.findUserIdsByRoles([Role.ADMIN, Role.SALES]);
-    const entityType =
-      options.recordType === 'order'
-        ? NOTIFICATION_ENTITY_TYPES.ORDER
-        : NOTIFICATION_ENTITY_TYPES.LEAD;
-
-    await this.createForRecipients(recipients, {
-      type: NOTIFICATION_TYPES.INCOMING_CUSTOMER_CALL,
-      title: `Incoming call: ${options.customerName}`,
-      message: `${options.callerPhone} matches ${options.recordType} ${options.recordLabel}.`,
-      entityType,
-      entityId: options.recordId,
-    });
-  }
-
   private async createForRecipients(
     recipientIds: string[],
     payload: NotificationPayload,
@@ -275,7 +253,7 @@ export class NotificationsService {
 
   private async findUserIdsByRoles(roles: Role[]) {
     const users = await this.prismaService.user.findMany({
-      where: { role: { in: roles }, isActive: true },
+      where: { role: { in: roles } },
       select: { id: true },
     });
 

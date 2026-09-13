@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, CheckCheck, Loader2, PhoneIncoming, Trash2, X } from 'lucide-react';
+import { Bell, CheckCheck, Loader2, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,7 @@ import { formatDateTime } from '@/features/orders/lib/order-formatters';
 import { notificationsApi } from '../api/notifications-api';
 import type { AppNotification } from '../types/notification.types';
 
-const POLL_INTERVAL_MS = 10000;
-const INCOMING_CALL_NOTIFICATION_TYPE = 'INCOMING_CUSTOMER_CALL';
-const DISMISSED_CALL_NOTIFICATION_KEY = 'crm-dismissed-call-notifications';
+const POLL_INTERVAL_MS = 45000;
 
 export function NotificationBell() {
   const router = useRouter();
@@ -23,8 +21,6 @@ export function NotificationBell() {
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [incomingCallNotification, setIncomingCallNotification] =
-    useState<AppNotification | null>(null);
 
   const refreshNotifications = async () => {
     setError(null);
@@ -35,14 +31,6 @@ export function NotificationBell() {
       ]);
       setNotifications(items);
       setUnreadCount(unread.count);
-      setIncomingCallNotification(
-        items.find(
-          (item) =>
-            item.type === INCOMING_CALL_NOTIFICATION_TYPE &&
-            !item.isRead &&
-            !isCallNotificationDismissed(item.id),
-        ) ?? null,
-      );
     } catch {
       setError('Unable to load notifications.');
     }
@@ -134,62 +122,8 @@ export function NotificationBell() {
     }
   };
 
-  const handleDismissIncomingCall = async () => {
-    if (!incomingCallNotification) {
-      return;
-    }
-
-    rememberDismissedCallNotification(incomingCallNotification.id);
-    setIncomingCallNotification(null);
-    await notificationsApi.markRead(incomingCallNotification.id).catch(
-      () => undefined,
-    );
-    void refreshNotifications();
-  };
-
   return (
     <div ref={containerRef} className="relative">
-      {incomingCallNotification ? (
-        <div className="fixed right-4 top-20 z-[80] w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-sky-300/40 bg-slate-950 text-white shadow-2xl shadow-slate-950/35 ring-1 ring-white/10">
-          <div className="flex items-start gap-3 border-b border-white/10 bg-sky-500/10 px-4 py-4">
-            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-400/20 text-sky-200">
-              <PhoneIncoming className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-200">
-                Existing customer call
-              </p>
-              <h2 className="mt-1 truncate text-base font-black">
-                {incomingCallNotification.title.replace(/^Incoming call:\s*/i, '')}
-              </h2>
-            </div>
-            <button
-              type="button"
-              className="rounded-lg p-1 text-slate-400 transition hover:bg-white/10 hover:text-white"
-              aria-label="Dismiss incoming call notification"
-              onClick={() => {
-                void handleDismissIncomingCall();
-              }}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="space-y-4 px-4 py-4">
-            <p className="text-sm leading-6 text-slate-300">
-              {incomingCallNotification.message}
-            </p>
-            <Button
-              className="h-11 w-full rounded-2xl bg-[#ff5a00] text-sm font-black text-white shadow-lg shadow-orange-950/30 hover:bg-[#e65000]"
-              onClick={() => {
-                void handleOpenNotification(incomingCallNotification);
-                setIncomingCallNotification(null);
-              }}
-            >
-              Open CRM Record
-            </Button>
-          </div>
-        </div>
-      ) : null}
       <Button
         variant="outline"
         size="sm"
@@ -326,45 +260,5 @@ function resolveNotificationHref(notification: AppNotification): string {
     return `/orders/${notification.entityId}`;
   }
 
-  if (notification.entityType === 'LEAD') {
-    return '/leads';
-  }
-
   return '/dashboard';
-}
-
-function getDismissedCallNotificationIds(): string[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(
-      window.sessionStorage.getItem(DISMISSED_CALL_NOTIFICATION_KEY) ?? '[]',
-    );
-
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function isCallNotificationDismissed(id: string): boolean {
-  return getDismissedCallNotificationIds().includes(id);
-}
-
-function rememberDismissedCallNotification(id: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const nextIds = [...new Set([...getDismissedCallNotificationIds(), id])].slice(
-    -50,
-  );
-  window.sessionStorage.setItem(
-    DISMISSED_CALL_NOTIFICATION_KEY,
-    JSON.stringify(nextIds),
-  );
 }
