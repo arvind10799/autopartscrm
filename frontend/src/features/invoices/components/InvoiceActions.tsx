@@ -2661,7 +2661,7 @@ const INVOICE_DOCUMENT_CSS = `
 
   .invoice-address-cell {
     display: grid;
-    grid-template-rows: 1fr 38px;
+    grid-template-rows: 1fr 22px;
     padding: 8px 8px 7px;
     gap: 8px;
     background: rgba(248, 248, 239, 0.58);

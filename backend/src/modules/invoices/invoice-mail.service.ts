@@ -344,15 +344,14 @@ export class InvoiceMailService {
         lineGap: 2,
       });
 
-    document
-      .fontSize(11)
-      .fillColor('#56575c')
-      .font('Helvetica-Bold')
-      .text('Shipping Vendor:', left + 10, 222)
-      .font('Helvetica')
-      .fontSize(8)
-      .fillColor('#111827')
-      .text(invoice.shippingVendor || 'LTL', left + 116, 223, { width: 168 });
+    this.drawCompactLabelValue(
+      document,
+      'Shipping Vendor:',
+      invoice.shippingVendor || 'LTL',
+      left + 10,
+      222,
+      168,
+    );
 
     document
       .moveTo(309, 160)
