@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requestBackend } from '@/lib/api/backend-api';
+import { AutoCloseLookupMiss } from './AutoCloseLookupMiss';
 
 type CustomerLookupMatch = {
   exists: true;
@@ -34,6 +35,10 @@ export default async function RingCentralCustomerLookupPage({
   const token = params.token ?? '';
   const result = await loadCustomerLookup(phone, token);
 
+  if (result.success && result.data && !result.data.exists) {
+    return <AutoCloseLookupMiss />;
+  }
+
   return (
     <section className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-8 text-slate-100">
       <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl shadow-black/30">
@@ -44,7 +49,7 @@ export default async function RingCentralCustomerLookupPage({
           <h1 className="mt-2 text-2xl font-black text-white">
             {result.success && result.data?.exists
               ? 'Existing Customer'
-              : 'New Customer'}
+              : 'Lookup Issue'}
           </h1>
         </div>
 
@@ -57,13 +62,7 @@ export default async function RingCentralCustomerLookupPage({
             />
           ) : result.data?.exists ? (
             <ExistingCustomerCard match={result.data} />
-          ) : (
-            <StatusCard
-              tone="neutral"
-              title="No existing customer found"
-              description={`Caller phone: ${result.data?.phone || phone || 'Not provided'}`}
-            />
-          )}
+          ) : null}
         </div>
       </div>
     </section>
