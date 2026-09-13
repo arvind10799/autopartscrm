@@ -1,0 +1,154 @@
+import {
+  BadRequestException,
+  Injectable,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../database/prisma/prisma.service';
+import { CustomerLookupQueryDto } from './dto/customer-lookup-query.dto';
+
+type CustomerLookupMatch = {
+  exists: true;
+  customerName: string;
+  phone: string | null;
+  recordType: 'order' | 'lead';
+  recordId: string;
+  recordLabel: string;
+  crmUrl: string;
+};
+
+type CustomerLookupMiss = {
+  exists: false;
+  phone: string;
+  message: string;
+};
+
+type CustomerLookupResult = CustomerLookupMatch | CustomerLookupMiss;
+
+type OrderLookupRow = {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string | null;
+  createdAt: Date;
+};
+
+type LeadLookupRow = {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  leadDate: Date;
+};
+
+@Injectable()
+export class RingCentralService {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prismaService: PrismaService,
+  ) {}
+
+  async lookupCustomer(
+    query: CustomerLookupQueryDto,
+  ): Promise<CustomerLookupResult> {
+    this.assertLookupToken(query.token);
+
+    const phoneKey = this.normalizePhoneForLookup(query.phone);
+
+    const order = await this.findLatestOrderByPhone(phoneKey);
+    if (order) {
+      return {
+        exists: true,
+        customerName: order.customerName,
+        phone: order.customerPhone,
+        recordType: 'order',
+        recordId: order.id,
+        recordLabel: order.orderNumber,
+        crmUrl: this.buildCrmUrl(`/orders/${order.id}`),
+      };
+    }
+
+    const lead = await this.findLatestLeadByPhone(phoneKey);
+    if (lead) {
+      return {
+        exists: true,
+        customerName: lead.customerName,
+        phone: lead.customerPhone,
+        recordType: 'lead',
+        recordId: lead.id,
+        recordLabel: 'Lead',
+        crmUrl: this.buildCrmUrl('/leads'),
+      };
+    }
+
+    return {
+      exists: false,
+      phone: query.phone,
+      message: 'No existing customer found.',
+    };
+  }
+
+  private assertLookupToken(token: string) {
+    const configuredToken = this.configService
+      .get<string>('RINGCENTRAL_LOOKUP_TOKEN')
+      ?.trim();
+
+    if (!configuredToken) {
+      throw new ServiceUnavailableException(
+        'RingCentral customer lookup is not configured.',
+      );
+    }
+
+    if (token.trim() !== configuredToken) {
+      throw new UnauthorizedException('Invalid lookup token.');
+    }
+  }
+
+  private normalizePhoneForLookup(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+
+    if (digits.length < 10) {
+      throw new BadRequestException(
+        'Phone number must include at least 10 digits.',
+      );
+    }
+
+    return digits.slice(-10);
+  }
+
+  private async findLatestOrderByPhone(
+    phoneKey: string,
+  ): Promise<OrderLookupRow | null> {
+    const matches = await this.prismaService.$queryRaw<OrderLookupRow[]>`
+      SELECT id, "orderNumber", "customerName", "customerPhone", "createdAt"
+      FROM "Order"
+      WHERE RIGHT(regexp_replace(COALESCE("customerPhone", ''), '[^0-9]', '', 'g'), 10) = ${phoneKey}
+      ORDER BY "createdAt" DESC
+      LIMIT 1
+    `;
+
+    return matches[0] ?? null;
+  }
+
+  private async findLatestLeadByPhone(
+    phoneKey: string,
+  ): Promise<LeadLookupRow | null> {
+    const matches = await this.prismaService.$queryRaw<LeadLookupRow[]>`
+      SELECT id, "customerName", "customerPhone", "leadDate"
+      FROM "Lead"
+      WHERE RIGHT(regexp_replace("customerPhone", '[^0-9]', '', 'g'), 10) = ${phoneKey}
+      ORDER BY "leadDate" DESC
+      LIMIT 1
+    `;
+
+    return matches[0] ?? null;
+  }
+
+  private buildCrmUrl(path: string): string {
+    const baseUrl = this.configService
+      .get<string>('APP_BASE_URL', 'http://localhost:3001')
+      .replace(/\/$/, '');
+
+    return `${baseUrl}${path}`;
+  }
+}

@@ -21,6 +21,7 @@ import { NotesModule } from './modules/notes/notes.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ReplacementsModule } from './modules/replacements/replacements.module';
+import { RingCentralModule } from './modules/ringcentral/ringcentral.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { VehicleLookupModule } from './modules/vehicle-lookup/vehicle-lookup.module';
@@ -36,6 +37,7 @@ import { VehicleLookupModule } from './modules/vehicle-lookup/vehicle-lookup.mod
     LeadsModule,
     OrdersModule,
     ReplacementsModule,
+    RingCentralModule,
     ShipmentsModule,
     CostsModule,
     InvoicesModule,
