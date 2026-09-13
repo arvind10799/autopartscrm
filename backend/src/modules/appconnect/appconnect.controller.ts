@@ -7,6 +7,12 @@ import { FindContactQueryDto } from './dto/find-contact-query.dto';
 export class AppConnectController {
   constructor(private readonly appConnectService: AppConnectService) {}
 
+  @Get('authentication')
+  @ResponseMessage('App Connect authentication completed successfully.')
+  authenticate(@Headers('authorization') authorizationHeader?: string) {
+    return this.appConnectService.authenticate(authorizationHeader);
+  }
+
   @Get('find-contact')
   @ResponseMessage('App Connect contact lookup completed successfully.')
   findContact(

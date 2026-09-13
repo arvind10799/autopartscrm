@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { RingCentralService } from '../ringcentral/ringcentral.service';
 import type {
+  AppConnectAuthenticationResponse,
   AppConnectFindContactResponse,
   AppConnectMatchedContact,
 } from './types/appconnect.types';
@@ -13,6 +14,19 @@ type ExistingLookupResult = Extract<
 @Injectable()
 export class AppConnectService {
   constructor(private readonly ringCentralService: RingCentralService) {}
+
+  authenticate(
+    authorizationHeader?: string,
+  ): AppConnectAuthenticationResponse {
+    this.assertBearerToken(authorizationHeader);
+
+    return {
+      user: {
+        username: 'Mee Auto Parts CRM',
+      },
+      message: 'ok',
+    };
+  }
 
   async findContact(
     phone: string,

@@ -10,3 +10,10 @@ export type AppConnectFindContactResponse = {
   successful: boolean;
   matchedContactInfo: AppConnectMatchedContact[];
 };
+
+export type AppConnectAuthenticationResponse = {
+  user: {
+    username: string;
+  };
+  message: string;
+};
