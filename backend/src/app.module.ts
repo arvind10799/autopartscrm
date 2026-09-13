@@ -12,6 +12,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
 import { RedisModule } from './infrastructure/redis/redis.module';
+import { AppConnectModule } from './modules/appconnect/appconnect.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CostsModule } from './modules/costs/costs.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -38,6 +39,7 @@ import { VehicleLookupModule } from './modules/vehicle-lookup/vehicle-lookup.mod
     OrdersModule,
     ReplacementsModule,
     RingCentralModule,
+    AppConnectModule,
     ShipmentsModule,
     CostsModule,
     InvoicesModule,

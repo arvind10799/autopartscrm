@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { CustomerLookupQueryDto } from './dto/customer-lookup-query.dto';
 
-type CustomerLookupMatch = {
+export type CustomerLookupMatch = {
   exists: true;
   customerName: string;
   phone: string | null;
@@ -18,13 +18,13 @@ type CustomerLookupMatch = {
   crmUrl: string;
 };
 
-type CustomerLookupMiss = {
+export type CustomerLookupMiss = {
   exists: false;
   phone: string;
   message: string;
 };
 
-type CustomerLookupResult = CustomerLookupMatch | CustomerLookupMiss;
+export type CustomerLookupResult = CustomerLookupMatch | CustomerLookupMiss;
 
 type OrderLookupRow = {
   id: string;
@@ -52,7 +52,12 @@ export class RingCentralService {
     query: CustomerLookupQueryDto,
   ): Promise<CustomerLookupResult> {
     this.assertLookupToken(query.token);
-    const phoneKey = this.normalizePhoneForLookup(query.phone);
+
+    return this.lookupCustomerByPhone(query.phone);
+  }
+
+  async lookupCustomerByPhone(phone: string): Promise<CustomerLookupResult> {
+    const phoneKey = this.normalizePhoneForLookup(phone);
 
     const order = await this.findLatestOrderByPhone(phoneKey);
     if (order) {
@@ -82,12 +87,12 @@ export class RingCentralService {
 
     return {
       exists: false,
-      phone: query.phone,
+      phone,
       message: 'No existing customer found.',
     };
   }
 
-  private assertLookupToken(token: string) {
+  assertLookupToken(token: string) {
     const configuredToken = this.configService
       .get<string>('RINGCENTRAL_LOOKUP_TOKEN')
       ?.trim();

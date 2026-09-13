@@ -8,5 +8,6 @@ import { RingCentralService } from './ringcentral.service';
   imports: [ConfigModule, PrismaModule],
   controllers: [RingCentralController],
   providers: [RingCentralService],
+  exports: [RingCentralService],
 })
 export class RingCentralModule {}
