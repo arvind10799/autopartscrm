@@ -345,16 +345,6 @@ export class InvoiceMailService {
       });
 
     document
-      .fontSize(11)
-      .fillColor('#56575c')
-      .font('Helvetica-Bold')
-      .text('Shipping Vendor:', left + 10, 210)
-      .font('Helvetica')
-      .fontSize(8)
-      .fillColor('#111827')
-      .text(invoice.shippingVendor || 'LTL', 280, 211, { width: 40, align: 'right' });
-
-    document
       .moveTo(309, 160)
       .lineTo(309, 252)
       .lineWidth(1.5)
@@ -363,7 +353,22 @@ export class InvoiceMailService {
 
     this.drawLabelValue(document, 'Customer Name:', invoice.customerName, 330, 138);
     this.drawLabelValue(document, 'Billing Address:', invoice.billingAddress, 330, 158);
-    this.drawLabelValue(document, 'Contact Number:', invoice.contactNumber, 330, 222);
+    this.drawCompactLabelValue(
+      document,
+      'Shipping Vendor:',
+      invoice.shippingVendor || 'LTL',
+      330,
+      222,
+      92,
+    );
+    this.drawCompactLabelValue(
+      document,
+      'Contact Number:',
+      invoice.contactNumber,
+      478,
+      222,
+      88,
+    );
 
     document
       .font('Helvetica')
@@ -620,6 +625,25 @@ export class InvoiceMailService {
       .fontSize(8)
       .fillColor('#111827')
       .text(` ${value ?? ''}`, { width: 188 });
+  }
+
+  private drawCompactLabelValue(
+    document: PDFKit.PDFDocument,
+    label: string,
+    value: string | null | undefined,
+    x: number,
+    y: number,
+    valueWidth: number,
+  ) {
+    document
+      .font('Helvetica-Bold')
+      .fontSize(10)
+      .fillColor('#5b5c62')
+      .text(label, x, y, { continued: true })
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor('#111827')
+      .text(` ${value ?? ''}`, { width: valueWidth });
   }
 
   private drawRoundedBox(

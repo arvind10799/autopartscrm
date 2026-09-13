@@ -1167,10 +1167,6 @@ function InvoiceDocument({ invoice }, ref) {
                 {shippingAddress.businessAddress ? <span>{shippingAddress.businessAddress}</span> : null}
               </span>
             </p>
-            <p>
-              <strong>Shipping Vendor :</strong>
-              <span>{invoice.shippingVendor || 'LTL'}</span>
-            </p>
           </div>
           <div className="invoice-address-divider" />
           <div className="invoice-address-cell invoice-address-cell--customer">
@@ -1182,10 +1178,16 @@ function InvoiceDocument({ invoice }, ref) {
               <strong>Billing Address :</strong>
               <span className="invoice-address-value">{invoice.billingAddress || ''}</span>
             </p>
-            <p>
-              <strong>Contact Number :</strong>
-              <span>{invoice.contactNumber || ''}</span>
-            </p>
+            <div className="invoice-address-contact-row">
+              <p>
+                <strong>Shipping Vendor :</strong>
+                <span>{invoice.shippingVendor || 'LTL'}</span>
+              </p>
+              <p>
+                <strong>Contact Number :</strong>
+                <span>{invoice.contactNumber || ''}</span>
+              </p>
+            </div>
           </div>
         </section>
 
@@ -2687,6 +2689,17 @@ const INVOICE_DOCUMENT_CSS = `
     grid-template-columns: max-content minmax(0, 1fr);
     column-gap: 8px;
     align-items: start;
+  }
+
+  .invoice-address-contact-row {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 10px;
+    align-items: start;
+  }
+
+  .invoice-address-contact-row p {
+    column-gap: 5px;
   }
 
   .invoice-address-cell strong,

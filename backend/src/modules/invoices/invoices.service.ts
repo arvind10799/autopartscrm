@@ -104,7 +104,7 @@ export class InvoicesService {
         this.getString(intakeDetails.shippingAddress),
       ),
       shippingVendor: 'LTL',
-      deliveryTimeline: '7-8 Business Days',
+      deliveryTimeline: '9-14 Business Days',
       itemDescription: this.buildInvoiceItemDescription(order),
       vehiclePartDescription: this.buildVehiclePartDescription(order),
       warrantyPartsOnly: DEFAULT_WARRANTY_PARTS_ONLY,

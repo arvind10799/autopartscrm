@@ -167,7 +167,7 @@ model Invoice {
   billingAddress         String?   @db.Text
   shippingAddress        String?   @db.Text
   shippingVendor         String    @default("LTL") @db.VarChar(80)
-  deliveryTimeline       String    @default("7-8 Business Days") @db.VarChar(120)
+  deliveryTimeline       String    @default("9-14 Business Days") @db.VarChar(120)
   itemDescription        String    @db.VarChar(255)
   vehiclePartDescription String?   @db.VarChar(255)
   warrantyPartsOnly      String?   @db.Text
