@@ -23,7 +23,7 @@ export default async function AppConnectLeadPage({
 
   return (
     <AppConnectRecordDetails
-      actionLabel="Open Leads Table"
+      actionLabel={getActionLabel(result.data)}
       detail={result.data}
     />
   );
@@ -45,4 +45,10 @@ async function loadAppConnectRecord(path: string) {
     message: payload.message,
     data: payload.data,
   };
+}
+
+function getActionLabel(detail: AppConnectRecordDetail): string {
+  return detail.crmUrl.includes('/orders/')
+    ? 'Open Order in CRM'
+    : 'Open Leads Table';
 }
