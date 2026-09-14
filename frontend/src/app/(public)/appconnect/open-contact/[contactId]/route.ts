@@ -8,14 +8,14 @@ export async function GET(
 ) {
   const { contactId } = await params;
   const [recordType, recordId] = decodeURIComponent(contactId).split(':', 2);
-  const redirectUrl = new URL('/leads', CRM_BASE_URL);
+  const redirectUrl = new URL('/appconnect/lead/not-found', CRM_BASE_URL);
 
   if (recordType === 'order' && recordId) {
-    redirectUrl.pathname = `/orders/${recordId}`;
+    redirectUrl.pathname = `/appconnect/order/${recordId}`;
   }
 
-  if (recordType === 'lead') {
-    redirectUrl.pathname = '/leads';
+  if (recordType === 'lead' && recordId) {
+    redirectUrl.pathname = `/appconnect/lead/${recordId}`;
   }
 
   return NextResponse.redirect(redirectUrl);
