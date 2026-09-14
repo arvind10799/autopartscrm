@@ -164,11 +164,16 @@ export class AppConnectService {
         quoteCurrency: true,
         status: true,
         leadDate: true,
+        convertedOrderId: true,
       },
     });
 
     if (!lead) {
       throw new NotFoundException('Lead was not found.');
+    }
+
+    if (lead.convertedOrderId) {
+      return this.getOrderDetails(lead.convertedOrderId);
     }
 
     const vehicle = this.joinValues([
@@ -190,7 +195,10 @@ export class AppConnectService {
         { label: 'State', value: this.formatNullable(lead.state) },
         { label: 'Vehicle', value: vehicle || 'Not available' },
         { label: 'Part Description', value: lead.partDescription },
-        { label: 'Quote', value: this.formatCurrency(lead.quote, lead.quoteCurrency) },
+        {
+          label: 'Quote',
+          value: this.formatCurrency(lead.quote, lead.quoteCurrency),
+        },
         { label: 'Status', value: this.formatEnum(lead.status) },
         { label: 'Lead Date', value: this.formatDate(lead.leadDate) },
         { label: 'Advisor', value: lead.adviserName },
