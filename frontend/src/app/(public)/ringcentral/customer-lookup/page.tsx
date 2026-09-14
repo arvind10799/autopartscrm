@@ -10,6 +10,20 @@ type CustomerLookupMatch = {
   recordId: string;
   recordLabel: string;
   crmUrl: string;
+  leadDetails?: {
+    adviserName: string;
+    customerEmail: string | null;
+    state: string | null;
+    partDescription: string;
+    vehicleYear: string | null;
+    vehicleMake: string | null;
+    vehicleModel: string | null;
+    vehicleVariant: string | null;
+    quote: string | null;
+    quoteCurrency: string;
+    status: string;
+    leadDate: string;
+  };
 };
 
 type CustomerLookupMiss = {
@@ -48,7 +62,7 @@ export default async function RingCentralCustomerLookupPage({
           </p>
           <h1 className="mt-2 text-2xl font-black text-white">
             {result.success && result.data?.exists
-              ? 'Existing Customer'
+              ? getLookupTitle(result.data)
               : 'Lookup Issue'}
           </h1>
         </div>
@@ -93,6 +107,10 @@ async function loadCustomerLookup(phone: string, token: string) {
 }
 
 function ExistingCustomerCard({ match }: { match: CustomerLookupMatch }) {
+  if (match.recordType === 'lead') {
+    return <ExistingLeadCard match={match} />;
+  }
+
   return (
     <>
       <dl className="space-y-3 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-4">
@@ -101,6 +119,59 @@ function ExistingCustomerCard({ match }: { match: CustomerLookupMatch }) {
         <LookupRow
           label="Record"
           value={`${capitalize(match.recordType)} · ${match.recordLabel}`}
+        />
+      </dl>
+      <Link
+        href={match.crmUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="flex h-12 items-center justify-center rounded-2xl bg-[#ff5a00] px-5 text-sm font-black text-white shadow-lg shadow-orange-950/30 transition hover:bg-[#e65000]"
+      >
+        Open CRM Record
+      </Link>
+    </>
+  );
+}
+
+function ExistingLeadCard({ match }: { match: CustomerLookupMatch }) {
+  const details = match.leadDetails;
+  const vehicle = [
+    details?.vehicleYear,
+    details?.vehicleMake,
+    details?.vehicleModel,
+    details?.vehicleVariant,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const quote =
+    details?.quote && Number.isFinite(Number(details.quote))
+      ? `${details.quoteCurrency} ${Number(details.quote).toFixed(2)}`
+      : null;
+
+  return (
+    <>
+      <dl className="space-y-3 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-4">
+        <LookupRow label="Lead Name" value={match.customerName} />
+        <LookupRow label="Phone" value={match.phone || 'Not available'} />
+        <LookupRow
+          label="Email"
+          value={details?.customerEmail || 'Not available'}
+        />
+        <LookupRow label="State" value={details?.state || 'Not available'} />
+        <LookupRow label="Vehicle" value={vehicle || 'Not available'} />
+        <LookupRow
+          label="Part Description"
+          value={details?.partDescription || 'Not available'}
+        />
+        <LookupRow label="Quote" value={quote || 'Not available'} />
+        <LookupRow label="Status" value={formatStatus(details?.status)} />
+        <LookupRow
+          label="Lead Date"
+          value={formatLookupDate(details?.leadDate)}
+        />
+        <LookupRow
+          label="Advisor"
+          value={details?.adviserName || 'Not available'}
         />
       </dl>
       <Link
@@ -150,4 +221,38 @@ function LookupRow({ label, value }: { label: string; value: string }) {
 
 function capitalize(value: string): string {
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+}
+
+function getLookupTitle(match: CustomerLookupMatch): string {
+  return match.recordType === 'lead' ? 'Existing Lead' : 'Existing Customer';
+}
+
+function formatStatus(status?: string): string {
+  if (!status) {
+    return 'Not available';
+  }
+
+  return status
+    .toLowerCase()
+    .split('_')
+    .map(capitalize)
+    .join(' ');
+}
+
+function formatLookupDate(value?: string): string {
+  if (!value) {
+    return 'Not available';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
 }

@@ -16,6 +16,20 @@ export type CustomerLookupMatch = {
   recordId: string;
   recordLabel: string;
   crmUrl: string;
+  leadDetails?: {
+    adviserName: string;
+    customerEmail: string | null;
+    state: string | null;
+    partDescription: string;
+    vehicleYear: string | null;
+    vehicleMake: string | null;
+    vehicleModel: string | null;
+    vehicleVariant: string | null;
+    quote: string | null;
+    quoteCurrency: string;
+    status: string;
+    leadDate: Date;
+  };
 };
 
 export type CustomerLookupMiss = {
@@ -36,8 +50,19 @@ type OrderLookupRow = {
 
 type LeadLookupRow = {
   id: string;
+  adviserName: string;
   customerName: string;
   customerPhone: string;
+  customerEmail: string | null;
+  state: string | null;
+  partDescription: string;
+  vehicleYear: string | null;
+  vehicleMake: string | null;
+  vehicleModel: string | null;
+  vehicleVariant: string | null;
+  quote: string | null;
+  quoteCurrency: string;
+  status: string;
   leadDate: Date;
 };
 
@@ -82,6 +107,20 @@ export class RingCentralService {
         recordId: lead.id,
         recordLabel: 'Lead',
         crmUrl: this.buildCrmUrl('/leads'),
+        leadDetails: {
+          adviserName: lead.adviserName,
+          customerEmail: lead.customerEmail,
+          state: lead.state,
+          partDescription: lead.partDescription,
+          vehicleYear: lead.vehicleYear,
+          vehicleMake: lead.vehicleMake,
+          vehicleModel: lead.vehicleModel,
+          vehicleVariant: lead.vehicleVariant,
+          quote: lead.quote,
+          quoteCurrency: lead.quoteCurrency,
+          status: lead.status,
+          leadDate: lead.leadDate,
+        },
       };
     }
 
@@ -138,7 +177,22 @@ export class RingCentralService {
     phoneKey: string,
   ): Promise<LeadLookupRow | null> {
     const matches = await this.prismaService.$queryRaw<LeadLookupRow[]>`
-      SELECT id, "customerName", "customerPhone", "leadDate"
+      SELECT
+        id,
+        "adviserName",
+        "customerName",
+        "customerPhone",
+        "customerEmail",
+        state,
+        "partDescription",
+        "vehicleYear",
+        "vehicleMake",
+        "vehicleModel",
+        "vehicleVariant",
+        CAST(quote AS TEXT) AS quote,
+        "quoteCurrency",
+        status,
+        "leadDate"
       FROM "Lead"
       WHERE RIGHT(regexp_replace("customerPhone", '[^0-9]', '', 'g'), 10) = ${phoneKey}
       ORDER BY "leadDate" DESC
