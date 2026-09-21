@@ -27,6 +27,7 @@ import {
   createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
 import { toast } from '@/lib/stores/toast.store';
+import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
 import {
   ALL_LEAD_CONVERSION_FILTER,
   ALL_LEAD_STATUS_FILTER,
@@ -48,7 +49,7 @@ function buildOrderInitialValues(lead: LeadSummary): Partial<CreateOrderFormValu
 
   return {
     leadId: lead.id,
-    orderDate: lead.date,
+    orderDate: getPacificTodayDateInputValue(),
     customerName: lead.customerName,
     customerEmail: lead.customerEmail ?? undefined,
     customerPhone: lead.customerPhone,
