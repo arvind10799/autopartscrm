@@ -76,6 +76,7 @@ export interface LeadsListQuery {
   status?: LeadStatus;
   createdFrom?: string;
   createdTo?: string;
+  createdById?: string;
 }
 
 export interface CreateLeadInput {

@@ -5,6 +5,7 @@ import { parseApiData } from '@/lib/api/parse-api-data';
 import type { ApiEnvelope } from '@/features/auth/types/auth.types';
 import {
   createLeadSchema,
+  leadAgentsSchema,
   leadsListSchema,
   leadSummarySchema,
   updateLeadSchema,
@@ -12,6 +13,7 @@ import {
 import { normalizeLeadsListQuery } from '../lib/leads.helpers';
 import type {
   CreateLeadInput,
+  LeadUser,
   LeadsListQuery,
   LeadsListResponse,
   LeadSummary,
@@ -41,6 +43,17 @@ export const leadsApi = {
     return parseApiData(response, leadSummarySchema, {
       emptyMessage: response.data.message || 'Create lead response was empty.',
       invalidMessage: 'Create lead response payload was invalid.',
+    });
+  },
+
+  async listAgents(): Promise<LeadUser[]> {
+    const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
+      '/api/leads/agents',
+    );
+
+    return parseApiData(response, leadAgentsSchema, {
+      emptyMessage: response.data.message || 'Lead agents response was empty.',
+      invalidMessage: 'Lead agents response payload was invalid.',
     });
   },
 

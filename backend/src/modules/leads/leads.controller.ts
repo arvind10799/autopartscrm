@@ -42,6 +42,11 @@ export class LeadsController {
     return this.leadsService.findAll(queryLeadsDto, user);
   }
 
+  @Get('agents')
+  findLeadAgents() {
+    return this.leadsService.findLeadAgents();
+  }
+
   @Patch(':id')
   update(
     @Param() params: UuidParamDto,

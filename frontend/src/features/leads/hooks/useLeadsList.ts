@@ -22,6 +22,7 @@ type UseLeadsListOptions = {
   status: LeadStatusFilter;
   createdFrom?: string;
   createdTo?: string;
+  createdById?: string;
   refreshKey: number;
 };
 
@@ -38,6 +39,7 @@ export function useLeadsList({
   status,
   createdFrom,
   createdTo,
+  createdById,
   refreshKey,
 }: UseLeadsListOptions): UseLeadsListResult {
   const [leadsResponse, setLeadsResponse] = useState<LeadsListResponse>(() =>
@@ -60,6 +62,7 @@ export function useLeadsList({
       status: status === ALL_LEAD_STATUS_FILTER ? undefined : status,
       createdFrom,
       createdTo,
+      createdById,
     });
 
     const loadLeads = async () => {
@@ -95,6 +98,7 @@ export function useLeadsList({
     void loadLeads();
   }, [
     converted,
+    createdById,
     createdFrom,
     createdTo,
     page,

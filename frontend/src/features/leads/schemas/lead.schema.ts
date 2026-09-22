@@ -135,6 +135,8 @@ export const leadSummarySchema = leadBackendSummarySchema.transform(
   normalizeLeadSummary,
 );
 
+export const leadAgentsSchema = z.array(leadUserSchema);
+
 export const leadsListSchema = z
   .object({
     items: z.array(leadBackendSummarySchema),

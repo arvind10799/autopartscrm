@@ -23,6 +23,10 @@ export class LeadsService {
     return this.leadsRepository.findAll(queryLeadsDto, user);
   }
 
+  findLeadAgents() {
+    return this.leadsRepository.findLeadAgents();
+  }
+
   async update(
     id: string,
     updateLeadDto: UpdateLeadDto,

@@ -56,6 +56,7 @@ function buildColumns(
   onConvert: (lead: LeadSummary) => void,
   onEdit: (lead: LeadSummary) => void,
   role?: UserRole,
+  currentUserId?: string | null,
 ): ColumnDef<LeadSummary>[] {
   const columns: ColumnDef<LeadSummary>[] = [
     {
@@ -165,8 +166,13 @@ function buildColumns(
       meta: {
         className: 'w-[8%] overflow-hidden px-2 text-right',
       },
-      cell: ({ row }) =>
-        row.original.isConverted && row.original.convertedOrder ? (
+      cell: ({ row }) => {
+        const canManageLead =
+          role === 'ADMIN' ||
+          (role === 'SALES' && row.original.createdBy.id === currentUserId);
+
+        if (row.original.isConverted && row.original.convertedOrder) {
+          return (
           <Link
             href={`/orders/${row.original.convertedOrder.id}`}
             className={cn(
@@ -178,7 +184,14 @@ function buildColumns(
             <ArrowRight className="h-4 w-4" />
             <span className="sr-only">View order</span>
           </Link>
-        ) : (
+          );
+        }
+
+        if (!canManageLead) {
+          return null;
+        }
+
+        return (
           <div className="flex min-w-0 items-center justify-end gap-1">
             <Button
               variant="ghost"
@@ -201,7 +214,8 @@ function buildColumns(
               <span className="sr-only">Convert to order</span>
             </Button>
           </div>
-        ),
+        );
+      },
     },
   ];
 
@@ -247,6 +261,7 @@ export function LeadsTable({
   onConvert,
   onEdit,
   role,
+  currentUserId,
 }: {
   leads: LeadSummary[];
   meta: PaginationMeta;
@@ -257,9 +272,10 @@ export function LeadsTable({
   onConvert: (lead: LeadSummary) => void;
   onEdit: (lead: LeadSummary) => void;
   role?: UserRole;
+  currentUserId?: string | null;
 }) {
   const totalPages = meta.totalPages;
-  const columns = buildColumns(onConvert, onEdit, role);
+  const columns = buildColumns(onConvert, onEdit, role, currentUserId);
 
   return (
     <DataTable
@@ -273,6 +289,9 @@ export function LeadsTable({
       layout="fit"
       renderMobileCard={(lead) => {
         const status = lead.isConverted ? 'CONVERTED' : lead.status;
+        const canManageLead =
+          role === 'ADMIN' ||
+          (role === 'SALES' && lead.createdBy.id === currentUserId);
 
         return (
           <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
@@ -324,7 +343,7 @@ export function LeadsTable({
                   View order
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-              ) : (
+              ) : canManageLead ? (
                 <>
                   <Button
                     variant="outline"
@@ -345,6 +364,10 @@ export function LeadsTable({
                     Convert
                   </Button>
                 </>
+              ) : (
+                <p className="col-span-2 rounded-xl border border-border/70 px-3 py-2 text-center text-xs font-medium text-muted-foreground">
+                  Assigned to another agent
+                </p>
               )}
             </div>
           </article>

@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { LeadStatus } from '../../../common/enums/lead-status.enum';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
@@ -14,4 +14,8 @@ export class QueryLeadsDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(LeadStatus)
   status?: LeadStatus;
+
+  @IsOptional()
+  @IsUUID()
+  createdById?: string;
 }

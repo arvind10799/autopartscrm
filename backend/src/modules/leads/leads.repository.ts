@@ -98,13 +98,20 @@ export class LeadsRepository {
       queryLeadsDto.page,
       queryLeadsDto.limit,
     );
-    const where: Prisma.LeadWhereInput = this.buildLeadAccessWhere(user);
+    const where: Prisma.LeadWhereInput = this.buildLeadAccessWhere(user, {
+      restrictSalesToOwn: false,
+    });
     const search = queryLeadsDto.search?.trim();
     const convertedFilter = this.normalizeConvertedFilter(queryLeadsDto.converted);
+    const createdById = queryLeadsDto.createdById?.trim();
     const leadDateFilter = buildCreatedAtFilter(
       queryLeadsDto.createdFrom,
       queryLeadsDto.createdTo,
     );
+
+    if (createdById) {
+      where.createdById = createdById;
+    }
 
     if (convertedFilter !== undefined) {
       where.convertedAt = convertedFilter ? { not: null } : null;
@@ -327,8 +334,35 @@ export class LeadsRepository {
     }
   }
 
-  private buildLeadAccessWhere(user: AuthenticatedUser): Prisma.LeadWhereInput {
-    if (user.role === Role.SALES) {
+  findLeadAgents() {
+    return this.prismaService.user.findMany({
+      where: {
+        role: {
+          in: [Role.ADMIN, Role.SALES],
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+      orderBy: [
+        {
+          role: 'asc',
+        },
+        {
+          name: 'asc',
+        },
+      ],
+    });
+  }
+
+  private buildLeadAccessWhere(
+    user: AuthenticatedUser,
+    options: { restrictSalesToOwn?: boolean } = { restrictSalesToOwn: true },
+  ): Prisma.LeadWhereInput {
+    if (user.role === Role.SALES && options.restrictSalesToOwn) {
       return {
         createdById: user.userId,
       };

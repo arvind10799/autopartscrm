@@ -25,6 +25,7 @@ export type LeadStatusFilter =
   | LeadStatus;
 
 const positiveIntegerSchema = z.coerce.number().int().min(1);
+const userIdSchema = z.string().uuid();
 const searchTermSchema = z
   .string()
   .trim()
@@ -39,6 +40,7 @@ export type NormalizedLeadsQuery = {
   status?: LeadStatus;
   createdFrom?: string;
   createdTo?: string;
+  createdById?: string;
 };
 
 export function createEmptyLeadsResponse(
@@ -108,6 +110,12 @@ export function formatLeadStatusLabel(value: LeadStatus): string {
   return labels[value];
 }
 
+function parseUserIdFilter(value: string | null | undefined): string | undefined {
+  const parsed = userIdSchema.safeParse(value);
+
+  return parsed.success ? parsed.data : undefined;
+}
+
 export function parseLeadsQueryParams(
   searchParams: URLSearchParams,
 ): NormalizedLeadsQuery {
@@ -120,6 +128,7 @@ export function parseLeadsQueryParams(
   const search = searchTermSchema.catch(undefined).parse(searchParams.get('search'));
   const convertedValue = searchParams.get('converted');
   const status = parseLeadStatusFilter(searchParams.get('status') ?? '');
+  const createdById = parseUserIdFilter(searchParams.get('createdById'));
 
   return {
     page,
@@ -134,6 +143,7 @@ export function parseLeadsQueryParams(
     status: status === ALL_LEAD_STATUS_FILTER ? undefined : status,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
+    createdById,
   };
 }
 
@@ -155,6 +165,10 @@ export function buildLeadsQueryString(query: NormalizedLeadsQuery): string {
     baseSearchParams.set('status', query.status);
   }
 
+  if (query.createdById) {
+    baseSearchParams.set('createdById', query.createdById);
+  }
+
   return buildDateRangeSearchParams(baseSearchParams, query).toString();
 }
 
@@ -172,6 +186,7 @@ export function normalizeLeadsListQuery(input: LeadsListQuery): LeadsListQuery {
     status: input.status,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
+    createdById: parseUserIdFilter(input.createdById),
   };
 }
 

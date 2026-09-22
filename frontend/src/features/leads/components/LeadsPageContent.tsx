@@ -38,11 +38,18 @@ import {
   type LeadConversionFilter,
   type LeadStatusFilter,
 } from '../lib/leads.helpers';
+import { leadsApi } from '../api/leads-api';
 import { useLeadsList } from '../hooks/useLeadsList';
-import type { LeadSummary } from '../types/lead.types';
+import type { LeadSummary, LeadUser } from '../types/lead.types';
 import { LEAD_STATUSES } from '../types/lead.types';
 import { CreateLeadForm } from './CreateLeadForm';
 import { LeadsTable } from './LeadsTable';
+
+const ALL_AGENTS_FILTER = 'ALL';
+
+function formatAgentFilterLabel(agent: LeadUser) {
+  return `${agent.name} (${agent.role === 'ADMIN' ? 'Admin' : 'Sales'})`;
+}
 
 function buildOrderInitialValues(lead: LeadSummary): Partial<CreateOrderFormValues> {
   const quoteValue = lead.quote ?? undefined;
@@ -78,6 +85,8 @@ export function LeadsPageContent() {
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
+  const [agentFilter, setAgentFilter] = useState<string | null>(null);
+  const [leadAgents, setLeadAgents] = useState<LeadUser[]>([]);
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -94,6 +103,32 @@ export function LeadsPageContent() {
     () => buildTimestampRangeQuery(dateFilter),
     [dateFilter],
   );
+  const selectedAgentFilter =
+    agentFilter ?? (authUser?.role === 'SALES' ? authUser.userId : ALL_AGENTS_FILTER);
+  const createdById =
+    selectedAgentFilter === ALL_AGENTS_FILTER ? undefined : selectedAgentFilter;
+  const agentOptions = useMemo(() => {
+    const agents = new Map<string, LeadUser>();
+
+    for (const agent of leadAgents) {
+      agents.set(agent.id, agent);
+    }
+
+    if (
+      authUser &&
+      (authUser.role === 'ADMIN' || authUser.role === 'SALES') &&
+      !agents.has(authUser.userId)
+    ) {
+      agents.set(authUser.userId, {
+        id: authUser.userId,
+        name: authUser.name,
+        email: authUser.email,
+        role: authUser.role,
+      });
+    }
+
+    return Array.from(agents.values());
+  }, [authUser, leadAgents]);
   const { leadsResponse, isLoading, error } = useLeadsList({
     page,
     search: activeSearch,
@@ -101,6 +136,7 @@ export function LeadsPageContent() {
     status: statusFilter,
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
+    createdById,
     refreshKey,
   });
 
@@ -116,6 +152,11 @@ export function LeadsPageContent() {
 
   const handleStatusFilterChange = (value: LeadStatusFilter) => {
     setStatusFilter(value);
+    startTransition(() => setPage(1));
+  };
+
+  const handleAgentFilterChange = (value: string) => {
+    setAgentFilter(value);
     startTransition(() => setPage(1));
   };
 
@@ -175,6 +216,34 @@ export function LeadsPageContent() {
     };
   }, [isCreateModalOpen, selectedConversionLead, selectedEditLead]);
 
+  useEffect(() => {
+    if (authUser?.role !== 'ADMIN' && authUser?.role !== 'SALES') {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadLeadAgents = async () => {
+      try {
+        const agents = await leadsApi.listAgents();
+
+        if (isMounted) {
+          setLeadAgents(agents);
+        }
+      } catch {
+        if (isMounted) {
+          setLeadAgents([]);
+        }
+      }
+    };
+
+    void loadLeadAgents();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authUser?.role]);
+
   return (
     <>
       <section className="grid gap-4">
@@ -199,6 +268,25 @@ export function LeadsPageContent() {
                     inlineCustomLayout="row"
                   />
                 </div>
+
+                <label className="grid w-full gap-2 sm:w-44">
+                  <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                    Agent filter
+                  </span>
+                  <Select
+                    value={selectedAgentFilter}
+                    aria-label="Agent filter"
+                    className="h-11 w-full rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                    onChange={(event) => handleAgentFilterChange(event.target.value)}
+                  >
+                    <option value={ALL_AGENTS_FILTER}>All agents</option>
+                    {agentOptions.map((agent) => (
+                      <option key={agent.id} value={agent.id}>
+                        {formatAgentFilterLabel(agent)}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
 
                 <Button
                   size="lg"
@@ -268,6 +356,7 @@ export function LeadsPageContent() {
               onConvert={handleConvert}
               onEdit={handleEdit}
               role={authUser?.role}
+              currentUserId={authUser?.userId}
             />
           </CardContent>
         </Card>
