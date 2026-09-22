@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Plus, Search, X } from 'lucide-react';
+import { Download, Search, X } from 'lucide-react';
 import {
   startTransition,
   useDeferredValue,
@@ -43,7 +43,6 @@ import {
   type OrderStatus,
   type OrderUser,
 } from '../types/order.types';
-import { CreateOrderForm } from './CreateOrderForm';
 import { OrdersTable } from './OrdersTable';
 import { UpdateOrderForm } from './UpdateOrderForm';
 
@@ -72,7 +71,6 @@ export function OrdersPageContent() {
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const activeSearch = deferredSearchTerm.trim();
@@ -137,25 +135,11 @@ export function OrdersPageContent() {
     startTransition(() => setPage(1));
   };
 
-  const handleCreated = (order: OrderSummary) => {
-    setSearchTerm('');
-    setShipmentStatusFilter(ALL_SHIPMENT_STATUS_FILTER);
-    setSelectedOrderId(null);
-    setIsCreateModalOpen(false);
-    startTransition(() => setPage(1));
-    setRefreshKey((currentValue) => currentValue + 1);
-    toast.success(
-      `Order ${order.orderNumber} created`,
-      'The orders table has been refreshed with the latest backend data.',
-    );
-  };
-
   const handleRetry = () => {
     setRefreshKey((currentValue) => currentValue + 1);
   };
 
   const handleEditStart = (orderId: string) => {
-    setIsCreateModalOpen(false);
     setSelectedOrderId(orderId);
   };
 
@@ -212,7 +196,7 @@ export function OrdersPageContent() {
   };
 
   useEffect(() => {
-    if (!isCreateModalOpen && !selectedOrderId) {
+    if (!selectedOrderId) {
       return;
     }
 
@@ -222,7 +206,7 @@ export function OrdersPageContent() {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isCreateModalOpen, selectedOrderId]);
+  }, [selectedOrderId]);
 
   useEffect(() => {
     if (authUser?.role !== 'ADMIN' && authUser?.role !== 'SALES') {
@@ -308,14 +292,6 @@ export function OrdersPageContent() {
                   {isExporting ? 'Exporting...' : 'Export Excel'}
                 </Button>
 
-                <Button
-                  size="lg"
-                  className="h-11 w-full whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000] sm:w-auto"
-                  onClick={() => setIsCreateModalOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Create order
-                </Button>
               </div>
             </div>
 
@@ -367,39 +343,6 @@ export function OrdersPageContent() {
           </CardContent>
         </Card>
       </section>
-
-      {isCreateModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6"
-        >
-          <div
-            className="w-full max-w-6xl rounded-[1.25rem] border border-slate-200 bg-white shadow-2xl sm:rounded-[1.5rem] dark:border-slate-800 dark:bg-slate-950"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-5 sm:py-3.5">
-              <div>
-                <h2 className="font-[var(--font-heading)] text-xl font-semibold tracking-[-0.03em] text-foreground">
-                  Create order
-                </h2>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 rounded-full px-0 text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white"
-                onClick={() => setIsCreateModalOpen(false)}
-                aria-label="Close create order popup"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto px-3 py-3 sm:px-5 sm:py-4">
-              <CreateOrderForm onCreated={handleCreated} />
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {selectedOrderId ? (
         <div
