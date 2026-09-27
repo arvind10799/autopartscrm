@@ -23,6 +23,12 @@ export class RefundOrderDto {
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  refundAmount?: number;
+
+  @ValidateIf((payload: RefundOrderDto) => payload.refundType === RefundType.PARTIAL)
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
   refundDeductionAmount?: number;
 
   @ValidateIf((payload: RefundOrderDto) => payload.refundType === RefundType.PARTIAL)

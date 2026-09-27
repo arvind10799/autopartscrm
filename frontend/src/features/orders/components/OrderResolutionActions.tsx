@@ -44,8 +44,15 @@ export function OrderResolutionActions({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cancellationReason, setCancellationReason] = useState('');
   const [refundType, setRefundType] = useState<OrderRefundType>('FULL');
-  const [deductionAmount, setDeductionAmount] = useState('');
+  const [refundAmount, setRefundAmount] = useState('');
   const [deductionReason, setDeductionReason] = useState('');
+  const financialSummary = getOrderFinancialSummary(order);
+  const enteredRefundAmount = Number(refundAmount || 0);
+  const retainedAmountPreview = Math.max(
+    financialSummary.originalPaidAmount -
+      (Number.isFinite(enteredRefundAmount) ? enteredRefundAmount : 0),
+    0,
+  );
 
   const canUseActions = authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
   const canCancel = canUseActions && order.status !== 'CANCELLED' && order.status !== 'REFUNDED';
@@ -60,7 +67,7 @@ export function OrderResolutionActions({
     setErrorMessage(null);
     setCancellationReason('');
     setRefundType('FULL');
-    setDeductionAmount('');
+    setRefundAmount('');
     setDeductionReason('');
   };
 
@@ -94,8 +101,8 @@ export function OrderResolutionActions({
     try {
       await ordersApi.refund(order.id, {
         refundType,
-        refundDeductionAmount:
-          refundType === 'PARTIAL' ? Number(deductionAmount) : undefined,
+        refundAmount:
+          refundType === 'PARTIAL' ? Number(refundAmount) : undefined,
         refundDeductionReason:
           refundType === 'PARTIAL' ? deductionReason : undefined,
       });
@@ -193,27 +200,34 @@ export function OrderResolutionActions({
                     <div className="grid gap-3">
                       <label className="grid gap-2">
                         <span className="text-sm font-semibold text-foreground">
-                          Deduction Amount/Charges
+                          Customer Refund Amount
                         </span>
                         <Input
                           type="number"
                           min="0"
                           step="0.01"
-                          value={deductionAmount}
-                          onChange={(event) => setDeductionAmount(event.target.value)}
+                          value={refundAmount}
+                          onChange={(event) => setRefundAmount(event.target.value)}
                           placeholder="0.00"
                         />
+                        <span className="text-xs text-muted-foreground">
+                          Paid amount:{' '}
+                          {formatCurrency(financialSummary.originalPaidAmount, order.currency)}
+                          {' · '}
+                          Retained amount:{' '}
+                          {formatCurrency(retainedAmountPreview, order.currency)}
+                        </span>
                       </label>
                       <label className="grid gap-2">
                         <span className="text-sm font-semibold text-foreground">
-                          Reason for Deduction
+                          Reason for Partial Refund
                         </span>
                         <textarea
                           value={deductionReason}
                           rows={3}
                           onChange={(event) => setDeductionReason(event.target.value)}
                           className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          placeholder="Explain the deduction kept from the refund."
+                          placeholder="Explain why this partial refund is being issued."
                         />
                       </label>
                     </div>
@@ -313,14 +327,14 @@ export function OrderResolutionDetails({
                   {formatCurrency(financialSummary.refundedAmount, order.currency)}
                 </p>
                 <p className="mt-1 text-muted-foreground">
-                  Deduction Amount:{' '}
+                  Retained Amount:{' '}
                   {formatCurrency(
                     details.refundDeductionAmount ?? 0,
                     order.currency,
                   )}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
-                  Reason for Deduction: {details.refundDeductionReason ?? 'Not provided'}
+                  Reason for Partial Refund: {details.refundDeductionReason ?? 'Not provided'}
                 </p>
               </>
             ) : (

@@ -307,6 +307,7 @@ export interface CancelOrderInput {
 
 export interface RefundOrderInput {
   refundType: OrderRefundType;
+  refundAmount?: number;
   refundDeductionAmount?: number;
   refundDeductionReason?: string;
 }

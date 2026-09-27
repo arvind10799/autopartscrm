@@ -288,26 +288,31 @@ export class OrdersService {
     } = { refundType };
 
     if (refundType === RefundType.PARTIAL) {
-      const deductionAmount = refundOrderDto.refundDeductionAmount;
+      const originalPaidAmount = this.getOriginalPaidAmount(existingOrder);
+      const refundAmount = refundOrderDto.refundAmount;
       const deductionReason = refundOrderDto.refundDeductionReason?.trim();
 
-      if (deductionAmount === undefined || deductionAmount <= 0) {
+      if (refundAmount === undefined || refundAmount <= 0) {
         throw new BadRequestException(
-          'Deduction amount is required for partial refunds.',
+          'Refund amount is required for partial refunds.',
         );
       }
 
-      if (deductionAmount > Number(existingOrder.totalSaleAmount)) {
+      if (refundAmount > originalPaidAmount) {
         throw new BadRequestException(
-          'Deduction amount cannot be greater than the total order amount.',
+          'Refund amount cannot be greater than the paid order amount.',
         );
       }
 
       if (!deductionReason) {
         throw new BadRequestException(
-          'Reason for deduction is required for partial refunds.',
+          'Reason for partial refund is required.',
         );
       }
+
+      const deductionAmount = this.roundCurrencyAmount(
+        originalPaidAmount - refundAmount,
+      );
 
       refundUpdate.refundDeductionAmount = deductionAmount;
       refundUpdate.refundDeductionReason = deductionReason;
@@ -333,7 +338,9 @@ export class OrdersService {
       existingOrder.currency,
     );
     const formattedCustomerRefund = this.formatCurrencyAmount(
-      Math.max(Number(existingOrder.totalSaleAmount) - retainedAmount, 0),
+      refundType === RefundType.PARTIAL
+        ? Math.max(this.getOriginalPaidAmount(existingOrder) - retainedAmount, 0)
+        : this.getOriginalPaidAmount(existingOrder),
       existingOrder.currency,
     );
 
@@ -342,7 +349,7 @@ export class OrdersService {
         content:
           refundType === RefundType.FULL
             ? `Order refunded:\n- Refund type: Full refund\n- GP: ${formattedGp}`
-            : `Order refunded:\n- Refund type: Partial refund\n- Customer refunded amount: ${formattedCustomerRefund}\n- Deduction amount: ${formattedDeduction}\n- Reason for deduction: ${refundUpdate.refundDeductionReason}\n- GP: ${formattedGp}`,
+            : `Order refunded:\n- Refund type: Partial refund\n- Customer refunded amount: ${formattedCustomerRefund}\n- Retained amount: ${formattedDeduction}\n- Reason for partial refund: ${refundUpdate.refundDeductionReason}\n- GP: ${formattedGp}`,
         entityType: NoteEntityType.ORDER,
         entityId: id,
       },
@@ -411,6 +418,40 @@ export class OrdersService {
       style: 'currency',
       currency: currency || 'USD',
     }).format(amount);
+  }
+
+  private getOriginalPaidAmount(
+    order: Pick<
+      OrderListRecord,
+      'status' | 'paymentMethod' | 'totalSaleAmount' | 'intakeDetails'
+    >,
+  ): number {
+    const intakeDetails = this.normalizeIntakeDetails(order.intakeDetails);
+    const partialPayment = Math.max(
+      this.getJsonNumber(intakeDetails, 'partialPayment') ?? 0,
+      0,
+    );
+    const totalSaleAmount = Math.max(Number(order.totalSaleAmount), 0);
+
+    if (partialPayment > 0) {
+      return Math.min(partialPayment, totalSaleAmount);
+    }
+
+    if (
+      order.paymentMethod ||
+      [
+        OrderStatus.CONFIRMED,
+        OrderStatus.PROCESSING,
+        OrderStatus.SHIPPED,
+        OrderStatus.DELIVERED,
+        OrderStatus.CANCELLED,
+        OrderStatus.REFUNDED,
+      ].includes(order.status as OrderStatus)
+    ) {
+      return totalSaleAmount;
+    }
+
+    return 0;
   }
 
   private buildOrdersWorkbook(
@@ -993,8 +1034,8 @@ export class OrdersService {
     cancellationReason: 'Cancellation reason',
     cancelledAt: 'Cancelled at',
     refundType: 'Refund type',
-    refundDeductionAmount: 'Refund deduction amount',
-    refundDeductionReason: 'Refund deduction reason',
+    refundDeductionAmount: 'Refund retained amount',
+    refundDeductionReason: 'Refund reason',
     refundedAt: 'Refunded at',
   };
 

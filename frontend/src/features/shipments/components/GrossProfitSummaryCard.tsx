@@ -524,7 +524,7 @@ export function GrossProfitSummaryCard({
           <p className="rounded-xl border border-dashed border-border/70 bg-secondary/15 px-3 py-2 text-xs text-muted-foreground">
             Formula:{' '}
             {refundDetails?.refundType === 'PARTIAL'
-              ? 'deduction amount - part cost - actual shipping cost - additional costs.'
+              ? 'retained amount - part cost - actual shipping cost - additional costs.'
               : refundDetails?.refundType === 'FULL'
                 ? 'retained amount - part cost - actual shipping cost - additional costs.'
                 : hasPaymentProcessingFee
@@ -550,14 +550,14 @@ export function GrossProfitSummaryCard({
                     )}
                   </p>
                   <p>
-                    Deduction Amount:{' '}
+                    Retained Amount:{' '}
                     {formatCurrency(
                       refundDetails.refundDeductionAmount ?? 0,
                       displayCurrency,
                     )}
                   </p>
                   <p className="whitespace-pre-wrap">
-                    Reason for Deduction:{' '}
+                    Reason for Partial Refund:{' '}
                     {refundDetails.refundDeductionReason ?? 'Not provided'}
                   </p>
                 </div>

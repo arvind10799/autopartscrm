@@ -1042,10 +1042,11 @@ export const cancelOrderSchema = z.object({
 export const refundOrderSchema = z
   .object({
     refundType: orderRefundTypeSchema,
+    refundAmount: optionalNumericValueSchema,
     refundDeductionAmount: optionalNumericValueSchema,
     refundDeductionReason: createOptionalTextSchema(
       1000,
-      'Reason for deduction must be 1000 characters or fewer.',
+      'Reason for partial refund must be 1000 characters or fewer.',
     ),
   })
   .superRefine((value, context) => {
@@ -1053,18 +1054,18 @@ export const refundOrderSchema = z
       return;
     }
 
-    if (value.refundDeductionAmount === undefined || value.refundDeductionAmount <= 0) {
+    if (value.refundAmount === undefined || value.refundAmount <= 0) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Deduction amount is required for partial refunds.',
-        path: ['refundDeductionAmount'],
+        message: 'Refund amount is required for partial refunds.',
+        path: ['refundAmount'],
       });
     }
 
     if (!value.refundDeductionReason) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Reason for deduction is required for partial refunds.',
+        message: 'Reason for partial refund is required.',
         path: ['refundDeductionReason'],
       });
     }
