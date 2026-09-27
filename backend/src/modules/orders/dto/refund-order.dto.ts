@@ -2,6 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsEnum,
   IsNumber,
+  IsOptional,
   IsString,
   MaxLength,
   Min,
@@ -25,7 +26,7 @@ export class RefundOrderDto {
   @Min(0)
   refundAmount?: number;
 
-  @ValidateIf((payload: RefundOrderDto) => payload.refundType === RefundType.PARTIAL)
+  @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
