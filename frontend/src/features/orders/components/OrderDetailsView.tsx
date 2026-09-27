@@ -236,8 +236,26 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] xl:grid-cols-[minmax(0,1.08fr)_minmax(430px,0.92fr)]">
         <div className="space-y-4">
           <Card className="overflow-hidden border-border/70 shadow-sm">
-            <CardHeader className="border-b border-border/70 pb-3">
+            <CardHeader className="flex flex-col gap-3 border-b border-border/70 pb-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-xl">Order details</CardTitle>
+              <div className="flex flex-wrap gap-2 sm:justify-end">
+                <OrderResolutionActions
+                  order={order}
+                  onResolved={() =>
+                    setRefreshKey((currentValue) => currentValue + 1)
+                  }
+                />
+                {canShowReplacement ? (
+                  <ReplacementTracker
+                    orderId={order.id}
+                    shipmentId={latestShipment?.id}
+                    buttonOnly
+                    onChanged={() =>
+                      setRefreshKey((currentValue) => currentValue + 1)
+                    }
+                  />
+                ) : null}
+              </div>
             </CardHeader>
 
             <CardContent className="space-y-3 p-3.5 sm:p-4">
@@ -387,33 +405,6 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
               </DetailSection>
 
               <OrderResolutionDetails order={order} />
-
-              <Card className="border-border/70 bg-secondary/10 shadow-sm">
-                <CardHeader className="space-y-1 pb-3">
-                  <CardTitle className="text-base">Order actions</CardTitle>
-                  <CardDescription>
-                    Manage cancellation, refund, and replacement workflows for this order.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  <OrderResolutionActions
-                    order={order}
-                    onResolved={() =>
-                      setRefreshKey((currentValue) => currentValue + 1)
-                    }
-                  />
-                  {canShowReplacement ? (
-                    <ReplacementTracker
-                      orderId={order.id}
-                      shipmentId={latestShipment?.id}
-                      buttonOnly
-                      onChanged={() =>
-                        setRefreshKey((currentValue) => currentValue + 1)
-                      }
-                    />
-                  ) : null}
-                </CardContent>
-              </Card>
             </CardContent>
           </Card>
         </div>
