@@ -24,6 +24,7 @@ import { notesApi } from '@/features/notes/api/notes-api';
 import type { NoteRecord } from '@/features/notes/types/note.types';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { InvoiceActions } from '@/features/invoices/components/InvoiceActions';
+import { ReplacementTracker } from '@/features/replacements/components/ReplacementTracker';
 import { GrossProfitSummaryCard } from '@/features/shipments/components/GrossProfitSummaryCard';
 import { ShipmentStatusBadge } from '@/features/shipments/components/ShipmentStatusBadge';
 import { toast } from '@/lib/stores/toast.store';
@@ -31,6 +32,7 @@ import { cn } from '@/lib/utils/cn';
 import { useOrderDetailWithRefresh } from '../hooks/useOrderDetail';
 import { getOrderFinancialSummary } from '../lib/order-financials';
 import {
+  OrderResolutionActions,
   OrderResolutionDetails,
 } from './OrderResolutionActions';
 import {
@@ -188,6 +190,7 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
   const canEditGpCosts =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
+  const canShowReplacement = order.status === 'DELIVERED';
 
   return (
     <section className="space-y-6">
@@ -384,6 +387,33 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
               </DetailSection>
 
               <OrderResolutionDetails order={order} />
+
+              <Card className="border-border/70 bg-secondary/10 shadow-sm">
+                <CardHeader className="space-y-1 pb-3">
+                  <CardTitle className="text-base">Order actions</CardTitle>
+                  <CardDescription>
+                    Manage cancellation, refund, and replacement workflows for this order.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                  <OrderResolutionActions
+                    order={order}
+                    onResolved={() =>
+                      setRefreshKey((currentValue) => currentValue + 1)
+                    }
+                  />
+                  {canShowReplacement ? (
+                    <ReplacementTracker
+                      orderId={order.id}
+                      shipmentId={latestShipment?.id}
+                      buttonOnly
+                      onChanged={() =>
+                        setRefreshKey((currentValue) => currentValue + 1)
+                      }
+                    />
+                  ) : null}
+                </CardContent>
+              </Card>
             </CardContent>
           </Card>
         </div>

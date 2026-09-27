@@ -25,27 +25,29 @@ import type { LeadSummary } from '../types/lead.types';
 import { LEAD_QUOTE_CURRENCIES, LEAD_STATUSES } from '../types/lead.types';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
 
-const defaultValues: CreateLeadFormValues = {
-  leadDate: '',
-  cmpt: '',
-  customerPhone: '',
-  customerName: '',
-  customerEmail: '',
-  state: '',
-  vehicleYear: '',
-  vehicleMake: '',
-  vehicleModel: '',
-  vehicleVariant: '',
-  quote: undefined,
-  quoteCurrency: 'USD',
-  comments: '',
-  prospects: '',
-  status: 'PROSPECT',
-};
+function createDefaultValues(): CreateLeadFormValues {
+  return {
+    leadDate: getPacificTodayDateInputValue(),
+    cmpt: 'YES',
+    customerPhone: '',
+    customerName: '',
+    customerEmail: '',
+    state: '',
+    vehicleYear: '',
+    vehicleMake: '',
+    vehicleModel: '',
+    vehicleVariant: '',
+    quote: undefined,
+    quoteCurrency: 'USD',
+    comments: '',
+    prospects: '',
+    status: 'PROSPECT',
+  };
+}
 
 function buildDefaultValues(lead?: LeadSummary | null): CreateLeadFormValues {
   if (!lead) {
-    return defaultValues;
+    return createDefaultValues();
   }
 
   return {
@@ -271,7 +273,7 @@ export function CreateLeadForm({
         ? await leadsApi.update(initialLead.id, payload)
         : await leadsApi.create(payload);
       onSaved(savedLead);
-      form.reset(defaultValues);
+      form.reset(createDefaultValues());
     } catch (error) {
       setFormError(
         getErrorMessage(error, 'Unable to create the lead right now. Please try again.'),
