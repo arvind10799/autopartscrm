@@ -47,6 +47,16 @@ export function OrderResolutionActions({
   const [refundAmount, setRefundAmount] = useState('');
   const [deductionReason, setDeductionReason] = useState('');
   const financialSummary = getOrderFinancialSummary(order);
+  const hasRefundDetails = order.status === 'REFUNDED' || Boolean(order.intakeDetails.refundType);
+  const existingRefundType = order.intakeDetails.refundType ?? 'FULL';
+  const existingRefundAmount =
+    existingRefundType === 'PARTIAL'
+      ? Math.max(
+          financialSummary.originalPaidAmount -
+            Number(order.intakeDetails.refundDeductionAmount ?? 0),
+          0,
+        )
+      : financialSummary.originalPaidAmount;
   const enteredRefundAmount = Number(refundAmount || 0);
   const retainedAmountPreview = Math.max(
     financialSummary.originalPaidAmount -
@@ -55,8 +65,8 @@ export function OrderResolutionActions({
   );
 
   const canUseActions = authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
-  const canCancel = canUseActions && order.status !== 'CANCELLED' && order.status !== 'REFUNDED';
-  const canRefund = canUseActions && order.status !== 'REFUNDED';
+  const canCancel = canUseActions && order.status !== 'CANCELLED';
+  const canRefund = canUseActions;
 
   if (authUser?.role !== 'ADMIN' && authUser?.role !== 'SHIPPING') {
     return null;
@@ -69,6 +79,22 @@ export function OrderResolutionActions({
     setRefundType('FULL');
     setRefundAmount('');
     setDeductionReason('');
+  };
+
+  const openCancellationModal = () => {
+    setErrorMessage(null);
+    setCancellationReason(order.intakeDetails.cancellationReason ?? '');
+    setActiveAction('cancel');
+  };
+
+  const openRefundModal = () => {
+    setErrorMessage(null);
+    setRefundType(existingRefundType);
+    setRefundAmount(
+      existingRefundType === 'PARTIAL' ? existingRefundAmount.toFixed(2) : '',
+    );
+    setDeductionReason(order.intakeDetails.refundDeductionReason ?? '');
+    setActiveAction('refund');
   };
 
   const handleCancelSubmit = async () => {
@@ -107,8 +133,12 @@ export function OrderResolutionActions({
           refundType === 'PARTIAL' ? deductionReason : undefined,
       });
       toast.success(
-        `Order ${order.orderNumber} refunded`,
-        'Refund details were saved and GP was adjusted.',
+        hasRefundDetails
+          ? `Refund details updated for ${order.orderNumber}`
+          : `Order ${order.orderNumber} refunded`,
+        hasRefundDetails
+          ? 'Refund details were updated and GP was recalculated.'
+          : 'Refund details were saved and GP was adjusted.',
       );
       resetModal();
       await onResolved();
@@ -131,7 +161,7 @@ export function OrderResolutionActions({
           variant="outline"
           size="sm"
           disabled={!canCancel || isSubmitting}
-          onClick={() => setActiveAction('cancel')}
+          onClick={openCancellationModal}
         >
           <Ban className="h-4 w-4" />
           Cancellation
@@ -141,10 +171,10 @@ export function OrderResolutionActions({
           variant="outline"
           size="sm"
           disabled={!canRefund || isSubmitting}
-          onClick={() => setActiveAction('refund')}
+          onClick={openRefundModal}
         >
           <RotateCcw className="h-4 w-4" />
-          Refund
+          {hasRefundDetails ? 'Edit refund' : 'Refund'}
         </Button>
       </div>
 
@@ -156,7 +186,11 @@ export function OrderResolutionActions({
                 {order.orderNumber}
               </p>
               <h2 className="mt-1 text-xl font-semibold text-foreground">
-                {activeAction === 'cancel' ? 'Cancel order' : 'Refund order'}
+                {activeAction === 'cancel'
+                  ? 'Cancel order'
+                  : hasRefundDetails
+                    ? 'Edit refund'
+                    : 'Refund order'}
               </h2>
             </div>
 
