@@ -469,6 +469,8 @@ function NotificationGroupCard({
   const isUnread = group.unreadCount > 0;
   const Icon = getNotificationIcon(group.latest);
   const isGrouped = group.items.length > 1;
+  const latestMessage = formatNotificationMessage(group.latest);
+  const latestContext = getNotificationContext(group.latest);
 
   return (
     <div
@@ -527,6 +529,11 @@ function NotificationGroupCard({
               <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
                 {getEntityLabel(group.latest)}
               </p>
+              {latestContext ? (
+                <p className="mt-1 truncate text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {latestContext}
+                </p>
+              ) : null}
             </div>
             <button
               type="button"
@@ -547,7 +554,7 @@ function NotificationGroupCard({
           </div>
 
           <p className="line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-            {group.latest.message}
+            {latestMessage}
           </p>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -588,35 +595,52 @@ function NotificationGroupCard({
         <div className="border-t border-slate-200 bg-white/70 px-3 py-2 dark:border-slate-800 dark:bg-slate-950/70">
           <div className="space-y-2">
             {group.items.map((notification) => (
-              <div
+              <NotificationTimelineItem
                 key={notification.id}
-                className="grid grid-cols-[0.75rem_1fr] gap-2 rounded-lg px-1 py-1.5"
-              >
-                <span
-                  className={cn(
-                    'mt-1.5 h-2 w-2 rounded-full',
-                    notification.isRead ? 'bg-slate-300' : 'bg-[#ff5a00]',
-                  )}
-                />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    {notification.title}
-                  </p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                    {notification.message}
-                  </p>
-                  <time
-                    className="mt-1 block text-[11px] text-slate-400 dark:text-slate-500"
-                    title={formatDateTime(notification.createdAt)}
-                  >
-                    {formatRelativeTime(notification.createdAt)}
-                  </time>
-                </div>
-              </div>
+                notification={notification}
+              />
             ))}
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function NotificationTimelineItem({
+  notification,
+}: {
+  notification: AppNotification;
+}) {
+  const context = getNotificationContext(notification);
+
+  return (
+    <div className="grid grid-cols-[0.75rem_1fr] gap-2 rounded-lg px-1 py-1.5">
+      <span
+        className={cn(
+          'mt-1.5 h-2 w-2 rounded-full',
+          notification.isRead ? 'bg-slate-300' : 'bg-[#ff5a00]',
+        )}
+      />
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {notification.title}
+        </p>
+        {context ? (
+          <p className="mt-0.5 truncate text-[11px] font-medium text-slate-400 dark:text-slate-500">
+            {context}
+          </p>
+        ) : null}
+        <p className="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          {formatNotificationMessage(notification)}
+        </p>
+        <time
+          className="mt-1 block text-[11px] text-slate-400 dark:text-slate-500"
+          title={formatDateTime(notification.createdAt)}
+        >
+          {formatRelativeTime(notification.createdAt)}
+        </time>
+      </div>
     </div>
   );
 }
@@ -812,6 +836,60 @@ function getEntityLabel(notification: AppNotification) {
   }
 
   return 'Notification';
+}
+
+function getNotificationContext(notification: AppNotification): string | null {
+  const context = extractTrailingContext(notification.message);
+
+  if (context) {
+    return context;
+  }
+
+  return null;
+}
+
+function formatNotificationMessage(notification: AppNotification): string {
+  const messageWithoutContext = removeTrailingContext(notification.message);
+
+  if (notification.entityType !== 'SHIPMENT') {
+    return messageWithoutContext;
+  }
+
+  const statusMatch = messageWithoutContext.match(
+    /^Shipment\s+\S+\s+for\s+(\S+)\s+changed from\s+(.+)\.$/,
+  );
+
+  if (statusMatch) {
+    return `${statusMatch[1]} changed from ${statusMatch[2]}.`;
+  }
+
+  const createdMatch = messageWithoutContext.match(
+    /^Shipment\s+\S+\s+was created for order\s+(\S+)\.$/,
+  );
+
+  if (createdMatch) {
+    return `${createdMatch[1]} shipment was created.`;
+  }
+
+  const activityMatch = messageWithoutContext.match(
+    /^(.+?)\s+Shipment\s+\S+\s+for order\s+(\S+)\.$/,
+  );
+
+  if (activityMatch) {
+    return `${activityMatch[1]} ${activityMatch[2]}.`;
+  }
+
+  return messageWithoutContext;
+}
+
+function extractTrailingContext(message: string): string | null {
+  const match = message.match(/\s+(Sale\s+.+)$/);
+
+  return match ? match[1] : null;
+}
+
+function removeTrailingContext(message: string): string {
+  return message.replace(/\s+Sale\s+.+$/, '').trim();
 }
 
 function formatRelativeTime(value: string): string {

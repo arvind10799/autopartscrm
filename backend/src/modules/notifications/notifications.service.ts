@@ -154,7 +154,7 @@ export class NotificationsService {
     await this.createForRecipients(recipients, {
       type: NOTIFICATION_TYPES.SHIPMENT_CREATED,
       title: `Shipment created for ${shipment.order.orderNumber}`,
-      message: `Shipment ${shipment.bolNumber} was created for order ${shipment.order.orderNumber}.`,
+      message: `${shipment.order.orderNumber} shipment was created. ${this.buildOrderNotificationContext(shipment.order)}`,
       entityType: NOTIFICATION_ENTITY_TYPES.SHIPMENT,
       entityId: shipment.id,
     });
@@ -173,7 +173,7 @@ export class NotificationsService {
     await this.createForRecipients(recipients, {
       type: NOTIFICATION_TYPES.SHIPMENT_STATUS_UPDATED,
       title: `Shipment status updated`,
-      message: `Shipment ${shipment.bolNumber} for ${shipment.order.orderNumber} changed from ${previousStatus} to ${nextStatus}.`,
+      message: `${shipment.order.orderNumber} changed from ${previousStatus} to ${nextStatus}. ${this.buildOrderNotificationContext(shipment.order)}`,
       entityType: NOTIFICATION_ENTITY_TYPES.SHIPMENT,
       entityId: shipment.id,
     });
@@ -188,7 +188,7 @@ export class NotificationsService {
     await this.createForRecipients(recipients, {
       type: NOTIFICATION_TYPES.SHIPMENT_ACTIVITY,
       title: `Shipment update`,
-      message: `${message} Shipment ${shipment.bolNumber} for order ${shipment.order.orderNumber}.`,
+      message: `${message} ${shipment.order.orderNumber}. ${this.buildOrderNotificationContext(shipment.order)}`,
       entityType: NOTIFICATION_ENTITY_TYPES.SHIPMENT,
       entityId: shipment.id,
     });
@@ -226,7 +226,7 @@ export class NotificationsService {
       await this.createForRecipients(recipients, {
         type: NOTIFICATION_TYPES.SHIPMENT_NOTE_CREATED,
         title: `Shipment note added`,
-        message: `${actor.name} added a note on shipment ${shipment.bolNumber}.`,
+        message: `${actor.name} added a note on ${shipment.order.orderNumber}. ${this.buildOrderNotificationContext(shipment.order)}`,
         entityType: NOTIFICATION_ENTITY_TYPES.SHIPMENT,
         entityId: shipment.id,
       });
@@ -296,11 +296,20 @@ export class NotificationsService {
           select: {
             id: true,
             orderNumber: true,
+            salesNumber: true,
+            customerName: true,
             createdById: true,
           },
         },
       },
     });
+  }
+
+  private buildOrderNotificationContext(order: {
+    salesNumber: string | null;
+    customerName: string;
+  }) {
+    return `Sale ${order.salesNumber ?? 'N/A'} · ${order.customerName}`;
   }
 }
 
