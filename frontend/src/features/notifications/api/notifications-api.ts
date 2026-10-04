@@ -14,9 +14,15 @@ import type {
 } from '../types/notification.types';
 
 export const notificationsApi = {
-  async list(): Promise<AppNotification[]> {
+  async list(options?: { unreadOnly?: boolean }): Promise<AppNotification[]> {
+    const searchParams = new URLSearchParams({ limit: '30' });
+
+    if (options?.unreadOnly) {
+      searchParams.set('unreadOnly', 'true');
+    }
+
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
-      '/api/notifications?limit=30',
+      `/api/notifications?${searchParams.toString()}`,
     );
 
     return parseApiData(response, notificationsListSchema, {
