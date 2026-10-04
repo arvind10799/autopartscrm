@@ -7,6 +7,7 @@ import {
   NOTIFICATION_ENTITY_TYPES,
   NOTIFICATION_TYPES,
 } from './notifications.constants';
+import { GroupNotificationsDto } from './dto/group-notifications.dto';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
 
 type NotificationPayload = {
@@ -77,6 +78,24 @@ export class NotificationsService {
     return { count: result.count };
   }
 
+  async markGroupRead(query: GroupNotificationsDto, user: AuthenticatedUser) {
+    const result = await this.prismaService.notification.updateMany({
+      where: {
+        recipientUserId: user.userId,
+        clearedAt: null,
+        isRead: false,
+        entityType: query.entityType,
+        entityId: query.entityId,
+      },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+
+    return { count: result.count };
+  }
+
   async clearOne(id: string, user: AuthenticatedUser) {
     await this.prismaService.notification.updateMany({
       where: {
@@ -100,6 +119,25 @@ export class NotificationsService {
       where: {
         recipientUserId: user.userId,
         clearedAt: null,
+      },
+      data: {
+        isRead: true,
+        readAt: now,
+        clearedAt: now,
+      },
+    });
+
+    return { count: result.count };
+  }
+
+  async clearGroup(query: GroupNotificationsDto, user: AuthenticatedUser) {
+    const now = new Date();
+    const result = await this.prismaService.notification.updateMany({
+      where: {
+        recipientUserId: user.userId,
+        clearedAt: null,
+        entityType: query.entityType,
+        entityId: query.entityId,
       },
       data: {
         isRead: true,

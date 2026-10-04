@@ -67,6 +67,15 @@ export function NotificationBell() {
     () => new Set(),
   );
 
+  const refreshUnreadCount = useCallback(async () => {
+    try {
+      const unread = await notificationsApi.unreadCount();
+      setUnreadCount(unread.count);
+    } catch {
+      // Keep the last known badge count if the lightweight refresh fails.
+    }
+  }, []);
+
   const refreshNotifications = useCallback(
     async (options?: { showSpinner?: boolean }) => {
       if (options?.showSpinner) {
@@ -93,13 +102,45 @@ export function NotificationBell() {
   );
 
   useEffect(() => {
-    void refreshNotifications();
+    if (isOpen) {
+      return;
+    }
+
+    const refresh = () => {
+      if (document.visibilityState !== 'hidden') {
+        void refreshUnreadCount();
+      }
+    };
+
+    refresh();
     const intervalId = window.setInterval(() => {
-      void refreshNotifications();
+      refresh();
     }, POLL_INTERVAL_MS);
 
-    return () => window.clearInterval(intervalId);
-  }, [refreshNotifications]);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refresh();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isOpen, refreshUnreadCount]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setIsLoading(true);
+    void refreshNotifications().finally(() => {
+      setIsLoading(false);
+    });
+  }, [isOpen, refreshNotifications]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -127,15 +168,8 @@ export function NotificationBell() {
     [visibleNotifications],
   );
 
-  const handleToggle = async () => {
-    const nextOpen = !isOpen;
-    setIsOpen(nextOpen);
-
-    if (nextOpen) {
-      setIsLoading(true);
-      await refreshNotifications();
-      setIsLoading(false);
-    }
+  const handleToggle = () => {
+    setIsOpen((current) => !current);
   };
 
   const handleFilterChange = (filter: NotificationFilter) => {
@@ -247,11 +281,7 @@ export function NotificationBell() {
     );
 
     try {
-      await Promise.all(
-        unreadItems.map((notification) =>
-          notificationsApi.markRead(notification.id),
-        ),
-      );
+      await notificationsApi.markGroupRead(group.entityType, group.entityId);
       if (!options?.silent) {
         await refreshNotifications();
       }
@@ -284,11 +314,7 @@ export function NotificationBell() {
     });
 
     try {
-      await Promise.all(
-        group.items.map((notification) =>
-          notificationsApi.clearOne(notification.id),
-        ),
-      );
+      await notificationsApi.clearGroup(group.entityType, group.entityId);
     } catch {
       setNotifications(notificationsBefore);
       setUnreadCount(unreadBefore);

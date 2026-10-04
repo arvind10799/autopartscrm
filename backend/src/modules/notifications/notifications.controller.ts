@@ -14,6 +14,7 @@ import { Role } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/role.guard';
+import { GroupNotificationsDto } from './dto/group-notifications.dto';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
 import { NotificationsService } from './notifications.service';
 
@@ -36,6 +37,24 @@ export class NotificationsController {
   @ResponseMessage('Unread notification count retrieved successfully.')
   unreadCount(@CurrentUser() user: AuthenticatedUser) {
     return this.notificationsService.getUnreadCount(user);
+  }
+
+  @Patch('group/read')
+  @ResponseMessage('Notification group marked as read.')
+  markGroupRead(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: GroupNotificationsDto,
+  ) {
+    return this.notificationsService.markGroupRead(query, user);
+  }
+
+  @Patch('group/clear')
+  @ResponseMessage('Notification group cleared.')
+  clearGroup(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: GroupNotificationsDto,
+  ) {
+    return this.notificationsService.clearGroup(query, user);
   }
 
   @Patch(':id/read')
