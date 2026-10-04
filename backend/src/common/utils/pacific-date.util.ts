@@ -1,5 +1,11 @@
 const PACIFIC_TIME_ZONE = 'America/Los_Angeles';
 
+export function parsePacificDateInputValue(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+
+  return new Date(Date.UTC(year, month - 1, day, 12));
+}
+
 export function getPacificTodayDateInputValue(date = new Date()): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: PACIFIC_TIME_ZONE,

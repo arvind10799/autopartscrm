@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { Role } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { buildCreatedAtFilter } from '../../common/utils/date-range.util';
+import { parsePacificDateInputValue } from '../../common/utils/pacific-date.util';
 import {
   createPaginatedResponse,
   getPaginationParams,
@@ -60,7 +61,7 @@ export class LeadsRepository {
     try {
       return await this.prismaService.lead.create({
         data: {
-          leadDate: new Date(createLeadDto.leadDate),
+          leadDate: parsePacificDateInputValue(createLeadDto.leadDate),
           adviserName: user.name,
           cmpt: createLeadDto.cmpt,
           customerPhone: createLeadDto.customerPhone.trim(),
@@ -273,7 +274,7 @@ export class LeadsRepository {
         },
         data: {
           leadDate: updateLeadDto.leadDate
-            ? new Date(updateLeadDto.leadDate)
+            ? parsePacificDateInputValue(updateLeadDto.leadDate)
             : undefined,
           cmpt: updateLeadDto.cmpt,
           customerPhone: updateLeadDto.customerPhone,
