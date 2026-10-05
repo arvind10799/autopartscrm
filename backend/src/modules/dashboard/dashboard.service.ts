@@ -452,7 +452,7 @@ export class DashboardService {
     const leadWhere: Prisma.LeadWhereInput = {
       ...(period.start
         ? {
-            leadDate: {
+            createdAt: {
               gte: period.start,
               lt: period.end,
             },
