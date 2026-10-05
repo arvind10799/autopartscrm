@@ -1,10 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
 import { getPacificTodayDateInputValue } from '../../common/utils/pacific-date.util';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import {
   buildOrdersExportWorkbook,
   OrdersExportWorkbookInput,
 } from '../orders/orders-export-workbook.builder';
+import { NotesService } from '../notes/notes.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -12,15 +14,32 @@ import { LeadListRecord, LeadsRepository } from './leads.repository';
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly leadsRepository: LeadsRepository) {}
+  constructor(
+    private readonly leadsRepository: LeadsRepository,
+    private readonly notesService: NotesService,
+  ) {}
 
-  create(createLeadDto: CreateLeadDto, user: AuthenticatedUser) {
+  async create(createLeadDto: CreateLeadDto, user: AuthenticatedUser) {
     this.assertPastOrTodayDate(
       createLeadDto.leadDate,
       'Lead date cannot be in the future.',
     );
 
-    return this.leadsRepository.create(createLeadDto, user);
+    const lead = await this.leadsRepository.create(createLeadDto, user);
+    const initialComment = createLeadDto.comments?.trim();
+
+    if (initialComment) {
+      await this.notesService.create(
+        {
+          content: initialComment,
+          entityId: lead.id,
+          entityType: NoteEntityType.LEAD,
+        },
+        user,
+      );
+    }
+
+    return lead;
   }
 
   findAll(queryLeadsDto: QueryLeadsDto, user: AuthenticatedUser) {
