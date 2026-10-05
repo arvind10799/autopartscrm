@@ -38,11 +38,13 @@ export class NotesService {
         CACHE_NAMESPACE_ORDERS_LIST,
       );
     }
-    await this.notificationsService.notifyNoteCreated(
-      createNoteDto.entityType,
-      createNoteDto.entityId,
-      user,
-    );
+    if (createNoteDto.entityType !== NoteEntityType.LEAD) {
+      await this.notificationsService.notifyNoteCreated(
+        createNoteDto.entityType,
+        createNoteDto.entityId,
+        user,
+      );
+    }
 
     return note;
   }
