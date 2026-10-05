@@ -3,6 +3,7 @@ import { formatOrderStatus } from '@/features/orders/lib/order-formatters';
 import type { OrderSummary } from '@/features/orders/types/order.types';
 import { formatShipmentStatus } from '@/features/shipments/lib/shipment-formatters';
 import type { ShipmentSummary } from '@/features/shipments/types/shipment.types';
+import type { LeadSummary } from '@/features/leads/types/lead.types';
 import { formatPacificDateTime } from '@/lib/utils/pacific-date';
 import type { NoteFormValues } from '../schemas/note.schema';
 import type {
@@ -39,7 +40,7 @@ export function getAvailableNoteEntityTypes(
     case 'ADMIN':
     case 'SALES':
     case 'SHIPPING':
-      return ['ORDER', 'SHIPMENT'];
+      return ['ORDER', 'SHIPMENT', 'LEAD'];
     default:
       return [];
   }
@@ -58,7 +59,7 @@ export function canBrowseShipmentNotes(
 }
 
 export function isNoteEntityType(value: string): value is NoteEntityType {
-  return value === 'ORDER' || value === 'SHIPMENT';
+  return value === 'ORDER' || value === 'SHIPMENT' || value === 'LEAD';
 }
 
 export function parseNoteEntityType(value: string): NoteEntityType | null {
@@ -68,7 +69,11 @@ export function parseNoteEntityType(value: string): NoteEntityType | null {
 }
 
 export function formatNoteEntityTypeLabel(entityType: NoteEntityType): string {
-  return entityType === 'ORDER' ? 'Order' : 'Shipment';
+  if (entityType === 'ORDER') {
+    return 'Order';
+  }
+
+  return entityType === 'SHIPMENT' ? 'Shipment' : 'Lead';
 }
 
 export function buildOrderNoteEntityOption(order: OrderSummary): NoteEntityOption {
@@ -88,6 +93,14 @@ export function buildShipmentNoteEntityOption(
     description: `${shipment.order.orderNumber} | ${formatShipmentStatus(
       shipment.currentStatus,
     )}`,
+  };
+}
+
+export function buildLeadNoteEntityOption(lead: LeadSummary): NoteEntityOption {
+  return {
+    id: lead.id,
+    label: lead.customerName,
+    description: `${lead.customerPhone} | ${lead.status}`,
   };
 }
 
@@ -117,6 +130,20 @@ export function buildShipmentNoteEntityContext(
     subtitle: `${shipment.order.orderNumber} | ${shipment.order.customerName}`,
     helperText:
       'Notes attached to the shipment record and its logistics activity. The list refreshes automatically after each save.',
+  };
+}
+
+export function buildLeadNoteEntityContext(
+  lead: LeadSummary | null,
+): NoteEntityContext | null {
+  if (!lead) {
+    return null;
+  }
+
+  return {
+    title: lead.customerName,
+    subtitle: `${lead.customerPhone} | ${lead.status}`,
+    helperText: `Notes attached to the lead record for ${lead.customerName}. The list refreshes automatically after each save.`,
   };
 }
 
@@ -150,6 +177,13 @@ export function getNoteEntityReference(note: NoteRecord) {
     return {
       title: note.order.orderNumber,
       description: note.order.customerName,
+    };
+  }
+
+  if (note.entityType === 'LEAD') {
+    return {
+      title: note.lead.customerName,
+      description: note.lead.customerPhone,
     };
   }
 

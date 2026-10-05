@@ -4,6 +4,24 @@ import {
   buildNoStoreJsonResponse,
   proxyBackendWithSession,
 } from '@/lib/api/server-proxy';
+import { isValidLeadId } from '@/features/leads/lib/leads.helpers';
+
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  const normalizedLeadId = id.trim();
+
+  if (!isValidLeadId(normalizedLeadId)) {
+    return buildNoStoreJsonResponse(
+      buildApiEnvelope('Lead identifier is invalid.'),
+      400,
+    );
+  }
+
+  return proxyBackendWithSession(`/leads/${normalizedLeadId}`);
+}
 
 export async function PATCH(
   request: Request,

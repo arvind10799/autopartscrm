@@ -59,6 +59,7 @@ enum ReplacementStatus {
 enum NoteEntityType {
   ORDER
   SHIPMENT
+  LEAD
 }
 
 enum LeadStatus {
@@ -119,6 +120,7 @@ model Lead {
 
   createdBy      User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
   convertedOrder Order? @relation("ConvertedLeadOrder", fields: [convertedOrderId], references: [id], onDelete: SetNull)
+  notes          Note[]
 
   @@index([leadDate])
   @@index([createdById])
@@ -382,18 +384,22 @@ model Note {
   authorId   String         @db.Uuid
   orderId    String?        @db.Uuid
   shipmentId String?        @db.Uuid
+  leadId     String?        @db.Uuid
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 
   author   User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
   order    Order?    @relation(fields: [orderId], references: [id], onDelete: Restrict)
   shipment Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+  lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: Restrict)
 
   @@index([authorId])
   @@index([orderId])
   @@index([shipmentId])
+  @@index([leadId])
   @@index([entityType, orderId])
   @@index([entityType, shipmentId])
+  @@index([entityType, leadId])
 }
 
 model Notification {

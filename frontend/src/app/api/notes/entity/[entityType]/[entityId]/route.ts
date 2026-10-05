@@ -10,6 +10,7 @@ import {
 import { parseNoteEntityType } from '@/features/notes/lib/notes.helpers';
 import { isValidOrderId } from '@/features/orders/lib/orders.helpers';
 import { isValidShipmentId } from '@/features/shipments/lib/shipments.helpers';
+import { isValidLeadId } from '@/features/leads/lib/leads.helpers';
 
 export async function GET(
   request: Request,
@@ -34,7 +35,9 @@ export async function GET(
     (normalizedEntityType === 'ORDER' &&
       !isValidOrderId(normalizedEntityId)) ||
     (normalizedEntityType === 'SHIPMENT' &&
-      !isValidShipmentId(normalizedEntityId))
+      !isValidShipmentId(normalizedEntityId)) ||
+    (normalizedEntityType === 'LEAD' &&
+      !isValidLeadId(normalizedEntityId))
   ) {
     return buildNoStoreJsonResponse(
       buildApiEnvelope('Note entity identifier is invalid.'),

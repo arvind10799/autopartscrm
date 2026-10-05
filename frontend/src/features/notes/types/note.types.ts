@@ -1,6 +1,6 @@
 import type { UserRole } from '@/features/auth/types/auth.types';
 
-export const NOTE_ENTITY_TYPES = ['ORDER', 'SHIPMENT'] as const;
+export const NOTE_ENTITY_TYPES = ['ORDER', 'SHIPMENT', 'LEAD'] as const;
 
 export type NoteEntityType = (typeof NOTE_ENTITY_TYPES)[number];
 
@@ -23,6 +23,13 @@ export interface NoteShipmentReference {
   orderId: string;
 }
 
+export interface NoteLeadReference {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  status: string;
+}
+
 export interface BaseNoteRecord {
   id: string;
   message: string;
@@ -37,12 +44,21 @@ export interface OrderNoteRecord extends BaseNoteRecord {
   entityType: 'ORDER';
   order: NoteOrderReference;
   shipment: null;
+  lead: null;
 }
 
 export interface ShipmentNoteRecord extends BaseNoteRecord {
   entityType: 'SHIPMENT';
   order: null;
   shipment: NoteShipmentReference;
+  lead: null;
+}
+
+export interface LeadNoteRecord extends BaseNoteRecord {
+  entityType: 'LEAD';
+  order: null;
+  shipment: null;
+  lead: NoteLeadReference;
 }
 
 export interface CreateNoteInput {
@@ -51,7 +67,7 @@ export interface CreateNoteInput {
   entityId: string;
 }
 
-export type NoteRecord = OrderNoteRecord | ShipmentNoteRecord;
+export type NoteRecord = OrderNoteRecord | ShipmentNoteRecord | LeadNoteRecord;
 
 export interface NoteEntityOption {
   id: string;

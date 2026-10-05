@@ -66,6 +66,14 @@ export class LeadsController {
     response.send(workbook);
   }
 
+  @Get(':id')
+  findOne(
+    @Param() params: UuidParamDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.leadsService.findOne(params.id, user);
+  }
+
   @Patch(':id')
   update(
     @Param() params: UuidParamDto,

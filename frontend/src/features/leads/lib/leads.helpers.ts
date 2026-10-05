@@ -26,6 +26,7 @@ export type LeadStatusFilter =
 
 const positiveIntegerSchema = z.coerce.number().int().min(1);
 const userIdSchema = z.string().uuid();
+const leadIdSchema = z.string().uuid();
 const searchTermSchema = z
   .string()
   .trim()
@@ -58,6 +59,10 @@ export function createEmptyLeadsResponse(
       hasPreviousPage: false,
     },
   };
+}
+
+export function isValidLeadId(value: string) {
+  return leadIdSchema.safeParse(value).success;
 }
 
 export function parseLeadConversionFilter(value: string): LeadConversionFilter {

@@ -77,6 +77,17 @@ export const leadsApi = {
     });
   },
 
+  async getById(leadId: string): Promise<LeadSummary> {
+    const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
+      `/api/leads/${leadId}`,
+    );
+
+    return parseApiData(response, leadSummarySchema, {
+      emptyMessage: response.data.message || 'Lead details response was empty.',
+      invalidMessage: 'Lead details response payload was invalid.',
+    });
+  },
+
   async update(leadId: string, payload: UpdateLeadInput): Promise<LeadSummary> {
     const requestPayload = updateLeadSchema.parse(payload);
     const response = await axiosBrowser.patch<ApiEnvelope<unknown>>(

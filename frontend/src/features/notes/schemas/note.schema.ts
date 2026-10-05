@@ -31,6 +31,13 @@ const noteShipmentReferenceSchema = z.object({
   orderId: noteIdSchema,
 });
 
+const noteLeadReferenceSchema = z.object({
+  id: noteIdSchema,
+  customerName: z.string(),
+  customerPhone: z.string(),
+  status: z.string(),
+});
+
 const noteBackendBaseSchema = z.object({
   id: noteIdSchema,
   content: z.string(),
@@ -43,17 +50,27 @@ const orderNoteBackendSchema = noteBackendBaseSchema.extend({
   entityType: z.literal('ORDER'),
   order: noteOrderReferenceSchema,
   shipment: z.null(),
+  lead: z.null(),
 });
 
 const shipmentNoteBackendSchema = noteBackendBaseSchema.extend({
   entityType: z.literal('SHIPMENT'),
   order: z.null(),
   shipment: noteShipmentReferenceSchema,
+  lead: z.null(),
+});
+
+const leadNoteBackendSchema = noteBackendBaseSchema.extend({
+  entityType: z.literal('LEAD'),
+  order: z.null(),
+  shipment: z.null(),
+  lead: noteLeadReferenceSchema,
 });
 
 const noteBackendSchema = z.discriminatedUnion('entityType', [
   orderNoteBackendSchema,
   shipmentNoteBackendSchema,
+  leadNoteBackendSchema,
 ]);
 
 function normalizeNote(note: z.infer<typeof noteBackendSchema>) {
@@ -68,6 +85,22 @@ function normalizeNote(note: z.infer<typeof noteBackendSchema>) {
       author: note.author,
       order: note.order,
       shipment: note.shipment,
+      lead: note.lead,
+    };
+  }
+
+  if (note.entityType === 'SHIPMENT') {
+    return {
+      id: note.id,
+      message: note.content,
+      entityType: note.entityType,
+      entityId: note.shipment.id,
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
+      author: note.author,
+      order: note.order,
+      shipment: note.shipment,
+      lead: note.lead,
     };
   }
 
@@ -75,12 +108,13 @@ function normalizeNote(note: z.infer<typeof noteBackendSchema>) {
     id: note.id,
     message: note.content,
     entityType: note.entityType,
-    entityId: note.shipment.id,
+    entityId: note.lead.id,
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
     author: note.author,
     order: note.order,
     shipment: note.shipment,
+    lead: note.lead,
   };
 }
 

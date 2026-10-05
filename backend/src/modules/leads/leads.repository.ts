@@ -150,6 +150,24 @@ export class LeadsRepository {
     return lead;
   }
 
+  async findById(id: string, user: AuthenticatedUser) {
+    const lead = await this.prismaService.lead.findFirst({
+      where: {
+        id,
+        ...this.buildLeadAccessWhere(user, {
+          restrictSalesToOwn: false,
+        }),
+      },
+      select: leadListSelect,
+    });
+
+    if (!lead) {
+      throw new NotFoundException('Lead was not found.');
+    }
+
+    return lead;
+  }
+
   async findEditableById(id: string, user: AuthenticatedUser) {
     const lead = await this.prismaService.lead.findFirst({
       where: {

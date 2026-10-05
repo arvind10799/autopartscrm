@@ -84,6 +84,15 @@ export class NotesService {
 
         return;
       }
+      case NoteEntityType.LEAD: {
+        const exists = await this.notesRepository.leadExists(entityId);
+
+        if (!exists) {
+          throw new NotFoundException('Lead was not found.');
+        }
+
+        return;
+      }
       default:
         throw new BadRequestException('Unsupported note entity type.');
     }

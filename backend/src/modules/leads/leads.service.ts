@@ -27,6 +27,10 @@ export class LeadsService {
     return this.leadsRepository.findAll(queryLeadsDto, user);
   }
 
+  findOne(id: string, user: AuthenticatedUser) {
+    return this.leadsRepository.findById(id, user);
+  }
+
   async exportExcel(
     queryLeadsDto: QueryLeadsDto,
     user: AuthenticatedUser,

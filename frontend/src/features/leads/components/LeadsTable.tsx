@@ -241,11 +241,34 @@ function buildColumns(
         }
 
         if (!canManageLead) {
-          return null;
+          return (
+            <Link
+              href={`/leads/${row.original.id}`}
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'sm' }),
+                'h-8 w-8 rounded-xl px-0 text-xs text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
+              )}
+              title="View lead"
+            >
+              <ArrowRight className="h-4 w-4" />
+              <span className="sr-only">View lead</span>
+            </Link>
+          );
         }
 
         return (
           <div className="flex min-w-0 items-center justify-end gap-1">
+            <Link
+              href={`/leads/${row.original.id}`}
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'sm' }),
+                'h-8 w-8 rounded-xl px-0 text-xs text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
+              )}
+              title="View lead"
+            >
+              <ArrowRight className="h-4 w-4" />
+              <span className="sr-only">View lead</span>
+            </Link>
             <Button
               variant="ghost"
               size="sm"
@@ -407,31 +430,41 @@ export function LeadsTable({
                   View order
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-              ) : canManageLead ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 rounded-xl"
-                    onClick={() => onEdit(lead)}
-                  >
-                    <PencilLine className="h-4 w-4" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]"
-                    onClick={() => onConvert(lead)}
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Convert
-                  </Button>
-                </>
               ) : (
-                <p className="col-span-2 rounded-xl border border-border/70 px-3 py-2 text-center text-xs font-medium text-muted-foreground">
-                  Assigned to another agent
-                </p>
+                <>
+                  <Link
+                    href={`/leads/${lead.id}`}
+                    className={cn(
+                      buttonVariants({ variant: 'outline', size: 'sm' }),
+                      canManageLead ? 'h-9 rounded-xl' : 'col-span-2 h-9 rounded-xl',
+                    )}
+                  >
+                    View lead
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  {canManageLead ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-xl"
+                        onClick={() => onEdit(lead)}
+                      >
+                        <PencilLine className="h-4 w-4" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]"
+                        onClick={() => onConvert(lead)}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Convert
+                      </Button>
+                    </>
+                  ) : null}
+                </>
               )}
             </div>
           </article>

@@ -4,6 +4,7 @@ import type { ApiEnvelope } from '@/features/auth/types/auth.types';
 import type { TimestampRangeQuery } from '@/lib/filters/date-range';
 import { isValidOrderId } from '@/features/orders/lib/orders.helpers';
 import { isValidShipmentId } from '@/features/shipments/lib/shipments.helpers';
+import { isValidLeadId } from '@/features/leads/lib/leads.helpers';
 import { axiosBrowser } from '@/lib/api/axios-browser';
 import { HttpError } from '@/lib/api/http-error';
 import { parseApiData } from '@/lib/api/parse-api-data';
@@ -68,5 +69,9 @@ function assertValidEntityReference(
 
   if (entityType === 'SHIPMENT' && !isValidShipmentId(entityId)) {
     throw new HttpError('Shipment identifier is invalid.', 400);
+  }
+
+  if (entityType === 'LEAD' && !isValidLeadId(entityId)) {
+    throw new HttpError('Lead identifier is invalid.', 400);
   }
 }

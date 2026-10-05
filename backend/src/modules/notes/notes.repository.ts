@@ -29,6 +29,14 @@ const noteInclude = {
       orderId: true,
     },
   },
+  lead: {
+    select: {
+      id: true,
+      customerName: true,
+      customerPhone: true,
+      status: true,
+    },
+  },
 } satisfies Prisma.NoteInclude;
 
 type CreateNoteRecordInput = {
@@ -110,6 +118,15 @@ export class NotesRepository {
     return Boolean(shipment);
   }
 
+  async leadExists(id: string) {
+    const lead = await this.prismaService.lead.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    return Boolean(lead);
+  }
+
   private buildEntityWhere(
     entityType: NoteEntityType,
     entityId: string,
@@ -124,6 +141,11 @@ export class NotesRepository {
         return {
           entityType,
           shipmentId: entityId,
+        };
+      case NoteEntityType.LEAD:
+        return {
+          entityType,
+          leadId: entityId,
         };
       default:
         throw new BadRequestException('Unsupported note entity type.');
@@ -162,6 +184,21 @@ export class NotesRepository {
             },
           },
           shipment: {
+            connect: {
+              id: entityId,
+            },
+          },
+        };
+      case NoteEntityType.LEAD:
+        return {
+          content: content.trim(),
+          entityType,
+          author: {
+            connect: {
+              id: authorId,
+            },
+          },
+          lead: {
             connect: {
               id: entityId,
             },
