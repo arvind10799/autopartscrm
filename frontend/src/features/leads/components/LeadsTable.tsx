@@ -22,6 +22,50 @@ function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
 }
 
+function formatUpdatedAge(value: string) {
+  const timestamp = new Date(value).getTime();
+
+  if (Number.isNaN(timestamp)) {
+    return '';
+  }
+
+  const elapsedSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - timestamp) / 1000),
+  );
+
+  if (elapsedSeconds < 60) {
+    return 'just now';
+  }
+
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} min ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+
+  if (elapsedHours < 24) {
+    return `${elapsedHours} ${elapsedHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+
+  if (elapsedDays < 30) {
+    return `${elapsedDays} ${elapsedDays === 1 ? 'day' : 'days'} ago`;
+  }
+
+  const elapsedMonths = Math.floor(elapsedDays / 30);
+
+  if (elapsedMonths < 12) {
+    return `${elapsedMonths} ${elapsedMonths === 1 ? 'month' : 'months'} ago`;
+  }
+
+  const elapsedYears = Math.floor(elapsedMonths / 12);
+  return `${elapsedYears} ${elapsedYears === 1 ? 'year' : 'years'} ago`;
+}
+
 function formatVehicleSummary(lead: LeadSummary) {
   return [lead.vehicleYear, lead.vehicleMake, lead.vehicleModel]
     .map((value) => value?.trim())
@@ -67,12 +111,20 @@ function buildColumns(
         className: role === 'ADMIN' ? 'w-[10%] overflow-hidden px-2' : 'w-[11%] overflow-hidden px-2',
       },
       cell: ({ row }) => (
-        <p
-          className="truncate font-semibold text-slate-950 dark:text-white"
-          title={formatDate(row.original.date)}
-        >
-          {formatDate(row.original.date)}
-        </p>
+        <div className="min-w-0">
+          <p
+            className="truncate font-semibold text-slate-950 dark:text-white"
+            title={formatDate(row.original.date)}
+          >
+            {formatDate(row.original.date)}
+          </p>
+          <p
+            className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400"
+            title={`Updated ${formatUpdatedAge(row.original.updatedAt)}`}
+          >
+            Updated {formatUpdatedAge(row.original.updatedAt)}
+          </p>
+        </div>
       ),
     },
     {
@@ -311,6 +363,9 @@ export function LeadsTable({
                 </p>
                 <p className="truncate text-xs font-medium text-muted-foreground">
                   {formatDate(lead.date)}
+                </p>
+                <p className="truncate text-[11px] font-medium text-muted-foreground">
+                  Updated {formatUpdatedAge(lead.updatedAt)}
                 </p>
               </div>
               <Badge
