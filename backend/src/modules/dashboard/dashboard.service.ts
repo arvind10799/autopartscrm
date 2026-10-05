@@ -563,16 +563,11 @@ export class DashboardService {
       agent.updatedLeads += 1;
     });
 
-    const agents = [...agentMap.values()]
-      .filter(
-        (agent) =>
-          agent.totalLeads > 0 || agent.updatedLeads > 0 || Boolean(search),
-      )
-      .sort((first, second) =>
-        first.agentName.localeCompare(second.agentName, undefined, {
-          sensitivity: 'base',
-        }),
-      );
+    const agents = [...agentMap.values()].sort((first, second) =>
+      first.agentName.localeCompare(second.agentName, undefined, {
+        sensitivity: 'base',
+      }),
+    );
 
     return {
       selectedMonth: period.selectedMonth,
