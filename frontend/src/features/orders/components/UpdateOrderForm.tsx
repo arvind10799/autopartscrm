@@ -424,11 +424,7 @@ export function UpdateOrderForm({
             <EditorSection title="Commercial details">
               {[
                 ['milesOffered', 'Miles offered'],
-                ['basePrice', 'Base price'],
-                ['salesTax', 'Sales tax'],
-                ['shippingCharges', 'Shipping charges'],
-                ['profit', 'Profit'],
-                ['partialPayment', 'Paid'],
+                ['basePrice', 'Order amount'],
               ].map(([field, label]) => (
                 <EditorField key={field} label={label} id={field}>
                   <Input
