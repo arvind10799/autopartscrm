@@ -1,9 +1,9 @@
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
-import Link from 'next/link';
+import type { MouseEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
   PencilLine,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { DataTable } from '@/components/data-table/DataTable';
 import { Badge } from '@/components/ui/badge';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { UserRole } from '@/features/auth/types/auth.types';
 import { cn } from '@/lib/utils/cn';
 import { formatDate, formatLeadCurrency } from '../lib/lead-formatters';
@@ -94,6 +94,18 @@ function getLeadStatusTone(status: LeadStatus | 'CONVERTED') {
   };
 
   return toneClasses[status];
+}
+
+function getLeadDetailsHref(lead: LeadSummary) {
+  if (lead.isConverted && lead.convertedOrder) {
+    return `/orders/${lead.convertedOrder.id}`;
+  }
+
+  return `/leads/${lead.id}`;
+}
+
+function stopRowNavigation(event: MouseEvent<HTMLElement>) {
+  event.stopPropagation();
 }
 
 function buildColumns(
@@ -224,56 +236,20 @@ function buildColumns(
           role === 'ADMIN' ||
           (role === 'SALES' && row.original.createdBy.id === currentUserId);
 
-        if (row.original.isConverted && row.original.convertedOrder) {
-          return (
-          <Link
-            href={`/orders/${row.original.convertedOrder.id}`}
-            className={cn(
-              buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'h-8 w-8 rounded-xl px-0 text-xs text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
-            )}
-            title="View order"
-          >
-            <ArrowRight className="h-4 w-4" />
-            <span className="sr-only">View order</span>
-          </Link>
-          );
-        }
-
-        if (!canManageLead) {
-          return (
-            <Link
-              href={`/leads/${row.original.id}`}
-              className={cn(
-                buttonVariants({ variant: 'ghost', size: 'sm' }),
-                'h-8 w-8 rounded-xl px-0 text-xs text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
-              )}
-              title="View lead"
-            >
-              <ArrowRight className="h-4 w-4" />
-              <span className="sr-only">View lead</span>
-            </Link>
-          );
+        if (row.original.isConverted || !canManageLead) {
+          return null;
         }
 
         return (
           <div className="flex min-w-0 items-center justify-end gap-1">
-            <Link
-              href={`/leads/${row.original.id}`}
-              className={cn(
-                buttonVariants({ variant: 'ghost', size: 'sm' }),
-                'h-8 w-8 rounded-xl px-0 text-xs text-[#0f6fb7] hover:bg-sky-50 hover:text-[#0b5f9e] dark:text-sky-300 dark:hover:bg-sky-950/30',
-              )}
-              title="View lead"
-            >
-              <ArrowRight className="h-4 w-4" />
-              <span className="sr-only">View lead</span>
-            </Link>
             <Button
               variant="ghost"
               size="sm"
               className="h-8 w-8 rounded-xl px-0 text-xs"
-              onClick={() => onEdit(row.original)}
+              onClick={(event) => {
+                stopRowNavigation(event);
+                onEdit(row.original);
+              }}
               title="Edit"
             >
               <PencilLine className="h-4 w-4" />
@@ -283,7 +259,10 @@ function buildColumns(
               variant="outline"
               size="sm"
               className="h-8 w-8 rounded-xl border-[#ff5a00]/25 px-0 text-xs text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20"
-              onClick={() => onConvert(row.original)}
+              onClick={(event) => {
+                stopRowNavigation(event);
+                onConvert(row.original);
+              }}
               title="Convert to order"
             >
               <RefreshCw className="h-4 w-4" />
@@ -352,6 +331,7 @@ export function LeadsTable({
   currentUserId?: string | null;
   showAgentColumn?: boolean;
 }) {
+  const router = useRouter();
   const totalPages = meta.totalPages;
   const columns = buildColumns(
     onConvert,
@@ -371,6 +351,7 @@ export function LeadsTable({
       onRetry={onRetry}
       density="compact"
       layout="fit"
+      onRowClick={(lead) => router.push(getLeadDetailsHref(lead))}
       renderMobileCard={(lead) => {
         const status = lead.isConverted ? 'CONVERTED' : lead.status;
         const canManageLead =
@@ -418,55 +399,34 @@ export function LeadsTable({
               />
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {lead.isConverted && lead.convertedOrder ? (
-                <Link
-                  href={`/orders/${lead.convertedOrder.id}`}
-                  className={cn(
-                    buttonVariants({ variant: 'default', size: 'sm' }),
-                    'col-span-2 h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',
-                  )}
+            {!lead.isConverted && canManageLead ? (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 rounded-xl"
+                  onClick={(event) => {
+                    stopRowNavigation(event);
+                    onEdit(lead);
+                  }}
                 >
-                  View order
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    href={`/leads/${lead.id}`}
-                    className={cn(
-                      buttonVariants({ variant: 'outline', size: 'sm' }),
-                      canManageLead ? 'h-9 rounded-xl' : 'col-span-2 h-9 rounded-xl',
-                    )}
-                  >
-                    View lead
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                  {canManageLead ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9 rounded-xl"
-                        onClick={() => onEdit(lead)}
-                      >
-                        <PencilLine className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]"
-                        onClick={() => onConvert(lead)}
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                        Convert
-                      </Button>
-                    </>
-                  ) : null}
-                </>
-              )}
-            </div>
+                  <PencilLine className="h-4 w-4" />
+                  Edit
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]"
+                  onClick={(event) => {
+                    stopRowNavigation(event);
+                    onConvert(lead);
+                  }}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Convert
+                </Button>
+              </div>
+            ) : null}
           </article>
         );
       }}

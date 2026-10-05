@@ -28,6 +28,7 @@ type DataTableProps<TData> = {
   density?: 'normal' | 'compact';
   layout?: 'scroll' | 'fit';
   renderMobileCard?: (row: TData) => ReactNode;
+  onRowClick?: (row: TData) => void;
 };
 
 export function DataTable<TData>({
@@ -44,6 +45,7 @@ export function DataTable<TData>({
   density = 'normal',
   layout = 'scroll',
   renderMobileCard,
+  onRowClick,
 }: DataTableProps<TData>) {
   const table = useReactTable({
     data,
@@ -104,7 +106,25 @@ export function DataTable<TData>({
             />
           ) : (
             data.map((row, index) => (
-              <div key={getRowId?.(row, index) ?? index}>{renderMobileCard(row)}</div>
+              <div
+                key={getRowId?.(row, index) ?? index}
+                role={onRowClick ? 'button' : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                className={cn(onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2')}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          onRowClick(row);
+                        }
+                      }
+                    : undefined
+                }
+              >
+                {renderMobileCard(row)}
+              </div>
             ))
           )}
         </div>
@@ -202,7 +222,23 @@ export function DataTable<TData>({
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-t border-border/60 transition hover:bg-secondary/30"
+                  role={onRowClick ? 'button' : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  className={cn(
+                    'border-t border-border/60 transition hover:bg-secondary/30',
+                    onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                  )}
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            onRowClick(row.original);
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
