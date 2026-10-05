@@ -49,6 +49,7 @@ export class OrdersCacheService {
       createdFrom: queryOrdersDto.createdFrom ?? null,
       createdTo: queryOrdersDto.createdTo ?? null,
       createdById: queryOrdersDto.createdById?.trim() ?? null,
+      ageingRange: queryOrdersDto.ageingRange ?? null,
       hasShipment: queryOrdersDto.hasShipment ?? null,
       hasReplacement: queryOrdersDto.hasReplacement ?? null,
       limit: queryOrdersDto.limit ?? 20,

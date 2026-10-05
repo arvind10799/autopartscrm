@@ -103,7 +103,6 @@ function buildColumns(
         <ShippingStatusCell
           status={row.original.latestShipmentStatus}
           orderStatus={row.original.status}
-          orderDate={row.original.intakeDetails?.orderDate}
           fallbackDate={row.original.createdAt}
           bolNumber={row.original.latestShipment?.bolNumber}
           proNumber={row.original.latestShipment?.proNumber}
@@ -238,7 +237,6 @@ export function OrdersTable({
                 <ShippingStatusCell
                   status={order.latestShipmentStatus}
                   orderStatus={order.status}
-                  orderDate={order.intakeDetails?.orderDate}
                   fallbackDate={order.createdAt}
                   bolNumber={order.latestShipment?.bolNumber}
                   proNumber={order.latestShipment?.proNumber}
