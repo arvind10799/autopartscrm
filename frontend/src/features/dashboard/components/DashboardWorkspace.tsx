@@ -45,6 +45,8 @@ import type {
   AgentLeadsDashboardAgent,
   AgentLeadsDashboardResponse,
   AgentLeadsSortKey,
+  DashboardPeriodMode,
+  DashboardPeriodQuery,
   DashboardTab,
   OrderStatusAgeingRange,
   OrderStatusDashboardOrder,
@@ -76,6 +78,17 @@ const DASHBOARD_TABS: Array<{
 
 const ORDER_STATUS_PAGE_SIZE = 20;
 
+const DASHBOARD_PERIOD_OPTIONS: Array<{
+  value: DashboardPeriodMode;
+  label: string;
+}> = [
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'last-week', label: 'Last Week' },
+  { value: 'month', label: 'Month' },
+  { value: 'custom', label: 'Custom Range' },
+];
+
 type SortState = {
   key: SalesOverviewSortKey;
   direction: 'asc' | 'desc';
@@ -91,12 +104,72 @@ type AgentLeadsSortState = {
   direction: 'asc' | 'desc';
 };
 
+function buildDashboardPeriodQuery({
+  customEndDate,
+  customStartDate,
+  maxMonth,
+  periodMode,
+  selectedMonth,
+  todayDate,
+}: {
+  customEndDate: string;
+  customStartDate: string;
+  maxMonth: string;
+  periodMode: DashboardPeriodMode;
+  selectedMonth: string;
+  todayDate: string;
+}): DashboardPeriodQuery {
+  if (periodMode === 'month') {
+    return { month: selectedMonth || maxMonth };
+  }
+
+  if (periodMode === 'yesterday') {
+    const yesterday = addDaysToDateInputValue(todayDate, -1);
+
+    return { startDate: yesterday, endDate: yesterday };
+  }
+
+  if (periodMode === 'last-week') {
+    return {
+      startDate: addDaysToDateInputValue(todayDate, -6),
+      endDate: todayDate,
+    };
+  }
+
+  if (periodMode === 'custom') {
+    return {
+      startDate: customStartDate || todayDate,
+      endDate: customEndDate || todayDate,
+    };
+  }
+
+  return { startDate: todayDate, endDate: todayDate };
+}
+
+function addDaysToDateInputValue(value: string, days: number) {
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, '0'),
+    String(date.getUTCDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 export function DashboardWorkspace() {
   const user = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<DashboardTab>('sales-overview');
-  const [periodMode, setPeriodMode] = useState<'all' | 'month'>('month');
+  const [periodMode, setPeriodMode] =
+    useState<DashboardPeriodMode>('month');
   const [selectedMonth, setSelectedMonth] = useState(() =>
     getPacificTodayDateInputValue().slice(0, 7),
+  );
+  const [customStartDate, setCustomStartDate] = useState(() =>
+    getPacificTodayDateInputValue(),
+  );
+  const [customEndDate, setCustomEndDate] = useState(() =>
+    getPacificTodayDateInputValue(),
   );
   const [salesOverview, setSalesOverview] =
     useState<SalesOverviewResponse | null>(null);
@@ -122,7 +195,27 @@ export function DashboardWorkspace() {
   const [agentLeadsError, setAgentLeadsError] = useState<string | null>(null);
   const [agentLeadSearchInput, setAgentLeadSearchInput] = useState('');
   const [agentLeadStatusFilter, setAgentLeadStatusFilter] = useState('ALL');
-  const maxMonth = getPacificTodayDateInputValue().slice(0, 7);
+  const maxDate = getPacificTodayDateInputValue();
+  const maxMonth = maxDate.slice(0, 7);
+  const dashboardPeriodQuery = useMemo(
+    () =>
+      buildDashboardPeriodQuery({
+        customEndDate,
+        customStartDate,
+        maxMonth,
+        periodMode,
+        selectedMonth,
+        todayDate: maxDate,
+      }),
+    [
+      customEndDate,
+      customStartDate,
+      maxDate,
+      maxMonth,
+      periodMode,
+      selectedMonth,
+    ],
+  );
   const deferredOrderSearchInput = useDeferredValue(orderSearchInput);
   const activeOrderSearch = deferredOrderSearchInput.trim();
   const deferredAgentLeadSearchInput = useDeferredValue(agentLeadSearchInput);
@@ -140,9 +233,7 @@ export function DashboardWorkspace() {
       setSalesOverviewError(null);
 
       try {
-        const response = await dashboardApi.getSalesOverview(
-          periodMode === 'all' ? null : selectedMonth || maxMonth,
-        );
+        const response = await dashboardApi.getSalesOverview(dashboardPeriodQuery);
 
         if (!isCancelled) {
           setSalesOverview(response);
@@ -167,7 +258,7 @@ export function DashboardWorkspace() {
     return () => {
       isCancelled = true;
     };
-  }, [activeTab, maxMonth, periodMode, refreshKey, selectedMonth]);
+  }, [activeTab, dashboardPeriodQuery, refreshKey]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -182,7 +273,7 @@ export function DashboardWorkspace() {
 
       try {
         const response = await dashboardApi.getOrderStatus({
-          month: periodMode === 'all' ? null : selectedMonth || maxMonth,
+          ...dashboardPeriodQuery,
           search: activeOrderSearch,
           status: orderStatusFilter,
           agentId: orderAgentFilter,
@@ -218,15 +309,13 @@ export function DashboardWorkspace() {
   }, [
     activeTab,
     activeOrderSearch,
-    maxMonth,
+    dashboardPeriodQuery,
     orderAgeingRange,
     orderAgentFilter,
     orderPage,
     orderStatusFilter,
     overdueDays,
-    periodMode,
     refreshKey,
-    selectedMonth,
   ]);
 
   useEffect(() => {
@@ -242,7 +331,7 @@ export function DashboardWorkspace() {
 
       try {
         const response = await dashboardApi.getAgentLeads({
-          month: periodMode === 'all' ? undefined : selectedMonth || maxMonth,
+          ...dashboardPeriodQuery,
           search: activeAgentLeadSearch,
           status: agentLeadStatusFilter,
         });
@@ -274,10 +363,8 @@ export function DashboardWorkspace() {
     activeTab,
     activeAgentLeadSearch,
     agentLeadStatusFilter,
-    maxMonth,
-    periodMode,
+    dashboardPeriodQuery,
     refreshKey,
-    selectedMonth,
   ]);
 
   const updateOrderStatusFilter = (value: string) => {
@@ -339,12 +426,15 @@ export function DashboardWorkspace() {
               value={periodMode}
               onChange={(event) => {
                 setOrderPage(1);
-                setPeriodMode(event.target.value === 'all' ? 'all' : 'month');
+                setPeriodMode(event.target.value as DashboardPeriodMode);
               }}
               className="h-11 w-full rounded-xl border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900"
             >
-              <option value="all">All time</option>
-              <option value="month">Monthly</option>
+              {DASHBOARD_PERIOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </Select>
           </div>
 
@@ -369,6 +459,60 @@ export function DashboardWorkspace() {
               />
             </div>
           ) : null}
+
+          {periodMode === 'custom' ? (
+            <>
+              <div className="w-full sm:w-40">
+                <label
+                  htmlFor="dashboard-start-date"
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
+                >
+                  From
+                </label>
+                <Input
+                  id="dashboard-start-date"
+                  type="date"
+                  value={customStartDate}
+                  max={customEndDate || maxDate}
+                  onChange={(event) => {
+                    const nextStartDate = event.target.value || maxDate;
+                    setOrderPage(1);
+                    setCustomStartDate(nextStartDate);
+
+                    if (customEndDate < nextStartDate) {
+                      setCustomEndDate(nextStartDate);
+                    }
+                  }}
+                  className="h-11 w-full rounded-xl border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900"
+                />
+              </div>
+              <div className="w-full sm:w-40">
+                <label
+                  htmlFor="dashboard-end-date"
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
+                >
+                  To
+                </label>
+                <Input
+                  id="dashboard-end-date"
+                  type="date"
+                  value={customEndDate}
+                  min={customStartDate}
+                  max={maxDate}
+                  onChange={(event) => {
+                    const nextEndDate = event.target.value || maxDate;
+                    setOrderPage(1);
+                    setCustomEndDate(nextEndDate);
+
+                    if (customStartDate > nextEndDate) {
+                      setCustomStartDate(nextEndDate);
+                    }
+                  }}
+                  className="h-11 w-full rounded-xl border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900"
+                />
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -377,8 +521,6 @@ export function DashboardWorkspace() {
           data={salesOverview}
           isLoading={isLoadingSalesOverview}
           error={salesOverviewError}
-          periodMode={periodMode}
-          month={periodMode === 'all' ? null : selectedMonth}
           onRetry={() => setRefreshKey((currentValue) => currentValue + 1)}
         />
       ) : activeTab === 'order-status' ? (
@@ -425,15 +567,11 @@ function SalesOverviewTab({
   data,
   isLoading,
   error,
-  periodMode,
-  month,
   onRetry,
 }: {
   data: SalesOverviewResponse | null;
   isLoading: boolean;
   error: string | null;
-  periodMode: 'all' | 'month';
-  month: string | null;
   onRetry: () => void;
 }) {
   const [sortState, setSortState] = useState<SortState>({
@@ -520,7 +658,7 @@ function SalesOverviewTab({
           icon={<ClipboardList className="h-5 w-5" />}
           label="Total Sales"
           value={data.totals.totalSales.toLocaleString()}
-          hint="Completed sales in selected month"
+          hint="Completed sales in selected period"
           tone="orange"
         />
         <SalesKpiCard
@@ -566,10 +704,10 @@ function SalesOverviewTab({
             <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
               <Users className="h-10 w-10 text-muted-foreground" />
               <p className="font-semibold text-foreground">
-                No sales activity for this month
+                No sales activity for this period
               </p>
               <p className="text-sm text-muted-foreground">
-                Choose another month or add leads/orders to populate this table.
+                Choose another period or add leads/orders to populate this table.
               </p>
             </div>
           ) : (
@@ -764,7 +902,7 @@ function OrderStatusTab({
   data: OrderStatusDashboardResponse | null;
   isLoading: boolean;
   error: string | null;
-  periodMode: 'all' | 'month';
+  periodMode: DashboardPeriodMode;
   searchInput: string;
   onSearchInputChange: (value: string) => void;
   statusFilter: string;
@@ -871,7 +1009,7 @@ function OrderStatusTab({
         />
         <SalesKpiCard
           icon={<PackageCheck className="h-5 w-5" />}
-          label={periodMode === 'all' ? 'Delivered' : 'Delivered MTD'}
+          label={periodMode === 'month' ? 'Delivered MTD' : 'Delivered'}
           value={data.totals.deliveredMtd.toLocaleString()}
           hint="Delivered orders in current period"
           tone="emerald"
@@ -1341,7 +1479,7 @@ function AgentLeadsTab({
               <Users className="h-10 w-10 text-slate-400" />
               <p className="font-semibold text-slate-950 dark:text-white">No matching agents</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Try another month, agent search, or lead status.
+                Try another period, agent search, or lead status.
               </p>
             </div>
           ) : (

@@ -11,22 +11,20 @@ import {
 import type {
   AgentLeadsDashboardQuery,
   AgentLeadsDashboardResponse,
+  DashboardPeriodQuery,
   OrderStatusDashboardQuery,
   OrderStatusDashboardResponse,
   SalesOverviewResponse,
 } from '../types/sales-overview.types';
 
 export const dashboardApi = {
-  async getSalesOverview(month?: string | null): Promise<SalesOverviewResponse> {
+  async getSalesOverview(
+    query?: DashboardPeriodQuery,
+  ): Promise<SalesOverviewResponse> {
+    const params = buildDashboardPeriodParams(query);
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
       '/api/dashboard/sales-overview',
-      month
-        ? {
-            params: {
-              month,
-            },
-          }
-        : undefined,
+      Object.keys(params).length > 0 ? { params } : undefined,
     );
 
     return parseApiData(response, salesOverviewSchema, {
@@ -40,9 +38,7 @@ export const dashboardApi = {
   ): Promise<OrderStatusDashboardResponse> {
     const params: Record<string, string | number> = {};
 
-    if (query.month) {
-      params.month = query.month;
-    }
+    Object.assign(params, buildDashboardPeriodParams(query));
 
     if (query.search?.trim()) {
       params.search = query.search.trim();
@@ -90,9 +86,7 @@ export const dashboardApi = {
   ): Promise<AgentLeadsDashboardResponse> {
     const params: Record<string, string> = {};
 
-    if (query.month) {
-      params.month = query.month;
-    }
+    Object.assign(params, buildDashboardPeriodParams(query));
 
     if (query.search?.trim()) {
       params.search = query.search.trim();
@@ -115,3 +109,18 @@ export const dashboardApi = {
     });
   },
 };
+
+function buildDashboardPeriodParams(query?: DashboardPeriodQuery) {
+  const params: Record<string, string> = {};
+
+  if (query?.month) {
+    params.month = query.month;
+  }
+
+  if (query?.startDate && query.endDate) {
+    params.startDate = query.startDate;
+    params.endDate = query.endDate;
+  }
+
+  return params;
+}

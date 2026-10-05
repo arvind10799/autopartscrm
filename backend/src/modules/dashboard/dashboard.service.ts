@@ -79,12 +79,18 @@ type AgentLeadMetric = {
   lastUpdated: string | null;
 };
 
+type DashboardPeriodQuery = {
+  month?: string;
+  startDate?: string;
+  endDate?: string;
+};
+
 @Injectable()
 export class DashboardService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async getSalesOverview(query: QuerySalesOverviewDto) {
-    const period = this.resolveSalesOverviewPeriod(query.month);
+    const period = this.resolveDashboardPeriod(query);
     const leadWhere: Prisma.LeadWhereInput = period.start
       ? {
           leadDate: {
@@ -257,7 +263,7 @@ export class DashboardService {
   }
 
   async getOrderStatus(query: QueryOrderStatusDashboardDto) {
-    const period = this.resolveSalesOverviewPeriod(query.month);
+    const period = this.resolveDashboardPeriod(query);
     const overdueDays = query.overdueDays ?? 14;
     const { page, limit, skip } = getPaginationParams(
       query.page,
@@ -440,7 +446,7 @@ export class DashboardService {
   }
 
   async getAgentLeads(query: QueryAgentLeadsDashboardDto) {
-    const period = this.resolveSalesOverviewPeriod(query.month);
+    const period = this.resolveDashboardPeriod(query);
     const search = query.search?.trim();
     const leadWhere: Prisma.LeadWhereInput = {
       ...(period.start
@@ -613,8 +619,12 @@ export class DashboardService {
     return Math.max(saleAmount - saleAmount * PAYMENT_PROCESSING_FEE_RATE, 0);
   }
 
-  private resolveSalesOverviewPeriod(month?: string) {
-    if (!month) {
+  private resolveDashboardPeriod(query: DashboardPeriodQuery) {
+    if (query.startDate || query.endDate) {
+      return this.resolveCustomDashboardPeriod(query.startDate, query.endDate);
+    }
+
+    if (!query.month) {
       return {
         selectedMonth: null,
         start: null,
@@ -623,7 +633,7 @@ export class DashboardService {
       };
     }
 
-    const selectedMonth = month;
+    const selectedMonth = query.month;
     const [yearText, monthText] = selectedMonth.split('-');
     const year = Number(yearText);
     const monthNumber = Number(monthText);
@@ -656,6 +666,50 @@ export class DashboardService {
         month: 'long',
         year: 'numeric',
       }).format(start),
+    };
+  }
+
+  private resolveCustomDashboardPeriod(
+    startDate?: string,
+    endDate?: string,
+  ) {
+    if (!startDate || !endDate) {
+      throw new BadRequestException(
+        'startDate and endDate are required for a custom dashboard range.',
+      );
+    }
+
+    const startParts = this.parseDateInput(startDate, 'startDate');
+    const endParts = this.parseDateInput(endDate, 'endDate');
+    const start = this.zonedTimeToUtc(
+      startParts.year,
+      startParts.month,
+      startParts.day,
+    );
+    const endExclusiveParts = this.addDaysToDateParts(endParts, 1);
+    const uncappedEnd = this.zonedTimeToUtc(
+      endExclusiveParts.year,
+      endExclusiveParts.month,
+      endExclusiveParts.day,
+    );
+
+    if (uncappedEnd <= start) {
+      throw new BadRequestException('endDate must be on or after startDate.');
+    }
+
+    const now = new Date();
+    const end = start <= now && uncappedEnd > now ? now : uncappedEnd;
+
+    return {
+      selectedMonth: null,
+      start,
+      end,
+      label:
+        startDate === endDate
+          ? this.formatPacificDateLabel(start)
+          : `${this.formatPacificDateLabel(start)} – ${this.formatPacificDateLabel(
+              this.zonedTimeToUtc(endParts.year, endParts.month, endParts.day),
+            )}`,
     };
   }
 
@@ -731,7 +785,7 @@ export class DashboardService {
 
   private isDateWithinPeriod(
     value: string | null,
-    period: ReturnType<DashboardService['resolveSalesOverviewPeriod']>,
+    period: ReturnType<DashboardService['resolveDashboardPeriod']>,
   ) {
     if (!value) {
       return false;
@@ -782,6 +836,59 @@ export class DashboardService {
     const month = parts.find((part) => part.type === 'month')?.value;
 
     return `${year}-${month}`;
+  }
+
+  private parseDateInput(value: string, fieldName: string) {
+    const [yearText, monthText, dayText] = value.split('-');
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+
+    if (
+      !Number.isInteger(year) ||
+      !Number.isInteger(month) ||
+      !Number.isInteger(day) ||
+      month < 1 ||
+      month > 12 ||
+      day < 1 ||
+      day > 31
+    ) {
+      throw new BadRequestException(`${fieldName} must use YYYY-MM-DD format.`);
+    }
+
+    const parsed = new Date(Date.UTC(year, month - 1, day));
+
+    if (
+      parsed.getUTCFullYear() !== year ||
+      parsed.getUTCMonth() !== month - 1 ||
+      parsed.getUTCDate() !== day
+    ) {
+      throw new BadRequestException(`${fieldName} is not a valid date.`);
+    }
+
+    return { year, month, day };
+  }
+
+  private addDaysToDateParts(
+    value: { year: number; month: number; day: number },
+    days: number,
+  ) {
+    const date = new Date(Date.UTC(value.year, value.month - 1, value.day + days));
+
+    return {
+      year: date.getUTCFullYear(),
+      month: date.getUTCMonth() + 1,
+      day: date.getUTCDate(),
+    };
+  }
+
+  private formatPacificDateLabel(date: Date) {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: PACIFIC_TIME_ZONE,
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
   }
 
   private zonedTimeToUtc(

@@ -46,6 +46,19 @@ export type OrderStatusSortKey =
   | 'ageingDays'
   | 'status';
 
+export type DashboardPeriodMode =
+  | 'today'
+  | 'yesterday'
+  | 'last-week'
+  | 'month'
+  | 'custom';
+
+export type DashboardPeriodQuery = {
+  month?: string | null;
+  startDate?: string;
+  endDate?: string;
+};
+
 export type SalesOverviewAgent = {
   agentId: string;
   agentName: string;
@@ -129,6 +142,8 @@ export type OrderStatusDashboardResponse = {
 
 export type OrderStatusDashboardQuery = {
   month?: string | null;
+  startDate?: string;
+  endDate?: string;
   search?: string;
   status?: string;
   agentId?: string;
@@ -165,7 +180,9 @@ export type AgentLeadsDashboardResponse = {
 };
 
 export type AgentLeadsDashboardQuery = {
-  month?: string;
+  month?: string | null;
+  startDate?: string;
+  endDate?: string;
   search?: string;
   status?: string;
 };
