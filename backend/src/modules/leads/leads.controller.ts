@@ -6,8 +6,10 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidParamDto } from '../../common/dto/uuid-param.dto';
@@ -19,6 +21,7 @@ import { CreateLeadDto } from './dto/create-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadsService } from './leads.service';
+import { XLSX_MIME_TYPE } from '../orders/orders-export-workbook.builder';
 
 @Roles(Role.ADMIN, Role.SALES)
 @UseGuards(JwtAuthGuard, RoleGuard)
@@ -45,6 +48,22 @@ export class LeadsController {
   @Get('agents')
   findLeadAgents() {
     return this.leadsService.findLeadAgents();
+  }
+
+  @Get('export.xlsx')
+  async exportExcel(
+    @Query() queryLeadsDto: QueryLeadsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() response: Response,
+  ) {
+    const workbook = await this.leadsService.exportExcel(queryLeadsDto, user);
+
+    response.setHeader('Content-Type', XLSX_MIME_TYPE);
+    response.setHeader(
+      'Content-Disposition',
+      'attachment; filename="leads-export.xlsx"',
+    );
+    response.send(workbook);
   }
 
   @Patch(':id')

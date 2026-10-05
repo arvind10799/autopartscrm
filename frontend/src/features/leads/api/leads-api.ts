@@ -33,6 +33,26 @@ export const leadsApi = {
     });
   },
 
+  async exportExcel(params: LeadsListQuery): Promise<void> {
+    const normalizedParams = normalizeLeadsListQuery(params);
+    const response = await axiosBrowser.get<Blob>('/api/leads/export.xlsx', {
+      params: normalizedParams,
+      responseType: 'blob',
+    });
+    const filename =
+      getDownloadFilename(response.headers['content-disposition']) ??
+      `leads-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
+
   async create(payload: CreateLeadInput): Promise<LeadSummary> {
     const requestPayload = createLeadSchema.parse(payload);
     const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
@@ -70,3 +90,15 @@ export const leadsApi = {
     });
   },
 };
+
+function getDownloadFilename(contentDisposition: unknown): string | null {
+  if (typeof contentDisposition !== 'string') {
+    return null;
+  }
+
+  const utf8FilenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const plainFilenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  const filename = utf8FilenameMatch?.[1] ?? plainFilenameMatch?.[1];
+
+  return filename ? decodeURIComponent(filename) : null;
+}

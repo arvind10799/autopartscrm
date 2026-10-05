@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { getPacificTodayDateInputValue } from '../../common/utils/pacific-date.util';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import {
+  buildOrdersExportWorkbook,
+  OrdersExportWorkbookInput,
+} from '../orders/orders-export-workbook.builder';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
-import { LeadsRepository } from './leads.repository';
+import { LeadListRecord, LeadsRepository } from './leads.repository';
 
 @Injectable()
 export class LeadsService {
@@ -21,6 +25,15 @@ export class LeadsService {
 
   findAll(queryLeadsDto: QueryLeadsDto, user: AuthenticatedUser) {
     return this.leadsRepository.findAll(queryLeadsDto, user);
+  }
+
+  async exportExcel(
+    queryLeadsDto: QueryLeadsDto,
+    user: AuthenticatedUser,
+  ): Promise<Buffer> {
+    const leads = await this.leadsRepository.findAllForExport(queryLeadsDto, user);
+
+    return this.buildLeadsWorkbook(leads, queryLeadsDto);
   }
 
   findLeadAgents() {
@@ -58,5 +71,118 @@ export class LeadsService {
     if (value > getPacificTodayDateInputValue()) {
       throw new BadRequestException(message);
     }
+  }
+
+  private buildLeadsWorkbook(
+    leads: LeadListRecord[],
+    queryLeadsDto: QueryLeadsDto,
+  ): Buffer {
+    const columns: OrdersExportWorkbookInput['columns'] = [
+      { header: 'Lead Date', width: 13 },
+      { header: 'Created Date', width: 22 },
+      { header: 'Updated Date', width: 22 },
+      { header: 'Agent Name', width: 22 },
+      { header: 'Agent Email', width: 28 },
+      { header: 'Adviser Name', width: 22 },
+      { header: 'CMPT', width: 14 },
+      { header: 'Customer Name', width: 24 },
+      { header: 'Customer Phone', width: 18 },
+      { header: 'Customer Email', width: 28 },
+      { header: 'State', width: 12 },
+      { header: 'Vehicle Year', width: 12 },
+      { header: 'Vehicle Make', width: 16 },
+      { header: 'Vehicle Model', width: 18 },
+      { header: 'Vehicle Variant', width: 18 },
+      { header: 'Part Description', width: 32, wrap: true },
+      { header: 'Quote', width: 14, money: true },
+      { header: 'Currency', width: 10 },
+      { header: 'Lead Status', width: 18 },
+      { header: 'Converted', width: 12 },
+      { header: 'Converted At', width: 22 },
+      { header: 'Converted Order', width: 18 },
+      { header: 'Comments', width: 44, wrap: true },
+      { header: 'Prospects', width: 44, wrap: true },
+    ];
+
+    return buildOrdersExportWorkbook({
+      columns,
+      rows: leads.map((lead) => this.buildLeadExportRow(lead)),
+      sheetName: this.buildExportSheetName(queryLeadsDto),
+    });
+  }
+
+  private buildLeadExportRow(
+    lead: LeadListRecord,
+  ): Array<string | number | null | undefined> {
+    return [
+      this.formatDateOnly(lead.leadDate),
+      this.formatDateTime(lead.createdAt),
+      this.formatDateTime(lead.updatedAt),
+      lead.createdBy.name,
+      lead.createdBy.email,
+      lead.adviserName,
+      lead.cmpt,
+      lead.customerName,
+      lead.customerPhone,
+      lead.customerEmail,
+      lead.state,
+      lead.vehicleYear,
+      lead.vehicleMake,
+      lead.vehicleModel,
+      lead.vehicleVariant,
+      lead.partDescription,
+      lead.quote ? Number(lead.quote) : null,
+      lead.quoteCurrency,
+      lead.status,
+      lead.convertedAt ? 'Yes' : 'No',
+      this.formatDateTime(lead.convertedAt),
+      lead.convertedOrder?.orderNumber ?? null,
+      lead.comments,
+      lead.prospects,
+    ];
+  }
+
+  private buildExportSheetName(queryLeadsDto: QueryLeadsDto): string {
+    const exportDate = this.formatExportDate(new Date());
+    const hasActiveFilter = [
+      queryLeadsDto.search,
+      queryLeadsDto.converted,
+      queryLeadsDto.status,
+      queryLeadsDto.createdFrom,
+      queryLeadsDto.createdTo,
+      queryLeadsDto.createdById,
+    ].some((value) => value !== undefined && String(value).trim().length > 0);
+
+    return hasActiveFilter
+      ? `Filtered Leads ${exportDate}`
+      : `All Leads ${exportDate}`;
+  }
+
+  private formatDateOnly(value: Date | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    const month = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(value.getUTCDate()).padStart(2, '0');
+    const year = value.getUTCFullYear();
+
+    return `${month}/${day}/${year}`;
+  }
+
+  private formatDateTime(value: Date | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    return value.toISOString().replace('T', ' ').slice(0, 19);
+  }
+
+  private formatExportDate(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${month}-${day}-${year}`;
   }
 }

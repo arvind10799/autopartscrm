@@ -53,6 +53,10 @@ const leadListSelect = {
   },
 } satisfies Prisma.LeadSelect;
 
+export type LeadListRecord = Prisma.LeadGetPayload<{
+  select: typeof leadListSelect;
+}>;
+
 @Injectable()
 export class LeadsRepository {
   constructor(private readonly prismaService: PrismaService) {}
@@ -99,109 +103,7 @@ export class LeadsRepository {
       queryLeadsDto.page,
       queryLeadsDto.limit,
     );
-    const where: Prisma.LeadWhereInput = this.buildLeadAccessWhere(user, {
-      restrictSalesToOwn: false,
-    });
-    const search = queryLeadsDto.search?.trim();
-    const convertedFilter = this.normalizeConvertedFilter(queryLeadsDto.converted);
-    const createdById = queryLeadsDto.createdById?.trim();
-    const leadDateFilter = buildCreatedAtFilter(
-      queryLeadsDto.createdFrom,
-      queryLeadsDto.createdTo,
-    );
-
-    if (createdById) {
-      where.createdById = createdById;
-    }
-
-    if (convertedFilter !== undefined) {
-      where.convertedAt = convertedFilter ? { not: null } : null;
-    }
-
-    if (queryLeadsDto.status) {
-      where.status = queryLeadsDto.status;
-    }
-
-    if (leadDateFilter) {
-      where.leadDate = leadDateFilter;
-    }
-
-    if (search) {
-      where.OR = [
-        {
-          adviserName: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          cmpt: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          customerPhone: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          customerName: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          customerEmail: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          state: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          partDescription: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          vehicleYear: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          vehicleMake: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          vehicleModel: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          vehicleVariant: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          prospects: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-      ];
-    }
+    const where = this.buildLeadListWhere(queryLeadsDto, user);
 
     const [data, total] = await this.prismaService.$transaction([
       this.prismaService.lead.findMany({
@@ -215,6 +117,14 @@ export class LeadsRepository {
     ]);
 
     return createPaginatedResponse(data, total, page, limit);
+  }
+
+  findAllForExport(queryLeadsDto: QueryLeadsDto, user: AuthenticatedUser) {
+    return this.prismaService.lead.findMany({
+      where: this.buildLeadListWhere(queryLeadsDto, user),
+      select: leadListSelect,
+      orderBy: [{ leadDate: 'desc' }, { createdAt: 'desc' }],
+    });
   }
 
   async findConvertibleById(id: string, user: AuthenticatedUser) {
@@ -370,6 +280,117 @@ export class LeadsRepository {
     }
 
     return {};
+  }
+
+  private buildLeadListWhere(
+    queryLeadsDto: QueryLeadsDto,
+    user: AuthenticatedUser,
+  ): Prisma.LeadWhereInput {
+    const where: Prisma.LeadWhereInput = this.buildLeadAccessWhere(user, {
+      restrictSalesToOwn: false,
+    });
+    const search = queryLeadsDto.search?.trim();
+    const convertedFilter = this.normalizeConvertedFilter(queryLeadsDto.converted);
+    const createdById = queryLeadsDto.createdById?.trim();
+    const leadDateFilter = buildCreatedAtFilter(
+      queryLeadsDto.createdFrom,
+      queryLeadsDto.createdTo,
+    );
+
+    if (createdById) {
+      where.createdById = createdById;
+    }
+
+    if (convertedFilter !== undefined) {
+      where.convertedAt = convertedFilter ? { not: null } : null;
+    }
+
+    if (queryLeadsDto.status) {
+      where.status = queryLeadsDto.status;
+    }
+
+    if (leadDateFilter) {
+      where.leadDate = leadDateFilter;
+    }
+
+    if (search) {
+      where.OR = [
+        {
+          adviserName: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          cmpt: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          customerPhone: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          customerName: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          customerEmail: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          state: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          partDescription: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          vehicleYear: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          vehicleMake: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          vehicleModel: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          vehicleVariant: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          prospects: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
+    return where;
   }
 
   private normalizeConvertedFilter(value: unknown): boolean | undefined {

@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Search, X } from 'lucide-react';
+import { Download, Plus, Search, X } from 'lucide-react';
 import {
   startTransition,
   useDeferredValue,
@@ -27,12 +27,14 @@ import {
   createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
 import { toast } from '@/lib/stores/toast.store';
+import { getErrorMessage } from '@/lib/utils/error';
 import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
 import {
   ALL_LEAD_CONVERSION_FILTER,
   ALL_LEAD_STATUS_FILTER,
   formatLeadConversionFilterLabel,
   formatLeadStatusLabel,
+  LEAD_PAGE_SIZE,
   parseLeadConversionFilter,
   parseLeadStatusFilter,
   type LeadConversionFilter,
@@ -93,6 +95,7 @@ export function LeadsPageContent() {
   const [selectedEditLead, setSelectedEditLead] = useState<LeadSummary | null>(null);
   const [selectedConversionLead, setSelectedConversionLead] =
     useState<LeadSummary | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const activeSearch = deferredSearchTerm.trim();
   const searchPlaceholder =
@@ -158,6 +161,39 @@ export function LeadsPageContent() {
   const handleAgentFilterChange = (value: string) => {
     setAgentFilter(value);
     startTransition(() => setPage(1));
+  };
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+
+    try {
+      await leadsApi.exportExcel({
+        page: 1,
+        limit: LEAD_PAGE_SIZE,
+        search: activeSearch,
+        converted:
+          convertedFilter === 'CONVERTED'
+            ? true
+            : convertedFilter === 'OPEN'
+              ? false
+              : undefined,
+        status: statusFilter === ALL_LEAD_STATUS_FILTER ? undefined : statusFilter,
+        createdFrom: dateRangeQuery.createdFrom,
+        createdTo: dateRangeQuery.createdTo,
+        createdById,
+      });
+      toast.success(
+        'Leads export started',
+        'The Excel file includes all leads matching the current filters.',
+      );
+    } catch (error) {
+      toast.error(
+        'Export failed',
+        getErrorMessage(error, 'Unable to export leads right now.'),
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleLeadSaved = (lead: LeadSummary) => {
@@ -290,6 +326,17 @@ export function LeadsPageContent() {
 
                 <Button
                   size="lg"
+                  variant="outline"
+                  className="h-11 w-full whitespace-nowrap rounded-xl px-5 font-semibold sm:w-auto"
+                  disabled={isExporting}
+                  onClick={() => void handleExportExcel()}
+                >
+                  <Download className="h-4 w-4" />
+                  {isExporting ? 'Exporting...' : 'Export Excel'}
+                </Button>
+
+                <Button
+                  size="lg"
                   className="h-11 w-full whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000] sm:w-auto"
                   onClick={() => setIsCreateModalOpen(true)}
                 >
@@ -357,6 +404,7 @@ export function LeadsPageContent() {
               onEdit={handleEdit}
               role={authUser?.role}
               currentUserId={authUser?.userId}
+              showAgentColumn={selectedAgentFilter === ALL_AGENTS_FILTER}
             />
           </CardContent>
         </Card>

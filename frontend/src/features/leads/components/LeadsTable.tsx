@@ -57,6 +57,7 @@ function buildColumns(
   onEdit: (lead: LeadSummary) => void,
   role?: UserRole,
   currentUserId?: string | null,
+  showAgentColumn = false,
 ): ColumnDef<LeadSummary>[] {
   const columns: ColumnDef<LeadSummary>[] = [
     {
@@ -219,19 +220,19 @@ function buildColumns(
     },
   ];
 
-  if (role === 'ADMIN') {
+  if (showAgentColumn) {
     columns.splice(2, 0, {
-      accessorKey: 'adviserName',
-      header: 'Adviser',
+      accessorKey: 'createdBy.name',
+      header: 'Agent',
       meta: {
         className: 'hidden w-[8%] overflow-hidden px-2 2xl:table-cell',
       },
       cell: ({ row }) => (
         <p
           className="truncate font-medium text-slate-700 dark:text-slate-200"
-          title={row.original.adviserName}
+          title={row.original.createdBy.name}
         >
-          {getFirstName(row.original.adviserName)}
+          {getFirstName(row.original.createdBy.name)}
         </p>
       ),
     });
@@ -262,6 +263,7 @@ export function LeadsTable({
   onEdit,
   role,
   currentUserId,
+  showAgentColumn = false,
 }: {
   leads: LeadSummary[];
   meta: PaginationMeta;
@@ -273,9 +275,16 @@ export function LeadsTable({
   onEdit: (lead: LeadSummary) => void;
   role?: UserRole;
   currentUserId?: string | null;
+  showAgentColumn?: boolean;
 }) {
   const totalPages = meta.totalPages;
-  const columns = buildColumns(onConvert, onEdit, role, currentUserId);
+  const columns = buildColumns(
+    onConvert,
+    onEdit,
+    role,
+    currentUserId,
+    showAgentColumn,
+  );
 
   return (
     <DataTable
@@ -316,8 +325,8 @@ export function LeadsTable({
             </div>
 
             <div className="mt-3 grid gap-2 text-sm">
-              {role === 'ADMIN' ? (
-                <MobileField label="Adviser" value={getFirstName(lead.adviserName)} />
+              {showAgentColumn ? (
+                <MobileField label="Agent" value={getFirstName(lead.createdBy.name)} />
               ) : null}
               <MobileField label="Phone" value={lead.customerPhone} />
               <MobileField label="Vehicle" value={formatVehicleSummary(lead)} />
