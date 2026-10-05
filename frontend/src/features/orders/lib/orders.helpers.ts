@@ -7,6 +7,7 @@ import {
 import type {
   CreateOrderInput,
   OrderPaymentMethod,
+  OrderAgeingRange,
   OrderShipmentStatus,
   OrderStatus,
   OrdersListQuery,
@@ -24,8 +25,12 @@ export const ALL_ORDER_STATUS_FILTER = 'ALL' as const;
 export const ALL_SHIPMENT_STATUS_FILTER = 'ALL' as const;
 export const REFUNDED_SHIPMENT_STATUS_FILTER = 'REFUNDED' as const;
 export const REPLACEMENT_SHIPMENT_STATUS_FILTER = 'REPLACEMENT' as const;
+export const ALL_ORDER_AGEING_FILTER = 'ALL' as const;
 
 export type OrderStatusFilter = typeof ALL_ORDER_STATUS_FILTER | OrderStatus;
+export type OrderAgeingFilter =
+  | typeof ALL_ORDER_AGEING_FILTER
+  | OrderAgeingRange;
 export type ShipmentStatusFilter =
   | typeof ALL_SHIPMENT_STATUS_FILTER
   | OrderShipmentStatus
@@ -52,6 +57,7 @@ export type NormalizedOrdersQuery = {
   shipmentStatus?: OrderShipmentStatus;
   hasShipment?: boolean;
   hasReplacement?: boolean;
+  ageingRange?: OrderAgeingRange;
   createdFrom?: string;
   createdTo?: string;
   createdById?: string;
@@ -136,6 +142,22 @@ export function parseShipmentStatusFilter(value: string): ShipmentStatusFilter {
   return isShipmentStatus(value) ? value : ALL_SHIPMENT_STATUS_FILTER;
 }
 
+export function parseOrderAgeingFilter(value: string): OrderAgeingFilter {
+  if (value === '0-7' || value === '8-14' || value === '15-30' || value === '31+') {
+    return value;
+  }
+
+  return ALL_ORDER_AGEING_FILTER;
+}
+
+export function formatOrderAgeingFilterLabel(value: OrderAgeingFilter): string {
+  if (value === 'ALL') {
+    return 'All aging';
+  }
+
+  return `${value} days`;
+}
+
 export function isValidOrderId(value: string): boolean {
   return orderIdSchema.safeParse(value).success;
 }
@@ -161,6 +183,9 @@ export function parseOrdersQueryParams(
   const shipmentStatusValue = searchParams.get('shipmentStatus');
   const hasShipmentValue = searchParams.get('hasShipment');
   const hasReplacementValue = searchParams.get('hasReplacement');
+  const ageingRange = parseOrderAgeingFilter(
+    searchParams.get('ageingRange') ?? '',
+  );
   const createdById = parseUserIdFilter(searchParams.get('createdById'));
 
   return {
@@ -179,6 +204,7 @@ export function parseOrdersQueryParams(
           ? false
           : undefined,
     hasReplacement: hasReplacementValue === 'true' ? true : undefined,
+    ageingRange: ageingRange === ALL_ORDER_AGEING_FILTER ? undefined : ageingRange,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
     createdById,
@@ -211,6 +237,10 @@ export function buildOrdersQueryString(query: NormalizedOrdersQuery): string {
     baseSearchParams.set('hasReplacement', 'true');
   }
 
+  if (query.ageingRange) {
+    baseSearchParams.set('ageingRange', query.ageingRange);
+  }
+
   if (query.createdById) {
     baseSearchParams.set('createdById', query.createdById);
   }
@@ -234,6 +264,7 @@ export function normalizeOrdersListQuery(
     shipmentStatus: input.shipmentStatus,
     hasShipment: input.hasShipment,
     hasReplacement: input.hasReplacement,
+    ageingRange: input.ageingRange,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
     createdById: parseUserIdFilter(input.createdById),

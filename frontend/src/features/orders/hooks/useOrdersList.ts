@@ -7,12 +7,14 @@ import { ordersApi } from '../api/orders-api';
 import {
   ALL_SHIPMENT_STATUS_FILTER,
   ALL_ORDER_STATUS_FILTER,
+  ALL_ORDER_AGEING_FILTER,
   createEmptyOrdersResponse,
   normalizeOrdersListQuery,
   ORDER_PAGE_SIZE,
   REFUNDED_SHIPMENT_STATUS_FILTER,
   REPLACEMENT_SHIPMENT_STATUS_FILTER,
   type OrderStatusFilter,
+  type OrderAgeingFilter,
   type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
 import type { OrdersListResponse } from '../types/order.types';
@@ -24,6 +26,7 @@ type UseOrdersListOptions = {
   shipmentStatus?: ShipmentStatusFilter;
   hasShipment?: boolean;
   hasReplacement?: boolean;
+  ageingRange?: OrderAgeingFilter;
   createdFrom?: string;
   createdTo?: string;
   createdById?: string;
@@ -43,6 +46,7 @@ export function useOrdersList({
   shipmentStatus,
   hasShipment,
   hasReplacement,
+  ageingRange,
   createdFrom,
   createdTo,
   createdById,
@@ -81,6 +85,8 @@ export function useOrdersList({
           : shipmentStatus,
       hasShipment,
       hasReplacement: hasReplacement || isReplacementShipmentFilter || undefined,
+      ageingRange:
+        ageingRange === ALL_ORDER_AGEING_FILTER ? undefined : ageingRange,
       createdFrom,
       createdTo,
       createdById,
@@ -126,6 +132,7 @@ export function useOrdersList({
     createdById,
     hasShipment,
     hasReplacement,
+    ageingRange,
     page,
     refreshKey,
     requestTracker,

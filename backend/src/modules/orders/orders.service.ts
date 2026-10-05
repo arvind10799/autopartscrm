@@ -515,6 +515,7 @@ export class OrdersService {
       queryOrdersDto.shipmentStatus,
       queryOrdersDto.hasShipment,
       queryOrdersDto.hasReplacement,
+      queryOrdersDto.ageingRange,
       queryOrdersDto.createdFrom,
       queryOrdersDto.createdTo,
       queryOrdersDto.createdById,

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   OrderStatus as PrismaOrderStatus,
   Prisma,
@@ -41,6 +41,10 @@ const SHIPMENT_WORKFLOW_STATUSES = [
   PrismaShipmentStatus.PRE_PROCESSING,
   PrismaShipmentStatus.PURCHASE,
 ] satisfies PrismaShipmentStatus[];
+const PACIFIC_TIME_ZONE = 'America/Los_Angeles';
+const ORDER_AGEING_RANGES = ['0-7', '8-14', '15-30', '31+'] as const;
+
+type OrderAgeingRange = (typeof ORDER_AGEING_RANGES)[number];
 
 const orderListSelect = {
   id: true,
@@ -768,9 +772,16 @@ export class OrdersRepository {
       queryOrdersDto.createdFrom,
       queryOrdersDto.createdTo,
     );
+    const ageingFilter = this.buildAgeingCreatedAtFilter(
+      queryOrdersDto.ageingRange,
+    );
+    const combinedCreatedAtFilter = this.mergeDateTimeFilters(
+      createdAtFilter,
+      ageingFilter,
+    );
 
-    if (createdAtFilter) {
-      where.createdAt = createdAtFilter;
+    if (combinedCreatedAtFilter) {
+      where.createdAt = combinedCreatedAtFilter;
     }
 
     if (search) {
@@ -844,6 +855,181 @@ export class OrdersRepository {
     }
 
     return where;
+  }
+
+  private buildAgeingCreatedAtFilter(
+    ageingRange?: string,
+  ): Prisma.DateTimeFilter | undefined {
+    const normalizedAgeingRange = this.normalizeAgeingRange(ageingRange);
+
+    if (!normalizedAgeingRange) {
+      return undefined;
+    }
+
+    const today = this.getPacificDateParts(new Date());
+
+    switch (normalizedAgeingRange) {
+      case '0-7':
+        return {
+          gte: this.getPacificStartOfDayUtc(today, -7),
+          lte: new Date(),
+        };
+      case '8-14':
+        return {
+          gte: this.getPacificStartOfDayUtc(today, -14),
+          lt: this.getPacificStartOfDayUtc(today, -7),
+        };
+      case '15-30':
+        return {
+          gte: this.getPacificStartOfDayUtc(today, -30),
+          lt: this.getPacificStartOfDayUtc(today, -14),
+        };
+      case '31+':
+        return {
+          lt: this.getPacificStartOfDayUtc(today, -30),
+        };
+      default:
+        return undefined;
+    }
+  }
+
+  private normalizeAgeingRange(ageingRange?: string): OrderAgeingRange | null {
+    if (!ageingRange || ageingRange === 'ALL') {
+      return null;
+    }
+
+    if (ORDER_AGEING_RANGES.includes(ageingRange as OrderAgeingRange)) {
+      return ageingRange as OrderAgeingRange;
+    }
+
+    throw new BadRequestException('ageingRange filter is invalid.');
+  }
+
+  private mergeDateTimeFilters(
+    first?: Prisma.DateTimeFilter,
+    second?: Prisma.DateTimeFilter,
+  ): Prisma.DateTimeFilter | undefined {
+    if (!first) {
+      return second;
+    }
+
+    if (!second) {
+      return first;
+    }
+
+    const gte = this.getLatestDate(first.gte, second.gte);
+    const lte = this.getEarliestDate(first.lte, second.lte);
+    const lt = this.getEarliestDate(first.lt, second.lt);
+
+    return {
+      ...first,
+      ...second,
+      ...(gte ? { gte } : {}),
+      ...(lte ? { lte } : {}),
+      ...(lt ? { lt } : {}),
+    };
+  }
+
+  private getLatestDate(
+    first?: string | Date | undefined,
+    second?: string | Date | undefined,
+  ) {
+    const firstDate = first ? new Date(first) : null;
+    const secondDate = second ? new Date(second) : null;
+
+    if (!firstDate) return secondDate ?? undefined;
+    if (!secondDate) return firstDate;
+
+    return firstDate > secondDate ? firstDate : secondDate;
+  }
+
+  private getEarliestDate(
+    first?: string | Date | undefined,
+    second?: string | Date | undefined,
+  ) {
+    const firstDate = first ? new Date(first) : null;
+    const secondDate = second ? new Date(second) : null;
+
+    if (!firstDate) return secondDate ?? undefined;
+    if (!secondDate) return firstDate;
+
+    return firstDate < secondDate ? firstDate : secondDate;
+  }
+
+  private getPacificDateParts(date: Date) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: PACIFIC_TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const valueFor = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(parts.find((part) => part.type === type)?.value);
+
+    return {
+      year: valueFor('year'),
+      month: valueFor('month'),
+      day: valueFor('day'),
+    };
+  }
+
+  private getPacificStartOfDayUtc(
+    dateParts: { year: number; month: number; day: number },
+    dayOffset = 0,
+  ) {
+    const date = new Date(
+      Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day + dayOffset),
+    );
+
+    return this.zonedTimeToUtc(
+      date.getUTCFullYear(),
+      date.getUTCMonth() + 1,
+      date.getUTCDate(),
+    );
+  }
+
+  private zonedTimeToUtc(
+    year: number,
+    month: number,
+    day: number,
+    hour = 0,
+    minute = 0,
+    second = 0,
+  ) {
+    const utcTimestamp = Date.UTC(year, month - 1, day, hour, minute, second);
+    const firstPassOffset = this.getTimeZoneOffsetMs(
+      new Date(utcTimestamp),
+      PACIFIC_TIME_ZONE,
+    );
+    const firstPassDate = new Date(utcTimestamp - firstPassOffset);
+    const finalOffset = this.getTimeZoneOffsetMs(firstPassDate, PACIFIC_TIME_ZONE);
+
+    return new Date(utcTimestamp - finalOffset);
+  }
+
+  private getTimeZoneOffsetMs(date: Date, timeZone: string) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const valueFor = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(parts.find((part) => part.type === type)?.value);
+    const localAsUtc = Date.UTC(
+      valueFor('year'),
+      valueFor('month') - 1,
+      valueFor('day'),
+      valueFor('hour'),
+      valueFor('minute'),
+      valueFor('second'),
+    );
+
+    return localAsUtc - date.getTime();
   }
 
   private normalizeHasShipmentFilter(value: unknown): boolean | undefined {

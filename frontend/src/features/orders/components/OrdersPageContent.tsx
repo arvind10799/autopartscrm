@@ -29,12 +29,16 @@ import { useAuthStore } from '@/features/auth/store/auth.store';
 import { ordersApi } from '../api/orders-api';
 import { useOrdersList } from '../hooks/useOrdersList';
 import {
+  ALL_ORDER_AGEING_FILTER,
   ALL_SHIPMENT_STATUS_FILTER,
+  formatOrderAgeingFilterLabel,
   formatShipmentStatusOptionLabel,
   ORDER_PAGE_SIZE,
+  parseOrderAgeingFilter,
   parseShipmentStatusFilter,
   REFUNDED_SHIPMENT_STATUS_FILTER,
   REPLACEMENT_SHIPMENT_STATUS_FILTER,
+  type OrderAgeingFilter,
   type ShipmentStatusFilter,
 } from '../lib/orders.helpers';
 import {
@@ -53,6 +57,13 @@ const ORDER_SHIPMENT_STATUS_FILTERS = [
   ...ORDER_SHIPMENT_STATUSES,
   REFUNDED_SHIPMENT_STATUS_FILTER,
 ] as const;
+const ORDER_AGEING_FILTERS: OrderAgeingFilter[] = [
+  ALL_ORDER_AGEING_FILTER,
+  '0-7',
+  '8-14',
+  '15-30',
+  '31+',
+];
 
 function formatAgentFilterLabel(agent: OrderUser) {
   return `${agent.name} (${agent.role === 'ADMIN' ? 'Admin' : 'Sales'})`;
@@ -63,6 +74,8 @@ export function OrdersPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [shipmentStatusFilter, setShipmentStatusFilter] =
     useState<ShipmentStatusFilter>(ALL_SHIPMENT_STATUS_FILTER);
+  const [ageingFilter, setAgeingFilter] =
+    useState<OrderAgeingFilter>(ALL_ORDER_AGEING_FILTER);
   const [agentFilter, setAgentFilter] = useState<string | null>(null);
   const [orderAgents, setOrderAgents] = useState<OrderUser[]>([]);
   const [dateFilter, setDateFilter] = useState(
@@ -108,6 +121,7 @@ export function OrdersPageContent() {
     page,
     search: activeSearch,
     shipmentStatus: shipmentStatusFilter,
+    ageingRange: ageingFilter,
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
     createdById,
@@ -127,6 +141,11 @@ export function OrdersPageContent() {
 
   const handleShipmentStatusChange = (value: ShipmentStatusFilter) => {
     setShipmentStatusFilter(value);
+    startTransition(() => setPage(1));
+  };
+
+  const handleAgeingFilterChange = (value: OrderAgeingFilter) => {
+    setAgeingFilter(value);
     startTransition(() => setPage(1));
   };
 
@@ -168,6 +187,8 @@ export function OrdersPageContent() {
             ? undefined
             : shipmentStatusFilter,
         hasReplacement: isReplacementShipmentFilter || undefined,
+        ageingRange:
+          ageingFilter === ALL_ORDER_AGEING_FILTER ? undefined : ageingFilter,
         createdFrom: dateRangeQuery.createdFrom,
         createdTo: dateRangeQuery.createdTo,
         createdById,
@@ -295,7 +316,7 @@ export function OrdersPageContent() {
               </div>
             </div>
 
-            <div className="grid gap-3 xl:grid-cols-[1fr_220px]">
+            <div className="grid gap-3 xl:grid-cols-[1fr_180px_220px]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -305,6 +326,21 @@ export function OrdersPageContent() {
                   placeholder="Search by order number, sales number, customer, phone, email, or part"
                 />
               </div>
+
+              <Select
+                value={ageingFilter}
+                aria-label="Orders aging filter"
+                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                onChange={(event) =>
+                  handleAgeingFilterChange(parseOrderAgeingFilter(event.target.value))
+                }
+              >
+                {ORDER_AGEING_FILTERS.map((range) => (
+                  <option key={range} value={range}>
+                    {formatOrderAgeingFilterLabel(range)}
+                  </option>
+                ))}
+              </Select>
 
               <Select
                 value={shipmentStatusFilter}

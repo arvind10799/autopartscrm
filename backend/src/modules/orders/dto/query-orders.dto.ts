@@ -29,6 +29,10 @@ export class QueryOrdersDto extends PaginationQueryDto {
   hasReplacement?: string;
 
   @IsOptional()
+  @IsString()
+  ageingRange?: string;
+
+  @IsOptional()
   @IsUUID()
   createdById?: string;
 }

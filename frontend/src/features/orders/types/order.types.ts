@@ -214,10 +214,13 @@ export interface OrdersListQuery {
   shipmentStatus?: OrderShipmentStatus;
   hasShipment?: boolean;
   hasReplacement?: boolean;
+  ageingRange?: OrderAgeingRange;
   createdFrom?: string;
   createdTo?: string;
   createdById?: string;
 }
+
+export type OrderAgeingRange = '0-7' | '8-14' | '15-30' | '31+';
 
 export interface CreateOrderInput {
   leadId?: string;
