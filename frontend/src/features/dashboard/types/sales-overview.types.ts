@@ -20,6 +20,7 @@ export type AgentLeadsSortKey =
   | 'agentName'
   | 'totalLeads'
   | 'totalProspects'
+  | 'updatedLeads'
   | 'lastUpdated';
 
 export type OrderStatusDashboardStatus =
@@ -161,12 +162,14 @@ export type AgentLeadsDashboardAgent = {
   initials: string;
   totalLeads: number;
   totalProspects: number;
+  updatedLeads: number;
   lastUpdated: string | null;
 };
 
 export type AgentLeadsDashboardTotals = {
   totalLeads: number;
   totalProspects: number;
+  updatedLeads: number;
 };
 
 export type AgentLeadsDashboardResponse = {

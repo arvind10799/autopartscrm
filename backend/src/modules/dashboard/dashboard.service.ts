@@ -76,6 +76,7 @@ type AgentLeadMetric = {
   initials: string;
   totalLeads: number;
   totalProspects: number;
+  updatedLeads: number;
   lastUpdated: string | null;
 };
 
@@ -459,6 +460,17 @@ export class DashboardService {
         : {}),
       ...(query.status ? { status: query.status } : {}),
     };
+    const updatedLeadWhere: Prisma.LeadWhereInput = {
+      ...(period.start
+        ? {
+            updatedAt: {
+              gte: period.start,
+              lt: period.end,
+            },
+          }
+        : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
     const userWhere: Prisma.UserWhereInput = {
       role: {
         in: [Role.ADMIN, Role.SALES],
@@ -473,7 +485,7 @@ export class DashboardService {
         : {}),
     };
 
-    const [users, leads] = await this.prismaService.$transaction([
+    const [users, leads, updatedLeads] = await this.prismaService.$transaction([
       this.prismaService.user.findMany({
         where: userWhere,
         select: {
@@ -494,6 +506,14 @@ export class DashboardService {
           updatedAt: true,
         },
       }),
+      this.prismaService.lead.findMany({
+        where: updatedLeadWhere,
+        select: {
+          createdById: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
     ]);
 
     const agentMap = new Map<string, AgentLeadMetric>();
@@ -507,6 +527,7 @@ export class DashboardService {
         initials: this.buildInitials(user.name),
         totalLeads: 0,
         totalProspects: 0,
+        updatedLeads: 0,
         lastUpdated: null,
       });
     });
@@ -532,8 +553,21 @@ export class DashboardService {
       }
     });
 
+    updatedLeads.forEach((lead) => {
+      const agent = agentMap.get(lead.createdById);
+
+      if (!agent || lead.updatedAt <= lead.createdAt) {
+        return;
+      }
+
+      agent.updatedLeads += 1;
+    });
+
     const agents = [...agentMap.values()]
-      .filter((agent) => agent.totalLeads > 0 || Boolean(search))
+      .filter(
+        (agent) =>
+          agent.totalLeads > 0 || agent.updatedLeads > 0 || Boolean(search),
+      )
       .sort((first, second) =>
         first.agentName.localeCompare(second.agentName, undefined, {
           sensitivity: 'base',
@@ -550,10 +584,12 @@ export class DashboardService {
         (summary, agent) => ({
           totalLeads: summary.totalLeads + agent.totalLeads,
           totalProspects: summary.totalProspects + agent.totalProspects,
+          updatedLeads: summary.updatedLeads + agent.updatedLeads,
         }),
         {
           totalLeads: 0,
           totalProspects: 0,
+          updatedLeads: 0,
         },
       ),
       agents,

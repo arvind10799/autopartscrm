@@ -111,6 +111,7 @@ export const agentLeadsDashboardSchema = z.object({
   totals: z.object({
     totalLeads: z.coerce.number(),
     totalProspects: z.coerce.number(),
+    updatedLeads: z.coerce.number(),
   }),
   agents: z.array(
     z.object({
@@ -121,6 +122,7 @@ export const agentLeadsDashboardSchema = z.object({
       initials: z.string(),
       totalLeads: z.coerce.number(),
       totalProspects: z.coerce.number(),
+      updatedLeads: z.coerce.number(),
       lastUpdated: z.string().nullable(),
     }),
   ),

@@ -1362,7 +1362,8 @@ function AgentLeadsTab({
 
       if (
         sortState.key === 'totalLeads' ||
-        sortState.key === 'totalProspects'
+        sortState.key === 'totalProspects' ||
+        sortState.key === 'updatedLeads'
       ) {
         return (first[sortState.key] - second[sortState.key]) * direction;
       }
@@ -1414,7 +1415,7 @@ function AgentLeadsTab({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         <SalesKpiCard
           icon={<Users className="h-5 w-5" />}
           label="Total Leads"
@@ -1428,6 +1429,13 @@ function AgentLeadsTab({
           value={data.totals.totalProspects.toLocaleString()}
           hint="Leads currently marked as Prospect"
           tone="emerald"
+        />
+        <SalesKpiCard
+          icon={<Clock3 className="h-5 w-5" />}
+          label="Updated Leads"
+          value={data.totals.updatedLeads.toLocaleString()}
+          hint={`Edited leads for ${data.periodLabel}`}
+          tone="orange"
         />
       </div>
 
@@ -1500,7 +1508,7 @@ function AgentLeadsTab({
                 isLoading ? 'opacity-70' : 'opacity-100',
               )}
             >
-              <table className="w-full min-w-[760px] text-sm">
+              <table className="w-full min-w-[900px] text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                   <tr>
                     <AgentLeadsSortableHeader
@@ -1519,6 +1527,12 @@ function AgentLeadsTab({
                     <AgentLeadsSortableHeader
                       label="Total Prospects"
                       sortKey="totalProspects"
+                      activeSort={sortState}
+                      onSort={handleSort}
+                    />
+                    <AgentLeadsSortableHeader
+                      label="Updated Leads"
+                      sortKey="updatedLeads"
                       activeSort={sortState}
                       onSort={handleSort}
                     />
@@ -1604,6 +1618,9 @@ function AgentLeadsRow({ agent }: { agent: AgentLeadsDashboardAgent }) {
       </td>
       <td className="px-4 py-3 text-right font-semibold text-slate-950 dark:text-white">
         {agent.totalProspects.toLocaleString()}
+      </td>
+      <td className="px-4 py-3 text-right font-semibold text-amber-600 dark:text-amber-300">
+        {agent.updatedLeads.toLocaleString()}
       </td>
       <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400">
         {agent.lastUpdated ? formatDateTime(agent.lastUpdated) : 'No updates'}
@@ -1820,6 +1837,11 @@ function AgentLeadsMobileCard({ agent }: { agent: AgentLeadsDashboardAgent }) {
           value={agent.totalProspects.toLocaleString()}
           valueClassName="text-emerald-600"
         />
+        <MobileMetric
+          label="Updated Leads"
+          value={agent.updatedLeads.toLocaleString()}
+          valueClassName="text-amber-600"
+        />
       </div>
       <div className="mt-2">
         <MobileInfo
@@ -1948,3 +1970,4 @@ function formatRole(role: SalesOverviewAgent['role']) {
     .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
     .join(' ');
 }
+
