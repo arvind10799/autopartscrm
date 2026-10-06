@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -71,6 +71,31 @@ export function DataTable<TData>({
     typeof meta.className === 'string'
       ? meta.className
       : '';
+  const handleRowClick = (
+    event: MouseEvent<HTMLElement>,
+    row: TData,
+  ) => {
+    if (!onRowClick || shouldIgnoreRowInteraction(event.target)) {
+      return;
+    }
+
+    onRowClick(row);
+  };
+  const handleRowKeyDown = (
+    event: KeyboardEvent<HTMLElement>,
+    row: TData,
+  ) => {
+    if (
+      !onRowClick ||
+      shouldIgnoreRowInteraction(event.target) ||
+      (event.key !== 'Enter' && event.key !== ' ')
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    onRowClick(row);
+  };
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm">
@@ -111,17 +136,8 @@ export function DataTable<TData>({
                 role={onRowClick ? 'button' : undefined}
                 tabIndex={onRowClick ? 0 : undefined}
                 className={cn(onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2')}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
-                onKeyDown={
-                  onRowClick
-                    ? (event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          onRowClick(row);
-                        }
-                      }
-                    : undefined
-                }
+                onClick={onRowClick ? (event) => handleRowClick(event, row) : undefined}
+                onKeyDown={onRowClick ? (event) => handleRowKeyDown(event, row) : undefined}
               >
                 {renderMobileCard(row)}
               </div>
@@ -228,15 +244,10 @@ export function DataTable<TData>({
                     'border-t border-border/60 transition hover:bg-secondary/30',
                     onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                   )}
-                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  onClick={onRowClick ? (event) => handleRowClick(event, row.original) : undefined}
                   onKeyDown={
                     onRowClick
-                      ? (event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            onRowClick(row.original);
-                          }
-                        }
+                      ? (event) => handleRowKeyDown(event, row.original)
                       : undefined
                   }
                 >
@@ -263,5 +274,17 @@ export function DataTable<TData>({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function shouldIgnoreRowInteraction(target: EventTarget | null) {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest(
+      'a,button,input,select,textarea,label,[role="button"],[data-row-click-ignore="true"]',
+    ),
   );
 }

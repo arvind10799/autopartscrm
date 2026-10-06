@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, ChevronLeft, ChevronRight, PencilLine } from 'lucide-react';
 import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -186,6 +187,7 @@ export function OrdersTable({
   role?: UserRole | null;
   currentUserId?: string | null;
 }) {
+  const router = useRouter();
   const totalPages = meta.totalPages;
   const columns = buildColumns(onEdit, role, currentUserId);
 
@@ -199,6 +201,7 @@ export function OrdersTable({
       onRetry={onRetry}
       density="compact"
       layout="fit"
+      onRowClick={(order) => router.push(`/orders/${order.id}`)}
       renderMobileCard={(order) => {
         const canEdit =
           role === 'ADMIN' ||
