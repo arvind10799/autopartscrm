@@ -3,6 +3,7 @@ import {
   LeadStatus,
   OrderPaymentMethod,
   OrderStatus,
+  NoteEntityType,
   Prisma,
   Role,
   ShipmentStatus,
@@ -471,6 +472,29 @@ export class DashboardService {
         : {}),
       ...(query.status ? { status: query.status } : {}),
     };
+    const leadNoteWhere: Prisma.NoteWhereInput = {
+      entityType: NoteEntityType.LEAD,
+      leadId: {
+        not: null,
+      },
+      ...(period.start
+        ? {
+            createdAt: {
+              gte: period.start,
+              lt: period.end,
+            },
+          }
+        : {}),
+      ...(query.status
+        ? {
+            lead: {
+              is: {
+                status: query.status,
+              },
+            },
+          }
+        : {}),
+    };
     const userWhere: Prisma.UserWhereInput = {
       role: {
         in: [Role.ADMIN, Role.SALES],
@@ -485,7 +509,8 @@ export class DashboardService {
         : {}),
     };
 
-    const [users, leads, updatedLeads] = await this.prismaService.$transaction([
+    const [users, leads, updatedLeads, leadNotes] =
+      await this.prismaService.$transaction([
       this.prismaService.user.findMany({
         where: userWhere,
         select: {
@@ -509,9 +534,25 @@ export class DashboardService {
       this.prismaService.lead.findMany({
         where: updatedLeadWhere,
         select: {
+          id: true,
           createdById: true,
           createdAt: true,
           updatedAt: true,
+        },
+      }),
+      this.prismaService.note.findMany({
+        where: leadNoteWhere,
+        select: {
+          content: true,
+          leadId: true,
+          createdAt: true,
+          lead: {
+            select: {
+              createdById: true,
+              createdAt: true,
+              comments: true,
+            },
+          },
         },
       }),
     ]);
@@ -553,14 +594,43 @@ export class DashboardService {
       }
     });
 
-    updatedLeads.forEach((lead) => {
-      const agent = agentMap.get(lead.createdById);
-
-      if (!agent || lead.updatedAt <= lead.createdAt) {
+    const updatedLeadIdsByAgent = new Map<string, Set<string>>();
+    const addUpdatedLeadActivity = (agentId: string, leadId: string) => {
+      if (!agentMap.has(agentId)) {
         return;
       }
 
-      agent.updatedLeads += 1;
+      const leadIds = updatedLeadIdsByAgent.get(agentId) ?? new Set<string>();
+      leadIds.add(leadId);
+      updatedLeadIdsByAgent.set(agentId, leadIds);
+    };
+
+    updatedLeads.forEach((lead) => {
+      if (lead.updatedAt <= lead.createdAt) {
+        return;
+      }
+
+      addUpdatedLeadActivity(lead.createdById, lead.id);
+    });
+
+    leadNotes.forEach((note) => {
+      if (!note.leadId || !note.lead) {
+        return;
+      }
+
+      if (this.isLeadCreationCommentNote(note)) {
+        return;
+      }
+
+      addUpdatedLeadActivity(note.lead.createdById, note.leadId);
+    });
+
+    updatedLeadIdsByAgent.forEach((leadIds, agentId) => {
+      const agent = agentMap.get(agentId);
+
+      if (agent) {
+        agent.updatedLeads = leadIds.size;
+      }
     });
 
     const agents = [...agentMap.values()].sort((first, second) =>
@@ -589,6 +659,30 @@ export class DashboardService {
       ),
       agents,
     };
+  }
+
+  private isLeadCreationCommentNote(note: {
+    content: string;
+    createdAt: Date;
+    lead: {
+      createdAt: Date;
+      comments: string | null;
+    } | null;
+  }): boolean {
+    const lead = note.lead;
+    const initialComment = lead?.comments?.trim();
+
+    if (!lead || !initialComment || note.content.trim() !== initialComment) {
+      return false;
+    }
+
+    const millisecondsAfterLeadCreation =
+      note.createdAt.getTime() - lead.createdAt.getTime();
+
+    return (
+      millisecondsAfterLeadCreation >= 0 &&
+      millisecondsAfterLeadCreation <= 60_000
+    );
   }
 
   private calculateOrderGrossProfit(order: {
