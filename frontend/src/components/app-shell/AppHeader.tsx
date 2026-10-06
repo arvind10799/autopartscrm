@@ -124,6 +124,10 @@ function getHeaderBackLink(pathname: string): { href: string; label: string } | 
     return { href: '/orders', label: 'Back to orders' };
   }
 
+  if (/^\/leads\/[^/]+/.test(pathname)) {
+    return { href: '/leads', label: 'Back to leads' };
+  }
+
   if (/^\/shipments\/[^/]+/.test(pathname) && !pathname.startsWith('/shipments/create')) {
     return { href: '/shipments', label: 'Back to shipments' };
   }

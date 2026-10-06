@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  ArrowRight,
   History,
   LoaderCircle,
   Plus,
@@ -218,42 +217,6 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
 
   return (
     <section className="space-y-6">
-      <Card className="overflow-hidden border-border/70 shadow-sm">
-        <CardHeader className="flex flex-col gap-3 border-b border-border/70 pb-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 space-y-2">
-            <Link
-              href="/leads"
-              className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to leads
-            </Link>
-            <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="truncate text-2xl sm:text-3xl">
-                {lead.customerName}
-              </CardTitle>
-              <LeadStatusBadge status={status} />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {lead.customerPhone} · Created by {lead.createdBy.name}
-            </p>
-          </div>
-
-          {lead.isConverted && lead.convertedOrder ? (
-            <Link
-              href={`/orders/${lead.convertedOrder.id}`}
-              className={cn(
-                buttonVariants({ variant: 'default', size: 'sm' }),
-                'rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',
-              )}
-            >
-              View order
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          ) : null}
-        </CardHeader>
-      </Card>
-
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] xl:grid-cols-[minmax(0,1.08fr)_minmax(430px,0.92fr)]">
         <div className="space-y-4">
           <Card className="overflow-hidden border-border/70 shadow-sm">
