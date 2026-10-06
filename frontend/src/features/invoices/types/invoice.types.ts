@@ -80,6 +80,16 @@ export interface InvoiceRecord {
   updatedAt: string;
 }
 
+export interface InvoicePhotoIdDocument {
+  id: string;
+  orderId: string;
+  invoiceNumber: string;
+  photoIdDocument: string | null;
+  photoIdFileName: string | null;
+  photoIdMimeType: string | null;
+  photoIdUploadedAt: string | null;
+}
+
 export type InvoiceDefaults = Omit<
   InvoiceRecord,
   | 'id'

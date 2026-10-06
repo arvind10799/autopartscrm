@@ -34,6 +34,14 @@ export class InvoicesController {
     return this.invoicesService.getDefaults(params.id, user);
   }
 
+  @Get('photo-id')
+  findPhotoIdByOrderId(
+    @Param() params: UuidParamDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.invoicesService.findPhotoIdByOrderId(params.id, user);
+  }
+
   @Get()
   findByOrderId(
     @Param() params: UuidParamDto,

@@ -136,6 +136,19 @@ export class InvoicesService {
     return this.serializeInvoice(invoice);
   }
 
+  async findPhotoIdByOrderId(orderId: string, user: AuthenticatedUser) {
+    const invoice = await this.invoicesRepository.findPhotoIdByOrderId(
+      orderId,
+      user,
+    );
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice was not found.');
+    }
+
+    return invoice;
+  }
+
   async create(
     orderId: string,
     createInvoiceDto: CreateInvoiceDto,
@@ -745,13 +758,22 @@ export class InvoicesService {
     },
   >(invoice: T) {
     const safeInvoice = { ...invoice };
+    const hasPhotoIdDocument = Boolean(
+      invoice.photoIdDocument ||
+        invoice.photoIdFileName ||
+        invoice.photoIdUploadedAt,
+    );
+
     delete safeInvoice.signatureTokenHash;
     delete safeInvoice.order;
     delete safeInvoice.auditEvents;
+    delete safeInvoice.photoIdDocument;
 
     return {
       ...safeInvoice,
       photoIdRequired: true,
+      photoIdDocument: null,
+      hasPhotoIdDocument,
       ...(invoice.invoiceDate
         ? { invoiceDate: this.formatDateOnlyValue(invoice.invoiceDate) }
         : {}),
@@ -844,16 +866,26 @@ export class InvoicesService {
         label: this.auditTitle(event.eventType),
         occurredAt: event.occurredAt,
       }));
+    const storedAttachmentHash = this.getPhotoIdHashFromAuditEvents(sortedEvents);
+    const attachmentHash =
+      storedAttachmentHash ??
+      (invoice.photoIdDocument ? this.hashDocument(invoice.photoIdDocument) : null);
+    const hasAttachment = Boolean(
+      invoice.photoIdDocument ||
+        invoice.photoIdFileName ||
+        invoice.photoIdUploadedAt ||
+        attachmentHash,
+    );
 
     return {
       timestamps,
-      attachmentDetails: invoice.photoIdDocument
+      attachmentDetails: hasAttachment
         ? {
             documentTitle: AUDIT_DOCUMENT_TITLE,
             fileName: invoice.photoIdFileName,
             mimeType: invoice.photoIdMimeType,
             uploadedAt: invoice.photoIdUploadedAt,
-            hash: this.hashDocument(invoice.photoIdDocument),
+            hash: attachmentHash ?? 'Not captured',
           }
         : null,
       events: sortedEvents,
@@ -863,6 +895,7 @@ export class InvoicesService {
   private buildFallbackAuditEvents<
     T extends {
       photoIdDocument?: string | null;
+      photoIdFileName?: string | null;
       photoIdUploadedAt?: Date | null;
       signatureRequestedAt?: Date | null;
       signatureLastSentAt?: Date | null;
@@ -886,7 +919,10 @@ export class InvoicesService {
       );
     }
 
-    if (invoice.photoIdDocument && invoice.photoIdUploadedAt) {
+    if (
+      (invoice.photoIdDocument || invoice.photoIdFileName) &&
+      invoice.photoIdUploadedAt
+    ) {
       fallbackEvents.push(
         this.buildFallbackAuditEvent(
           'ATTACHED',
@@ -954,6 +990,33 @@ export class InvoicesService {
     };
 
     return titles[eventType] ?? eventType;
+  }
+
+  private getPhotoIdHashFromAuditEvents(
+    auditEvents: InvoiceAuditEventRecord[],
+  ): string | null {
+    for (const event of auditEvents) {
+      if (event.eventType !== 'ATTACHED') {
+        continue;
+      }
+
+      if (!this.isJsonObject(event.metadata)) {
+        continue;
+      }
+
+      const hash = event.metadata.hash;
+      if (typeof hash === 'string' && hash.trim()) {
+        return hash;
+      }
+    }
+
+    return null;
+  }
+
+  private isJsonObject(
+    value: Prisma.JsonValue | null,
+  ): value is Prisma.JsonObject {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
   }
 
   private hasAcceptedTermsForCurrentInvoice(invoice: {

@@ -132,6 +132,16 @@ export const invoiceRecordSchema = z.object({
   updatedAt: z.string(),
 });
 
+export const invoicePhotoIdDocumentSchema = z.object({
+  id: z.string(),
+  orderId: z.string(),
+  invoiceNumber: z.string(),
+  photoIdDocument: z.string().nullable().optional().default(null),
+  photoIdFileName: z.string().nullable(),
+  photoIdMimeType: z.string().nullable(),
+  photoIdUploadedAt: z.string().nullable(),
+});
+
 export const invoiceDefaultsSchema = z.object({
   invoiceNumber: z.string(),
   invoiceDate: z.string(),

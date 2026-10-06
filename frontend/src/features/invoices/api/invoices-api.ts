@@ -4,6 +4,7 @@ import type { ApiEnvelope } from '@/features/auth/types/auth.types';
 import {
   createInvoiceSchema,
   invoiceDefaultsSchema,
+  invoicePhotoIdDocumentSchema,
   invoiceRecordSchema,
   invoiceSignatureRequestResultSchema,
   publicInvoiceRecordSchema,
@@ -12,6 +13,7 @@ import {
 import type {
   CreateInvoiceInput,
   InvoiceDefaults,
+  InvoicePhotoIdDocument,
   InvoiceRecord,
   InvoiceSignatureRequestResult,
   PublicInvoiceRecord,
@@ -48,6 +50,19 @@ export const invoicesApi = {
     return parseApiData(response, invoiceRecordSchema, {
       emptyMessage: response.data.message || 'Invoice response was empty.',
       invalidMessage: 'Invoice payload was invalid.',
+    });
+  },
+
+  async getPhotoIdByOrderId(orderId: string): Promise<InvoicePhotoIdDocument> {
+    this.assertOrderId(orderId);
+
+    const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
+      `/api/orders/${orderId}/invoice/photo-id`,
+    );
+
+    return parseApiData(response, invoicePhotoIdDocumentSchema, {
+      emptyMessage: response.data.message || 'Photo ID response was empty.',
+      invalidMessage: 'Photo ID payload was invalid.',
     });
   },
 

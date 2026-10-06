@@ -12,6 +12,7 @@ import type {
   CreateInvoiceInput,
   InvoiceCurrency,
   InvoiceDefaults,
+  InvoicePhotoIdDocument,
   InvoiceRecord,
   InvoiceSignatureRequestResult,
 } from '@/features/invoices/types/invoice.types';
@@ -81,6 +82,7 @@ export function InvoiceActions({
   const [isAuditTrailOpen, setIsAuditTrailOpen] = useState(false);
   const [isActionsExpanded, setIsActionsExpanded] = useState(false);
   const [invoiceForPdf, setInvoiceForPdf] = useState<InvoiceRecord | null>(null);
+  const [photoIdInvoice, setPhotoIdInvoice] = useState<InvoiceRecord | null>(null);
   const [draft, setDraft] = useState<InvoiceDraft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(false);
@@ -96,6 +98,7 @@ export function InvoiceActions({
   useEffect(() => {
     setInvoice(order.invoice);
     setInvoiceForPdf(null);
+    setPhotoIdInvoice(null);
   }, [order.id, order.invoice]);
 
   const printableInvoice = invoiceForPdf ?? (draft ? draftToInvoicePreview(order.id, draft) : null);
@@ -124,6 +127,21 @@ export function InvoiceActions({
     }
   };
 
+  const loadPhotoIdDocument = async () => {
+    if (!invoice) {
+      return null;
+    }
+
+    setIsLoadingInvoiceDetails(true);
+
+    try {
+      const photoIdDocument = await invoicesApi.getPhotoIdByOrderId(order.id);
+      return mergeInvoicePhotoId(invoice, photoIdDocument);
+    } finally {
+      setIsLoadingInvoiceDetails(false);
+    }
+  };
+
   const openInvoiceView = async () => {
     if (!invoice) {
       return;
@@ -144,13 +162,14 @@ export function InvoiceActions({
 
   const openPhotoIdView = async () => {
     try {
-      const hydratedInvoice = await loadFullInvoice();
+      const hydratedInvoice = await loadPhotoIdDocument();
 
-      if (!hydratedInvoice.photoIdDocument) {
+      if (!hydratedInvoice?.photoIdDocument) {
         toast.error('Photo ID unavailable', 'The uploaded Photo ID could not be loaded.');
         return;
       }
 
+      setPhotoIdInvoice(hydratedInvoice);
       setIsPhotoIdOpen(true);
     } catch (caughtError) {
       toast.error(
@@ -182,9 +201,9 @@ export function InvoiceActions({
 
   const handleDownloadPhotoId = async () => {
     try {
-      const hydratedInvoice = await loadFullInvoice();
+      const hydratedInvoice = await loadPhotoIdDocument();
 
-      if (!hydratedInvoice.photoIdDocument) {
+      if (!hydratedInvoice?.photoIdDocument) {
         toast.error('Photo ID unavailable', 'The uploaded Photo ID could not be loaded.');
         return;
       }
@@ -606,10 +625,13 @@ export function InvoiceActions({
         />
       ) : null}
 
-      {isPhotoIdOpen && invoice?.photoIdDocument ? (
+      {isPhotoIdOpen && photoIdInvoice?.photoIdDocument ? (
         <PhotoIdViewModal
-          invoice={invoice}
-          onClose={() => setIsPhotoIdOpen(false)}
+          invoice={photoIdInvoice}
+          onClose={() => {
+            setIsPhotoIdOpen(false);
+            setPhotoIdInvoice(null);
+          }}
         />
       ) : null}
 
@@ -1684,6 +1706,20 @@ function isInvoiceFullyLoaded(invoice: InvoiceRecord): boolean {
 
 function hasInvoicePhotoId(invoice: InvoiceRecord): boolean {
   return Boolean(invoice.photoIdDocument || invoice.hasPhotoIdDocument);
+}
+
+function mergeInvoicePhotoId(
+  invoice: InvoiceRecord,
+  photoIdDocument: InvoicePhotoIdDocument,
+): InvoiceRecord {
+  return {
+    ...invoice,
+    photoIdDocument: photoIdDocument.photoIdDocument,
+    photoIdFileName: photoIdDocument.photoIdFileName,
+    photoIdMimeType: photoIdDocument.photoIdMimeType,
+    photoIdUploadedAt: photoIdDocument.photoIdUploadedAt,
+    hasPhotoIdDocument: Boolean(photoIdDocument.photoIdDocument),
+  };
 }
 
 function waitForNextPaint(): Promise<void> {

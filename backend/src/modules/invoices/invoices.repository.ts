@@ -34,6 +34,62 @@ const invoiceAuditEventsInclude = {
   },
 } satisfies Prisma.InvoiceAuditEventFindManyArgs;
 
+const invoiceOrderReferenceSelect = {
+  id: true,
+  customerEmail: true,
+  customerPhone: true,
+  orderNumber: true,
+  currency: true,
+} satisfies Prisma.OrderSelect;
+
+const invoiceBaseSelect = {
+  id: true,
+  orderId: true,
+  invoiceNumber: true,
+  invoiceDate: true,
+  salesAssistant: true,
+  customerName: true,
+  contactNumber: true,
+  billingAddress: true,
+  shippingAddress: true,
+  shippingVendor: true,
+  deliveryTimeline: true,
+  itemDescription: true,
+  vehiclePartDescription: true,
+  warrantyPartsOnly: true,
+  cancellationPolicy: true,
+  quantity: true,
+  saleAmount: true,
+  paymentStatus: true,
+  paymentDate: true,
+  paymentSource: true,
+  shippingCost: true,
+  salesTaxes: true,
+  coreCharge: true,
+  totalAmount: true,
+  customerSignature: true,
+  customerSignatureImage: true,
+  signatureDate: true,
+  photoIdRequired: true,
+  photoIdFileName: true,
+  photoIdMimeType: true,
+  photoIdUploadedAt: true,
+  signedAt: true,
+  signatureIpAddress: true,
+  signatureTokenHash: true,
+  signatureTokenExpiresAt: true,
+  signatureRequestedAt: true,
+  signatureLastSentAt: true,
+  status: true,
+  pdfStorageKey: true,
+  createdAt: true,
+  updatedAt: true,
+  order: {
+    select: invoiceOrderReferenceSelect,
+  },
+  auditEvents: invoiceAuditEventsInclude,
+} satisfies Prisma.InvoiceSelect;
+
 export type InvoiceOrder = Prisma.OrderGetPayload<{
   select: typeof invoiceOrderSelect;
 }>;
@@ -64,17 +120,24 @@ export class InvoicesRepository {
         orderId,
         order: this.buildOrderAccessWhere(user),
       },
-      include: {
-        order: {
-          select: {
-            id: true,
-            orderNumber: true,
-            customerEmail: true,
-            customerPhone: true,
-            currency: true,
-          },
-        },
-        auditEvents: invoiceAuditEventsInclude,
+      select: invoiceBaseSelect,
+    });
+  }
+
+  findPhotoIdByOrderId(orderId: string, user: AuthenticatedUser) {
+    return this.prismaService.invoice.findFirst({
+      where: {
+        orderId,
+        order: this.buildOrderAccessWhere(user),
+      },
+      select: {
+        id: true,
+        orderId: true,
+        invoiceNumber: true,
+        photoIdDocument: true,
+        photoIdFileName: true,
+        photoIdMimeType: true,
+        photoIdUploadedAt: true,
       },
     });
   }
@@ -86,13 +149,7 @@ export class InvoicesRepository {
       },
       include: {
         order: {
-          select: {
-            id: true,
-            customerEmail: true,
-            customerPhone: true,
-            orderNumber: true,
-            currency: true,
-          },
+          select: invoiceOrderReferenceSelect,
         },
         auditEvents: invoiceAuditEventsInclude,
       },
@@ -105,13 +162,7 @@ export class InvoicesRepository {
         data,
         include: {
           order: {
-            select: {
-              id: true,
-              customerEmail: true,
-              customerPhone: true,
-              orderNumber: true,
-              currency: true,
-            },
+            select: invoiceOrderReferenceSelect,
           },
           auditEvents: invoiceAuditEventsInclude,
         },
@@ -128,13 +179,7 @@ export class InvoicesRepository {
       },
       include: {
         order: {
-          select: {
-            id: true,
-            customerEmail: true,
-            customerPhone: true,
-            orderNumber: true,
-            currency: true,
-          },
+          select: invoiceOrderReferenceSelect,
         },
         auditEvents: invoiceAuditEventsInclude,
       },
@@ -154,13 +199,7 @@ export class InvoicesRepository {
         data,
         include: {
           order: {
-            select: {
-              id: true,
-              customerEmail: true,
-              customerPhone: true,
-              orderNumber: true,
-              currency: true,
-            },
+            select: invoiceOrderReferenceSelect,
           },
           auditEvents: invoiceAuditEventsInclude,
         },
