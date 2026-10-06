@@ -12,6 +12,7 @@ import {
 import { DetailPageSkeleton } from '@/components/feedback/page-skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import {
   Card,
   CardContent,
@@ -30,7 +31,7 @@ import {
 import { leadsApi } from '../api/leads-api';
 import { formatDate, formatLeadCurrency } from '../lib/lead-formatters';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
-import type { LeadSummary } from '../types/lead.types';
+import { LEAD_STATUSES, type LeadStatus, type LeadSummary } from '../types/lead.types';
 
 type TimelineEntry = {
   id: string;
@@ -60,6 +61,7 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -186,6 +188,32 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
     }
   };
 
+  const handleStatusChange = async (nextStatus: LeadStatus) => {
+    if (!lead || lead.isConverted || nextStatus === lead.status || isSavingStatus) {
+      return;
+    }
+
+    setIsSavingStatus(true);
+
+    try {
+      const updatedLead = await leadsApi.update(lead.id, buildLeadStatusUpdatePayload(lead, nextStatus));
+      setLead(updatedLead);
+      toast.success(
+        'Lead status updated',
+        `Status changed to ${formatLeadStatusLabel(updatedLead.status)}.`,
+      );
+    } catch (caughtError) {
+      toast.error(
+        'Unable to update status',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Please try again in a moment.',
+      );
+    } finally {
+      setIsSavingStatus(false);
+    }
+  };
+
   if (isLoading) {
     return <DetailPageSkeleton />;
   }
@@ -229,7 +257,20 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
                 <DetailBlock label="Lead date" value={formatDate(lead.date)} />
                 <DetailBlock label="Advisor name" value={lead.createdBy.name} />
                 <DetailBlock label="CMPT" value={lead.cmpt} />
-                <DetailBlock label="Status" value={<LeadStatusBadge status={status} />} />
+                <DetailBlock
+                  label="Status"
+                  value={
+                    lead.isConverted ? (
+                      <LeadStatusBadge status={status} />
+                    ) : (
+                      <LeadStatusSelect
+                        status={lead.status}
+                        isSaving={isSavingStatus}
+                        onChange={(nextStatus) => void handleStatusChange(nextStatus)}
+                      />
+                    )
+                  }
+                />
               </DetailSection>
 
               <DetailSection title="Customer Info" tone="blue">
@@ -390,6 +431,59 @@ function LeadStatusBadge({ status }: { status: LeadSummary['status'] | 'CONVERTE
       {status === 'CONVERTED' ? 'Converted' : formatLeadStatusLabel(status)}
     </Badge>
   );
+}
+
+function LeadStatusSelect({
+  status,
+  isSaving,
+  onChange,
+}: {
+  status: LeadStatus;
+  isSaving: boolean;
+  onChange: (status: LeadStatus) => void;
+}) {
+  return (
+    <div className="flex max-w-xs items-center gap-2">
+      <Select
+        value={status}
+        disabled={isSaving}
+        className="h-8 rounded-full border-orange-200 bg-white px-3 py-1 text-xs font-semibold text-orange-700 shadow-none focus-visible:ring-orange-300 dark:border-orange-900/50 dark:bg-slate-950 dark:text-orange-300"
+        onChange={(event) => onChange(event.target.value as LeadStatus)}
+      >
+        {LEAD_STATUSES.map((leadStatus) => (
+          <option key={leadStatus} value={leadStatus}>
+            {formatLeadStatusLabel(leadStatus)}
+          </option>
+        ))}
+      </Select>
+      {isSaving ? (
+        <LoaderCircle className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : null}
+    </div>
+  );
+}
+
+function buildLeadStatusUpdatePayload(
+  lead: LeadSummary,
+  status: LeadStatus,
+) {
+  return {
+    leadDate: lead.date,
+    cmpt: lead.cmpt,
+    customerPhone: lead.customerPhone,
+    customerName: lead.customerName,
+    customerEmail: lead.customerEmail ?? undefined,
+    state: lead.state ?? undefined,
+    vehicleYear: lead.vehicleYear ?? '',
+    vehicleMake: lead.vehicleMake ?? '',
+    vehicleModel: lead.vehicleModel ?? '',
+    vehicleVariant: lead.vehicleVariant ?? undefined,
+    quote: lead.quote ?? undefined,
+    quoteCurrency: lead.quoteCurrency,
+    comments: lead.comments ?? undefined,
+    prospects: lead.prospects,
+    status,
+  };
 }
 
 function DetailSection({
