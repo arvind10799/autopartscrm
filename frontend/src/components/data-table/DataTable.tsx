@@ -284,7 +284,7 @@ function shouldIgnoreRowInteraction(target: EventTarget | null) {
 
   return Boolean(
     target.closest(
-      'a,button,input,select,textarea,label,[role="button"],[data-row-click-ignore="true"]',
+      'a,button,input,select,textarea,label,[data-row-click-ignore="true"]',
     ),
   );
 }
