@@ -76,6 +76,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAcceptingTerms, setIsAcceptingTerms] = useState(false);
+  const [isProcessingPhotoId, setIsProcessingPhotoId] = useState(false);
   const [hasSubmittedSuccessfully, setHasSubmittedSuccessfully] = useState(false);
   const [hasDrawing, setHasDrawing] = useState(false);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -246,16 +247,28 @@ export function InvoiceSigningPage({ token }: { token: string }) {
       return;
     }
 
+    setIsProcessingPhotoId(true);
+
     try {
-      const document = await fileToDataUrl(file);
-      setPhotoIdDocument(document);
-      setPhotoIdFileName(file.name);
-      setPhotoIdMimeType(normalizedMimeType);
+      if (normalizedMimeType === 'application/pdf') {
+        const document = await fileToDataUrl(file);
+        setPhotoIdDocument(document);
+        setPhotoIdFileName(file.name);
+        setPhotoIdMimeType(normalizedMimeType);
+        return;
+      }
+
+      const optimizedDocument = await fileToOptimizedPhotoIdDataUrl(file);
+      setPhotoIdDocument(optimizedDocument.dataUrl);
+      setPhotoIdFileName(optimizedDocument.fileName);
+      setPhotoIdMimeType(optimizedDocument.mimeType);
     } catch (caughtError) {
       toast.error(
         'Unable to upload photo ID',
         caughtError instanceof Error ? caughtError.message : 'Please try another file.',
       );
+    } finally {
+      setIsProcessingPhotoId(false);
     }
   };
 
@@ -598,7 +611,17 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                       ) : null}
                     </div>
                     <PhotoIdGuidance />
-                    {photoIdDocument ? (
+                    {isProcessingPhotoId ? (
+                      <div className="rounded-lg border border-border bg-white p-3 text-sm text-foreground">
+                        <div className="flex items-center gap-2">
+                          <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
+                          <span className="font-medium">Processing image...</span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Optimizing Photo ID before upload.
+                        </p>
+                      </div>
+                    ) : photoIdDocument ? (
                       <div className="space-y-2">
                         <div className="rounded-lg border border-border bg-white p-2.5 text-sm text-foreground">
                           <p className="truncate font-medium">
@@ -651,7 +674,7 @@ export function InvoiceSigningPage({ token }: { token: string }) {
                   <Button
                     type="button"
                     className="w-full"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isProcessingPhotoId}
                     onClick={submitSignature}
                   >
                     {isSubmitting ? (
@@ -1216,6 +1239,80 @@ function fileToDataUrl(file: File) {
     reader.onerror = () => reject(reader.error ?? new Error('Unable to read this file.'));
     reader.readAsDataURL(file);
   });
+}
+
+function fileToOptimizedPhotoIdDataUrl(file: File) {
+  return new Promise<{
+    dataUrl: string;
+    fileName: string;
+    mimeType: string;
+  }>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        reject(new Error('Unable to read Photo ID image.'));
+        return;
+      }
+
+      const image = new window.Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDimension = 1600;
+        const scale = Math.min(
+          maxDimension / image.width,
+          maxDimension / image.height,
+          1,
+        );
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+
+        canvas.width = width;
+        canvas.height = height;
+
+        if (!context) {
+          reject(new Error('Unable to prepare Photo ID image.'));
+          return;
+        }
+
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, width, height);
+        context.drawImage(image, 0, 0, width, height);
+
+        const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+        if (optimizedDataUrl.length >= result.length) {
+          resolve({
+            dataUrl: result,
+            fileName: file.name,
+            mimeType: file.type || 'image/jpeg',
+          });
+          return;
+        }
+
+        resolve({
+          dataUrl: optimizedDataUrl,
+          fileName: buildOptimizedPhotoIdFileName(file.name),
+          mimeType: 'image/jpeg',
+        });
+      };
+      image.onerror = () => reject(new Error('Photo ID image could not be opened.'));
+      image.src = result;
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read Photo ID image.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function buildOptimizedPhotoIdFileName(fileName: string) {
+  const trimmedFileName = fileName.trim();
+  const baseName = trimmedFileName
+    ? trimmedFileName.replace(/\.[^.]+$/, '')
+    : 'photo-id';
+
+  return `${baseName}-optimized.jpg`;
 }
 
 function waitForRenderFrame() {
