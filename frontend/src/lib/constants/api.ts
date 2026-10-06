@@ -1,5 +1,5 @@
 export const DEFAULT_BACKEND_API_URL = 'http://localhost:3000';
-export const DEFAULT_API_TIMEOUT_MS = 10000;
+export const DEFAULT_API_TIMEOUT_MS = 30000;
 export const DEFAULT_AUTH_COOKIE_MAX_AGE_SECONDS = 86400;
 
 export const API_ERROR_MESSAGES = {
