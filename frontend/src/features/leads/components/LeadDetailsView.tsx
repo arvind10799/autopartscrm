@@ -6,8 +6,9 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   ArrowRight,
+  History,
   LoaderCircle,
-  MessageSquarePlus,
+  Plus,
 } from 'lucide-react';
 import { DetailPageSkeleton } from '@/components/feedback/page-skeletons';
 import { Badge } from '@/components/ui/badge';
@@ -21,13 +22,33 @@ import {
 } from '@/components/ui/card';
 import { notesApi } from '@/features/notes/api/notes-api';
 import type { NoteRecord } from '@/features/notes/types/note.types';
-import { formatNoteTimestamp } from '@/features/notes/lib/notes.helpers';
 import { toast } from '@/lib/stores/toast.store';
 import { cn } from '@/lib/utils/cn';
+import {
+  formatDateTime,
+  formatRelativeTime,
+} from '@/features/orders/lib/order-formatters';
 import { leadsApi } from '../api/leads-api';
 import { formatDate, formatLeadCurrency } from '../lib/lead-formatters';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
 import type { LeadSummary } from '../types/lead.types';
+
+type TimelineEntry = {
+  id: string;
+  timestamp: string;
+  actorName: string;
+  action: string;
+  body: ReactNode;
+  badgeVariant?:
+    | 'default'
+    | 'secondary'
+    | 'outline'
+    | 'neutral'
+    | 'success'
+    | 'warning'
+    | 'danger'
+    | 'info';
+};
 
 export function LeadDetailsView({ leadId }: { leadId: string }) {
   const [lead, setLead] = useState<LeadSummary | null>(null);
@@ -38,6 +59,7 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
   const [notesError, setNotesError] = useState<string | null>(null);
   const [noteMessage, setNoteMessage] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
+  const [isNoteFormOpen, setIsNoteFormOpen] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -120,6 +142,18 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
       ),
     [notes],
   );
+  const notesTimeline = useMemo(
+    () =>
+      sortedNotes.map((note) => ({
+        id: note.id,
+        timestamp: note.createdAt,
+        actorName: note.author.name,
+        action: 'Note',
+        body: note.message,
+        badgeVariant: 'secondary' as const,
+      })),
+    [sortedNotes],
+  );
 
   const handleAddComment = async () => {
     const trimmedMessage = noteMessage.trim();
@@ -139,6 +173,7 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
         message: trimmedMessage,
       });
       setNoteMessage('');
+      setIsNoteFormOpen(false);
       setRefreshKey((currentValue) => currentValue + 1);
       toast.success('Comment added', 'Lead comments have been refreshed.');
     } catch (caughtError) {
@@ -182,71 +217,76 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
   const status = lead.isConverted ? 'CONVERTED' : lead.status;
 
   return (
-    <section className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-1">
-          <Link
-            href="/leads"
-            className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to leads
-          </Link>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              {lead.customerName}
-            </h1>
-            <LeadStatusBadge status={status} />
+    <section className="space-y-6">
+      <Card className="overflow-hidden border-border/70 shadow-sm">
+        <CardHeader className="flex flex-col gap-3 border-b border-border/70 pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-2">
+            <Link
+              href="/leads"
+              className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to leads
+            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle className="truncate text-2xl sm:text-3xl">
+                {lead.customerName}
+              </CardTitle>
+              <LeadStatusBadge status={status} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {lead.customerPhone} · Created by {lead.createdBy.name}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {lead.customerPhone} · Created by {lead.createdBy.name}
-          </p>
-        </div>
 
-        {lead.isConverted && lead.convertedOrder ? (
-          <Link
-            href={`/orders/${lead.convertedOrder.id}`}
-            className={cn(
-              buttonVariants({ variant: 'default', size: 'sm' }),
-              'rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',
-            )}
-          >
-            View order
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        ) : null}
-      </div>
+          {lead.isConverted && lead.convertedOrder ? (
+            <Link
+              href={`/orders/${lead.convertedOrder.id}`}
+              className={cn(
+                buttonVariants({ variant: 'default', size: 'sm' }),
+                'rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',
+              )}
+            >
+              View order
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : null}
+        </CardHeader>
+      </Card>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] xl:grid-cols-[minmax(0,1.08fr)_minmax(430px,0.92fr)]">
         <div className="space-y-4">
-          <Card className="rounded-2xl border-border/70 shadow-sm">
-            <CardHeader>
-              <CardTitle>Lead details</CardTitle>
-              <CardDescription>
-                Customer, vehicle, quote, and sales intake information.
-              </CardDescription>
+          <Card className="overflow-hidden border-border/70 shadow-sm">
+            <CardHeader className="flex flex-col gap-3 border-b border-border/70 pb-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-xl">Lead details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <DetailSection title="Customer">
-                <DetailItem label="Name" value={lead.customerName} />
-                <DetailItem label="Phone" value={lead.customerPhone} />
-                <DetailItem label="Email" value={formatNullableText(lead.customerEmail)} />
-                <DetailItem label="State" value={formatNullableText(lead.state)} />
+
+            <CardContent className="space-y-3 p-3.5 sm:p-4">
+              <DetailSection title="Basic Lead Info" tone="orange">
+                <DetailBlock label="Lead date" value={formatDate(lead.date)} />
+                <DetailBlock label="Advisor name" value={lead.createdBy.name} />
+                <DetailBlock label="CMPT" value={lead.cmpt} />
+                <DetailBlock label="Status" value={<LeadStatusBadge status={status} />} />
               </DetailSection>
 
-              <DetailSection title="Vehicle / part">
-                <DetailItem label="Year" value={formatNullableText(lead.vehicleYear)} />
-                <DetailItem label="Make" value={formatNullableText(lead.vehicleMake)} />
-                <DetailItem label="Model" value={formatNullableText(lead.vehicleModel)} />
-                <DetailItem label="Part" value={formatNullableText(lead.vehicleVariant)} />
-                <DetailItem label="Description" value={lead.partDescription} wide />
+              <DetailSection title="Customer Info" tone="blue">
+                <DetailBlock label="Name" value={lead.customerName} />
+                <DetailBlock label="Mobile" value={lead.customerPhone} />
+                <DetailBlock label="Email" value={formatNullableText(lead.customerEmail)} />
+                <DetailBlock label="State" value={formatNullableText(lead.state)} />
               </DetailSection>
 
-              <DetailSection title="Sales">
-                <DetailItem label="Lead date" value={formatDate(lead.date)} />
-                <DetailItem label="CMPT" value={lead.cmpt} />
-                <DetailItem label="Prospects" value={lead.prospects} />
-                <DetailItem
+              <DetailSection title="Vehicle / Part Info" tone="teal">
+                <DetailBlock label="Parts" value={lead.partDescription} />
+                <DetailBlock label="Make" value={formatNullableText(lead.vehicleMake)} />
+                <DetailBlock label="Model" value={formatNullableText(lead.vehicleModel)} />
+                <DetailBlock label="Year" value={formatNullableText(lead.vehicleYear)} />
+                <DetailBlock label="Part" value={formatNullableText(lead.vehicleVariant)} />
+                <DetailBlock label="Description" value={lead.partDescription} />
+              </DetailSection>
+
+              <DetailSection title="Sales Info" tone="green">
+                <DetailBlock
                   label="Quote"
                   value={
                     lead.quote !== null
@@ -254,84 +294,109 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
                       : 'Not provided'
                   }
                 />
-                <DetailItem label="Comments" value={formatNullableText(lead.comments)} wide />
+                <DetailBlock label="Currency" value={lead.quoteCurrency} />
+                <DetailBlock label="Prospects" value={formatNullableText(lead.prospects)} />
+                <DetailBlock label="Comments" value={formatNullableText(lead.comments)} />
               </DetailSection>
 
-              <DetailSection title="Activity">
-                <DetailItem label="Created" value={formatNoteTimestamp(lead.createdAt)} />
-                <DetailItem label="Last edited" value={formatNoteTimestamp(lead.updatedAt)} />
+              <DetailSection title="Activity" tone="amber">
+                <DetailBlock label="Created" value={formatDateTime(lead.createdAt)} />
+                <DetailBlock label="Last edited" value={formatDateTime(lead.updatedAt)} />
                 {lead.convertedAt ? (
-                  <DetailItem label="Converted" value={formatNoteTimestamp(lead.convertedAt)} />
+                  <DetailBlock label="Converted" value={formatDateTime(lead.convertedAt)} />
                 ) : null}
               </DetailSection>
             </CardContent>
           </Card>
         </div>
 
-        <aside className="xl:sticky xl:top-24">
-          <Card className="rounded-2xl border-border/70 shadow-sm xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
-            <CardHeader className="border-b border-border/70">
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <Card className="overflow-hidden lg:flex lg:max-h-[calc(100vh-3rem)] lg:flex-col">
+            <CardHeader className="border-b border-border/70 px-4 py-3">
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <CardTitle>Comments</CardTitle>
-                  <CardDescription>Lead-specific notes and follow-ups.</CardDescription>
-                </div>
-                <Badge variant="outline" className="rounded-full">
-                  {sortedNotes.length.toLocaleString()}
-                </Badge>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <History className="h-4 w-4 text-primary" />
+                  NOTES
+                </CardTitle>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white hover:bg-[#e65000]"
+                  onClick={() => {
+                    setIsNoteFormOpen((currentValue) => !currentValue);
+                    setNoteError(null);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add note
+                </Button>
               </div>
             </CardHeader>
 
-            <div className="border-b border-border/70 bg-card p-3.5 sm:p-4">
-              <form
-                className="space-y-2"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void handleAddComment();
-                }}
-              >
-                <label
-                  htmlFor="lead-detail-comment"
-                  className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            {isNoteFormOpen ? (
+              <div className="border-b border-border/70 bg-card p-3.5 sm:p-4">
+                <form
+                  className="space-y-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void handleAddComment();
+                  }}
                 >
-                  Add comment
-                </label>
-                <textarea
-                  id="lead-detail-comment"
-                  value={noteMessage}
-                  rows={3}
-                  onChange={(event) => setNoteMessage(event.target.value)}
-                  placeholder="Add comment"
-                  className={cn(
-                    'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    noteError ? 'border-destructive/60' : null,
-                  )}
-                />
-                {noteError ? <p className="text-sm text-destructive">{noteError}</p> : null}
-                <div className="flex justify-end">
-                  <Button
-                    type="submit"
-                    size="sm"
-                    className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white hover:bg-[#e65000]"
-                    disabled={isSavingNote}
+                  <label
+                    htmlFor="lead-detail-comment"
+                    className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
                   >
-                    {isSavingNote ? (
-                      <>
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <MessageSquarePlus className="h-4 w-4" />
-                        Add comment
-                      </>
+                    Add note
+                  </label>
+                  <textarea
+                    id="lead-detail-comment"
+                    value={noteMessage}
+                    rows={3}
+                    onChange={(event) => setNoteMessage(event.target.value)}
+                    placeholder="Add note"
+                    className={cn(
+                      'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      noteError ? 'border-destructive/60' : null,
                     )}
-                  </Button>
-                </div>
-              </form>
-            </div>
+                  />
+                  {noteError ? (
+                    <p className="text-sm text-destructive">{noteError}</p>
+                  ) : null}
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-lg px-3 text-xs"
+                      disabled={isSavingNote}
+                      onClick={() => {
+                        setIsNoteFormOpen(false);
+                        setNoteError(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      className="h-8 rounded-lg bg-[#ff5a00] px-3 text-xs text-white hover:bg-[#e65000]"
+                      disabled={isSavingNote}
+                    >
+                      {isSavingNote ? (
+                        <>
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Submit'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            ) : null}
 
-            <CardContent className="min-h-0 space-y-3 p-3.5 sm:p-4 xl:max-h-[calc(100vh-24rem)] xl:overflow-y-auto">
+            <CardContent className="min-h-0 space-y-3 p-3.5 sm:p-4 lg:flex-1 lg:overflow-y-auto">
               {notesError ? (
                 <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {notesError}
@@ -340,31 +405,13 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
 
               {isLoadingNotes ? (
                 <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
-                  Loading comments...
-                </div>
-              ) : sortedNotes.length > 0 ? (
-                <div className="space-y-3">
-                  {sortedNotes.map((note) => (
-                    <article
-                      key={note.id}
-                      className="rounded-xl border border-border/70 bg-secondary/20 p-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="font-semibold text-foreground">{note.author.name}</p>
-                        <time className="shrink-0 text-xs text-muted-foreground">
-                          {formatNoteTimestamp(note.createdAt)}
-                        </time>
-                      </div>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                        {note.message}
-                      </p>
-                    </article>
-                  ))}
+                  Loading notes...
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
-                  No comments yet.
-                </div>
+                <RemarkTimeline
+                  entries={notesTimeline}
+                  emptyMessage="No internal notes yet."
+                />
               )}
             </CardContent>
           </Card>
@@ -384,40 +431,126 @@ function LeadStatusBadge({ status }: { status: LeadSummary['status'] | 'CONVERTE
 
 function DetailSection({
   title,
+  tone = 'slate',
   children,
 }: {
   title: string;
+  tone?: DetailTone;
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border/70 bg-secondary/20 p-3">
-      <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+    <section className={cn('rounded-xl border p-3 shadow-sm', getDetailToneClassName(tone))}>
+      <h3 className="text-xs font-bold uppercase tracking-[0.16em]">
         {title}
       </h3>
-      <div className="mt-2 grid gap-x-4 gap-y-2 sm:grid-cols-2">{children}</div>
+      <div className="mt-2 grid gap-x-4 gap-y-1.5 sm:grid-cols-2">{children}</div>
     </section>
   );
 }
 
-function DetailItem({
+function DetailBlock({
   label,
   value,
-  wide = false,
 }: {
   label: string;
-  value: string;
-  wide?: boolean;
+  value: ReactNode;
 }) {
   return (
-    <div className={cn('min-w-0', wide ? 'sm:col-span-2' : null)}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="grid min-w-0 grid-cols-[7.25rem_minmax(0,1fr)] gap-2 text-xs leading-5">
+      <p className="font-bold uppercase text-foreground/85">
         {label}
       </p>
-      <p className="mt-0.5 whitespace-pre-wrap break-words text-sm font-medium text-foreground">
+      <div className="min-w-0 whitespace-pre-wrap font-medium text-foreground">
         {value}
-      </p>
+      </div>
     </div>
   );
+}
+
+type DetailTone = 'orange' | 'blue' | 'teal' | 'amber' | 'sky' | 'green' | 'slate';
+
+function getDetailToneClassName(tone: DetailTone) {
+  const classes: Record<DetailTone, string> = {
+    orange:
+      'border-orange-200 bg-orange-50/70 text-orange-800 dark:border-orange-900/50 dark:bg-orange-950/20 dark:text-orange-200',
+    blue:
+      'border-blue-200 bg-blue-50/70 text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-200',
+    teal:
+      'border-teal-200 bg-teal-50/70 text-teal-800 dark:border-teal-900/50 dark:bg-teal-950/20 dark:text-teal-200',
+    amber:
+      'border-amber-200 bg-amber-50/70 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200',
+    sky:
+      'border-sky-200 bg-sky-50/70 text-sky-800 dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-200',
+    green:
+      'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-200',
+    slate:
+      'border-border bg-secondary/20 text-foreground',
+  };
+
+  return classes[tone];
+}
+
+function RemarkTimeline({
+  entries,
+  emptyMessage,
+}: {
+  entries: TimelineEntry[];
+  emptyMessage: string;
+}) {
+  if (entries.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-border/70 bg-secondary/20 p-3 text-sm text-muted-foreground">
+        {emptyMessage}
+      </p>
+    );
+  }
+
+  return (
+    <ol className="relative space-y-3 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-border">
+      {entries.map((entry) => (
+        <RemarkItem key={entry.id} entry={entry} />
+      ))}
+    </ol>
+  );
+}
+
+function RemarkItem({ entry }: { entry: TimelineEntry }) {
+  return (
+    <li className="relative pl-6">
+      <span
+        className={cn(
+          'absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-background',
+          getTimelineDotClassName(entry.badgeVariant),
+        )}
+      />
+      <div className="space-y-1">
+        <p className="text-xs leading-5 text-muted-foreground">
+          <span className="font-semibold text-[#d94d00] dark:text-orange-300">
+            {entry.actorName}
+          </span>{' '}
+          | {formatDateTime(entry.timestamp)} ({formatRelativeTime(entry.timestamp)})
+        </p>
+        <div className="whitespace-pre-wrap text-xs font-medium leading-5 text-foreground">
+          {entry.body}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function getTimelineDotClassName(variant?: TimelineEntry['badgeVariant']) {
+  switch (variant) {
+    case 'warning':
+      return 'bg-amber-500';
+    case 'success':
+      return 'bg-emerald-500';
+    case 'danger':
+      return 'bg-red-500';
+    case 'info':
+      return 'bg-sky-500';
+    default:
+      return 'bg-teal-500';
+  }
 }
 
 function formatNullableText(value: string | null): string {
