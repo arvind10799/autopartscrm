@@ -77,6 +77,7 @@ export interface LeadsListQuery {
   createdFrom?: string;
   createdTo?: string;
   createdById?: string;
+  untouchedDays?: number;
 }
 
 export interface CreateLeadInput {

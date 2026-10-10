@@ -38,6 +38,9 @@ export class NotesService {
         CACHE_NAMESPACE_ORDERS_LIST,
       );
     }
+    if (createNoteDto.entityType === NoteEntityType.LEAD) {
+      await this.notesRepository.touchLead(createNoteDto.entityId);
+    }
     if (createNoteDto.entityType !== NoteEntityType.LEAD) {
       await this.notificationsService.notifyNoteCreated(
         createNoteDto.entityType,

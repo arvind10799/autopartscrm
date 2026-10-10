@@ -127,6 +127,15 @@ export class NotesRepository {
     return Boolean(lead);
   }
 
+  async touchLead(id: string) {
+    await this.prismaService.lead.update({
+      where: { id },
+      data: {
+        updatedAt: new Date(),
+      },
+    });
+  }
+
   private buildEntityWhere(
     entityType: NoteEntityType,
     entityId: string,

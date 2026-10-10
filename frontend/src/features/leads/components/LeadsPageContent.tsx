@@ -32,13 +32,18 @@ import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
 import {
   ALL_LEAD_CONVERSION_FILTER,
   ALL_LEAD_STATUS_FILTER,
+  ALL_UNTOUCHED_LEADS_FILTER,
   formatLeadConversionFilterLabel,
   formatLeadStatusLabel,
+  formatUntouchedLeadsFilterLabel,
   LEAD_PAGE_SIZE,
   parseLeadConversionFilter,
   parseLeadStatusFilter,
+  parseUntouchedLeadsFilter,
+  UNTOUCHED_LEADS_DAY_OPTIONS,
   type LeadConversionFilter,
   type LeadStatusFilter,
+  type UntouchedLeadsFilter,
 } from '../lib/leads.helpers';
 import { leadsApi } from '../api/leads-api';
 import { useLeadsList } from '../hooks/useLeadsList';
@@ -84,6 +89,8 @@ export function LeadsPageContent() {
     useState<LeadConversionFilter>(ALL_LEAD_CONVERSION_FILTER);
   const [statusFilter, setStatusFilter] =
     useState<LeadStatusFilter>(ALL_LEAD_STATUS_FILTER);
+  const [untouchedFilter, setUntouchedFilter] =
+    useState<UntouchedLeadsFilter>(ALL_UNTOUCHED_LEADS_FILTER);
   const [dateFilter, setDateFilter] = useState(
     createDefaultDateRangeFilterState(),
   );
@@ -140,6 +147,10 @@ export function LeadsPageContent() {
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
     createdById,
+    untouchedDays:
+      untouchedFilter === ALL_UNTOUCHED_LEADS_FILTER
+        ? undefined
+        : untouchedFilter,
     refreshKey,
   });
 
@@ -155,6 +166,11 @@ export function LeadsPageContent() {
 
   const handleStatusFilterChange = (value: LeadStatusFilter) => {
     setStatusFilter(value);
+    startTransition(() => setPage(1));
+  };
+
+  const handleUntouchedFilterChange = (value: UntouchedLeadsFilter) => {
+    setUntouchedFilter(value);
     startTransition(() => setPage(1));
   };
 
@@ -181,6 +197,10 @@ export function LeadsPageContent() {
         createdFrom: dateRangeQuery.createdFrom,
         createdTo: dateRangeQuery.createdTo,
         createdById,
+        untouchedDays:
+          untouchedFilter === ALL_UNTOUCHED_LEADS_FILTER
+            ? undefined
+            : untouchedFilter,
       });
       toast.success(
         'Leads export started',
@@ -203,6 +223,7 @@ export function LeadsPageContent() {
     setSearchTerm('');
     setConvertedFilter(ALL_LEAD_CONVERSION_FILTER);
     setStatusFilter(ALL_LEAD_STATUS_FILTER);
+    setUntouchedFilter(ALL_UNTOUCHED_LEADS_FILTER);
     startTransition(() => setPage(1));
     setRefreshKey((currentValue) => currentValue + 1);
     toast.success(
@@ -346,7 +367,7 @@ export function LeadsPageContent() {
               </div>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px]">
+            <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px_240px]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -386,6 +407,26 @@ export function LeadsPageContent() {
                 {LEAD_STATUSES.map((status) => (
                   <option key={status} value={status}>
                     {formatLeadStatusLabel(status)}
+                  </option>
+                ))}
+              </Select>
+
+              <Select
+                value={String(untouchedFilter)}
+                onChange={(event) =>
+                  handleUntouchedFilterChange(
+                    parseUntouchedLeadsFilter(event.target.value),
+                  )
+                }
+                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                aria-label="Not touched filter"
+              >
+                <option value={ALL_UNTOUCHED_LEADS_FILTER}>
+                  {formatUntouchedLeadsFilterLabel(ALL_UNTOUCHED_LEADS_FILTER)}
+                </option>
+                {UNTOUCHED_LEADS_DAY_OPTIONS.map((days) => (
+                  <option key={days} value={days}>
+                    {formatUntouchedLeadsFilterLabel(days)}
                   </option>
                 ))}
               </Select>

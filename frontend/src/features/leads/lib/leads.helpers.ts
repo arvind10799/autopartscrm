@@ -14,6 +14,8 @@ import type {
 export const LEAD_PAGE_SIZE = 10;
 export const ALL_LEAD_CONVERSION_FILTER = 'ALL' as const;
 export const ALL_LEAD_STATUS_FILTER = 'ALL' as const;
+export const ALL_UNTOUCHED_LEADS_FILTER = 'ALL' as const;
+export const UNTOUCHED_LEADS_DAY_OPTIONS = [1, 2, 3, 7, 14, 30] as const;
 
 export type LeadConversionFilter =
   | typeof ALL_LEAD_CONVERSION_FILTER
@@ -23,6 +25,10 @@ export type LeadConversionFilter =
 export type LeadStatusFilter =
   | typeof ALL_LEAD_STATUS_FILTER
   | LeadStatus;
+
+export type UntouchedLeadsFilter =
+  | typeof ALL_UNTOUCHED_LEADS_FILTER
+  | (typeof UNTOUCHED_LEADS_DAY_OPTIONS)[number];
 
 const positiveIntegerSchema = z.coerce.number().int().min(1);
 const userIdSchema = z.string().uuid();
@@ -42,6 +48,7 @@ export type NormalizedLeadsQuery = {
   createdFrom?: string;
   createdTo?: string;
   createdById?: string;
+  untouchedDays?: number;
 };
 
 export function createEmptyLeadsResponse(
@@ -115,6 +122,26 @@ export function formatLeadStatusLabel(value: LeadStatus): string {
   return labels[value];
 }
 
+export function parseUntouchedLeadsFilter(value: string): UntouchedLeadsFilter {
+  const parsedValue = Number(value);
+
+  return UNTOUCHED_LEADS_DAY_OPTIONS.includes(
+    parsedValue as (typeof UNTOUCHED_LEADS_DAY_OPTIONS)[number],
+  )
+    ? (parsedValue as UntouchedLeadsFilter)
+    : ALL_UNTOUCHED_LEADS_FILTER;
+}
+
+export function formatUntouchedLeadsFilterLabel(
+  value: UntouchedLeadsFilter,
+): string {
+  if (value === ALL_UNTOUCHED_LEADS_FILTER) {
+    return 'All leads';
+  }
+
+  return `${value}+ days not touched`;
+}
+
 function parseUserIdFilter(value: string | null | undefined): string | undefined {
   const parsed = userIdSchema.safeParse(value);
 
@@ -134,6 +161,9 @@ export function parseLeadsQueryParams(
   const convertedValue = searchParams.get('converted');
   const status = parseLeadStatusFilter(searchParams.get('status') ?? '');
   const createdById = parseUserIdFilter(searchParams.get('createdById'));
+  const untouchedDays = parseUntouchedLeadsFilter(
+    searchParams.get('untouchedDays') ?? '',
+  );
 
   return {
     page,
@@ -149,6 +179,8 @@ export function parseLeadsQueryParams(
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
     createdById,
+    untouchedDays:
+      untouchedDays === ALL_UNTOUCHED_LEADS_FILTER ? undefined : untouchedDays,
   };
 }
 
@@ -174,6 +206,10 @@ export function buildLeadsQueryString(query: NormalizedLeadsQuery): string {
     baseSearchParams.set('createdById', query.createdById);
   }
 
+  if (query.untouchedDays) {
+    baseSearchParams.set('untouchedDays', String(query.untouchedDays));
+  }
+
   return buildDateRangeSearchParams(baseSearchParams, query).toString();
 }
 
@@ -192,6 +228,10 @@ export function normalizeLeadsListQuery(input: LeadsListQuery): LeadsListQuery {
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,
     createdById: parseUserIdFilter(input.createdById),
+    untouchedDays:
+      input.untouchedDays && input.untouchedDays > 0
+        ? Math.min(Math.trunc(input.untouchedDays), 365)
+        : undefined,
   };
 }
 

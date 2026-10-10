@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { LeadStatus } from '../../common/enums/lead-status.enum';
 import { Role } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { buildCreatedAtFilter } from '../../common/utils/date-range.util';
@@ -52,6 +53,12 @@ const leadListSelect = {
     },
   },
 } satisfies Prisma.LeadSelect;
+
+const UNTOUCHED_LEAD_EXCLUDED_STATUSES = [
+  LeadStatus.SHOPPING_AROUND,
+  LeadStatus.NOT_INTERESTED,
+  LeadStatus.WE_DONT_SALE,
+];
 
 export type LeadListRecord = Prisma.LeadGetPayload<{
   select: typeof leadListSelect;
@@ -314,6 +321,7 @@ export class LeadsRepository {
       queryLeadsDto.createdFrom,
       queryLeadsDto.createdTo,
     );
+    const untouchedDays = queryLeadsDto.untouchedDays;
 
     if (createdById) {
       where.createdById = createdById;
@@ -329,6 +337,21 @@ export class LeadsRepository {
 
     if (leadDateFilter) {
       where.leadDate = leadDateFilter;
+    }
+
+    if (untouchedDays) {
+      const untouchedCutoff = new Date();
+      untouchedCutoff.setDate(untouchedCutoff.getDate() - untouchedDays);
+      where.updatedAt = { lte: untouchedCutoff };
+      where.convertedAt = null;
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+        {
+          status: {
+            notIn: UNTOUCHED_LEAD_EXCLUDED_STATUSES,
+          },
+        },
+      ];
     }
 
     if (search) {

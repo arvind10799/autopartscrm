@@ -23,6 +23,7 @@ type UseLeadsListOptions = {
   createdFrom?: string;
   createdTo?: string;
   createdById?: string;
+  untouchedDays?: number;
   refreshKey: number;
 };
 
@@ -40,6 +41,7 @@ export function useLeadsList({
   createdFrom,
   createdTo,
   createdById,
+  untouchedDays,
   refreshKey,
 }: UseLeadsListOptions): UseLeadsListResult {
   const [leadsResponse, setLeadsResponse] = useState<LeadsListResponse>(() =>
@@ -63,6 +65,7 @@ export function useLeadsList({
       createdFrom,
       createdTo,
       createdById,
+      untouchedDays,
     });
 
     const loadLeads = async () => {
@@ -106,6 +109,7 @@ export function useLeadsList({
     requestTracker,
     search,
     status,
+    untouchedDays,
   ]);
 
   return {
