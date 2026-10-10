@@ -12,6 +12,7 @@ interface AuthState {
   setLoading: () => void;
   setSession: (session: ClientSession) => void;
   clearSession: () => void;
+  finishSessionCheck: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -37,5 +38,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       initialized: true,
       user: null,
     });
+  },
+  finishSessionCheck: () => {
+    set((state) => ({
+      ...state,
+      status: state.user ? 'authenticated' : 'idle',
+      initialized: true,
+    }));
   },
 }));

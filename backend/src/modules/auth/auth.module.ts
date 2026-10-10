@@ -23,7 +23,7 @@ import { RoleGuard } from './role.guard';
         secret: configService.get<string>('JWT_SECRET', 'change-me'),
         signOptions: {
           expiresIn: Number(
-            configService.get<string>('JWT_EXPIRES_IN_SECONDS', '86400'),
+            configService.get<string>('JWT_EXPIRES_IN_SECONDS', '604800'),
           ),
         },
       }),

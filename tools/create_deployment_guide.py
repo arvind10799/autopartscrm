@@ -317,7 +317,7 @@ def add_sections(doc):
         [
             'DATABASE_URL="postgresql://DB_USER:DB_PASSWORD@RDS_ENDPOINT:5432/auto_parts_crm?schema=public"',
             'JWT_SECRET="use-a-long-secure-random-secret"',
-            "JWT_EXPIRES_IN_SECONDS=86400",
+            "JWT_EXPIRES_IN_SECONDS=604800",
             'REDIS_HOST="your-redis-host-or-127.0.0.1"',
             "REDIS_PORT=6379",
             'REDIS_USERNAME=""',
@@ -348,7 +348,7 @@ def add_sections(doc):
             "NEXT_PUBLIC_TOAST_DURATION_MS=5000",
             'BACKEND_API_URL="https://api.your-domain.com"',
             "BACKEND_API_TIMEOUT_MS=10000",
-            "AUTH_COOKIE_MAX_AGE_SECONDS=86400",
+            "AUTH_COOKIE_MAX_AGE_SECONDS=604800",
         ],
     )
 

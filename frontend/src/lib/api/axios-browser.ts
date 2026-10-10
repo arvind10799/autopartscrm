@@ -21,12 +21,16 @@ axiosBrowser.interceptors.response.use(
     const normalizedError = toHttpError(error);
     const requestUrl = typeof error?.config?.url === 'string' ? error.config.url : '';
     const isAuthRoute = requestUrl.startsWith('/api/auth/');
+    const isPassiveNotificationPoll = requestUrl.startsWith(
+      '/api/notifications/unread-count',
+    );
 
     if (
       typeof window !== 'undefined' &&
       normalizedError.status === 401 &&
       window.location.pathname !== LOGIN_ROUTE &&
-      !isAuthRoute
+      !isAuthRoute &&
+      !isPassiveNotificationPoll
     ) {
       useAuthStore.getState().clearSession();
       window.location.assign(LOGIN_ROUTE);

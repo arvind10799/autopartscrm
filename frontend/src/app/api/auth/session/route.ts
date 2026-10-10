@@ -30,11 +30,14 @@ export async function GET() {
   });
   if (status >= 400 || !payload?.data) {
     const response = NextResponse.json(
-      buildApiEnvelope<AuthUser>(payload?.message ?? 'Session expired.'),
-      { status: status || 401 },
+      buildApiEnvelope<AuthUser>(payload?.message ?? 'Unable to verify session.'),
+      { status: status || 503 },
     );
 
-    clearAuthCookies(response);
+    if (status === 401) {
+      clearAuthCookies(response);
+    }
+
     response.headers.set('Cache-Control', 'no-store');
 
     return response;
@@ -48,7 +51,6 @@ export async function GET() {
       { status: 502 },
     );
 
-    clearAuthCookies(response);
     response.headers.set('Cache-Control', 'no-store');
 
     return response;

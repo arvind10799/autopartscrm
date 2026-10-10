@@ -11,6 +11,7 @@ export function AuthBootstrap() {
   const setLoading = useAuthStore((state) => state.setLoading);
   const setSession = useAuthStore((state) => state.setSession);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const finishSessionCheck = useAuthStore((state) => state.finishSessionCheck);
   const requestTracker = useRequestTracker();
 
   useEffect(() => {
@@ -41,12 +42,12 @@ export function AuthBootstrap() {
           return;
         }
 
-        clearSession();
+        finishSessionCheck();
       }
     };
 
     void loadSession();
-  }, [clearSession, initialized, requestTracker, setLoading, setSession]);
+  }, [clearSession, finishSessionCheck, initialized, requestTracker, setLoading, setSession]);
 
   return null;
 }

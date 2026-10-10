@@ -12,6 +12,7 @@ import {
 import { getNavigationForRole } from '@/features/auth/lib/permissions';
 import type { AuthUser } from '@/features/auth/types/auth.types';
 import { matchNavigationItem } from '@/lib/config/navigation';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 
 const fallbackSection = {
   label: 'Workspace',
@@ -37,6 +38,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const setSession = useAuthStore((state) => state.setSession);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigationItems = useMemo(
@@ -49,6 +51,10 @@ export function AppShell({
     ) ??
     matchNavigationItem(pathname);
   const currentSection = currentNavigationItem ?? fallbackSection;
+
+  useEffect(() => {
+    setSession({ user });
+  }, [setSession, user]);
 
   // Hydrate collapsed state from localStorage on mount
   useEffect(() => {
