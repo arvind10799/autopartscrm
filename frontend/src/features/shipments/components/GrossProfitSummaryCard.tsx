@@ -150,6 +150,7 @@ export function GrossProfitSummaryCard({
     (Boolean(shipmentId) || Boolean(orderId)) &&
     (!hasActualPurchaseAmount || !hasActualShippingAmount);
   const hasRefundDetails = Boolean(refundDetails?.refundType);
+  const refundAmount = refundDetails?.customerRefundedAmount ?? 0;
 
   const resetAdditionalCostForm = () => {
     setAmount('');
@@ -481,10 +482,17 @@ export function GrossProfitSummaryCard({
               value={formatCurrency(originalSaleAmount, displayCurrency)}
             />
             {hasRefundDetails ? (
-              <GpMetric
-                label={saleMetricLabel}
-                value={formatCurrency(totalSaleAmount, displayCurrency)}
-              />
+              <>
+                <GpMetric
+                  label="Refund Amount"
+                  value={`-${formatCurrency(refundAmount, displayCurrency)}`}
+                />
+                <GpMetric
+                  label={saleMetricLabel}
+                  value={formatCurrency(totalSaleAmount, displayCurrency)}
+                  hint="Sale minus refund amount"
+                />
+              </>
             ) : null}
             {hasPaymentProcessingFee ? (
               <>
@@ -520,17 +528,6 @@ export function GrossProfitSummaryCard({
               value={formatCurrency(totalCosts, displayCurrency)}
             />
           </div>
-
-          <p className="rounded-xl border border-dashed border-border/70 bg-secondary/15 px-3 py-2 text-xs text-muted-foreground">
-            Formula:{' '}
-            {refundDetails?.refundType === 'PARTIAL'
-              ? 'retained amount - part cost - actual shipping cost - additional costs.'
-              : refundDetails?.refundType === 'FULL'
-                ? 'retained amount - part cost - actual shipping cost - additional costs.'
-                : hasPaymentProcessingFee
-                  ? 'sale after 2% processing fee - effective part cost - effective shipping cost - additional costs.'
-                  : 'sale - effective part cost - effective shipping cost - additional costs.'}
-          </p>
 
           {hasRefundDetails ? (
             <div className="rounded-xl border border-violet-200 bg-violet-50/80 px-3 py-2 text-sm text-violet-950 dark:border-violet-900/60 dark:bg-violet-950/20 dark:text-violet-100">
