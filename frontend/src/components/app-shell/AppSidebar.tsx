@@ -48,7 +48,7 @@ export function AppSidebar({
         aria-label="CRM sidebar navigation"
         className={cn(
           'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-white/10 bg-[linear-gradient(180deg,#062846_0%,#031f38_48%,#021426_100%)] px-2 py-3.5 text-white shadow-2xl shadow-sky-950/20 transition-[width,transform,box-shadow,background-color,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width,transform] dark:border-white/10 dark:bg-[linear-gradient(180deg,#062846_0%,#031f38_48%,#021426_100%)] dark:text-white dark:shadow-black/30',
-          'w-[min(13rem,calc(100vw-1rem))]',
+          'w-[min(13rem,calc(100dvw_-_1rem))] max-w-[calc(100%_-_1rem)]',
           'lg:translate-x-0 lg:shadow-none',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}

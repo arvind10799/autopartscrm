@@ -325,7 +325,7 @@ export function NotificationBell() {
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative min-w-0 shrink-0">
       <Button
         variant="outline"
         size="sm"
@@ -343,7 +343,7 @@ export function NotificationBell() {
       </Button>
 
       {isOpen ? (
-        <div className="fixed inset-x-3 top-16 z-50 max-h-[calc(100vh-5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[28rem] dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/40">
+        <div className="fixed inset-x-3 top-16 z-50 max-h-[calc(100svh_-_5rem)] max-w-[calc(100dvw_-_1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[28rem] sm:max-w-[calc(100vw_-_2rem)] dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/40">
           <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/80">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -406,7 +406,7 @@ export function NotificationBell() {
             </div>
           </div>
 
-          <div className="max-h-[calc(100vh-13rem)] overflow-y-auto p-2 sm:max-h-[31rem]">
+          <div className="max-h-[calc(100svh_-_13rem)] overflow-y-auto p-2 sm:max-h-[31rem]">
             {isLoading ? (
               <NotificationLoadingState />
             ) : error ? (

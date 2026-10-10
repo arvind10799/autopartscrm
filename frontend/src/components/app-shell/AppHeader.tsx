@@ -44,9 +44,9 @@ export function AppHeader({
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 shadow-sm shadow-slate-950/[0.03] backdrop-blur-xl transition-colors duration-300 dark:border-slate-800 dark:bg-[rgba(2,11,24,0.92)] dark:shadow-black/20">
+    <header className="sticky top-0 z-20 w-full max-w-full overflow-x-clip border-b border-slate-200/80 bg-white/90 shadow-sm shadow-slate-950/[0.03] backdrop-blur-xl transition-colors duration-300 dark:border-slate-800 dark:bg-[rgba(2,11,24,0.92)] dark:shadow-black/20">
       <div
-        className="mx-auto flex w-full items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-6 sm:py-2.5 lg:px-8"
+        className="mx-auto flex w-full min-w-0 max-w-full items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-6 sm:py-2.5 lg:px-8"
         style={{ maxWidth: APP_SHELL_MAX_WIDTH }}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
@@ -78,7 +78,7 @@ export function AppHeader({
           </h1>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+        <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2">
           {user.role === 'SALES' ? (
             <div className="hidden min-w-0 sm:flex sm:max-w-64 sm:flex-col sm:items-end">
               <span className="truncate text-sm font-semibold text-slate-950 dark:text-white">
