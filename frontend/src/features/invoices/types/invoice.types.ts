@@ -168,10 +168,12 @@ export interface PublicInvoiceRecord extends InvoiceRecord {
   canSign: boolean;
 }
 
-export type InvoiceSignatureSmsStatus = 'SENT' | 'SKIPPED' | 'FAILED';
+export type InvoiceSignatureDeliveryStatus = 'SENT' | 'SKIPPED' | 'FAILED';
 
 export interface InvoiceSignatureRequestResult extends InvoiceRecord {
-  signatureSmsStatus?: InvoiceSignatureSmsStatus;
+  signatureEmailStatus?: InvoiceSignatureDeliveryStatus;
+  signatureEmailMessage?: string | null;
+  signatureSmsStatus?: InvoiceSignatureDeliveryStatus;
   signatureSmsMessage?: string | null;
 }
 

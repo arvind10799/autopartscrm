@@ -5,7 +5,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
@@ -227,7 +226,12 @@ export class InvoicesService {
       user,
     );
 
-    if (order.customerEmail && this.invoiceMailService.isConfigured()) {
+    if (
+      this.canSendSignatureRequest({
+        customerEmail: order.customerEmail,
+        customerPhone: invoice.contactNumber ?? order.customerPhone,
+      })
+    ) {
       return this.issueSignatureRequest(invoice.id, user, {
         noteMessage: `Invoice signature request sent: ${invoice.invoiceNumber}`,
         ipAddress,
@@ -612,17 +616,23 @@ export class InvoicesService {
     }
 
     const customerEmail = existingInvoice.order.customerEmail;
-    if (!customerEmail) {
+    const recipientPhone =
+      existingInvoice.contactNumber ?? existingInvoice.order.customerPhone;
+    const canSendEmail = Boolean(
+      customerEmail && this.invoiceMailService.isConfigured(),
+    );
+    const canSendSms = Boolean(
+      recipientPhone && this.ringCentralSmsService.isConfigured(),
+    );
+
+    if (!canSendEmail && !canSendSms) {
       throw new BadRequestException(
-        'Customer email is required before sending an invoice signature request.',
+        'Customer email or phone number is required before sending an invoice signature request.',
       );
     }
 
-    if (!this.invoiceMailService.isConfigured()) {
-      throw new ServiceUnavailableException('SMTP email is not configured.');
-    }
-
     const signatureToken = this.buildSignatureTokenUpdate();
+    const signingUrl = this.buildSigningUrl(signatureToken.token);
     const invoice = await this.invoicesRepository.update(invoiceId, {
       ...signatureToken.data,
       status: SIGNATURE_REQUESTED_STATUS,
@@ -630,7 +640,7 @@ export class InvoicesService {
       signatureLastSentAt: new Date(),
     });
 
-    await this.invoiceMailService.sendSignatureRequest(
+    const signatureEmailResult = await this.sendSignatureRequestEmail(
       {
         invoiceNumber: invoice.invoiceNumber,
         customerName: invoice.customerName,
@@ -639,7 +649,7 @@ export class InvoicesService {
         currency: invoice.order.currency,
         signatureTokenExpiresAt: invoice.signatureTokenExpiresAt,
       },
-      this.buildSigningUrl(signatureToken.token),
+      signingUrl,
     );
 
     const signatureSmsResult = await this.sendSignatureRequestSms(
@@ -649,7 +659,7 @@ export class InvoicesService {
         contactNumber: invoice.contactNumber,
         orderCustomerPhone: invoice.order.customerPhone,
       },
-      this.buildSigningUrl(signatureToken.token),
+      signingUrl,
     );
 
     await this.createAuditEvent(invoice.id, 'SENT', {
@@ -660,6 +670,8 @@ export class InvoicesService {
         invoiceNumber: invoice.invoiceNumber,
         recipientEmail: customerEmail,
         recipientPhone: invoice.contactNumber ?? invoice.order.customerPhone,
+        emailStatus: signatureEmailResult.status,
+        emailMessage: signatureEmailResult.message,
         smsStatus: signatureSmsResult.status,
         smsMessage: signatureSmsResult.message,
       },
@@ -679,8 +691,63 @@ export class InvoicesService {
 
     return {
       ...this.serializeInvoice(refreshedInvoice),
+      signatureEmailStatus: signatureEmailResult.status,
+      signatureEmailMessage: signatureEmailResult.message,
       signatureSmsStatus: signatureSmsResult.status,
       signatureSmsMessage: signatureSmsResult.message,
+    };
+  }
+
+  private canSendSignatureRequest(order: {
+    customerEmail?: string | null;
+    customerPhone?: string | null;
+  }) {
+    return Boolean(
+      (order.customerEmail && this.invoiceMailService.isConfigured()) ||
+        (order.customerPhone && this.ringCentralSmsService.isConfigured()),
+    );
+  }
+
+  private async sendSignatureRequestEmail(
+    invoice: {
+      invoiceNumber: string;
+      customerName: string;
+      customerEmail: string | null;
+      totalAmount: number;
+      currency: string | null;
+      signatureTokenExpiresAt: Date | null;
+    },
+    signingUrl: string,
+  ): Promise<{ status: string; message: string }> {
+    if (!invoice.customerEmail) {
+      return {
+        status: SIGNATURE_SMS_SKIPPED,
+        message: 'no email address',
+      };
+    }
+
+    if (!this.invoiceMailService.isConfigured()) {
+      return {
+        status: SIGNATURE_SMS_SKIPPED,
+        message: 'SMTP email is not configured',
+      };
+    }
+
+    await this.invoiceMailService.sendSignatureRequest(
+      {
+        invoiceNumber: invoice.invoiceNumber,
+        customerName: invoice.customerName,
+        customerEmail: invoice.customerEmail,
+        totalAmount: invoice.totalAmount,
+        currency: invoice.currency,
+        signatureTokenExpiresAt: invoice.signatureTokenExpiresAt,
+      },
+      signingUrl,
+    );
+
+    return {
+      status: SIGNATURE_SMS_SENT,
+      message: 'Email sent',
     };
   }
 

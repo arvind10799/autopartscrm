@@ -177,6 +177,8 @@ export const publicInvoiceRecordSchema = invoiceRecordSchema.extend({
 });
 
 export const invoiceSignatureRequestResultSchema = invoiceRecordSchema.extend({
+  signatureEmailStatus: z.enum(['SENT', 'SKIPPED', 'FAILED']).optional(),
+  signatureEmailMessage: z.string().nullable().optional(),
   signatureSmsStatus: z.enum(['SENT', 'SKIPPED', 'FAILED']).optional(),
   signatureSmsMessage: z.string().nullable().optional(),
 });

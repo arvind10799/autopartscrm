@@ -1563,21 +1563,41 @@ function defaultsToDraft(defaults: InvoiceDefaults): InvoiceDraft {
 function getSignatureRequestToastMessage(
   invoice: InvoiceSignatureRequestResult,
 ): string {
-  if (invoice.signatureSmsStatus === 'SENT') {
-    return 'Email sent and SMS sent';
+  const emailMessage = getDeliveryMessage(
+    'Email',
+    invoice.signatureEmailStatus,
+    invoice.signatureEmailMessage,
+  );
+  const smsMessage = getDeliveryMessage(
+    'SMS',
+    invoice.signatureSmsStatus,
+    invoice.signatureSmsMessage,
+  );
+
+  return (
+    [emailMessage, smsMessage].filter(Boolean).join(', ') ||
+    'Signing link sent'
+  );
+}
+
+function getDeliveryMessage(
+  label: string,
+  status?: InvoiceSignatureRequestResult['signatureSmsStatus'],
+  message?: string | null,
+): string | null {
+  if (status === 'SENT') {
+    return `${label} sent`;
   }
 
-  if (invoice.signatureSmsStatus === 'SKIPPED') {
-    return `Email sent, SMS skipped: ${
-      invoice.signatureSmsMessage || 'no phone number'
-    }`;
+  if (status === 'SKIPPED') {
+    return `${label} skipped: ${message || 'not available'}`;
   }
 
-  if (invoice.signatureSmsStatus === 'FAILED') {
-    return 'Email sent, SMS failed: check logs/RingCentral';
+  if (status === 'FAILED') {
+    return `${label} failed: ${message || 'check logs'}`;
   }
 
-  return 'Email sent';
+  return null;
 }
 
 function invoiceToDraft(invoice: InvoiceRecord): InvoiceDraft {
