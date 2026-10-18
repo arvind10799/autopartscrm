@@ -44,6 +44,10 @@ export class WebsiteLeadsService {
     return this.repository.list(query, user);
   }
 
+  summary(user: AuthenticatedUser) {
+    return this.repository.summary(user);
+  }
+
   get(id: string, user: AuthenticatedUser) {
     return this.repository.findAccessible(id, user);
   }
@@ -52,12 +56,20 @@ export class WebsiteLeadsService {
     return this.repository.listAgents();
   }
 
+  claim(id: string, user: AuthenticatedUser) {
+    if (user.role !== Role.SALES) {
+      throw new ForbiddenException('Only a sales agent can claim a website lead.');
+    }
+    return this.repository.claim(id, user);
+  }
+
   async update(
     id: string,
     input: UpdateWebsiteLeadDto,
     user: AuthenticatedUser,
   ) {
     const existing = await this.repository.findAccessible(id, user);
+    this.requireOwnership(existing.assignedToId, user);
     if (
       existing.convertedLeadId ||
       existing.status === WebsiteLeadStatus.CONVERTED
@@ -96,7 +108,8 @@ export class WebsiteLeadsService {
   }
 
   async addNote(id: string, content: string, user: AuthenticatedUser) {
-    await this.repository.findAccessible(id, user);
+    const existing = await this.repository.findAccessible(id, user);
+    this.requireOwnership(existing.assignedToId, user);
     return this.repository.addNote(id, content, user);
   }
 
@@ -105,10 +118,19 @@ export class WebsiteLeadsService {
     input: ConvertWebsiteLeadDto,
     user: AuthenticatedUser,
   ) {
-    await this.repository.findAccessible(id, user);
+    const existing = await this.repository.findAccessible(id, user);
+    this.requireOwnership(existing.assignedToId, user);
     if (isFuturePacificDate(input.leadDate)) {
       throw new BadRequestException('Lead date cannot be in the future.');
     }
     return this.repository.convert(id, input, user);
+  }
+
+  private requireOwnership(assignedToId: string | null, user: AuthenticatedUser) {
+    if (user.role === Role.SALES && assignedToId !== user.userId) {
+      throw new ForbiddenException(
+        'Assign this website lead to yourself before editing it.',
+      );
+    }
   }
 }

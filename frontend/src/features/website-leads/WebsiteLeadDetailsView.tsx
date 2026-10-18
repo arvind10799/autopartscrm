@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { ArrowRight, Plus, UserRoundCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
@@ -25,6 +26,11 @@ import {
   type WebsiteLeadNote,
   type WebsiteLeadStatus,
 } from './website-leads-api';
+import {
+  WebsiteLeadAssignmentBadge,
+  WebsiteLeadStatusBadge,
+} from './WebsiteLeadBadges';
+import { useWebsiteLeadsSummary } from './WebsiteLeadsSummaryProvider';
 
 const statusLabel: Record<WebsiteLeadStatus, string> = {
   NEW: 'New',
@@ -52,7 +58,9 @@ function Detail({
 
 export function WebsiteLeadDetailsView({ id }: { id: string }) {
   const router = useRouter();
-  const role = useAuthStore((state) => state.user?.role);
+  const user = useAuthStore((state) => state.user);
+  const role = user?.role;
+  const { refresh: refreshSummary } = useWebsiteLeadsSummary();
   const returnHref = useDetailReturnHref('/website-leads');
   const [lead, setLead] = useState<WebsiteLead | null>(null);
   const [notes, setNotes] = useState<WebsiteLeadNote[]>([]);
@@ -64,6 +72,23 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
   const [noteText, setNoteText] = useState('');
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [showConvertForm, setShowConvertForm] = useState(false);
+  const conversionFormRef = useRef<HTMLDivElement | null>(null);
+  const canManage =
+    role === 'ADMIN' || (role === 'SALES' && lead?.assignedToId === user?.userId);
+  const canClaim = role === 'SALES' && lead?.assignedToId === null &&
+    !lead.convertedLeadId;
+
+  useEffect(() => {
+    if (!showConvertForm) return;
+    const frame = window.requestAnimationFrame(() => {
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      conversionFormRef.current?.scrollIntoView({
+        behavior: reducedMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [showConvertForm]);
 
   useEffect(() => {
     let active = true;
@@ -126,11 +151,12 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
     status?: WebsiteLeadStatus;
     assignedToId?: string | null;
   }) {
-    if (!lead || saving) return;
+    if (!lead || !canManage || saving) return;
     setSaving(true);
     setActionError(null);
     try {
       setLead(await websiteLeadsApi.update(id, payload));
+      void refreshSummary();
     } catch (caught) {
       setActionError(
         caught instanceof Error
@@ -143,7 +169,7 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
   }
 
   async function addNote() {
-    if (!noteText.trim() || saving) return;
+    if (!canManage || !noteText.trim() || saving) return;
     setSaving(true);
     setActionError(null);
     try {
@@ -154,6 +180,24 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
     } catch (caught) {
       setActionError(
         caught instanceof Error ? caught.message : 'Unable to add note.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function claim() {
+    if (!canClaim || saving) return;
+    setSaving(true);
+    setActionError(null);
+    try {
+      setLead(await websiteLeadsApi.claim(id));
+      void refreshSummary();
+    } catch (caught) {
+      setActionError(
+        caught instanceof Error
+          ? caught.message
+          : 'This website lead could not be assigned. Refresh the list.',
       );
     } finally {
       setSaving(false);
@@ -183,23 +227,52 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
           {actionError}
         </p>
       ) : null}
+      {canClaim ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-4 dark:border-orange-900 dark:bg-orange-950/20 sm:px-5">
+          <div>
+            <p className="font-semibold text-slate-950 dark:text-white">Available to claim</p>
+            <p className="text-sm text-muted-foreground">
+              Assign this inquiry to yourself to update its status, add notes, or convert it.
+            </p>
+          </div>
+          <Button onClick={() => void claim()} disabled={saving}>
+            <UserRoundCheck className="h-4 w-4" />
+            {saving ? 'Assigning…' : 'Assign to me'}
+          </Button>
+        </div>
+      ) : null}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(350px,0.95fr)]">
         <Card className="overflow-hidden">
           <CardHeader className="border-b border-border/70">
-            <CardTitle>{lead.customerName || 'Website inquiry'}</CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle>{lead.customerName || 'Website inquiry'}</CardTitle>
+              <WebsiteLeadStatusBadge status={lead.status} />
+              <WebsiteLeadAssignmentBadge
+                name={lead.assignedTo?.name || null}
+                isMine={lead.assignedToId === user?.userId}
+              />
+            </div>
             <p className="text-sm text-muted-foreground">
               {lead.source === 'QUOTE' ? 'Quote request' : 'Part request'} ·
               Received {formatPacificDateTime(lead.submittedAt)}
             </p>
           </CardHeader>
           <CardContent className="space-y-5 pt-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/50">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Requested part</p>
+              <p className="mt-1 text-base font-semibold text-slate-950 dark:text-white">
+                {lead.partRequested || 'Part details not provided'}
+              </p>
+            </div>
             <div className="grid gap-4 rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-orange-900 dark:bg-orange-950/20 sm:grid-cols-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-orange-700 dark:text-orange-300 sm:col-span-2">Customer contact</h3>
               <Detail label="Phone" value={lead.customerPhone} />
               <Detail label="Email" value={lead.customerEmail} />
               <Detail label="State" value={lead.state} />
               <Detail label="ZIP" value={lead.zipCode} />
             </div>
             <div className="grid gap-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/20 sm:grid-cols-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300 sm:col-span-2">Vehicle and part</h3>
               <Detail label="Year" value={lead.vehicleYear} />
               <Detail label="Make" value={lead.vehicleMake} />
               <Detail label="Model" value={lead.vehicleModel} />
@@ -219,7 +292,7 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
                 Status
                 <Select
                   value={lead.status}
-                  disabled={saving || !!lead.convertedLeadId}
+                  disabled={saving || !canManage || !!lead.convertedLeadId}
                   onChange={(event) =>
                     void update({
                       status: event.target.value as WebsiteLeadStatus,
@@ -255,7 +328,9 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
                   </Select>
                 ) : (
                   <p className="pt-2 text-sm font-normal normal-case text-foreground">
-                    {lead.assignedTo?.name || 'Unassigned'}
+                    {lead.assignedToId === user?.userId
+                      ? 'Assigned to me'
+                      : lead.assignedTo?.name || 'Unassigned'}
                   </p>
                 )}
               </label>
@@ -273,12 +348,12 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
             <Detail label="Source page" value={lead.sourcePageUrl} />
             {lead.convertedLeadId ? (
               <Link
-                className="inline-block text-sm font-semibold text-primary underline"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-primary underline"
                 href={`/leads/${lead.convertedLeadId}`}
               >
-                Open converted lead
+                Open converted CRM lead <ArrowRight className="h-4 w-4" />
               </Link>
-            ) : lead.status !== 'CONVERTED' ? (
+            ) : lead.status !== 'CONVERTED' && canManage ? (
               <Button onClick={() => setShowConvertForm((value) => !value)}>
                 {showConvertForm ? 'Hide conversion form' : 'Convert to Lead'}
               </Button>
@@ -287,15 +362,23 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
         </Card>
         <Card className="h-fit overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between border-b border-border/70">
-            <CardTitle>Notes</CardTitle>
-            <Button
-              size="sm"
-              onClick={() => setShowNoteForm((value) => !value)}
-            >
-              <Plus className="h-4 w-4" /> Add note
-            </Button>
+            <div>
+              <CardTitle>Notes</CardTitle>
+              <p className="text-xs text-muted-foreground">Internal follow-up history</p>
+            </div>
+            {canManage ? (
+              <Button
+                size="sm"
+                onClick={() => setShowNoteForm((value) => !value)}
+              >
+                <Plus className="h-4 w-4" /> Add note
+              </Button>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
+            {!canManage && !lead.convertedLeadId ? (
+              <Badge variant="outline">Assign to yourself to add notes</Badge>
+            ) : null}
             {showNoteForm ? (
               <div className="space-y-2">
                 <Textarea
@@ -336,24 +419,29 @@ export function WebsiteLeadDetailsView({ id }: { id: string }) {
           </CardContent>
         </Card>
       </div>
-      {showConvertForm && conversionValues && !lead.convertedLeadId ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Convert to CRM lead</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Review the imported details and complete every required field
-              before saving.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <CreateLeadForm
-              initialValues={conversionValues}
-              submitLabel="Convert to lead"
-              onSubmitLead={(payload) => websiteLeadsApi.convert(id, payload)}
-              onSaved={(converted) => router.push(`/leads/${converted.id}`)}
-            />
-          </CardContent>
-        </Card>
+      {showConvertForm && conversionValues && canManage && !lead.convertedLeadId ? (
+        <div ref={conversionFormRef} className="scroll-mt-24 sm:scroll-mt-28">
+          <Card>
+            <CardHeader>
+              <CardTitle>Convert to CRM lead</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Review the imported details and complete every required field
+                before saving.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <CreateLeadForm
+                initialValues={conversionValues}
+                submitLabel="Convert to lead"
+                onSubmitLead={(payload) => websiteLeadsApi.convert(id, payload)}
+                onSaved={(converted) => {
+                  void refreshSummary();
+                  router.push(`/leads/${converted.id}`);
+                }}
+              />
+            </CardContent>
+          </Card>
+        </div>
       ) : null}
     </section>
   );

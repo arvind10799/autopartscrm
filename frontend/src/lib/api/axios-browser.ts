@@ -24,13 +24,17 @@ axiosBrowser.interceptors.response.use(
     const isPassiveNotificationPoll = requestUrl.startsWith(
       '/api/notifications/unread-count',
     );
+    const isPassiveWebsiteLeadsPoll = requestUrl.startsWith(
+      '/api/website-leads/summary',
+    );
 
     if (
       typeof window !== 'undefined' &&
       normalizedError.status === 401 &&
       window.location.pathname !== LOGIN_ROUTE &&
       !isAuthRoute &&
-      !isPassiveNotificationPoll
+      !isPassiveNotificationPoll &&
+      !isPassiveWebsiteLeadsPoll
     ) {
       useAuthStore.getState().clearSession();
       window.location.assign(LOGIN_ROUTE);

@@ -1,6 +1,10 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { WebsiteLeadStatus } from '@prisma/client';
+import { Role } from '../../common/enums/role.enum';
+import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { WebsiteLeadsService } from './website-leads.service';
 import { WebsiteLeadsRepository } from './website-leads.repository';
+import { ConvertWebsiteLeadDto } from './dto/convert-website-lead.dto';
 import {
   IntakeWebsiteLeadDto,
   WebsiteInquiryType,
@@ -52,5 +56,76 @@ describe('WebsiteLeadsService intake', () => {
       service.ingest({ ...validSubmission, customerEmail: undefined }),
     ).toThrow(BadRequestException);
     expect(ingest).not.toHaveBeenCalled();
+  });
+});
+
+describe('WebsiteLeadsService sales access', () => {
+  const salesUser: AuthenticatedUser = {
+    userId: '11111111-1111-4111-8111-111111111111',
+    name: 'Sales Agent',
+    email: 'sales@example.com',
+    role: Role.SALES,
+  };
+  const findAccessible = jest.fn();
+  const update = jest.fn();
+  const addNote = jest.fn();
+  const convert = jest.fn();
+  const claim = jest.fn();
+  const service = new WebsiteLeadsService({
+    findAccessible,
+    update,
+    addNote,
+    convert,
+    claim,
+  } as unknown as WebsiteLeadsRepository);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    findAccessible.mockResolvedValue({
+      assignedToId: null,
+      convertedLeadId: null,
+      status: WebsiteLeadStatus.NEW,
+    });
+  });
+
+  it('allows sales to view and claim an unassigned lead', async () => {
+    claim.mockResolvedValue({ assignedToId: salesUser.userId });
+    await expect(service.get('lead-id', salesUser)).resolves.toMatchObject({
+      assignedToId: null,
+    });
+    await expect(service.claim('lead-id', salesUser)).resolves.toMatchObject({
+      assignedToId: salesUser.userId,
+    });
+    expect(claim).toHaveBeenCalledWith('lead-id', salesUser);
+  });
+
+  it('blocks edits, notes, and conversion until a sales agent claims the lead', async () => {
+    await expect(
+      service.update('lead-id', { status: WebsiteLeadStatus.CONTACTED }, salesUser),
+    ).rejects.toThrow(ForbiddenException);
+    await expect(service.addNote('lead-id', 'Called customer', salesUser)).rejects.toThrow(
+      ForbiddenException,
+    );
+    await expect(
+      service.convert('lead-id', {} as ConvertWebsiteLeadDto, salesUser),
+    ).rejects.toThrow(ForbiddenException);
+    expect(update).not.toHaveBeenCalled();
+    expect(addNote).not.toHaveBeenCalled();
+    expect(convert).not.toHaveBeenCalled();
+  });
+
+  it('allows status updates after the claim and prevents admins using the claim action', async () => {
+    findAccessible.mockResolvedValue({
+      assignedToId: salesUser.userId,
+      convertedLeadId: null,
+      status: WebsiteLeadStatus.NEW,
+    });
+    update.mockResolvedValue({ status: WebsiteLeadStatus.CONTACTED });
+    await expect(
+      service.update('lead-id', { status: WebsiteLeadStatus.CONTACTED }, salesUser),
+    ).resolves.toMatchObject({ status: WebsiteLeadStatus.CONTACTED });
+    expect(() =>
+      service.claim('lead-id', { ...salesUser, role: Role.ADMIN }),
+    ).toThrow(ForbiddenException);
   });
 });

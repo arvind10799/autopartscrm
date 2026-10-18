@@ -11,6 +11,7 @@ import { roleLabels } from '@/features/auth/lib/roles';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import type { AuthUser } from '@/features/auth/types/auth.types';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell';
+import { useWebsiteLeadsSummary } from '@/features/website-leads/WebsiteLeadsSummaryProvider';
 import { getTableBackLabel, useDetailReturnHref } from '@/lib/filters/table-view-state';
 import { APP_SHELL_MAX_WIDTH } from './shell.constants';
 import { ThemeToggle } from './ThemeToggle';
@@ -32,6 +33,7 @@ export function AppHeader({
   const [isPending, startTransition] = useTransition();
   const backLink = getHeaderBackLink(pathname);
   const backHref = useDetailReturnHref(backLink?.href ?? '/');
+  const { summary } = useWebsiteLeadsSummary();
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -55,14 +57,19 @@ export function AppHeader({
           <Button
             variant="outline"
             size="sm"
-            className="h-9 w-9 shrink-0 rounded-full border-slate-200 bg-white px-0 text-[#0f6fb7] shadow-sm hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] lg:hidden dark:border-slate-800 dark:bg-slate-950 dark:text-sky-300 dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
+            className="relative h-9 w-9 shrink-0 rounded-full border-slate-200 bg-white px-0 text-[#0f6fb7] shadow-sm hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] lg:hidden dark:border-slate-800 dark:bg-slate-950 dark:text-sky-300 dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
             onClick={onOpenMenu}
-            aria-label="Open navigation menu"
+            aria-label={summary?.newCount
+              ? `Open navigation menu, ${summary.newCount} new website leads`
+              : 'Open navigation menu'}
             aria-controls="crm-sidebar"
             aria-expanded={isMenuOpen}
             type="button"
           >
             <Menu className="h-4 w-4" />
+            {summary?.newCount ? (
+              <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-white dark:ring-slate-950" aria-hidden="true" />
+            ) : null}
           </Button>
 
           {backLink ? (

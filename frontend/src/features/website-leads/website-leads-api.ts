@@ -15,6 +15,13 @@ export const WEBSITE_LEAD_STATUSES = [
   'CONVERTED',
 ] as const;
 export type WebsiteLeadStatus = (typeof WEBSITE_LEAD_STATUSES)[number];
+export const WEBSITE_LEAD_ASSIGNMENT_FILTERS = [
+  'ALL',
+  'UNASSIGNED',
+  'MINE',
+] as const;
+export type WebsiteLeadAssignmentFilter =
+  (typeof WEBSITE_LEAD_ASSIGNMENT_FILTERS)[number];
 
 const agentSchema = z.object({
   id: z.string().uuid(),
@@ -75,11 +82,18 @@ const listSchema = z.object({
     hasPreviousPage: z.boolean(),
   }),
 });
+const summarySchema = z.object({
+  totalCount: z.number(),
+  newCount: z.number(),
+  unassignedCount: z.number(),
+  mineCount: z.number(),
+});
 
 export type WebsiteLead = z.infer<typeof websiteLeadSchema>;
 export type WebsiteLeadNote = z.infer<typeof noteSchema>;
 export type WebsiteLeadAgent = z.infer<typeof agentSchema>;
 export type WebsiteLeadList = z.infer<typeof listSchema>;
+export type WebsiteLeadSummary = z.infer<typeof summarySchema>;
 
 export const websiteLeadsApi = {
   async list(params: {
@@ -88,6 +102,7 @@ export const websiteLeadsApi = {
     search?: string;
     status?: WebsiteLeadStatus;
     assignedToId?: string;
+    assignment?: WebsiteLeadAssignmentFilter;
   }): Promise<WebsiteLeadList> {
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
       '/api/website-leads',
@@ -96,6 +111,15 @@ export const websiteLeadsApi = {
     return parseApiData(response, listSchema, {
       emptyMessage: 'Website leads response was empty.',
       invalidMessage: 'Website leads response was invalid.',
+    });
+  },
+  async summary(): Promise<WebsiteLeadSummary> {
+    const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
+      '/api/website-leads/summary',
+    );
+    return parseApiData(response, summarySchema, {
+      emptyMessage: 'Website lead summary was empty.',
+      invalidMessage: 'Website lead summary was invalid.',
     });
   },
   async agents(): Promise<WebsiteLeadAgent[]> {
@@ -127,6 +151,15 @@ export const websiteLeadsApi = {
     return parseApiData(response, websiteLeadSchema, {
       emptyMessage: 'Website lead update was empty.',
       invalidMessage: 'Website lead update was invalid.',
+    });
+  },
+  async claim(id: string): Promise<WebsiteLead> {
+    const response = await axiosBrowser.post<ApiEnvelope<unknown>>(
+      `/api/website-leads/${id}/claim`,
+    );
+    return parseApiData(response, websiteLeadSchema, {
+      emptyMessage: 'Website lead claim was empty.',
+      invalidMessage: 'Website lead claim was invalid.',
     });
   },
   async notes(id: string): Promise<WebsiteLeadNote[]> {

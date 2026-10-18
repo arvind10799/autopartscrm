@@ -13,6 +13,7 @@ import { getNavigationForRole } from '@/features/auth/lib/permissions';
 import type { AuthUser } from '@/features/auth/types/auth.types';
 import { matchNavigationItem } from '@/lib/config/navigation';
 import { useAuthStore } from '@/features/auth/store/auth.store';
+import { WebsiteLeadsSummaryProvider } from '@/features/website-leads/WebsiteLeadsSummaryProvider';
 
 const fallbackSection = {
   label: 'Workspace',
@@ -104,6 +105,7 @@ export function AppShell({
     : APP_SIDEBAR_WIDTH;
 
   return (
+    <WebsiteLeadsSummaryProvider key={user.userId} role={user.role}>
     <div
       className="min-h-screen w-full max-w-full overflow-x-clip bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(246,248,252,0.98))] transition-colors duration-300 dark:bg-[linear-gradient(180deg,rgba(2,6,23,0.72),rgba(15,23,42,0.98))]"
       style={
@@ -138,5 +140,6 @@ export function AppShell({
         </div>
       </div>
     </div>
+    </WebsiteLeadsSummaryProvider>
   );
 }

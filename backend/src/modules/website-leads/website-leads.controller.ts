@@ -40,6 +40,11 @@ export class WebsiteLeadsController {
     return this.service.listAgents();
   }
 
+  @Get('summary')
+  summary(@CurrentUser() user: AuthenticatedUser) {
+    return this.service.summary(user);
+  }
+
   @Get(':id')
   get(@Param() params: UuidParamDto, @CurrentUser() user: AuthenticatedUser) {
     return this.service.get(params.id, user);
@@ -52,6 +57,12 @@ export class WebsiteLeadsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.update(params.id, input, user);
+  }
+
+  @Post(':id/claim')
+  @Roles(Role.SALES)
+  claim(@Param() params: UuidParamDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.claim(params.id, user);
   }
 
   @Get(':id/notes')

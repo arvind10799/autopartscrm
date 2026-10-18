@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils/cn';
 import { getNavigationForRole } from '@/features/auth/lib/permissions';
 import type { UserRole } from '@/features/auth/types/auth.types';
+import { useWebsiteLeadsSummary } from '@/features/website-leads/WebsiteLeadsSummaryProvider';
 import {
   APP_SIDEBAR_COLLAPSED_WIDTH,
   APP_SIDEBAR_WIDTH,
@@ -29,6 +30,7 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const navigationItems = getNavigationForRole(role);
+  const { summary } = useWebsiteLeadsSummary();
 
   return (
     <>
@@ -153,6 +155,8 @@ export function AppSidebar({
               const isActive =
                 pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
+              const newWebsiteLeads =
+                item.href === '/website-leads' ? summary?.newCount ?? 0 : 0;
 
               return (
                 <Link
@@ -195,6 +199,20 @@ export function AppSidebar({
                       {item.label}
                     </span>
                   )}
+
+                  {newWebsiteLeads > 0 ? (
+                    isCollapsed ? (
+                      <span
+                        className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full border-2 border-[#062846] bg-[#ffb347]"
+                        title={`${newWebsiteLeads} new website leads`}
+                        aria-label={`${newWebsiteLeads} new website leads`}
+                      />
+                    ) : (
+                      <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-orange-100 px-1.5 py-0.5 text-[11px] font-bold leading-none text-orange-800 shadow-sm dark:bg-orange-200 dark:text-orange-950">
+                        {newWebsiteLeads > 99 ? '99+' : newWebsiteLeads}
+                      </span>
+                    )
+                  ) : null}
 
                   {/* Tooltip for collapsed state */}
                   {isCollapsed && (

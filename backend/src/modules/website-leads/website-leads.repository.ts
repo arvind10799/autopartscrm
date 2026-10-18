@@ -66,9 +66,8 @@ export class WebsiteLeadsRepository {
   async list(query: QueryWebsiteLeadsDto, user: AuthenticatedUser) {
     const { page, limit, skip } = getPaginationParams(query.page, query.limit);
     const where: Prisma.WebsiteLeadWhereInput = {
-      ...this.accessWhere(user),
+      AND: [this.visibleWhere(user), this.assignmentWhere(query, user)],
       status: query.status,
-      assignedToId: user.role === Role.ADMIN ? query.assignedToId : undefined,
       submittedAt: buildCreatedAtFilter(query.createdFrom, query.createdTo),
       OR: query.search?.trim()
         ? [
@@ -113,13 +112,52 @@ export class WebsiteLeadsRepository {
     return createPaginatedResponse(items, total, page, limit);
   }
 
+  async summary(user: AuthenticatedUser) {
+    const visible = this.visibleWhere(user);
+    const [totalCount, newCount, unassignedCount, mineCount] =
+      await this.prisma.$transaction([
+        this.prisma.websiteLead.count({ where: visible }),
+        this.prisma.websiteLead.count({
+          where: { AND: [visible, { status: WebsiteLeadStatus.NEW }] },
+        }),
+        this.prisma.websiteLead.count({
+          where: { AND: [visible, { assignedToId: null }] },
+        }),
+        this.prisma.websiteLead.count({
+          where: { AND: [visible, { assignedToId: user.userId }] },
+        }),
+      ]);
+    return { totalCount, newCount, unassignedCount, mineCount };
+  }
+
   async findAccessible(id: string, user: AuthenticatedUser) {
     const record = await this.prisma.websiteLead.findFirst({
-      where: { id, ...this.accessWhere(user) },
+      where: { id, AND: [this.visibleWhere(user)] },
       include: websiteLeadInclude,
     });
     if (!record) throw new NotFoundException('Website lead was not found.');
     return record;
+  }
+
+  async claim(id: string, user: AuthenticatedUser) {
+    const claimed = await this.prisma.websiteLead.updateMany({
+      where: {
+        id,
+        assignedToId: null,
+        convertedLeadId: null,
+        status: { not: WebsiteLeadStatus.CONVERTED },
+      },
+      data: { assignedToId: user.userId },
+    });
+    if (claimed.count !== 1) {
+      throw new ConflictException(
+        'This website lead is no longer available to claim. Refresh the list.',
+      );
+    }
+    return this.prisma.websiteLead.findUniqueOrThrow({
+      where: { id },
+      include: websiteLeadInclude,
+    });
   }
 
   listAgents() {
@@ -154,7 +192,7 @@ export class WebsiteLeadsRepository {
     const result = await this.prisma.websiteLead.updateMany({
       where: {
         id,
-        ...this.accessWhere(user),
+        AND: [this.ownedWhere(user)],
         convertedLeadId: null,
         status: { not: WebsiteLeadStatus.CONVERTED },
       },
@@ -252,7 +290,7 @@ export class WebsiteLeadsRepository {
       const claimed = await tx.websiteLead.updateMany({
         where: {
           id,
-          ...this.accessWhere(user),
+          AND: [this.ownedWhere(user)],
           convertedLeadId: null,
           status: { not: WebsiteLeadStatus.CONVERTED },
         },
@@ -291,7 +329,33 @@ export class WebsiteLeadsRepository {
     });
   }
 
-  private accessWhere(user: AuthenticatedUser): Prisma.WebsiteLeadWhereInput {
+  private visibleWhere(user: AuthenticatedUser): Prisma.WebsiteLeadWhereInput {
+    return user.role === Role.ADMIN
+      ? {}
+      : {
+          OR: [
+            {
+              assignedToId: null,
+              status: { not: WebsiteLeadStatus.CONVERTED },
+            },
+            { assignedToId: user.userId },
+          ],
+        };
+  }
+
+  private ownedWhere(user: AuthenticatedUser): Prisma.WebsiteLeadWhereInput {
     return user.role === Role.ADMIN ? {} : { assignedToId: user.userId };
+  }
+
+  private assignmentWhere(
+    query: QueryWebsiteLeadsDto,
+    user: AuthenticatedUser,
+  ): Prisma.WebsiteLeadWhereInput {
+    if (query.assignment === 'UNASSIGNED') return { assignedToId: null };
+    if (query.assignment === 'MINE') return { assignedToId: user.userId };
+    if (user.role === Role.ADMIN && query.assignedToId) {
+      return { assignedToId: query.assignedToId };
+    }
+    return {};
   }
 }
