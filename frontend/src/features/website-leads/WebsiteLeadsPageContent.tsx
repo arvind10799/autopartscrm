@@ -1,9 +1,10 @@
 'use client';
 
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Globe2, Inbox, Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Select } from '@/components/ui/select';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import {
   parseTablePage,
+  useTableDateRange,
   useTableDetailHref,
   useTableQueryParam,
 } from '@/lib/filters/table-view-state';
@@ -31,6 +33,7 @@ import {
   WebsiteLeadStatusBadge,
 } from './WebsiteLeadBadges';
 import { useWebsiteLeadsSummary } from './WebsiteLeadsSummaryProvider';
+import { buildWebsiteLeadSubmittedRangeQuery } from './website-lead-date-range';
 
 const PAGE_SIZE = 20;
 const statusLabel: Record<WebsiteLeadStatus, string> = {
@@ -67,6 +70,7 @@ export function WebsiteLeadsPageContent() {
         : 'ALL',
     );
   const [agent, setAgent] = useTableQueryParam('agent', '', (value) => value);
+  const [dateFilter, setDateFilter] = useTableDateRange();
   const [page, setPage] = useTableQueryParam('page', 1, parseTablePage, false);
   const detailHref = useTableDetailHref('/website-leads');
   const deferredSearch = useDeferredValue(search);
@@ -74,7 +78,11 @@ export function WebsiteLeadsPageContent() {
   const [data, setData] = useState<WebsiteLeadList | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const hasFilters = Boolean(search || status || agent || assignment !== 'ALL');
+  const hasFilters = Boolean(search || status || agent || assignment !== 'ALL' || dateFilter.preset !== 'ALL');
+  const { createdFrom, createdTo } = useMemo(
+    () => buildWebsiteLeadSubmittedRangeQuery(dateFilter),
+    [dateFilter.preset, dateFilter.from, dateFilter.to],
+  );
 
   useEffect(() => {
     if (role !== 'ADMIN') return;
@@ -94,6 +102,8 @@ export function WebsiteLeadsPageContent() {
         limit: PAGE_SIZE,
         search: deferredSearch || undefined,
         status: status ? (status as WebsiteLeadStatus) : undefined,
+        createdFrom,
+        createdTo,
         assignment: assignment !== 'ALL' ? assignment : undefined,
         assignedToId:
           role === 'ADMIN' && assignment === 'ALL' ? agent || undefined : undefined,
@@ -115,13 +125,14 @@ export function WebsiteLeadsPageContent() {
     return () => {
       active = false;
     };
-  }, [page, deferredSearch, status, assignment, agent, role]);
+  }, [page, deferredSearch, status, assignment, agent, role, createdFrom, createdTo]);
 
   function clearFilters() {
     setSearch('');
     setStatus('');
     setAgent('');
     setAssignment('ALL');
+    setDateFilter({ preset: 'ALL', from: '', to: '' });
   }
 
   function chooseAssignment(value: WebsiteLeadAssignmentFilter) {
@@ -214,7 +225,10 @@ export function WebsiteLeadsPageContent() {
               </button>
             ))}
           </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px] lg:grid-cols-[minmax(0,1fr)_180px_210px]">
+          <div className={cn(
+            'mt-4 grid items-start gap-3 md:grid-cols-[minmax(0,1fr)_180px] lg:grid-cols-[minmax(0,1fr)_170px_190px]',
+            role === 'ADMIN' && 'xl:grid-cols-[minmax(0,1fr)_170px_190px_190px]',
+          )}>
             <label className="relative">
               <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -237,6 +251,19 @@ export function WebsiteLeadsPageContent() {
                 </option>
               ))}
             </Select>
+            <div className={cn(dateFilter.preset === 'CUSTOM' && 'lg:col-span-2')}>
+              <DateRangeFilter
+                value={dateFilter}
+                onChange={setDateFilter}
+                variant="inline"
+                showPresetLabel={false}
+                inlineCustomLayout="row"
+                showDayPresets
+                dateLabel="Received"
+                compactControls
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">Received date · Pacific time</p>
+            </div>
             {role === 'ADMIN' ? (
               <Select
                 aria-label="Agent filter"

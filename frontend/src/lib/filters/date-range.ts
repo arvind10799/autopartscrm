@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const DATE_RANGE_PRESETS = [
   'ALL',
+  'TODAY',
+  'YESTERDAY',
   'LAST_7_DAYS',
   'LAST_30_DAYS',
   'CUSTOM',
@@ -37,6 +39,20 @@ export function buildTimestampRangeQuery(
 ): TimestampRangeQuery {
   if (filter.preset === 'ALL') {
     return {};
+  }
+
+  if (filter.preset === 'TODAY' || filter.preset === 'YESTERDAY') {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    if (filter.preset === 'YESTERDAY') start.setDate(start.getDate() - 1);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return {
+      createdFrom: start.toISOString(),
+      createdTo: filter.preset === 'TODAY'
+        ? now.toISOString()
+        : new Date(end.getTime() - 1).toISOString(),
+    };
   }
 
   if (filter.preset === 'LAST_7_DAYS') {

@@ -103,6 +103,8 @@ export const websiteLeadsApi = {
     status?: WebsiteLeadStatus;
     assignedToId?: string;
     assignment?: WebsiteLeadAssignmentFilter;
+    createdFrom?: string;
+    createdTo?: string;
   }): Promise<WebsiteLeadList> {
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
       '/api/website-leads',

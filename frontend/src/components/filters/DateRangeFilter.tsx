@@ -18,18 +18,31 @@ const PRESET_OPTIONS: Array<{
   { value: 'CUSTOM', label: 'Custom range' },
 ];
 
+const DAY_PRESET_OPTIONS: typeof PRESET_OPTIONS = [
+  PRESET_OPTIONS[0],
+  { value: 'TODAY', label: 'Today' },
+  { value: 'YESTERDAY', label: 'Yesterday' },
+  ...PRESET_OPTIONS.slice(1),
+];
+
 export function DateRangeFilter({
   value,
   onChange,
   variant = 'card',
   showPresetLabel = true,
   inlineCustomLayout = 'stack',
+  showDayPresets = false,
+  dateLabel = 'Created',
+  compactControls = false,
 }: {
   value: DateRangeFilterState;
   onChange: (value: DateRangeFilterState) => void;
   variant?: 'card' | 'inline';
   showPresetLabel?: boolean;
   inlineCustomLayout?: 'stack' | 'row';
+  showDayPresets?: boolean;
+  dateLabel?: string;
+  compactControls?: boolean;
 }) {
   const isCustom = value.preset === 'CUSTOM';
   const isInline = variant === 'inline';
@@ -55,7 +68,7 @@ export function DateRangeFilter({
               <CalendarRange className="h-4 w-4" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">Created date</p>
+              <p className="text-sm font-semibold text-foreground">{dateLabel} date</p>
               <p className="text-sm text-muted-foreground">
                 Filter records by a preset window or a custom date range.
               </p>
@@ -83,8 +96,8 @@ export function DateRangeFilter({
               </label>
             ) : null}
             <Select
-              className="h-11 rounded-xl"
-              aria-label="Created date preset"
+              className={compactControls ? 'h-10 rounded-lg' : 'h-11 rounded-xl'}
+              aria-label={`${dateLabel} date preset`}
               value={value.preset}
               onChange={(event) =>
                 onChange({
@@ -93,7 +106,7 @@ export function DateRangeFilter({
                 })
               }
             >
-              {PRESET_OPTIONS.map((option) => (
+              {(showDayPresets ? DAY_PRESET_OPTIONS : PRESET_OPTIONS).map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -108,8 +121,8 @@ export function DateRangeFilter({
                   From Date
                 </label>
                 <Input
-                  className="h-11 rounded-xl"
-                  aria-label="Created from"
+                  className={compactControls ? 'h-10 rounded-lg' : 'h-11 rounded-xl'}
+                  aria-label={`${dateLabel} from`}
                   type="date"
                   value={value.from}
                   onChange={(event) =>
@@ -126,8 +139,8 @@ export function DateRangeFilter({
                   To Date
                 </label>
                 <Input
-                  className="h-11 rounded-xl"
-                  aria-label="Created to"
+                  className={compactControls ? 'h-10 rounded-lg' : 'h-11 rounded-xl'}
+                  aria-label={`${dateLabel} to`}
                   type="date"
                   value={value.to}
                   onChange={(event) =>
