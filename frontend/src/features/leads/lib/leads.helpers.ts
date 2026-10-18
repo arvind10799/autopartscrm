@@ -16,6 +16,7 @@ export const ALL_LEAD_CONVERSION_FILTER = 'ALL' as const;
 export const ALL_LEAD_STATUS_FILTER = 'ALL' as const;
 export const ALL_UNTOUCHED_LEADS_FILTER = 'ALL' as const;
 export const UNTOUCHED_LEADS_DAY_OPTIONS = [1, 2, 3, 7, 14, 30] as const;
+export const MAX_UNTOUCHED_LEADS_DAYS = 365;
 
 export type LeadConversionFilter =
   | typeof ALL_LEAD_CONVERSION_FILTER
@@ -28,7 +29,7 @@ export type LeadStatusFilter =
 
 export type UntouchedLeadsFilter =
   | typeof ALL_UNTOUCHED_LEADS_FILTER
-  | (typeof UNTOUCHED_LEADS_DAY_OPTIONS)[number];
+  | number;
 
 const positiveIntegerSchema = z.coerce.number().int().min(1);
 const userIdSchema = z.string().uuid();
@@ -123,12 +124,14 @@ export function formatLeadStatusLabel(value: LeadStatus): string {
 }
 
 export function parseUntouchedLeadsFilter(value: string): UntouchedLeadsFilter {
-  const parsedValue = Number(value);
+  const normalizedValue = value.trim();
+  const parsedValue = Number(normalizedValue);
 
-  return UNTOUCHED_LEADS_DAY_OPTIONS.includes(
-    parsedValue as (typeof UNTOUCHED_LEADS_DAY_OPTIONS)[number],
-  )
-    ? (parsedValue as UntouchedLeadsFilter)
+  return /^\d+$/.test(normalizedValue) &&
+    Number.isInteger(parsedValue) &&
+    parsedValue >= 1 &&
+    parsedValue <= MAX_UNTOUCHED_LEADS_DAYS
+    ? parsedValue
     : ALL_UNTOUCHED_LEADS_FILTER;
 }
 

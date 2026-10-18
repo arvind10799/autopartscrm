@@ -6,6 +6,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
+import { useTableDetailHref } from '@/lib/filters/table-view-state';
 import type {
   ShipmentPaginationMeta,
   ShipmentSummary,
@@ -16,7 +17,7 @@ function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
 }
 
-const columns: ColumnDef<ShipmentSummary>[] = [
+const buildColumns = (detailHref: (path: string) => string): ColumnDef<ShipmentSummary>[] => [
   {
     accessorKey: 'order.salesNumber',
     header: 'Sale',
@@ -26,7 +27,7 @@ const columns: ColumnDef<ShipmentSummary>[] = [
     cell: ({ row }) => (
       <div className="min-w-0 space-y-0.5">
         <Link
-          href={`/shipments/${row.original.id}`}
+          href={detailHref(`/shipments/${row.original.id}`)}
           className="block truncate font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
         >
           {row.original.order.salesNumber ?? '—'}
@@ -116,7 +117,7 @@ const columns: ColumnDef<ShipmentSummary>[] = [
     },
     cell: ({ row }) => (
       <Link
-        href={`/shipments/${row.original.id}`}
+        href={detailHref(`/shipments/${row.original.id}`)}
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'sm' }),
           'rounded-lg px-2 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20',
@@ -157,6 +158,8 @@ export function ShipmentsTable({
   onRetry: () => void;
   onPageChange: (page: number) => void;
 }) {
+  const detailHref = useTableDetailHref('/shipments');
+  const columns = buildColumns(detailHref);
   const totalPages = meta.totalPages;
 
   return (
@@ -174,7 +177,7 @@ export function ShipmentsTable({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <Link
-                href={`/shipments/${shipment.id}`}
+                href={detailHref(`/shipments/${shipment.id}`)}
                 className="block truncate text-base font-semibold text-[#d94d00] dark:text-orange-300"
               >
                 {shipment.order.salesNumber ?? '—'}
@@ -203,7 +206,7 @@ export function ShipmentsTable({
           </div>
 
           <Link
-            href={`/shipments/${shipment.id}`}
+            href={detailHref(`/shipments/${shipment.id}`)}
             className={cn(
               buttonVariants({ variant: 'default', size: 'sm' }),
               'mt-3 h-9 w-full rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',

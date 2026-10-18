@@ -123,7 +123,7 @@ export class LeadsService {
       { header: 'Converted', width: 12 },
       { header: 'Converted At', width: 22 },
       { header: 'Converted Order', width: 18 },
-      { header: 'Comments', width: 44, wrap: true },
+      { header: 'Additional Quotes', width: 44, wrap: true },
       { header: 'Prospects', width: 44, wrap: true },
     ];
 

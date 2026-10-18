@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { UserRole } from '@/features/auth/types/auth.types';
 import { cn } from '@/lib/utils/cn';
+import { useTableDetailHref } from '@/lib/filters/table-view-state';
 import { formatDate, formatLeadCurrency } from '../lib/lead-formatters';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
 import type { LeadStatus, LeadSummary, PaginationMeta } from '../types/lead.types';
@@ -332,6 +333,7 @@ export function LeadsTable({
   showAgentColumn?: boolean;
 }) {
   const router = useRouter();
+  const detailHref = useTableDetailHref('/leads');
   const totalPages = meta.totalPages;
   const columns = buildColumns(
     onConvert,
@@ -351,7 +353,7 @@ export function LeadsTable({
       onRetry={onRetry}
       density="compact"
       layout="fit"
-      onRowClick={(lead) => router.push(getLeadDetailsHref(lead))}
+      onRowClick={(lead) => router.push(detailHref(getLeadDetailsHref(lead)))}
       renderMobileCard={(lead) => {
         const status = lead.isConverted ? 'CONVERTED' : lead.status;
         const canManageLead =

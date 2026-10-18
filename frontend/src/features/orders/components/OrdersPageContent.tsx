@@ -21,8 +21,8 @@ import { Select } from '@/components/ui/select';
 import { formatUsPhoneNumber } from '@/lib/forms/phone-format';
 import {
   buildTimestampRangeQuery,
-  createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
+import { parseTablePage, useTableDateRange, useTableQueryParam } from '@/lib/filters/table-view-state';
 import { toast } from '@/lib/stores/toast.store';
 import { getErrorMessage } from '@/lib/utils/error';
 import { useAuthStore } from '@/features/auth/store/auth.store';
@@ -71,17 +71,15 @@ function formatAgentFilterLabel(agent: OrderUser) {
 
 export function OrdersPageContent() {
   const authUser = useAuthStore((state) => state.user);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useTableQueryParam('q', '', (value) => value);
   const [shipmentStatusFilter, setShipmentStatusFilter] =
-    useState<ShipmentStatusFilter>(ALL_SHIPMENT_STATUS_FILTER);
+    useTableQueryParam<ShipmentStatusFilter>('shipmentStatus', ALL_SHIPMENT_STATUS_FILTER, parseShipmentStatusFilter);
   const [ageingFilter, setAgeingFilter] =
-    useState<OrderAgeingFilter>(ALL_ORDER_AGEING_FILTER);
-  const [agentFilter, setAgentFilter] = useState<string | null>(null);
+    useTableQueryParam<OrderAgeingFilter>('ageing', ALL_ORDER_AGEING_FILTER, parseOrderAgeingFilter);
+  const [agentFilter, setAgentFilter] = useTableQueryParam<string | null>('agent', null, (value) => value || null);
   const [orderAgents, setOrderAgents] = useState<OrderUser[]>([]);
-  const [dateFilter, setDateFilter] = useState(
-    createDefaultDateRangeFilterState(),
-  );
-  const [page, setPage] = useState(1);
+  const [dateFilter, setDateFilter] = useTableDateRange();
+  const [page, setPage] = useTableQueryParam('page', 1, parseTablePage, false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -127,6 +125,12 @@ export function OrdersPageContent() {
     createdById,
     refreshKey,
   });
+
+  useEffect(() => {
+    if (isLoading) return;
+    const lastPage = Math.max(1, ordersResponse.meta.totalPages);
+    if (page > lastPage) setPage(lastPage);
+  }, [isLoading, ordersResponse.meta.totalPages, page, setPage]);
 
   const handleSearchChange = (value: string) => {
     const digitCount = value.replace(/\D/g, '').length;

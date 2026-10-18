@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { getTableBackLabel, useDetailReturnHref } from '@/lib/filters/table-view-state';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
@@ -77,6 +78,7 @@ type ShipmentActivityEntry = {
 };
 
 export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
+  const returnHref = useDetailReturnHref('/shipments');
   const {
     shipment,
     isLoading,
@@ -142,11 +144,11 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
             {error ?? 'Shipment details are unavailable.'}
           </div>
           <Link
-            href="/shipments"
+            href={returnHref}
             className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to shipments
+            {getTableBackLabel(returnHref)}
           </Link>
         </CardContent>
       </Card>

@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { getTableBackLabel, useDetailReturnHref } from '@/lib/filters/table-view-state';
 import {
   ArrowLeft,
   History,
@@ -51,6 +52,7 @@ type TimelineEntry = {
 };
 
 export function LeadDetailsView({ leadId }: { leadId: string }) {
+  const returnHref = useDetailReturnHref('/leads');
   const [lead, setLead] = useState<LeadSummary | null>(null);
   const [notes, setNotes] = useState<NoteRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -230,11 +232,11 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
             {error ?? 'Lead details are unavailable.'}
           </div>
           <Link
-            href="/leads"
+            href={returnHref}
             className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to leads
+            {getTableBackLabel(returnHref)}
           </Link>
         </CardContent>
       </Card>
@@ -300,10 +302,13 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
                 />
                 <DetailBlock label="Currency" value={lead.quoteCurrency} />
                 <DetailBlock label="Prospects" value={formatNullableText(lead.prospects)} />
-                <DetailBlock label="Comments" value={formatNullableText(lead.comments)} />
+                <DetailBlock label="Additional Quotes" value={formatNullableText(lead.comments)} />
               </DetailSection>
 
               <DetailSection title="Activity" tone="amber">
+                {lead.websiteLead ? (
+                  <DetailBlock label="Website inquiry" value={<Link className="text-primary underline" href={`/website-leads/${lead.websiteLead.id}`}>View original request</Link>} />
+                ) : null}
                 <DetailBlock label="Created" value={formatDateTime(lead.createdAt)} />
                 <DetailBlock label="Last edited" value={formatDateTime(lead.updatedAt)} />
                 {lead.convertedAt ? (

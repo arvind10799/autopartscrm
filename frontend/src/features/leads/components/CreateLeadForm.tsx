@@ -21,7 +21,7 @@ import {
   createLeadFormSchema,
   type CreateLeadFormValues,
 } from '../schemas/lead.schema';
-import type { LeadSummary } from '../types/lead.types';
+import type { CreateLeadInput, LeadSummary } from '../types/lead.types';
 import { LEAD_QUOTE_CURRENCIES, LEAD_STATUSES } from '../types/lead.types';
 import { formatLeadStatusLabel } from '../lib/leads.helpers';
 
@@ -98,9 +98,15 @@ function Field({
 
 export function CreateLeadForm({
   initialLead,
+  initialValues,
+  onSubmitLead,
+  submitLabel,
   onSaved,
 }: {
   initialLead?: LeadSummary | null;
+  initialValues?: Partial<CreateLeadFormValues>;
+  onSubmitLead?: (payload: CreateLeadInput) => Promise<LeadSummary>;
+  submitLabel?: string;
   onSaved: (lead: LeadSummary) => void;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
@@ -114,7 +120,7 @@ export function CreateLeadForm({
   const [vehicleLookupNotice, setVehicleLookupNotice] = useState<string | null>(null);
   const form = useForm<CreateLeadFormValues>({
     resolver: zodResolver(createLeadFormSchema),
-    defaultValues: buildDefaultValues(initialLead),
+    defaultValues: { ...buildDefaultValues(initialLead), ...initialValues },
   });
   const maxLeadDate = getPacificTodayDateInputValue();
   const customerPhoneInput = form.register('customerPhone');
@@ -133,8 +139,8 @@ export function CreateLeadForm({
     typeof vehicleVariant === 'string' ? vehicleVariant : '';
 
   useEffect(() => {
-    form.reset(buildDefaultValues(initialLead));
-  }, [form, initialLead]);
+    form.reset({ ...buildDefaultValues(initialLead), ...initialValues });
+  }, [form, initialLead, initialValues]);
 
   useEffect(() => {
     let isActive = true;
@@ -269,9 +275,11 @@ export function CreateLeadForm({
 
     try {
       const payload = createLeadFormSchema.parse(values);
-      const savedLead = initialLead
-        ? await leadsApi.update(initialLead.id, payload)
-        : await leadsApi.create(payload);
+      const savedLead = onSubmitLead
+        ? await onSubmitLead(payload)
+        : initialLead
+          ? await leadsApi.update(initialLead.id, payload)
+          : await leadsApi.create(payload);
       onSaved(savedLead);
       form.reset(createDefaultValues());
     } catch (error) {
@@ -521,14 +529,14 @@ export function CreateLeadForm({
 
           <Field
             id="comments"
-            label="Comments"
+            label="Additional Quotes"
             error={form.formState.errors.comments?.message?.toString()}
             className="xl:col-span-4"
           >
             <Textarea
               id="comments"
               rows={4}
-              placeholder="Add follow-up details, fitment notes, or sales context"
+              placeholder="Add other quoted prices or options"
               className="min-h-[92px] rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               {...form.register('comments')}
             />
@@ -549,7 +557,7 @@ export function CreateLeadForm({
           className="h-10 w-full rounded-xl bg-[#ff5a00] font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000]"
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting
+          {submitLabel && !form.formState.isSubmitting ? submitLabel : form.formState.isSubmitting
             ? initialLead
               ? 'Saving lead...'
               : 'Creating lead...'

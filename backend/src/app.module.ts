@@ -26,6 +26,7 @@ import { RingCentralModule } from './modules/ringcentral/ringcentral.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { VehicleLookupModule } from './modules/vehicle-lookup/vehicle-lookup.module';
+import { WebsiteLeadsModule } from './modules/website-leads/website-leads.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { VehicleLookupModule } from './modules/vehicle-lookup/vehicle-lookup.mod
     AuthModule,
     DashboardModule,
     LeadsModule,
+    WebsiteLeadsModule,
     OrdersModule,
     ReplacementsModule,
     RingCentralModule,

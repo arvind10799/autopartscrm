@@ -8,6 +8,7 @@ APP_PUBLIC_URL="${APP_PUBLIC_URL:-}"
 API_INTERNAL_URL="${API_INTERNAL_URL:-http://127.0.0.1:3000}"
 DATABASE_URL="${DATABASE_URL:-}"
 JWT_SECRET="${JWT_SECRET:-}"
+WEBSITE_LEADS_SIGNING_SECRET="${WEBSITE_LEADS_SIGNING_SECRET:-}"
 JWT_EXPIRES_IN_SECONDS="${JWT_EXPIRES_IN_SECONDS:-604800}"
 SEED_USER_PASSWORD="${SEED_USER_PASSWORD:-}"
 REDIS_HOST="${REDIS_HOST:-crm-wjf4r8.serverless.apse2.cache.amazonaws.com}"
@@ -49,6 +50,13 @@ require_value "APP_PUBLIC_URL" "${APP_PUBLIC_URL}"
 require_value "DATABASE_URL" "${DATABASE_URL}"
 require_value "JWT_SECRET" "${JWT_SECRET}"
 require_value "SEED_USER_PASSWORD" "${SEED_USER_PASSWORD}"
+
+# Keep the active website intake key on routine redeploys when it is not supplied
+# by the caller. The key is generated once and stored only in backend/.env.
+if [[ -z "${WEBSITE_LEADS_SIGNING_SECRET}" && -f "${APP_DIR}/backend/.env" ]]; then
+  WEBSITE_LEADS_SIGNING_SECRET="$(sed -nE 's/^WEBSITE_LEADS_SIGNING_SECRET="?([a-f0-9]{64})"?$/\1/p' "${APP_DIR}/backend/.env" | head -n 1)"
+fi
+require_value "WEBSITE_LEADS_SIGNING_SECRET" "${WEBSITE_LEADS_SIGNING_SECRET}"
 
 ensure_database_exists() {
   if ! command -v psql >/dev/null 2>&1; then
@@ -99,6 +107,7 @@ git pull --ff-only origin "${BRANCH}"
 cat > backend/.env <<EOF
 DATABASE_URL="${DATABASE_URL}"
 JWT_SECRET="${JWT_SECRET}"
+WEBSITE_LEADS_SIGNING_SECRET="${WEBSITE_LEADS_SIGNING_SECRET}"
 JWT_EXPIRES_IN_SECONDS=${JWT_EXPIRES_IN_SECONDS}
 SEED_USER_PASSWORD="${SEED_USER_PASSWORD}"
 REDIS_HOST="${REDIS_HOST}"

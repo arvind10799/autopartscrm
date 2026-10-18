@@ -52,6 +52,7 @@ export interface LeadSummary {
   updatedAt: string;
   createdBy: LeadUser;
   convertedOrder: LeadConvertedOrder | null;
+  websiteLead: { id: string } | null;
 }
 
 export interface PaginationMeta {

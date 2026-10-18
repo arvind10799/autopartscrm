@@ -169,6 +169,7 @@ function buildRootRelsXml() {
 function buildWorkbookXml(sheetName: string) {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <bookViews><workbookView activeTab="0"/></bookViews>
   <sheets><sheet name="${escapeXml(sheetName)}" sheetId="1" r:id="rId1"/></sheets>
 </workbook>`;
 }
@@ -184,6 +185,9 @@ function buildWorkbookRelsXml() {
 function buildZip(files: Map<string, string | Buffer>): Buffer {
   const localFileParts: Buffer[] = [];
   const centralDirectoryParts: Buffer[] = [];
+  // ZIP timestamps use DOS date/time fields; 1980-01-01 is the earliest valid date.
+  const zipDate = 0x0021;
+  const zipTime = 0;
   let offset = 0;
 
   for (const [filename, content] of files) {
@@ -196,8 +200,8 @@ function buildZip(files: Map<string, string | Buffer>): Buffer {
     localHeader.writeUInt16LE(20, 4);
     localHeader.writeUInt16LE(0x0800, 6);
     localHeader.writeUInt16LE(0, 8);
-    localHeader.writeUInt16LE(0, 10);
-    localHeader.writeUInt16LE(0, 12);
+    localHeader.writeUInt16LE(zipTime, 10);
+    localHeader.writeUInt16LE(zipDate, 12);
     localHeader.writeUInt32LE(crc, 14);
     localHeader.writeUInt32LE(contentBuffer.length, 18);
     localHeader.writeUInt32LE(contentBuffer.length, 22);
@@ -212,8 +216,8 @@ function buildZip(files: Map<string, string | Buffer>): Buffer {
     centralHeader.writeUInt16LE(20, 6);
     centralHeader.writeUInt16LE(0x0800, 8);
     centralHeader.writeUInt16LE(0, 10);
-    centralHeader.writeUInt16LE(0, 12);
-    centralHeader.writeUInt16LE(0, 14);
+    centralHeader.writeUInt16LE(zipTime, 12);
+    centralHeader.writeUInt16LE(zipDate, 14);
     centralHeader.writeUInt32LE(crc, 16);
     centralHeader.writeUInt32LE(contentBuffer.length, 20);
     centralHeader.writeUInt32LE(contentBuffer.length, 24);
@@ -283,6 +287,7 @@ function getColumnName(columnNumber: number): string {
 
 function escapeXml(value: string): string {
   return value
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

@@ -24,8 +24,8 @@ import type { CreateOrderFormValues } from '@/features/orders/schemas/order.sche
 import type { OrderSummary } from '@/features/orders/types/order.types';
 import {
   buildTimestampRangeQuery,
-  createDefaultDateRangeFilterState,
 } from '@/lib/filters/date-range';
+import { parseTablePage, useTableDateRange, useTableQueryParam } from '@/lib/filters/table-view-state';
 import { toast } from '@/lib/stores/toast.store';
 import { getErrorMessage } from '@/lib/utils/error';
 import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
@@ -37,6 +37,7 @@ import {
   formatLeadStatusLabel,
   formatUntouchedLeadsFilterLabel,
   LEAD_PAGE_SIZE,
+  MAX_UNTOUCHED_LEADS_DAYS,
   parseLeadConversionFilter,
   parseLeadStatusFilter,
   parseUntouchedLeadsFilter,
@@ -84,19 +85,30 @@ function buildOrderInitialValues(lead: LeadSummary): Partial<CreateOrderFormValu
 
 export function LeadsPageContent() {
   const authUser = useAuthStore((state) => state.user);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useTableQueryParam('q', '', (value) => value);
   const [convertedFilter, setConvertedFilter] =
-    useState<LeadConversionFilter>(ALL_LEAD_CONVERSION_FILTER);
+    useTableQueryParam<LeadConversionFilter>('conversion', ALL_LEAD_CONVERSION_FILTER, parseLeadConversionFilter);
   const [statusFilter, setStatusFilter] =
-    useState<LeadStatusFilter>(ALL_LEAD_STATUS_FILTER);
+    useTableQueryParam<LeadStatusFilter>('status', ALL_LEAD_STATUS_FILTER, parseLeadStatusFilter);
   const [untouchedFilter, setUntouchedFilter] =
-    useState<UntouchedLeadsFilter>(ALL_UNTOUCHED_LEADS_FILTER);
-  const [dateFilter, setDateFilter] = useState(
-    createDefaultDateRangeFilterState(),
+    useTableQueryParam<UntouchedLeadsFilter>('untouched', ALL_UNTOUCHED_LEADS_FILTER, parseUntouchedLeadsFilter);
+  const [untouchedMode, setUntouchedMode] = useTableQueryParam<'PRESET' | 'CUSTOM'>(
+    'untouchedMode',
+    'PRESET',
+    (value) => value === 'CUSTOM' ? 'CUSTOM' : 'PRESET',
   );
-  const [agentFilter, setAgentFilter] = useState<string | null>(null);
+  const isCustomUntouched = untouchedMode === 'CUSTOM' || (
+    typeof untouchedFilter === 'number' &&
+    !UNTOUCHED_LEADS_DAY_OPTIONS.some((days) => days === untouchedFilter)
+  );
+  const [customDaysDraft, setCustomDaysDraft] = useState(
+    typeof untouchedFilter === 'number' ? String(untouchedFilter) : '',
+  );
+  const [customDaysError, setCustomDaysError] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useTableDateRange();
+  const [agentFilter, setAgentFilter] = useTableQueryParam<string | null>('agent', null, (value) => value || null);
   const [leadAgents, setLeadAgents] = useState<LeadUser[]>([]);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useTableQueryParam('page', 1, parseTablePage, false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedEditLead, setSelectedEditLead] = useState<LeadSummary | null>(null);
@@ -154,6 +166,12 @@ export function LeadsPageContent() {
     refreshKey,
   });
 
+  useEffect(() => {
+    if (isLoading) return;
+    const lastPage = Math.max(1, leadsResponse.meta.totalPages);
+    if (page > lastPage) setPage(lastPage);
+  }, [isLoading, leadsResponse.meta.totalPages, page, setPage]);
+
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     startTransition(() => setPage(1));
@@ -172,6 +190,33 @@ export function LeadsPageContent() {
   const handleUntouchedFilterChange = (value: UntouchedLeadsFilter) => {
     setUntouchedFilter(value);
     startTransition(() => setPage(1));
+  };
+
+  const handleUntouchedSelection = (value: string) => {
+    setCustomDaysError(null);
+
+    if (value === 'CUSTOM') {
+      setCustomDaysDraft(isCustomUntouched && typeof untouchedFilter === 'number'
+        ? String(untouchedFilter)
+        : '');
+      setUntouchedMode('CUSTOM');
+      handleUntouchedFilterChange(ALL_UNTOUCHED_LEADS_FILTER);
+      return;
+    }
+
+    setUntouchedMode('PRESET');
+    handleUntouchedFilterChange(parseUntouchedLeadsFilter(value));
+  };
+
+  const handleApplyCustomDays = () => {
+    const days = parseUntouchedLeadsFilter(customDaysDraft);
+    if (days === ALL_UNTOUCHED_LEADS_FILTER) {
+      setCustomDaysError(`Enter a whole number from 1 to ${MAX_UNTOUCHED_LEADS_DAYS}.`);
+      return;
+    }
+
+    setCustomDaysError(null);
+    handleUntouchedFilterChange(days);
   };
 
   const handleAgentFilterChange = (value: string) => {
@@ -224,6 +269,9 @@ export function LeadsPageContent() {
     setConvertedFilter(ALL_LEAD_CONVERSION_FILTER);
     setStatusFilter(ALL_LEAD_STATUS_FILTER);
     setUntouchedFilter(ALL_UNTOUCHED_LEADS_FILTER);
+    setUntouchedMode('PRESET');
+    setCustomDaysDraft('');
+    setCustomDaysError(null);
     startTransition(() => setPage(1));
     setRefreshKey((currentValue) => currentValue + 1);
     toast.success(
@@ -411,25 +459,59 @@ export function LeadsPageContent() {
                 ))}
               </Select>
 
-              <Select
-                value={String(untouchedFilter)}
-                onChange={(event) =>
-                  handleUntouchedFilterChange(
-                    parseUntouchedLeadsFilter(event.target.value),
-                  )
-                }
-                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-                aria-label="Not touched filter"
-              >
-                <option value={ALL_UNTOUCHED_LEADS_FILTER}>
-                  {formatUntouchedLeadsFilterLabel(ALL_UNTOUCHED_LEADS_FILTER)}
-                </option>
-                {UNTOUCHED_LEADS_DAY_OPTIONS.map((days) => (
-                  <option key={days} value={days}>
-                    {formatUntouchedLeadsFilterLabel(days)}
+              <div className="space-y-2">
+                <Select
+                  value={isCustomUntouched ? 'CUSTOM' : String(untouchedFilter)}
+                  onChange={(event) => handleUntouchedSelection(event.target.value)}
+                  className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                  aria-label="Not touched filter"
+                >
+                  <option value={ALL_UNTOUCHED_LEADS_FILTER}>
+                    {formatUntouchedLeadsFilterLabel(ALL_UNTOUCHED_LEADS_FILTER)}
                   </option>
-                ))}
-              </Select>
+                  {UNTOUCHED_LEADS_DAY_OPTIONS.map((days) => (
+                    <option key={days} value={days}>
+                      {formatUntouchedLeadsFilterLabel(days)}
+                    </option>
+                  ))}
+                  <option value="CUSTOM">Custom days</option>
+                </Select>
+                {isCustomUntouched ? (
+                  <form
+                    className="space-y-1"
+                    noValidate
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      handleApplyCustomDays();
+                    }}
+                  >
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={MAX_UNTOUCHED_LEADS_DAYS}
+                        step={1}
+                        value={customDaysDraft}
+                        onChange={(event) => {
+                          setCustomDaysDraft(event.target.value);
+                          setCustomDaysError(null);
+                        }}
+                        className="h-11 min-w-0 flex-1 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                        placeholder="1–365 days"
+                        aria-label="Custom days not touched"
+                        aria-invalid={customDaysError !== null}
+                      />
+                      <Button type="submit" className="h-11 rounded-xl px-3">Apply</Button>
+                    </div>
+                    {customDaysError ? <p role="alert" className="text-xs text-destructive">{customDaysError}</p> : null}
+                    {typeof untouchedFilter === 'number' ? (
+                      <p className="text-xs text-muted-foreground">
+                        Showing leads not touched for {untouchedFilter}+ days
+                      </p>
+                    ) : null}
+                  </form>
+                ) : null}
+              </div>
             </div>
           </CardHeader>
 

@@ -17,9 +17,9 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import {
   buildTimestampRangeQuery,
-  createDefaultDateRangeFilterState,
   type DateRangeFilterState,
 } from '@/lib/filters/date-range';
+import { parseTablePage, useTableDateRange, useTableDetailHref, useTableQueryParam } from '@/lib/filters/table-view-state';
 import { formatRelativeTime } from '@/features/orders/lib/order-formatters';
 import { useReplacementsList } from '../hooks/useReplacementsList';
 import {
@@ -31,7 +31,7 @@ import {
 import { REPLACEMENT_STATUSES, type ReplacementRequest } from '../types/replacement.types';
 import { ReplacementStatusBadge } from './ReplacementStatusBadge';
 
-const columns: ColumnDef<ReplacementRequest>[] = [
+const buildColumns = (detailHref: (path: string) => string): ColumnDef<ReplacementRequest>[] => [
   {
     accessorKey: 'order.salesNumber',
     header: 'Sale',
@@ -39,7 +39,7 @@ const columns: ColumnDef<ReplacementRequest>[] = [
     cell: ({ row }) => (
       <div className="min-w-0">
         <Link
-          href={`/orders/${row.original.order.id}`}
+          href={detailHref(`/orders/${row.original.order.id}`)}
           className="block truncate font-semibold text-[#d94d00] hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
         >
           {row.original.order.salesNumber ?? '—'}
@@ -123,7 +123,7 @@ const columns: ColumnDef<ReplacementRequest>[] = [
     header: '',
     meta: { className: 'w-[8%]' },
     cell: ({ row }) => (
-      <Link href={`/replacement-orders/${row.original.id}`}>
+      <Link href={detailHref(`/replacement-orders/${row.original.id}`)}>
         <Button
           variant="outline"
           size="sm"
@@ -138,13 +138,13 @@ const columns: ColumnDef<ReplacementRequest>[] = [
 ];
 
 export function ReplacementOrdersPageContent() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useTableQueryParam('q', '', (value) => value);
   const [statusFilter, setStatusFilter] =
-    useState<ReplacementStatusFilter>(ALL_REPLACEMENT_STATUS_FILTER);
-  const [dateFilter, setDateFilter] = useState(
-    createDefaultDateRangeFilterState(),
-  );
-  const [page, setPage] = useState(1);
+    useTableQueryParam<ReplacementStatusFilter>('status', ALL_REPLACEMENT_STATUS_FILTER, parseReplacementStatusFilter);
+  const [dateFilter, setDateFilter] = useTableDateRange();
+  const [page, setPage] = useTableQueryParam('page', 1, parseTablePage, false);
+  const detailHref = useTableDetailHref('/replacement-orders');
+  const columns = buildColumns(detailHref);
   const [refreshKey, setRefreshKey] = useState(0);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const activeSearch = deferredSearchTerm.trim();
@@ -260,7 +260,7 @@ export function ReplacementOrdersPageContent() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <Link
-                      href={`/replacement-orders/${replacement.id}`}
+                      href={detailHref(`/replacement-orders/${replacement.id}`)}
                       className="block truncate text-base font-semibold text-[#d94d00] dark:text-orange-300"
                     >
                       {replacement.order.salesNumber ?? '—'}
@@ -283,7 +283,7 @@ export function ReplacementOrdersPageContent() {
                   <MobileField label="Updated" value={formatRelativeTime(replacement.updatedAt)} />
                 </div>
 
-                <Link href={`/replacement-orders/${replacement.id}`}>
+                <Link href={detailHref(`/replacement-orders/${replacement.id}`)}>
                   <Button
                     variant="default"
                     size="sm"

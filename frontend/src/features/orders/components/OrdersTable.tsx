@@ -7,6 +7,7 @@ import { ArrowRight, ChevronLeft, ChevronRight, PencilLine } from 'lucide-react'
 import { DataTable } from '@/components/data-table/DataTable';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
+import { useTableDetailHref } from '@/lib/filters/table-view-state';
 import type { UserRole } from '@/features/auth/types/auth.types';
 import { formatCurrency } from '../lib/order-formatters';
 import type { PaginationMeta, OrderSummary } from '../types/order.types';
@@ -18,6 +19,7 @@ function getFirstName(name: string) {
 
 function buildColumns(
   onEdit: (orderId: string) => void,
+  detailHref: (path: string) => string,
   role: UserRole | null | undefined,
   currentUserId?: string | null,
 ): ColumnDef<OrderSummary>[] {
@@ -31,7 +33,7 @@ function buildColumns(
       cell: ({ row }) => (
         <div className="min-w-0 space-y-0.5">
           <Link
-            href={`/orders/${row.original.id}`}
+            href={detailHref(`/orders/${row.original.id}`)}
             className="block truncate font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
           >
             {row.original.salesNumber ?? '—'}
@@ -137,7 +139,7 @@ function buildColumns(
               </Button>
             ) : null}
             <Link
-              href={`/orders/${row.original.id}`}
+              href={detailHref(`/orders/${row.original.id}`)}
               className={cn(
                 buttonVariants({ variant: 'ghost', size: 'sm' }),
                 'h-8 rounded-lg px-2 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20',
@@ -188,8 +190,9 @@ export function OrdersTable({
   currentUserId?: string | null;
 }) {
   const router = useRouter();
+  const detailHref = useTableDetailHref('/orders');
   const totalPages = meta.totalPages;
-  const columns = buildColumns(onEdit, role, currentUserId);
+  const columns = buildColumns(onEdit, detailHref, role, currentUserId);
 
   return (
     <DataTable
@@ -201,7 +204,7 @@ export function OrdersTable({
       onRetry={onRetry}
       density="compact"
       layout="fit"
-      onRowClick={(order) => router.push(`/orders/${order.id}`)}
+      onRowClick={(order) => router.push(detailHref(`/orders/${order.id}`))}
       renderMobileCard={(order) => {
         const canEdit =
           role === 'ADMIN' ||
@@ -213,7 +216,7 @@ export function OrdersTable({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <Link
-                  href={`/orders/${order.id}`}
+                  href={detailHref(`/orders/${order.id}`)}
                   className="block truncate text-base font-semibold text-[#d94d00] dark:text-orange-300"
                 >
                   {order.salesNumber ?? '—'}
@@ -261,7 +264,7 @@ export function OrdersTable({
                 </Button>
               ) : null}
               <Link
-                href={`/orders/${order.id}`}
+                href={detailHref(`/orders/${order.id}`)}
                 className={cn(
                   buttonVariants({ variant: 'default', size: 'sm' }),
                   canEdit ? '' : 'col-span-2',

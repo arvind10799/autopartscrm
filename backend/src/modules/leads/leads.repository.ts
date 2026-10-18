@@ -52,6 +52,9 @@ const leadListSelect = {
       status: true,
     },
   },
+  websiteLead: {
+    select: { id: true },
+  },
 } satisfies Prisma.LeadSelect;
 
 const UNTOUCHED_LEAD_EXCLUDED_STATUSES = [

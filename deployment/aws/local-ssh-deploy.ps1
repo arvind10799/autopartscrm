@@ -66,6 +66,7 @@ try {
     APP_PUBLIC_URL = $AppPublicUrl
     DATABASE_URL = [Environment]::GetEnvironmentVariable("DATABASE_URL")
     JWT_SECRET = [Environment]::GetEnvironmentVariable("JWT_SECRET")
+    WEBSITE_LEADS_SIGNING_SECRET = Get-EnvironmentValueOrDefault "WEBSITE_LEADS_SIGNING_SECRET" ""
     SEED_USER_PASSWORD = [Environment]::GetEnvironmentVariable("SEED_USER_PASSWORD")
     REDIS_HOST = Get-EnvironmentValueOrDefault "REDIS_HOST" "crm-wjf4r8.serverless.apse2.cache.amazonaws.com"
     REDIS_PORT = Get-EnvironmentValueOrDefault "REDIS_PORT" "6379"

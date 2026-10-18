@@ -5,7 +5,17 @@ import { PrismaService } from './database/prisma/prisma.service';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  app.use(
+    '/website-leads/intake',
+    json({
+      limit: '64kb',
+      verify: (request, _response, body) => {
+        (request as typeof request & { rawBody: Buffer }).rawBody =
+          Buffer.from(body);
+      },
+    }),
+  );
   app.use(json({ limit: '25mb' }));
   app.use(urlencoded({ extended: true, limit: '25mb' }));
   app.get(PrismaService).enableShutdownHooks(app);

@@ -82,6 +82,7 @@ const leadBackendSummarySchema = z.object({
   updatedAt: z.string(),
   createdBy: leadUserSchema,
   convertedOrder: convertedOrderSchema.nullable(),
+  websiteLead: z.object({ id: z.string() }).nullable().optional(),
 });
 
 function normalizeLeadSummary(lead: z.infer<typeof leadBackendSummarySchema>) {
@@ -110,6 +111,7 @@ function normalizeLeadSummary(lead: z.infer<typeof leadBackendSummarySchema>) {
     updatedAt: lead.updatedAt,
     createdBy: lead.createdBy,
     convertedOrder: lead.convertedOrder,
+    websiteLead: lead.websiteLead ?? null,
   };
 }
 
@@ -193,7 +195,7 @@ export const createLeadSchema = z.object({
   comments: z
     .string()
     .trim()
-    .max(2000, 'Comments must be 2000 characters or fewer.')
+    .max(2000, 'Additional Quotes must be 2000 characters or fewer.')
     .optional(),
   prospects: z
     .string()
@@ -246,7 +248,7 @@ export const createLeadFormSchema = z.object({
   quoteCurrency: leadQuoteCurrencySchema,
   comments: z
     .string()
-    .max(2000, 'Comments must be 2000 characters or fewer.')
+    .max(2000, 'Additional Quotes must be 2000 characters or fewer.')
     .optional(),
   prospects: z
     .string()

@@ -6,6 +6,7 @@ import {
   RotateCcw,
   Truck,
   Users,
+  Globe2,
 } from 'lucide-react';
 import type { UserRole } from '@/features/auth/types/auth.types';
 
@@ -34,6 +35,14 @@ export const navigationConfig: NavigationItemConfig[] = [
     label: 'Leads',
     description: 'Sales lead intake, follow-up tracking, and order conversion.',
     icon: Phone,
+    roles: ['ADMIN', 'SALES'],
+    group: 'workspace',
+  },
+  {
+    href: '/website-leads',
+    label: 'Website Leads',
+    description: 'Quote and part requests received from the website.',
+    icon: Globe2,
     roles: ['ADMIN', 'SALES'],
     group: 'workspace',
   },

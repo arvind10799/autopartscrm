@@ -13,9 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import {
   buildTimestampRangeQuery,
-  createDefaultDateRangeFilterState,
   type DateRangeFilterState,
 } from '@/lib/filters/date-range';
+import { parseTablePage, useTableDateRange, useTableQueryParam } from '@/lib/filters/table-view-state';
 import { useShipmentsList } from '../hooks/useShipmentsList';
 import {
   ALL_SHIPMENT_STATUS_FILTER,
@@ -44,13 +44,11 @@ const OPERATIONAL_SHIPMENT_STATUS_FILTERS = [
 )[];
 
 export function ShipmentsPageContent() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useTableQueryParam('q', '', (value) => value);
   const [statusFilter, setStatusFilter] =
-    useState<ShipmentStatusFilter>(ALL_SHIPMENT_STATUS_FILTER);
-  const [dateFilter, setDateFilter] = useState(
-    createDefaultDateRangeFilterState(),
-  );
-  const [page, setPage] = useState(1);
+    useTableQueryParam<ShipmentStatusFilter>('status', ALL_SHIPMENT_STATUS_FILTER, parseShipmentStatusFilter);
+  const [dateFilter, setDateFilter] = useTableDateRange();
+  const [page, setPage] = useTableQueryParam('page', 1, parseTablePage, false);
   const [refreshKey, setRefreshKey] = useState(0);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const activeSearch = deferredSearchTerm.trim();

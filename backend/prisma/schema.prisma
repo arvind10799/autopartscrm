@@ -60,6 +60,14 @@ enum NoteEntityType {
   ORDER
   SHIPMENT
   LEAD
+  WEBSITE_LEAD
+}
+
+enum WebsiteLeadStatus {
+  NEW
+  CONTACTED
+  CLOSED
+  CONVERTED
 }
 
 enum LeadStatus {
@@ -83,6 +91,8 @@ model User {
   updatedAt    DateTime @updatedAt
 
     leads  Lead[]
+    assignedWebsiteLeads WebsiteLead[] @relation("WebsiteLeadAssignee")
+    convertedWebsiteLeads WebsiteLead[] @relation("WebsiteLeadConverter")
     orders Order[]
     notes  Note[]
     notifications Notification[]
@@ -121,11 +131,50 @@ model Lead {
   createdBy      User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
   convertedOrder Order? @relation("ConvertedLeadOrder", fields: [convertedOrderId], references: [id], onDelete: SetNull)
   notes          Note[]
+  websiteLead    WebsiteLead? @relation("WebsiteLeadConversion")
 
   @@index([leadDate])
   @@index([createdById])
   @@index([status])
   @@index([convertedAt])
+}
+
+model WebsiteLead {
+  id                   String            @id @default(uuid()) @db.Uuid
+  source               String            @db.VarChar(60)
+  sourceFormId         String            @db.VarChar(80)
+  sourcePageUrl        String?           @db.VarChar(1000)
+  externalSubmissionId String            @db.VarChar(120)
+  submittedAt          DateTime
+  customerName         String?           @db.VarChar(160)
+  customerPhone        String?           @db.VarChar(50)
+  customerEmail        String?           @db.VarChar(160)
+  state                String?           @db.VarChar(80)
+  zipCode              String?           @db.VarChar(20)
+  vehicleYear          String?           @db.VarChar(10)
+  vehicleMake          String?           @db.VarChar(80)
+  vehicleModel         String?           @db.VarChar(80)
+  vin                  String?           @db.VarChar(40)
+  partRequested        String?           @db.VarChar(255)
+  message              String?           @db.Text
+  smsOptIn             Boolean?
+  status               WebsiteLeadStatus @default(NEW)
+  assignedToId         String?           @db.Uuid
+  convertedLeadId      String?           @unique @db.Uuid
+  convertedById        String?           @db.Uuid
+  convertedAt          DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  assignedTo    User?  @relation("WebsiteLeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  convertedBy   User?  @relation("WebsiteLeadConverter", fields: [convertedById], references: [id], onDelete: SetNull)
+  convertedLead Lead?  @relation("WebsiteLeadConversion", fields: [convertedLeadId], references: [id], onDelete: Restrict)
+  notes         Note[]
+
+  @@unique([source, externalSubmissionId])
+  @@index([status, submittedAt])
+  @@index([assignedToId, submittedAt])
+  @@index([submittedAt])
 }
 
 model Order {
@@ -385,6 +434,7 @@ model Note {
   orderId    String?        @db.Uuid
   shipmentId String?        @db.Uuid
   leadId     String?        @db.Uuid
+    websiteLeadId String?     @db.Uuid
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 
@@ -392,11 +442,13 @@ model Note {
   order    Order?    @relation(fields: [orderId], references: [id], onDelete: Restrict)
   shipment Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
   lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: Restrict)
+    websiteLead WebsiteLead? @relation(fields: [websiteLeadId], references: [id], onDelete: Restrict)
 
   @@index([authorId])
   @@index([orderId])
   @@index([shipmentId])
   @@index([leadId])
+  @@index([websiteLeadId])
   @@index([entityType, orderId])
   @@index([entityType, shipmentId])
   @@index([entityType, leadId])

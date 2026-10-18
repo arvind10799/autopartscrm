@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getTableBackLabel, useDetailReturnHref } from '@/lib/filters/table-view-state';
 import {
   ArrowLeft,
   ChevronDown,
@@ -59,6 +60,7 @@ type TimelineEntry = {
 };
 
 export function OrderDetailsView({ orderId }: { orderId: string }) {
+  const returnHref = useDetailReturnHref('/orders');
   const [refreshKey, setRefreshKey] = useState(0);
   const [noteMessage, setNoteMessage] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
@@ -167,11 +169,11 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
             {error ?? 'Order details are unavailable.'}
           </div>
           <Link
-            href="/orders"
+            href={returnHref}
             className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to orders
+            {getTableBackLabel(returnHref)}
           </Link>
         </CardContent>
       </Card>

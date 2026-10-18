@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { getTableBackLabel, useDetailReturnHref } from '@/lib/filters/table-view-state';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
@@ -63,6 +64,7 @@ export function ReplacementDetailsView({
 }: {
   replacementId: string;
 }) {
+  const returnHref = useDetailReturnHref('/replacement-orders');
   const {
     replacement,
     isLoading,
@@ -167,11 +169,11 @@ export function ReplacementDetailsView({
             {error ?? 'Replacement details are unavailable.'}
           </div>
           <Link
-            href="/replacement-orders"
+            href={returnHref}
             className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to replacement orders
+            {getTableBackLabel(returnHref)}
           </Link>
         </CardContent>
       </Card>
