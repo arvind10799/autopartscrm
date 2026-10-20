@@ -22,6 +22,7 @@ import { NotesModule } from './modules/notes/notes.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ReplacementsModule } from './modules/replacements/replacements.module';
+import { ReleasesModule } from './modules/releases/releases.module';
 import { RingCentralModule } from './modules/ringcentral/ringcentral.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
@@ -40,6 +41,7 @@ import { WebsiteLeadsModule } from './modules/website-leads/website-leads.module
     WebsiteLeadsModule,
     OrdersModule,
     ReplacementsModule,
+    ReleasesModule,
     RingCentralModule,
     AppConnectModule,
     ShipmentsModule,

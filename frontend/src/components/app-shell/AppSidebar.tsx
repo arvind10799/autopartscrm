@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils/cn';
 import { getNavigationForRole } from '@/features/auth/lib/permissions';
 import type { UserRole } from '@/features/auth/types/auth.types';
 import { useWebsiteLeadsSummary } from '@/features/website-leads/WebsiteLeadsSummaryProvider';
+import { CURRENT_RELEASE } from '@/lib/config/current-release';
 import {
   APP_SIDEBAR_COLLAPSED_WIDTH,
   APP_SIDEBAR_WIDTH,
@@ -21,12 +22,14 @@ export function AppSidebar({
   isCollapsed,
   onClose,
   onToggleCollapse,
+  onOpenWhatsNew,
 }: {
   role: UserRole;
   isOpen: boolean;
   isCollapsed: boolean;
   onClose: () => void;
   onToggleCollapse: () => void;
+  onOpenWhatsNew: () => void;
 }) {
   const pathname = usePathname();
   const navigationItems = getNavigationForRole(role);
@@ -229,16 +232,26 @@ export function AppSidebar({
 
           <div className="mt-auto border-t border-white/14 pt-2.5 text-center">
             {isCollapsed ? (
-              <p
-                className="text-[10px] font-semibold leading-tight text-white/60"
-                title="Auto Parts CRM Version 5.0 Powered by Rock One Solutions"
+              <button
+                type="button"
+                onClick={onOpenWhatsNew}
+                className="rounded-md px-1 text-[10px] font-semibold leading-tight text-white/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                title={`Version ${CURRENT_RELEASE.version} · What’s New`}
+                aria-label={`What’s New in CRM ${CURRENT_RELEASE.version}`}
               >
-                CRM
-              </p>
+                v{CURRENT_RELEASE.version}
+              </button>
             ) : (
               <div className="space-y-1 text-[11px] leading-relaxed text-white/60">
                 <p className="font-semibold text-white/80">Auto Parts CRM</p>
-                <p>Version 5.0</p>
+                <button
+                  type="button"
+                  onClick={onOpenWhatsNew}
+                  className="rounded-md px-1 text-white/70 underline-offset-2 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                  aria-label={`What’s New in CRM ${CURRENT_RELEASE.version}`}
+                >
+                  Version {CURRENT_RELEASE.version} · What’s New
+                </button>
                 <p>Powered by Rock One Solutions</p>
               </div>
             )}

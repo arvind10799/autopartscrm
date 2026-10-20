@@ -101,6 +101,16 @@ model User {
     replacementRequestsCreated ReplacementRequest[] @relation("ReplacementRequestCreatedBy")
     replacementRequestsUpdated ReplacementRequest[] @relation("ReplacementRequestUpdatedBy")
     replacementHistories ReplacementHistory[]
+    releaseAcknowledgements ReleaseAcknowledgement[]
+}
+
+model ReleaseAcknowledgement {
+  userId    String   @db.Uuid
+  releaseId String   @db.VarChar(40)
+  seenAt    DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, releaseId])
 }
 
 model Lead {

@@ -1,7 +1,7 @@
 'use client';
 
-import { type CSSProperties, useEffect, useMemo, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
 import {
@@ -14,6 +14,9 @@ import type { AuthUser } from '@/features/auth/types/auth.types';
 import { matchNavigationItem } from '@/lib/config/navigation';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { WebsiteLeadsSummaryProvider } from '@/features/website-leads/WebsiteLeadsSummaryProvider';
+import { releasesApi } from '@/features/releases/releases-api';
+import { hasReleaseHighlights } from '@/lib/config/current-release';
+import { WhatsNewDialog } from './WhatsNewDialog';
 
 const fallbackSection = {
   label: 'Workspace',
@@ -39,9 +42,13 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+  const [releaseSeen, setReleaseSeen] = useState(false);
+  const releaseInteractedRef = useRef(false);
   const navigationItems = useMemo(
     () => getNavigationForRole(user.role),
     [user.role],
@@ -56,6 +63,32 @@ export function AppShell({
   useEffect(() => {
     setSession({ user });
   }, [setSession, user]);
+
+  useEffect(() => {
+    let active = true;
+    releaseInteractedRef.current = false;
+    setWhatsNewOpen(false);
+    setReleaseSeen(false);
+    if (!hasReleaseHighlights(user.role)) return;
+
+    void releasesApi.hasSeen().then((seen) => {
+      if (!active) return;
+      setReleaseSeen(seen);
+      if (!seen && !releaseInteractedRef.current) setWhatsNewOpen(true);
+    }).catch(() => {
+      // Leave the workspace usable if the release-status request fails.
+    });
+
+    return () => { active = false; };
+  }, [user.userId, user.role]);
+
+  const dismissWhatsNew = () => {
+    releaseInteractedRef.current = true;
+    setWhatsNewOpen(false);
+    if (releaseSeen || !hasReleaseHighlights(user.role)) return;
+    setReleaseSeen(true);
+    void releasesApi.markSeen().catch(() => setReleaseSeen(false));
+  };
 
   // Hydrate collapsed state from localStorage on mount
   useEffect(() => {
@@ -121,6 +154,10 @@ export function AppShell({
         isCollapsed={sidebarCollapsed}
         onClose={() => setSidebarOpen(false)}
         onToggleCollapse={handleToggleCollapse}
+        onOpenWhatsNew={() => {
+          releaseInteractedRef.current = true;
+          setWhatsNewOpen(true);
+        }}
       />
 
       <div className="min-h-screen min-w-0 max-w-full transition-[padding] duration-200 ease-out lg:pl-[var(--app-sidebar-width)]">
@@ -140,6 +177,15 @@ export function AppShell({
         </div>
       </div>
     </div>
+    <WhatsNewDialog
+      open={whatsNewOpen}
+      role={user.role}
+      onDismiss={dismissWhatsNew}
+      onOpenWebsiteLeads={() => {
+        dismissWhatsNew();
+        router.push('/website-leads');
+      }}
+    />
     </WebsiteLeadsSummaryProvider>
   );
 }
