@@ -39,6 +39,12 @@ DATABASE_URL="postgresql://postgres:YOUR_RDS_PASSWORD@database-1.c9wgco4aopuo.ap
 
 If the RDS database was not created with the `auto_parts_crm` database name, create it first or change the database name in `DATABASE_URL`.
 
+## RingCentral SMS settings
+
+The deployment reads RingCentral settings from `/home/ec2-user/.crm-secrets/ringcentral.env` on EC2. This file is already provisioned on the current CRM server. Keep it outside Git, owned by `ec2-user`, with mode `600`; its parent directory must have mode `700`. A new server must be provisioned before its first deployment with these five `export` assignments: `RINGCENTRAL_CLIENT_ID`, `RINGCENTRAL_CLIENT_SECRET`, `RINGCENTRAL_JWT`, `RINGCENTRAL_SERVER_URL`, and `RINGCENTRAL_FROM_NUMBER`.
+
+The deploy script checks that the file exists, is private, and contains all five values before it updates the checkout or rewrites `backend/.env`. To change the SMS app or sender later, update this protected file first. Local shell variables are not used for RingCentral settings, and the local SSH deploy script does not copy them to the server.
+
 ## First Deployment
 
 SSH to the EC2 instance as `ec2-user`, copy this repository, then run:

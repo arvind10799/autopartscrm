@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 APP_DIR="${APP_DIR:-/opt/auto-parts-crm}"
 REPO_URL="${REPO_URL:-https://github.com/arvind10799/autopartscrm.git}"
@@ -30,11 +31,7 @@ SMTP_PORT="${SMTP_PORT:-587}"
 SMTP_USER="${SMTP_USER:-}"
 SMTP_PASS="${SMTP_PASS:-}"
 MAIL_FROM="${MAIL_FROM:-MEE AUTO PARTS Billing <billing@meeautoparts.com>}"
-RINGCENTRAL_CLIENT_ID="${RINGCENTRAL_CLIENT_ID:-}"
-RINGCENTRAL_CLIENT_SECRET="${RINGCENTRAL_CLIENT_SECRET:-}"
-RINGCENTRAL_JWT="${RINGCENTRAL_JWT:-}"
-RINGCENTRAL_SERVER_URL="${RINGCENTRAL_SERVER_URL:-https://platform.ringcentral.com}"
-RINGCENTRAL_FROM_NUMBER="${RINGCENTRAL_FROM_NUMBER:-}"
+RINGCENTRAL_SECRETS_FILE="${RINGCENTRAL_SECRETS_FILE:-${HOME}/.crm-secrets/ringcentral.env}"
 
 require_value() {
   local name="$1"
@@ -50,6 +47,25 @@ require_value "APP_PUBLIC_URL" "${APP_PUBLIC_URL}"
 require_value "DATABASE_URL" "${DATABASE_URL}"
 require_value "JWT_SECRET" "${JWT_SECRET}"
 require_value "SEED_USER_PASSWORD" "${SEED_USER_PASSWORD}"
+
+# The EC2-owned file is the source of truth. Never fall back to values from a
+# deployer's shell, which may be blank or belong to a different RingCentral app.
+if [[ ! -f "${RINGCENTRAL_SECRETS_FILE}" || ! -r "${RINGCENTRAL_SECRETS_FILE}" || -L "${RINGCENTRAL_SECRETS_FILE}" ]]; then
+  echo "RingCentral secrets file is missing or unreadable: ${RINGCENTRAL_SECRETS_FILE}"
+  exit 1
+fi
+if [[ ! -O "${RINGCENTRAL_SECRETS_FILE}" || "$(stat -c '%a' "${RINGCENTRAL_SECRETS_FILE}")" != "600" ]]; then
+  echo "RingCentral secrets file must be owned by the deployment user and have mode 600."
+  exit 1
+fi
+unset RINGCENTRAL_CLIENT_ID RINGCENTRAL_CLIENT_SECRET RINGCENTRAL_JWT RINGCENTRAL_SERVER_URL RINGCENTRAL_FROM_NUMBER
+# shellcheck source=/dev/null
+source "${RINGCENTRAL_SECRETS_FILE}"
+require_value "RINGCENTRAL_CLIENT_ID" "${RINGCENTRAL_CLIENT_ID:-}"
+require_value "RINGCENTRAL_CLIENT_SECRET" "${RINGCENTRAL_CLIENT_SECRET:-}"
+require_value "RINGCENTRAL_JWT" "${RINGCENTRAL_JWT:-}"
+require_value "RINGCENTRAL_SERVER_URL" "${RINGCENTRAL_SERVER_URL:-}"
+require_value "RINGCENTRAL_FROM_NUMBER" "${RINGCENTRAL_FROM_NUMBER:-}"
 
 # Keep the active website intake key on routine redeploys when it is not supplied
 # by the caller. The key is generated once and stored only in backend/.env.
