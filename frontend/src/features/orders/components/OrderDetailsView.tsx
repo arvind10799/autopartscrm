@@ -192,7 +192,11 @@ export function OrderDetailsView({ orderId }: { orderId: string }) {
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
   const canEditGpCosts =
     authUser?.role === 'ADMIN' || authUser?.role === 'SHIPPING';
-  const canShowReplacement = order.status === 'DELIVERED';
+  const canShowReplacement =
+    canAddAdditionalCost &&
+    order.status !== 'CANCELLED' &&
+    order.status !== 'REFUNDED' &&
+    (order.status === 'DELIVERED' || latestShipment?.status === 'DELIVERED');
 
   return (
     <section className="space-y-6">
