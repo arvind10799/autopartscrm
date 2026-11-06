@@ -30,8 +30,8 @@ const SIGNATURE_SMS_FAILED = 'FAILED';
 const AUDIT_DOCUMENT_TITLE = 'Photo ID - Front copy';
 const DEFAULT_WARRANTY_PARTS_ONLY = [
   'Standard: 90 days for non-performance engines and transmissions.',
-  "No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accesories sent isn't charged or covered.",
-  'Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accesories.',
+  "No Warranty: Rotary engines, engine accessories (alternator, turbocharger, sensors), and labor - any accessories sent isn't charged or covered.",
+  'Voided Warranty: Overheating, abuse, improper installation, or failure to install a new timing belt/tensioner and/or accessories.',
   'Coverage: Engines are guaranteed against rod knock, cracked blocks, and internal issues.',
   'Warranty is void if the part requires modifications to fit or if it necessitates alterations or replacement of other components.',
 ].join('\n');
