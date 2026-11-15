@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { UserManagement } from '@/features/users/components/UserManagement';
+import { UserCenterWorkspace } from '@/features/users/components/UserCenterWorkspace';
 
 export const metadata: Metadata = {
   title: 'User Center',
@@ -17,7 +17,7 @@ export default function UserCenterPage() {
         </p>
       </div>
 
-      <UserManagement />
+      <UserCenterWorkspace />
     </div>
   );
 }

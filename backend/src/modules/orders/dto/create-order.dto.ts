@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsEmail,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsIn,
@@ -16,6 +17,7 @@ import {
   Min,
 } from 'class-validator';
 import { OrderPaymentMethod } from '../../../common/enums/order-payment-method.enum';
+import { US_STATE_CODES } from '../../reminders/reminder-time';
 import { OrderStatus } from '../../../common/enums/order-status.enum';
 import {
   trimString,
@@ -25,6 +27,17 @@ import {
 } from '../../../common/utils/transform.util';
 
 export class CreateOrderDto {
+  @IsOptional()
+  @IsBoolean()
+  moveLeadReminders?: boolean;
+
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() || null : value,
+  )
+  @IsOptional()
+  @IsIn(US_STATE_CODES)
+  billingState?: string | null;
+
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()

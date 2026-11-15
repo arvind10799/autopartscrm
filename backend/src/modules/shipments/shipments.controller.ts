@@ -36,8 +36,11 @@ export class ShipmentsController {
 
   @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
   @Get()
-  findAll(@Query() queryShipmentsDto: QueryShipmentsDto) {
-    return this.shipmentsService.findAll(queryShipmentsDto);
+  findAll(
+    @Query() queryShipmentsDto: QueryShipmentsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.shipmentsService.findAll(queryShipmentsDto, user);
   }
 
   @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)

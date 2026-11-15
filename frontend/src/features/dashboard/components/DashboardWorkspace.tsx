@@ -1,4 +1,5 @@
 'use client';
+import {OrderReminderShortcut} from '@/features/reminders/OrderReminderShortcut';
 
 import {
   type ReactNode,
@@ -41,6 +42,8 @@ import {
   formatDateTime,
 } from '@/features/orders/lib/order-formatters';
 import { dashboardApi } from '../api/dashboard-api';
+import { MyRemindersStrip } from '@/features/reminders/MyRemindersStrip';
+import { FollowUpsTab } from '@/features/reminders/FollowUpsTab';
 import type {
   AgentLeadsDashboardAgent,
   AgentLeadsDashboardResponse,
@@ -393,9 +396,10 @@ export function DashboardWorkspace() {
 
   return (
     <section className="space-y-4 sm:space-y-5">
+      <MyRemindersStrip />
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm shadow-slate-950/5 sm:p-4 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800 dark:bg-slate-950/80">
         <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-          {DASHBOARD_TABS.map((tab) => (
+          {[...DASHBOARD_TABS,...(user?.role === 'ADMIN' ? [{id:'follow-ups' as const,label:'Follow-ups'}] : [])].map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -516,7 +520,9 @@ export function DashboardWorkspace() {
         </div>
       </div>
 
-      {activeTab === 'sales-overview' ? (
+      {activeTab === 'follow-ups' && user?.role === 'ADMIN' ? (
+        <FollowUpsTab period={periodMode} month={selectedMonth} startDate={customStartDate} endDate={customEndDate} />
+      ) : activeTab === 'sales-overview' ? (
         <SalesOverviewTab
           data={salesOverview}
           isLoading={isLoadingSalesOverview}
@@ -1312,6 +1318,7 @@ function OrderStatusRow({ order }: { order: OrderStatusDashboardOrder }) {
         )}
       >
         {order.ageingDays.toLocaleString()}
+        {order.ageingDays>14&&order.isPending?<OrderReminderShortcut orderId={order.id} agentId={order.agentId} label={`${order.salesNumber||order.orderNumber} · ${order.customerName}`}/>:null}
       </td>
       <td className="px-4 py-3 text-right">
         <ShipmentStatusBadge status={order.status} />
@@ -1807,6 +1814,7 @@ function OrderStatusMobileCard({ order }: { order: OrderStatusDashboardOrder }) 
       </div>
       <div className="mt-3 grid gap-2">
         <MobileInfo label="Customer" value={order.customerName} />
+        {order.ageingDays>14&&order.isPending?<OrderReminderShortcut orderId={order.id} agentId={order.agentId} label={`${order.salesNumber||order.orderNumber} · ${order.customerName}`}/>:null}
         <MobileInfo label="Agent" value={order.agentName} />
         <MobileInfo label="Sale Date" value={formatDate(order.saleDate)} />
         <MobileInfo

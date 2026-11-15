@@ -1,3 +1,4 @@
+import { exportFollowUp } from '../reminders/reminder-table';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
 import { getPacificTodayDateInputValue } from '../../common/utils/pacific-date.util';
@@ -54,7 +55,10 @@ export class LeadsService {
     queryLeadsDto: QueryLeadsDto,
     user: AuthenticatedUser,
   ): Promise<Buffer> {
-    const leads = await this.leadsRepository.findAllForExport(queryLeadsDto, user);
+    const leads = await this.leadsRepository.findAllForExport(
+      queryLeadsDto,
+      user,
+    );
 
     return this.buildLeadsWorkbook(leads, queryLeadsDto);
   }
@@ -83,7 +87,7 @@ export class LeadsService {
       );
     }
 
-    return this.leadsRepository.update(id, updateLeadDto);
+    return this.leadsRepository.update(id, updateLeadDto, user.userId);
   }
 
   private assertPastOrTodayDate(value: string, message: string): void {
@@ -125,6 +129,7 @@ export class LeadsService {
       { header: 'Converted Order', width: 18 },
       { header: 'Additional Quotes', width: 44, wrap: true },
       { header: 'Prospects', width: 44, wrap: true },
+      { header: 'Next follow-up (customer time zone)', width: 58, wrap: true },
     ];
 
     return buildOrdersExportWorkbook({
@@ -162,6 +167,7 @@ export class LeadsService {
       lead.convertedOrder?.orderNumber ?? null,
       lead.comments,
       lead.prospects,
+      exportFollowUp(lead.followUp),
     ];
   }
 
@@ -174,6 +180,8 @@ export class LeadsService {
       queryLeadsDto.createdFrom,
       queryLeadsDto.createdTo,
       queryLeadsDto.createdById,
+      queryLeadsDto.untouchedDays,
+      queryLeadsDto.noUpcoming === 'true' ? 'No upcoming reminder' : undefined,
     ].some((value) => value !== undefined && String(value).trim().length > 0);
 
     return hasActiveFilter

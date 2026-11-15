@@ -1,12 +1,18 @@
+import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { attachTableFollowUps } from '../reminders/reminder-table';
+import {
+  createWithSuggestionEvent,
+  automationSnapshot,
+  publishChangedSuggestions,
+} from '../reminders/reminder-automation-events';
+import { reconcileReminders } from '../reminders/reminder-lifecycle';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   OrderStatus as PrismaOrderStatus,
   Prisma,
   ShipmentStatus as PrismaShipmentStatus,
 } from '@prisma/client';
-import {
-  buildCreatedAtFilter,
-} from '../../common/utils/date-range.util';
+import { buildCreatedAtFilter } from '../../common/utils/date-range.util';
 import {
   createPaginatedResponse,
   getPaginationParams,
@@ -148,28 +154,35 @@ export class ShipmentsRepository {
       PrismaShipmentStatus.PENDING) as PrismaShipmentStatus;
 
     try {
-      return await this.prismaService.shipment.create({
-        data: {
-          bolNumber: createShipmentDto.bolNumber?.trim(),
-          pickupNumber: createShipmentDto.pickupNumber?.trim(),
-          order: {
-            connect: {
-              id: createShipmentDto.orderId,
+      return await createWithSuggestionEvent(
+        this.prismaService,
+        'SHIPMENT',
+        (tx) =>
+          tx.shipment.create({
+            data: {
+              bolNumber: createShipmentDto.bolNumber?.trim(),
+              pickupNumber: createShipmentDto.pickupNumber?.trim(),
+              order: {
+                connect: {
+                  id: createShipmentDto.orderId,
+                },
+              },
+              carrierName: createShipmentDto.carrierName?.trim(),
+              status,
+              shippedAt:
+                status === PrismaShipmentStatus.SHIPPED
+                  ? new Date()
+                  : undefined,
             },
-          },
-          carrierName: createShipmentDto.carrierName?.trim(),
-          status,
-          shippedAt:
-            status === PrismaShipmentStatus.SHIPPED ? new Date() : undefined,
-        },
-        select: shipmentSummarySelect,
-      });
+            select: shipmentSummarySelect,
+          }),
+      );
     } catch (error) {
       handlePrismaError(error, 'Shipment');
     }
   }
 
-  async findAll(queryShipmentsDto: QueryShipmentsDto) {
+  async findAll(queryShipmentsDto: QueryShipmentsDto, user: AuthenticatedUser) {
     const { page, limit, skip } = getPaginationParams(
       queryShipmentsDto.page,
       queryShipmentsDto.limit,
@@ -336,7 +349,12 @@ export class ShipmentsRepository {
       this.prismaService.shipment.count({ where }),
     ]);
 
-    return createPaginatedResponse(data, total, page, limit);
+    return createPaginatedResponse(
+      await attachTableFollowUps(this.prismaService, data, 'SHIPMENT', user),
+      total,
+      page,
+      limit,
+    );
   }
 
   private isExactSalesNumberSearch(search: string): boolean {
@@ -397,10 +415,16 @@ export class ShipmentsRepository {
     }
 
     try {
-      return await this.prismaService.shipment.update({
-        where: { id },
-        data,
-        select: shipmentSummarySelect,
+      return await this.prismaService.$transaction(async (tx) => {
+        const before = await automationSnapshot(tx, 'SHIPMENT', id);
+        const result = await tx.shipment.update({
+          where: { id },
+          data,
+          select: shipmentSummarySelect,
+        });
+        await reconcileReminders(tx, { orderId: result.orderId }, undefined);
+        await publishChangedSuggestions(tx, 'SHIPMENT', id, before);
+        return result;
       });
     } catch (error) {
       handlePrismaError(error, 'Shipment');

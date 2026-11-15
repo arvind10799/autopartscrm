@@ -24,6 +24,7 @@ type UseOrdersListOptions = {
   search: string;
   status?: OrderStatusFilter;
   shipmentStatus?: ShipmentStatusFilter;
+  reminderContext?:'ORDER'|'SHIPMENT_ORDER';
   hasShipment?: boolean;
   hasReplacement?: boolean;
   ageingRange?: OrderAgeingFilter;
@@ -45,6 +46,7 @@ export function useOrdersList({
   status,
   shipmentStatus,
   hasShipment,
+  reminderContext,
   hasReplacement,
   ageingRange,
   createdFrom,
@@ -84,6 +86,7 @@ export function useOrdersList({
           ? undefined
           : shipmentStatus,
       hasShipment,
+  reminderContext,
       hasReplacement: hasReplacement || isReplacementShipmentFilter || undefined,
       ageingRange:
         ageingRange === ALL_ORDER_AGEING_FILTER ? undefined : ageingRange,
@@ -131,6 +134,7 @@ export function useOrdersList({
     createdTo,
     createdById,
     hasShipment,
+  reminderContext,
     hasReplacement,
     ageingRange,
     page,

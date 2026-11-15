@@ -54,9 +54,11 @@ describe('LeadsService', () => {
       'lead-id',
       salesUser,
     );
-    expect(leadsRepository.update).toHaveBeenCalledWith('lead-id', {
-      status: LeadStatus.CALL_BACK_LATER,
-    });
+    expect(leadsRepository.update).toHaveBeenCalledWith(
+      'lead-id',
+      { status: LeadStatus.CALL_BACK_LATER },
+      salesUser.userId,
+    );
     expect(result).toEqual({
       id: 'lead-id',
       status: LeadStatus.CALL_BACK_LATER,

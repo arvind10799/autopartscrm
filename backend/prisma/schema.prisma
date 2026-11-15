@@ -102,6 +102,18 @@ model User {
     replacementRequestsUpdated ReplacementRequest[] @relation("ReplacementRequestUpdatedBy")
     replacementHistories ReplacementHistory[]
     releaseAcknowledgements ReleaseAcknowledgement[]
+    reminderPreferences ReminderUserPreference?
+    remindersOwned Reminder[] @relation("ReminderOwner")
+    remindersCreated Reminder[] @relation("ReminderCreator")
+    remindersCompleted Reminder[] @relation("ReminderCompleter")
+    remindersWorking Reminder[] @relation("ReminderWorker")
+    reminderHistory ReminderHistory[]
+    reminderDeliveries ReminderDelivery[]
+    reminderPushSubscriptions ReminderPushSubscription[]
+    reminderDigests ReminderDigest[]
+    reminderSeriesCreated ReminderSeries[]
+    reminderSuggestionDecisions ReminderSuggestion[]
+    reminderAutomationAudits ReminderAutomationAudit[]
 }
 
 model ReleaseAcknowledgement {
@@ -142,6 +154,7 @@ model Lead {
   convertedOrder Order? @relation("ConvertedLeadOrder", fields: [convertedOrderId], references: [id], onDelete: SetNull)
   notes          Note[]
   websiteLead    WebsiteLead? @relation("WebsiteLeadConversion")
+  reminders Reminder[]
 
   @@index([leadDate])
   @@index([createdById])
@@ -180,6 +193,7 @@ model WebsiteLead {
   convertedBy   User?  @relation("WebsiteLeadConverter", fields: [convertedById], references: [id], onDelete: SetNull)
   convertedLead Lead?  @relation("WebsiteLeadConversion", fields: [convertedLeadId], references: [id], onDelete: Restrict)
   notes         Note[]
+  reminders Reminder[]
 
   @@unique([source, externalSubmissionId])
   @@index([status, submittedAt])
@@ -196,6 +210,7 @@ model Order {
   customerEmail   String?     @db.VarChar(160)
   customerPhone   String?     @db.VarChar(30)
   intakeDetails   Json?
+  billingState    String? @db.VarChar(2)
   price           Decimal     @db.Decimal(12, 2)
   quantity        Int
   totalSaleAmount Decimal     @db.Decimal(12, 2)
@@ -212,6 +227,7 @@ model Order {
   notes     Note[]
   invoice   Invoice?
   replacementRequests ReplacementRequest[]
+  reminders Reminder[]
 
   @@index([orderNumber])
   @@index([createdById])
@@ -309,6 +325,7 @@ model Shipment {
     events  ShipmentEvent[]
     notes   Note[]
     replacementRequests ReplacementRequest[]
+    reminders Reminder[]
 
   @@index([bolNumber])
   @@index([pickupNumber])
@@ -335,6 +352,7 @@ model ReplacementRequest {
   createdBy User      @relation("ReplacementRequestCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   updatedBy User?     @relation("ReplacementRequestUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   histories ReplacementHistory[]
+  reminders Reminder[]
 
   @@index([orderId])
   @@index([shipmentId])
@@ -476,10 +494,351 @@ model Notification {
   readAt          DateTime?
   clearedAt       DateTime?
   createdAt       DateTime  @default(now())
+  reminderId      String? @db.Uuid
+  reminderDeliveryId String? @unique @db.Uuid
+  reminder Reminder? @relation(fields: [reminderId], references: [id], onDelete: Restrict)
 
   recipient User @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
 
   @@index([recipientUserId, clearedAt, createdAt])
   @@index([recipientUserId, isRead, clearedAt])
   @@index([entityType, entityId])
+}
+
+enum ReminderContext {
+  PERSONAL
+  WEBSITE_LEAD
+  LEAD
+  ORDER
+  SHIPMENT_ORDER
+  SHIPMENT
+  REPLACEMENT
+}
+
+enum ReminderOwnerKind {
+  USER
+  SHIPPING_QUEUE
+}
+
+enum ReminderStatus {
+  OPEN
+  SNOOZED
+  COMPLETED
+  CANCELLED
+}
+
+enum ReminderPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ReminderHistoryAction {
+  CREATED
+  EDITED
+  SNOOZED
+  WORK_STARTED
+  HANDED_OFF
+  REASSIGNED
+  ESCALATED
+  COMPLETED
+  CANCELLED
+  DELETED
+}
+
+enum ReminderDeliveryKind {
+  EARLY
+  DUE
+  SECOND_ALERT
+  ESCALATION
+  ASSIGNED
+  COMPLETED
+  AUTO_CLOSED
+  REASSIGNED
+}
+
+enum ReminderDeliveryChannel {
+  BELL
+  PUSH
+  EMAIL
+}
+
+enum ReminderDeliveryStatus {
+  PENDING
+  PROCESSING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+model ReminderType {
+  key String @id @db.VarChar(50)
+  label String @db.VarChar(80)
+  allowedRoles Role[]
+  isActive Boolean @default(true)
+  reminders Reminder[]
+  suggestionRules ReminderSuggestionRule[]
+}
+
+model Reminder {
+  id String @id @default(uuid()) @db.Uuid
+  title String @db.VarChar(120)
+  typeKey String @db.VarChar(50)
+  context ReminderContext
+  originContext ReminderContext?
+  originRecordId String? @db.Uuid
+  websiteLeadId String? @db.Uuid
+  leadId String? @db.Uuid
+  orderId String? @db.Uuid
+  shipmentId String? @db.Uuid
+  replacementId String? @db.Uuid
+  ownerKind ReminderOwnerKind
+  ownerUserId String? @db.Uuid
+  createdById String @db.Uuid
+  assignedByAdmin Boolean @default(false)
+  isHandoff Boolean @default(false)
+  notifyCreatorOnCompletion Boolean @default(false)
+  priority ReminderPriority @default(MEDIUM)
+  note String? @db.VarChar(1000)
+  dueAt DateTime @db.Timestamptz(3)
+  localDueAt String @db.VarChar(16)
+  timeZone String @db.VarChar(40)
+  earlyAlertMinutes Int @default(0)
+  status ReminderStatus @default(OPEN)
+  snoozedUntil DateTime? @db.Timestamptz(3)
+  snoozeCount Int @default(0)
+  completedAt DateTime? @db.Timestamptz(3)
+  completedById String? @db.Uuid
+  completionNote String? @db.VarChar(1000)
+  cancelReason String? @db.VarChar(255)
+  escalatedAt DateTime? @db.Timestamptz(3)
+  workingById String? @db.Uuid
+  workingUntil DateTime? @db.Timestamptz(3)
+  version Int @default(1)
+  scheduleVersion Int @default(1)
+  seriesId String? @db.Uuid
+  occurrenceNumber Int?
+  deletedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  type ReminderType @relation(fields: [typeKey], references: [key], onDelete: Restrict)
+  websiteLead WebsiteLead? @relation(fields: [websiteLeadId], references: [id], onDelete: Restrict)
+  lead Lead? @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  shipment Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+  replacement ReplacementRequest? @relation(fields: [replacementId], references: [id], onDelete: Restrict)
+  owner User? @relation("ReminderOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  createdBy User @relation("ReminderCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  completedBy User? @relation("ReminderCompleter", fields: [completedById], references: [id], onDelete: Restrict)
+  workingBy User? @relation("ReminderWorker", fields: [workingById], references: [id], onDelete: Restrict)
+  histories ReminderHistory[]
+  deliveries ReminderDelivery[]
+  notifications Notification[]
+  series ReminderSeries? @relation(fields: [seriesId], references: [id], onDelete: Restrict)
+  acceptedSuggestion ReminderSuggestion?
+  @@unique([seriesId, occurrenceNumber])
+
+  @@index([ownerUserId, deletedAt, status, dueAt])
+  @@index([ownerKind, deletedAt, status, dueAt])
+  @@index([status, dueAt])
+  @@index([workingUntil])
+  @@index([websiteLeadId, deletedAt, status, dueAt])
+  @@index([leadId, deletedAt, status, dueAt])
+  @@index([orderId, deletedAt, status, dueAt])
+  @@index([shipmentId])
+  @@index([replacementId])
+  @@index([originContext, originRecordId])
+  @@index([createdById])
+}
+
+enum ReminderRepeatFrequency {
+  DAILY
+  EVERY_N_DAYS
+  WEEKLY
+}
+enum ReminderSuggestionStatus {
+  PENDING
+  ACCEPTED
+  DISMISSED
+  SUPERSEDED
+}
+model ReminderSeries {
+  id String @id @default(uuid()) @db.Uuid
+  frequency ReminderRepeatFrequency
+  intervalDays Int @default(1)
+  weekday Int?
+  anchorLocalAt String @db.VarChar(16)
+  lastScheduledLocalAt String @db.VarChar(16)
+  template Json
+  timeZone String @db.VarChar(40)
+  untilDate String? @db.VarChar(10)
+  maxOccurrences Int?
+  stopStatus String? @db.VarChar(40)
+  completedCount Int @default(0)
+  version Int @default(1)
+  isActive Boolean @default(true)
+  stoppedAt DateTime? @db.Timestamptz(3)
+  stopReason String? @db.VarChar(255)
+  createdById String @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  occurrences Reminder[]
+}
+model ReminderSuggestionRule {
+  key String @id @db.VarChar(80)
+  context ReminderContext
+  trigger String @db.VarChar(50)
+  label String @db.VarChar(120)
+  typeKey String @db.VarChar(50)
+  assignment String @default("RECORD_OWNER") @db.VarChar(30)
+  delayDays Int @default(0)
+  delayMinutes Int @default(60)
+  requiresTime Boolean @default(false)
+  missingCostOnly Boolean @default(false)
+  repeatDays Int?
+  stopStatus String? @db.VarChar(40)
+  isActive Boolean @default(true)
+  version Int @default(1)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  type ReminderType @relation(fields: [typeKey], references: [key], onDelete: Restrict)
+  suggestions ReminderSuggestion[]
+  @@index([context, trigger, isActive])
+}
+model ReminderSuggestion {
+  id String @id @default(uuid()) @db.Uuid
+  ruleKey String @db.VarChar(80)
+  eventId String @db.Uuid
+  context ReminderContext
+  recordId String @db.Uuid
+  trigger String @db.VarChar(50)
+  status ReminderSuggestionStatus @default(PENDING)
+  version Int @default(1)
+  decidedById String? @db.Uuid
+  decidedAt DateTime? @db.Timestamptz(3)
+  acceptedReminderId String? @unique @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  rule ReminderSuggestionRule @relation(fields: [ruleKey], references: [key], onDelete: Restrict)
+  decidedBy User? @relation(fields: [decidedById], references: [id], onDelete: Restrict)
+  acceptedReminder Reminder? @relation(fields: [acceptedReminderId], references: [id], onDelete: Restrict)
+  @@unique([eventId, ruleKey])
+  @@index([context, recordId, status, createdAt])
+  @@index([decidedById])
+}
+model ReminderAutomationAudit {
+  id String @id @default(uuid()) @db.Uuid
+  actorId String @db.Uuid
+  action String @db.VarChar(40)
+  subjectKey String @db.VarChar(80)
+  changes Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  @@index([actorId])
+}
+
+model ReminderHistory {
+  id String @id @default(uuid()) @db.Uuid
+  reminderId String @db.Uuid
+  actorId String? @db.Uuid
+  action ReminderHistoryAction
+  changes Json?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  reminder Reminder @relation(fields: [reminderId], references: [id], onDelete: Restrict)
+  actor User? @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([reminderId, createdAt])
+  @@index([actorId])
+}
+
+model ReminderDelivery {
+  id String @id @default(uuid()) @db.Uuid
+  reminderId String @db.Uuid
+  recipientUserId String @db.Uuid
+  reminderVersion Int
+  kind ReminderDeliveryKind
+  channel ReminderDeliveryChannel
+  status ReminderDeliveryStatus @default(PENDING)
+  availableAt DateTime @db.Timestamptz(3)
+  lockedUntil DateTime? @db.Timestamptz(3)
+  lockToken String? @db.Uuid
+  sentAt DateTime? @db.Timestamptz(3)
+  attempts Int @default(0)
+  lastError String? @db.VarChar(500)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  reminder Reminder @relation(fields: [reminderId], references: [id], onDelete: Restrict)
+  recipient User @relation(fields: [recipientUserId], references: [id], onDelete: Restrict)
+  pushReceipts ReminderPushReceipt[]
+
+  @@unique([reminderId, reminderVersion, recipientUserId, kind, channel], map: "ReminderDelivery_dedup_key")
+  @@index([status, availableAt])
+  @@index([lockedUntil])
+  @@index([recipientUserId])
+}
+
+model ReminderUserPreference {
+  userId String @id @db.Uuid
+  handoffsSeenAt DateTime? @db.Timestamptz(3)
+  displayTimeZone String @default("America/Los_Angeles") @db.VarChar(40)
+  workingStartMinute Int @default(540)
+  workingEndMinute Int @default(1020)
+  dailyDigestEnabled Boolean @default(true)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+}
+
+model ReminderSettings {
+  id String @id @default("default") @db.VarChar(20)
+  workingMarkerMinutes Int @default(120)
+  secondAlertMinutes Int? @default(30)
+  escalationMinutes Int? @default(120)
+  snoozeFlagCount Int? @default(3)
+  callingStartMinute Int @default(480)
+  callingEndMinute Int @default(1200)
+  callingWindowEnabled Boolean @default(true)
+  snoozeMinutes Int[] @default([15,60,1440,4320])
+  defaultDisplayTimeZone String @default("America/Los_Angeles") @db.VarChar(64)
+  stateTimeZones Json @default("{}")
+  policyVersion Int @default(1)
+  deliveryEnabled Boolean @default(false)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model ReminderPushSubscription {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  endpoint String @unique @db.VarChar(2048)
+  p256dh String @db.VarChar(100)
+  auth String @db.VarChar(40)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receipts ReminderPushReceipt[]
+  @@index([userId])
+}
+
+model ReminderPushReceipt {
+  deliveryId String @db.Uuid
+  subscriptionId String @db.Uuid
+  sentAt DateTime @default(now()) @db.Timestamptz(3)
+  delivery ReminderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  subscription ReminderPushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  @@id([deliveryId, subscriptionId])
+}
+
+model ReminderDigest {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  shiftDate String @db.VarChar(10)
+  status ReminderDeliveryStatus @default(PENDING)
+  availableAt DateTime @db.Timestamptz(3)
+  lockedUntil DateTime? @db.Timestamptz(3)
+  lockToken String? @db.Uuid
+  attempts Int @default(0)
+  lastError String? @db.VarChar(500)
+  sentAt DateTime? @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([userId, shiftDate])
+  @@index([status, availableAt])
 }

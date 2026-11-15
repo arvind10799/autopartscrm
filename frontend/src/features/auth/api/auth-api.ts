@@ -34,6 +34,7 @@ export const authApi = {
   },
 
   async logout(): Promise<void> {
+    await import('@/features/reminders/reminder-push').then(m=>m.detachReminderPush()).catch(()=>undefined);
     const response = await axiosBrowser.post('/api/auth/logout');
     assertApiSuccess(response, 'Logout failed.');
   },

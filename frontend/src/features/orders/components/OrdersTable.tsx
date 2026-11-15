@@ -1,17 +1,23 @@
-'use client';
+"use client";
+import { FollowUpCell } from "@/features/reminders/FollowUpCell";
 
-import type { ColumnDef } from '@tanstack/react-table';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowRight, ChevronLeft, ChevronRight, PencilLine } from 'lucide-react';
-import { DataTable } from '@/components/data-table/DataTable';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils/cn';
-import { useTableDetailHref } from '@/lib/filters/table-view-state';
-import type { UserRole } from '@/features/auth/types/auth.types';
-import { formatCurrency } from '../lib/order-formatters';
-import type { PaginationMeta, OrderSummary } from '../types/order.types';
-import { ShippingStatusCell } from '@/features/shipments/components/ShippingStatusCell';
+import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  PencilLine,
+} from "lucide-react";
+import { DataTable } from "@/components/data-table/DataTable";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils/cn";
+import { useTableDetailHref } from "@/lib/filters/table-view-state";
+import type { UserRole } from "@/features/auth/types/auth.types";
+import { formatCurrency } from "../lib/order-formatters";
+import type { PaginationMeta, OrderSummary } from "../types/order.types";
+import { ShippingStatusCell } from "@/features/shipments/components/ShippingStatusCell";
 
 function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
@@ -25,10 +31,10 @@ function buildColumns(
 ): ColumnDef<OrderSummary>[] {
   const columns: ColumnDef<OrderSummary>[] = [
     {
-      accessorKey: 'salesNumber',
-      header: 'Sale',
+      accessorKey: "salesNumber",
+      header: "Sale",
       meta: {
-        className: 'w-[11%]',
+        className: "w-[11%]",
       },
       cell: ({ row }) => (
         <div className="min-w-0 space-y-0.5">
@@ -36,7 +42,7 @@ function buildColumns(
             href={detailHref(`/orders/${row.original.id}`)}
             className="block truncate font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
           >
-            {row.original.salesNumber ?? '—'}
+            {row.original.salesNumber ?? "—"}
           </Link>
           <p className="truncate text-xs font-medium text-muted-foreground">
             {row.original.orderNumber}
@@ -45,23 +51,25 @@ function buildColumns(
       ),
     },
     {
-      accessorKey: 'customerName',
-      header: 'Customer',
+      accessorKey: "customerName",
+      header: "Customer",
       meta: {
-        className: 'w-[16%]',
+        className: "w-[16%]",
       },
       cell: ({ row }) => (
-        <p className="truncate font-medium text-foreground">{row.original.customerName}</p>
+        <p className="truncate font-medium text-foreground">
+          {row.original.customerName}
+        </p>
       ),
     },
   ];
 
-  if (role === 'ADMIN') {
+  if (role === "ADMIN") {
     columns.push({
-      accessorKey: 'createdBy',
-      header: 'Advisor',
+      accessorKey: "createdBy",
+      header: "Advisor",
       meta: {
-        className: 'w-[8%]',
+        className: "w-[8%]",
       },
       cell: ({ row }) => (
         <p className="truncate font-medium text-foreground">
@@ -73,22 +81,25 @@ function buildColumns(
 
   columns.push(
     {
-      accessorKey: 'partDescription',
-      header: 'Part',
+      accessorKey: "partDescription",
+      header: "Part",
       meta: {
-        className: role === 'ADMIN' ? 'w-[28%]' : 'w-[36%]',
+        className: role === "ADMIN" ? "w-[28%]" : "w-[36%]",
       },
       cell: ({ row }) => (
-        <p className="truncate text-sm text-foreground" title={row.original.partDescription}>
+        <p
+          className="truncate text-sm text-foreground"
+          title={row.original.partDescription}
+        >
           {row.original.partDescription}
         </p>
       ),
     },
     {
-      accessorKey: 'totalSaleAmount',
-      header: 'Total',
+      accessorKey: "totalSaleAmount",
+      header: "Total",
       meta: {
-        className: 'w-[10%]',
+        className: "w-[10%]",
       },
       cell: ({ row }) => (
         <span className="block truncate font-semibold text-foreground">
@@ -97,10 +108,10 @@ function buildColumns(
       ),
     },
     {
-      accessorKey: 'latestShipmentStatus',
-      header: 'Shipping',
+      accessorKey: "latestShipmentStatus",
+      header: "Shipping",
       meta: {
-        className: 'w-[12%]',
+        className: "w-[12%]",
       },
       cell: ({ row }) => (
         <ShippingStatusCell
@@ -114,16 +125,22 @@ function buildColumns(
       ),
     },
     {
-      id: 'actions',
-      header: '',
+      id: "followUp",
+      header: "Next follow-up",
+      meta: { className: "w-[150px] px-2" },
+      cell: ({ row }) => <FollowUpCell value={row.original.followUp} />,
+    },
+    {
+      id: "actions",
+      header: "",
       meta: {
-        className: 'w-[15%]',
+        className: "w-[15%]",
       },
       cell: ({ row }) => {
         const canEdit =
-          role === 'ADMIN' ||
-          role === 'SHIPPING' ||
-          (role === 'SALES' && row.original.createdBy.id === currentUserId);
+          role === "ADMIN" ||
+          role === "SHIPPING" ||
+          (role === "SALES" && row.original.createdBy.id === currentUserId);
 
         return (
           <div className="flex items-center justify-end gap-1">
@@ -141,8 +158,8 @@ function buildColumns(
             <Link
               href={detailHref(`/orders/${row.original.id}`)}
               className={cn(
-                buttonVariants({ variant: 'ghost', size: 'sm' }),
-                'h-8 rounded-lg px-2 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20',
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "h-8 rounded-lg px-2 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20",
               )}
             >
               View
@@ -159,7 +176,7 @@ function buildColumns(
 
 function getRangeLabel(meta: PaginationMeta, currentCount: number) {
   if (meta.total === 0 || currentCount === 0) {
-    return 'No results';
+    return "No results";
   }
 
   const start = (meta.page - 1) * meta.limit + 1;
@@ -190,7 +207,7 @@ export function OrdersTable({
   currentUserId?: string | null;
 }) {
   const router = useRouter();
-  const detailHref = useTableDetailHref('/orders');
+  const detailHref = useTableDetailHref("/orders");
   const totalPages = meta.totalPages;
   const columns = buildColumns(onEdit, detailHref, role, currentUserId);
 
@@ -203,13 +220,13 @@ export function OrdersTable({
       error={error}
       onRetry={onRetry}
       density="compact"
-      layout="fit"
+      layout="scroll"
       onRowClick={(order) => router.push(detailHref(`/orders/${order.id}`))}
       renderMobileCard={(order) => {
         const canEdit =
-          role === 'ADMIN' ||
-          role === 'SHIPPING' ||
-          (role === 'SALES' && order.createdBy.id === currentUserId);
+          role === "ADMIN" ||
+          role === "SHIPPING" ||
+          (role === "SALES" && order.createdBy.id === currentUserId);
 
         return (
           <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
@@ -219,7 +236,7 @@ export function OrdersTable({
                   href={detailHref(`/orders/${order.id}`)}
                   className="block truncate text-base font-semibold text-[#d94d00] dark:text-orange-300"
                 >
-                  {order.salesNumber ?? '—'}
+                  {order.salesNumber ?? "—"}
                 </Link>
                 <p className="truncate text-xs font-medium text-muted-foreground">
                   {order.orderNumber}
@@ -232,9 +249,18 @@ export function OrdersTable({
 
             <div className="mt-3 grid gap-2 text-sm">
               <MobileField label="Customer" value={order.customerName} />
-              {role === 'ADMIN' ? (
-                <MobileField label="Advisor" value={getFirstName(order.createdBy.name)} />
+              {role === "ADMIN" ? (
+                <MobileField
+                  label="Advisor"
+                  value={getFirstName(order.createdBy.name)}
+                />
               ) : null}
+              <div className="flex justify-between gap-3">
+                <span className="text-xs text-muted-foreground">
+                  Next follow-up
+                </span>
+                <FollowUpCell value={order.followUp} />
+              </div>
               <MobileField label="Part" value={order.partDescription} />
               <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -266,9 +292,9 @@ export function OrdersTable({
               <Link
                 href={detailHref(`/orders/${order.id}`)}
                 className={cn(
-                  buttonVariants({ variant: 'default', size: 'sm' }),
-                  canEdit ? '' : 'col-span-2',
-                  'h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',
+                  buttonVariants({ variant: "default", size: "sm" }),
+                  canEdit ? "" : "col-span-2",
+                  "h-9 rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]",
                 )}
               >
                 View
@@ -324,7 +350,7 @@ function MobileField({ label, value }: { label: string; value: string }) {
         {label}
       </span>
       <span className="truncate font-medium text-foreground" title={value}>
-        {value || '—'}
+        {value || "—"}
       </span>
     </div>
   );

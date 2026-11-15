@@ -1,24 +1,25 @@
-'use client';
+"use client";
+import { followUpSchema } from "@/features/reminders/follow-up.schema";
 
-import { z } from 'zod';
-import { axiosBrowser } from '@/lib/api/axios-browser';
-import { parseApiData } from '@/lib/api/parse-api-data';
-import type { ApiEnvelope } from '@/features/auth/types/auth.types';
-import type { CreateLeadInput } from '@/features/leads/types/lead.types';
-import { leadSummarySchema } from '@/features/leads/schemas/lead.schema';
-import type { LeadSummary } from '@/features/leads/types/lead.types';
+import { z } from "zod";
+import { axiosBrowser } from "@/lib/api/axios-browser";
+import { parseApiData } from "@/lib/api/parse-api-data";
+import type { ApiEnvelope } from "@/features/auth/types/auth.types";
+import type { CreateLeadInput } from "@/features/leads/types/lead.types";
+import { leadSummarySchema } from "@/features/leads/schemas/lead.schema";
+import type { LeadSummary } from "@/features/leads/types/lead.types";
 
 export const WEBSITE_LEAD_STATUSES = [
-  'NEW',
-  'CONTACTED',
-  'CLOSED',
-  'CONVERTED',
+  "NEW",
+  "CONTACTED",
+  "CLOSED",
+  "CONVERTED",
 ] as const;
 export type WebsiteLeadStatus = (typeof WEBSITE_LEAD_STATUSES)[number];
 export const WEBSITE_LEAD_ASSIGNMENT_FILTERS = [
-  'ALL',
-  'UNASSIGNED',
-  'MINE',
+  "ALL",
+  "UNASSIGNED",
+  "MINE",
 ] as const;
 export type WebsiteLeadAssignmentFilter =
   (typeof WEBSITE_LEAD_ASSIGNMENT_FILTERS)[number];
@@ -27,11 +28,12 @@ const agentSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   email: z.string(),
-  role: z.enum(['ADMIN', 'SALES']),
+  role: z.enum(["ADMIN", "SALES"]),
 });
 const websiteLeadSchema = z.object({
+  followUp: followUpSchema.nullish(),
   id: z.string().uuid(),
-  source: z.enum(['QUOTE', 'PART_REQUEST']),
+  source: z.enum(["QUOTE", "PART_REQUEST"]),
   sourceFormId: z.string(),
   sourcePageUrl: z.string().nullable(),
   externalSubmissionId: z.string(),
@@ -100,6 +102,7 @@ export const websiteLeadsApi = {
     page: number;
     limit: number;
     search?: string;
+    noUpcoming?: boolean;
     status?: WebsiteLeadStatus;
     assignedToId?: string;
     assignment?: WebsiteLeadAssignmentFilter;
@@ -107,30 +110,30 @@ export const websiteLeadsApi = {
     createdTo?: string;
   }): Promise<WebsiteLeadList> {
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
-      '/api/website-leads',
+      "/api/website-leads",
       { params },
     );
     return parseApiData(response, listSchema, {
-      emptyMessage: 'Website leads response was empty.',
-      invalidMessage: 'Website leads response was invalid.',
+      emptyMessage: "Website leads response was empty.",
+      invalidMessage: "Website leads response was invalid.",
     });
   },
   async summary(): Promise<WebsiteLeadSummary> {
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
-      '/api/website-leads/summary',
+      "/api/website-leads/summary",
     );
     return parseApiData(response, summarySchema, {
-      emptyMessage: 'Website lead summary was empty.',
-      invalidMessage: 'Website lead summary was invalid.',
+      emptyMessage: "Website lead summary was empty.",
+      invalidMessage: "Website lead summary was invalid.",
     });
   },
   async agents(): Promise<WebsiteLeadAgent[]> {
     const response = await axiosBrowser.get<ApiEnvelope<unknown>>(
-      '/api/website-leads/agents',
+      "/api/website-leads/agents",
     );
     return parseApiData(response, z.array(agentSchema), {
-      emptyMessage: 'Agents response was empty.',
-      invalidMessage: 'Agents response was invalid.',
+      emptyMessage: "Agents response was empty.",
+      invalidMessage: "Agents response was invalid.",
     });
   },
   async get(id: string): Promise<WebsiteLead> {
@@ -138,8 +141,8 @@ export const websiteLeadsApi = {
       `/api/website-leads/${id}`,
     );
     return parseApiData(response, websiteLeadSchema, {
-      emptyMessage: 'Website lead was not found.',
-      invalidMessage: 'Website lead response was invalid.',
+      emptyMessage: "Website lead was not found.",
+      invalidMessage: "Website lead response was invalid.",
     });
   },
   async update(
@@ -151,8 +154,8 @@ export const websiteLeadsApi = {
       payload,
     );
     return parseApiData(response, websiteLeadSchema, {
-      emptyMessage: 'Website lead update was empty.',
-      invalidMessage: 'Website lead update was invalid.',
+      emptyMessage: "Website lead update was empty.",
+      invalidMessage: "Website lead update was invalid.",
     });
   },
   async claim(id: string): Promise<WebsiteLead> {
@@ -160,8 +163,8 @@ export const websiteLeadsApi = {
       `/api/website-leads/${id}/claim`,
     );
     return parseApiData(response, websiteLeadSchema, {
-      emptyMessage: 'Website lead claim was empty.',
-      invalidMessage: 'Website lead claim was invalid.',
+      emptyMessage: "Website lead claim was empty.",
+      invalidMessage: "Website lead claim was invalid.",
     });
   },
   async notes(id: string): Promise<WebsiteLeadNote[]> {
@@ -169,8 +172,8 @@ export const websiteLeadsApi = {
       `/api/website-leads/${id}/notes`,
     );
     return parseApiData(response, z.array(noteSchema), {
-      emptyMessage: 'Notes response was empty.',
-      invalidMessage: 'Notes response was invalid.',
+      emptyMessage: "Notes response was empty.",
+      invalidMessage: "Notes response was invalid.",
     });
   },
   async addNote(id: string, content: string): Promise<WebsiteLeadNote> {
@@ -179,8 +182,8 @@ export const websiteLeadsApi = {
       { content },
     );
     return parseApiData(response, noteSchema, {
-      emptyMessage: 'Note response was empty.',
-      invalidMessage: 'Note response was invalid.',
+      emptyMessage: "Note response was empty.",
+      invalidMessage: "Note response was invalid.",
     });
   },
   async convert(id: string, payload: CreateLeadInput): Promise<LeadSummary> {
@@ -189,8 +192,8 @@ export const websiteLeadsApi = {
       payload,
     );
     return parseApiData(response, leadSummarySchema, {
-      emptyMessage: 'Conversion response was empty.',
-      invalidMessage: 'Conversion response was invalid.',
+      emptyMessage: "Conversion response was empty.",
+      invalidMessage: "Conversion response was invalid.",
     });
   },
 };

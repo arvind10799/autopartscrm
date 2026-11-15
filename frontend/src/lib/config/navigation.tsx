@@ -7,6 +7,8 @@ import {
   Truck,
   Users,
   Globe2,
+  ListTodo,
+  CalendarDays,
 } from 'lucide-react';
 import type { UserRole } from '@/features/auth/types/auth.types';
 
@@ -29,6 +31,22 @@ export const navigationConfig: NavigationItemConfig[] = [
     roles: ['ADMIN', 'SALES', 'SHIPPING'],
     group: 'workspace',
     defaultFor: ['ADMIN'],
+  },
+  {
+    href: '/my-tasks',
+    label: 'My Tasks',
+    description: 'Your follow-ups, assigned tasks, and team handoffs.',
+    icon: ListTodo,
+    roles: ['ADMIN', 'SALES', 'SHIPPING'],
+    group: 'workspace',
+  },
+  {
+    href: '/calendar',
+    label: 'Calendar',
+    description: 'Plan follow-ups in your display time zone.',
+    icon: CalendarDays,
+    roles: ['ADMIN', 'SALES', 'SHIPPING'],
+    group: 'workspace',
   },
   {
     href: '/leads',

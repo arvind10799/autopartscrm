@@ -1,6 +1,8 @@
 'use client';
 
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { ReminderPushPrompt } from '@/features/reminders/ReminderPushPrompt';
+import { ReminderAlertDialog } from '@/features/reminders/ReminderAlertDialog';
 import { usePathname, useRouter } from 'next/navigation';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
@@ -14,6 +16,7 @@ import type { AuthUser } from '@/features/auth/types/auth.types';
 import { matchNavigationItem } from '@/lib/config/navigation';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { WebsiteLeadsSummaryProvider } from '@/features/website-leads/WebsiteLeadsSummaryProvider';
+import { TaskSummaryProvider } from '@/features/reminders/TaskSummaryProvider';
 import { releasesApi } from '@/features/releases/releases-api';
 import { hasReleaseHighlights } from '@/lib/config/current-release';
 import { WhatsNewDialog } from './WhatsNewDialog';
@@ -139,6 +142,7 @@ export function AppShell({
 
   return (
     <WebsiteLeadsSummaryProvider key={user.userId} role={user.role}>
+    <TaskSummaryProvider key={user.userId}>
     <div
       className="min-h-screen w-full max-w-full overflow-x-clip bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(246,248,252,0.98))] transition-colors duration-300 dark:bg-[linear-gradient(180deg,rgba(2,6,23,0.72),rgba(15,23,42,0.98))]"
       style={
@@ -170,6 +174,7 @@ export function AppShell({
           />
 
           <main className="min-w-0 max-w-full flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <ReminderPushPrompt key={user.userId} userId={user.userId}/>
             <div className="mx-auto flex w-full max-w-[var(--app-shell-max-width)] min-w-0 flex-col gap-6 overflow-x-clip">
               <div className="min-w-0">{children}</div>
             </div>
@@ -181,11 +186,13 @@ export function AppShell({
       open={whatsNewOpen}
       role={user.role}
       onDismiss={dismissWhatsNew}
-      onOpenWebsiteLeads={() => {
+      onOpenMyTasks={() => {
         dismissWhatsNew();
-        router.push('/website-leads');
+        router.push('/my-tasks');
       }}
     />
+    <Suspense fallback={null}><ReminderAlertDialog key={user.userId}/></Suspense>
+    </TaskSummaryProvider>
     </WebsiteLeadsSummaryProvider>
   );
 }

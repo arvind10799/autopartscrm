@@ -1,4 +1,14 @@
 import {
+  attachTableFollowUps,
+  futureReminderWhere,
+} from '../reminders/reminder-table';
+import {
+  createWithSuggestionEvent,
+  automationSnapshot,
+  publishChangedSuggestions,
+} from '../reminders/reminder-automation-events';
+import { reconcileReminders } from '../reminders/reminder-lifecycle';
+import {
   ConflictException,
   Injectable,
   NotFoundException,
@@ -99,6 +109,12 @@ export class WebsiteLeadsRepository {
           ]
         : undefined,
     };
+    if (query.noUpcoming === 'true') {
+      (where.AND as Prisma.WebsiteLeadWhereInput[]).push({
+        status: { in: ['NEW', 'CONTACTED'] },
+        reminders: { none: futureReminderWhere('WEBSITE_LEAD', user) },
+      });
+    }
     const [items, total] = await this.prisma.$transaction([
       this.prisma.websiteLead.findMany({
         where,
@@ -109,7 +125,12 @@ export class WebsiteLeadsRepository {
       }),
       this.prisma.websiteLead.count({ where }),
     ]);
-    return createPaginatedResponse(items, total, page, limit);
+    return createPaginatedResponse(
+      await attachTableFollowUps(this.prisma, items, 'WEBSITE_LEAD', user),
+      total,
+      page,
+      limit,
+    );
   }
 
   async summary(user: AuthenticatedUser) {
@@ -140,23 +161,28 @@ export class WebsiteLeadsRepository {
   }
 
   async claim(id: string, user: AuthenticatedUser) {
-    const claimed = await this.prisma.websiteLead.updateMany({
-      where: {
-        id,
-        assignedToId: null,
-        convertedLeadId: null,
-        status: { not: WebsiteLeadStatus.CONVERTED },
-      },
-      data: { assignedToId: user.userId },
-    });
-    if (claimed.count !== 1) {
-      throw new ConflictException(
-        'This website lead is no longer available to claim. Refresh the list.',
-      );
-    }
-    return this.prisma.websiteLead.findUniqueOrThrow({
-      where: { id },
-      include: websiteLeadInclude,
+    return this.prisma.$transaction(async (tx) => {
+      const before = await automationSnapshot(tx, 'WEBSITE_LEAD', id);
+      const claimed = await tx.websiteLead.updateMany({
+        where: {
+          id,
+          assignedToId: null,
+          convertedLeadId: null,
+          status: { not: WebsiteLeadStatus.CONVERTED },
+        },
+        data: { assignedToId: user.userId },
+      });
+      if (claimed.count !== 1) {
+        throw new ConflictException(
+          'This website lead is no longer available to claim. Refresh the list.',
+        );
+      }
+      await reconcileReminders(tx, { websiteLeadId: id }, user.userId);
+      await publishChangedSuggestions(tx, 'WEBSITE_LEAD', id, before);
+      return tx.websiteLead.findUniqueOrThrow({
+        where: { id },
+        include: websiteLeadInclude,
+      });
     });
   }
 
@@ -189,23 +215,28 @@ export class WebsiteLeadsRepository {
     input: UpdateWebsiteLeadDto,
     user: AuthenticatedUser,
   ) {
-    const result = await this.prisma.websiteLead.updateMany({
-      where: {
-        id,
-        AND: [this.ownedWhere(user)],
-        convertedLeadId: null,
-        status: { not: WebsiteLeadStatus.CONVERTED },
-      },
-      data: {
-        status: input.status,
-        assignedToId: input.assignedToId,
-      },
-    });
-    if (result.count !== 1)
-      throw new ConflictException('Website lead can no longer be edited.');
-    return this.prisma.websiteLead.findUniqueOrThrow({
-      where: { id },
-      include: websiteLeadInclude,
+    return this.prisma.$transaction(async (tx) => {
+      const before = await automationSnapshot(tx, 'WEBSITE_LEAD', id);
+      const result = await tx.websiteLead.updateMany({
+        where: {
+          id,
+          AND: [this.ownedWhere(user)],
+          convertedLeadId: null,
+          status: { not: WebsiteLeadStatus.CONVERTED },
+        },
+        data: {
+          status: input.status,
+          assignedToId: input.assignedToId,
+        },
+      });
+      if (result.count !== 1)
+        throw new ConflictException('Website lead can no longer be edited.');
+      await reconcileReminders(tx, { websiteLeadId: id }, user.userId);
+      await publishChangedSuggestions(tx, 'WEBSITE_LEAD', id, before);
+      return tx.websiteLead.findUniqueOrThrow({
+        where: { id },
+        include: websiteLeadInclude,
+      });
     });
   }
 
@@ -252,40 +283,42 @@ export class WebsiteLeadsRepository {
         throw new ConflictException('Website lead has already been converted.');
       }
 
-      const lead = await tx.lead.create({
-        data: {
-          leadDate: parsePacificDateInputValue(input.leadDate),
-          adviserName: user.name,
-          cmpt: input.cmpt,
-          customerPhone: input.customerPhone,
-          customerName: input.customerName,
-          customerEmail: input.customerEmail,
-          state: input.state,
-          partDescription: [
-            input.vehicleYear,
-            input.vehicleMake,
-            input.vehicleModel,
-            input.vehicleVariant,
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .slice(0, 255),
-          vehicleYear: input.vehicleYear,
-          vehicleMake: input.vehicleMake,
-          vehicleModel: input.vehicleModel,
-          vehicleVariant: input.vehicleVariant,
-          quote:
-            input.quote === undefined
-              ? undefined
-              : new Prisma.Decimal(input.quote),
-          quoteCurrency: input.quoteCurrency ?? 'USD',
-          comments: input.comments,
-          prospects: input.prospects ?? '',
-          status: input.status,
-          createdById: user.userId,
-        },
-        select: { id: true, customerName: true },
-      });
+      const lead = await createWithSuggestionEvent(tx, 'LEAD', (tx) =>
+        tx.lead.create({
+          data: {
+            leadDate: parsePacificDateInputValue(input.leadDate),
+            adviserName: user.name,
+            cmpt: input.cmpt,
+            customerPhone: input.customerPhone,
+            customerName: input.customerName,
+            customerEmail: input.customerEmail,
+            state: input.state,
+            partDescription: [
+              input.vehicleYear,
+              input.vehicleMake,
+              input.vehicleModel,
+              input.vehicleVariant,
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .slice(0, 255),
+            vehicleYear: input.vehicleYear,
+            vehicleMake: input.vehicleMake,
+            vehicleModel: input.vehicleModel,
+            vehicleVariant: input.vehicleVariant,
+            quote:
+              input.quote === undefined
+                ? undefined
+                : new Prisma.Decimal(input.quote),
+            quoteCurrency: input.quoteCurrency ?? 'USD',
+            comments: input.comments,
+            prospects: input.prospects ?? '',
+            status: input.status,
+            createdById: user.userId,
+          },
+          select: { id: true, customerName: true },
+        }),
+      );
 
       const claimed = await tx.websiteLead.updateMany({
         where: {
@@ -314,6 +347,7 @@ export class WebsiteLeadsRepository {
           },
         });
       }
+      await reconcileReminders(tx, { websiteLeadId: id }, user.userId);
       return tx.lead.findUniqueOrThrow({
         where: { id: lead.id },
         include: {

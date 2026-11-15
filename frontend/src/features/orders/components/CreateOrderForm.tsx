@@ -1,4 +1,5 @@
 'use client';
+import { BillingStateSelect } from '@/features/reminders/BillingStateSelect';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight } from 'lucide-react';
@@ -35,6 +36,8 @@ import type { OrderSummary } from '../types/order.types';
 
 const defaultValues: CreateOrderFormValues = {
   leadId: undefined,
+  moveLeadReminders: true,
+  billingState: '',
   advisorName: '',
   orderNumber: '',
   salesNumber: '',
@@ -696,6 +699,8 @@ export function CreateOrderForm({
     resolvedInitialValues.basePrice,
     resolvedInitialValues.advisorName,
     resolvedInitialValues.billingAddress,
+    resolvedInitialValues.billingState,
+    resolvedInitialValues.moveLeadReminders,
     resolvedInitialValues.billingPerson,
     resolvedInitialValues.billingPhone,
     resolvedInitialValues.companyName,
@@ -769,6 +774,12 @@ export function CreateOrderForm({
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
       <input type="hidden" {...form.register('leadId')} />
+      {!!form.watch('leadId') && (
+        <label className="flex items-center gap-2 rounded-xl border border-border bg-secondary/20 p-3 text-sm">
+          <input type="checkbox" {...form.register('moveLeadReminders')} />
+          Move open one-time lead reminders to this order
+        </label>
+      )}
       <input type="hidden" {...form.register('quantity')} />
       <input type="hidden" {...form.register('salePrice')} />
       <input type="hidden" {...form.register('salesTax')} />
@@ -1039,6 +1050,11 @@ export function CreateOrderForm({
                       {...form.register('billingAddress')}
                     />
                   </Field>
+
+                  <label className="block space-y-2 text-sm font-medium">
+                    Billing state
+                    <BillingStateSelect {...form.register('billingState')} />
+                  </label>
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field

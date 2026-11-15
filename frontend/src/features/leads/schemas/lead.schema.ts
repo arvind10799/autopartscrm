@@ -1,3 +1,4 @@
+import { followUpSchema } from '@/features/reminders/follow-up.schema';
 import { z } from 'zod';
 import { formatUsPhoneNumber, hasCompleteUsPhoneNumber } from '@/lib/forms/phone-format';
 import { isFuturePacificDate } from '@/lib/utils/pacific-date';
@@ -59,6 +60,7 @@ const convertedOrderSchema = z.object({
 });
 
 const leadBackendSummarySchema = z.object({
+  followUp:followUpSchema.nullish(),
   id: z.string(),
   leadDate: z.string(),
   adviserName: z.string(),
@@ -87,6 +89,7 @@ const leadBackendSummarySchema = z.object({
 
 function normalizeLeadSummary(lead: z.infer<typeof leadBackendSummarySchema>) {
   return {
+    followUp:lead.followUp??null,
     id: lead.id,
     date: lead.leadDate.slice(0, 10),
     adviserName: lead.adviserName,

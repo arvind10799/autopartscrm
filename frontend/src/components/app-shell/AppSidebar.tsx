@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils/cn';
 import { getNavigationForRole } from '@/features/auth/lib/permissions';
 import type { UserRole } from '@/features/auth/types/auth.types';
 import { useWebsiteLeadsSummary } from '@/features/website-leads/WebsiteLeadsSummaryProvider';
+import { useTaskSummary } from '@/features/reminders/TaskSummaryProvider';
 import { CURRENT_RELEASE } from '@/lib/config/current-release';
 import {
   APP_SIDEBAR_COLLAPSED_WIDTH,
@@ -34,6 +35,7 @@ export function AppSidebar({
   const pathname = usePathname();
   const navigationItems = getNavigationForRole(role);
   const { summary } = useWebsiteLeadsSummary();
+  const { summary:taskSummary, error:taskSummaryError } = useTaskSummary();
 
   return (
     <>
@@ -216,6 +218,12 @@ export function AppSidebar({
                       </span>
                     )
                   ) : null}
+                  {item.href === '/my-tasks' && !!taskSummary?.badge && (
+                    <span title={`${taskSummary.overdue} overdue · ${taskSummary.today} due today`} aria-label={`${taskSummary.badge} tasks overdue or due today`} className={cn(isCollapsed?'absolute right-1 top-1 h-2.5 w-2.5 rounded-full border-2 border-[#062846]':'ml-auto inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold',taskSummary.overdue?'bg-red-100 text-red-800':'bg-orange-100 text-orange-800')}>
+                      {!isCollapsed&&(taskSummary.badge>99?'99+':taskSummary.badge)}
+                    </span>
+                  )}
+                  {item.href === '/my-tasks' && taskSummaryError && <span title="Task counts temporarily unavailable" className="ml-auto text-xs text-orange-200">!</span>}
 
                   {/* Tooltip for collapsed state */}
                   {isCollapsed && (

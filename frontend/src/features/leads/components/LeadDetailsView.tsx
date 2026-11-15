@@ -1,5 +1,7 @@
 'use client';
 
+import { RemindersPanel } from '@/features/reminders/RemindersPanel';
+
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -319,7 +321,16 @@ export function LeadDetailsView({ leadId }: { leadId: string }) {
           </Card>
         </div>
 
-        <aside className="lg:sticky lg:top-6 lg:self-start">
+        <aside className="space-y-4 lg:self-start">
+          <RemindersPanel
+            context="LEAD"
+            recordId={lead.id}
+            recordRevision={lead.updatedAt}
+            recordLabel={lead.customerName}
+            ownerUserId={lead.createdBy.id}
+            offerCancel={['NEEDS_LOCALLY', 'NOT_INTERESTED', 'WE_DONT_SALE'].includes(lead.status)}
+            onChanged={() => setRefreshKey((value) => value + 1)}
+          />
           <Card className="overflow-hidden lg:flex lg:max-h-[calc(100vh-3rem)] lg:flex-col">
             <CardHeader className="border-b border-border/70 px-4 py-3">
               <div className="flex items-center justify-between gap-3">

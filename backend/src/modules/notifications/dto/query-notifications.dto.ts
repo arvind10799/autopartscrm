@@ -1,5 +1,5 @@
-import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import { IsBoolean, IsInt, IsOptional, Max, Min, IsIn } from 'class-validator';
 
 export class QueryNotificationsDto {
   @Type(() => Number)
@@ -9,9 +9,11 @@ export class QueryNotificationsDto {
   @Max(100)
   limit?: number = 30;
 
-  @Type(() => Boolean)
+  @Transform(({ obj, key }) =>
+    obj[key] === 'true' ? true : obj[key] === 'false' ? false : obj[key],
+  )
   @IsOptional()
   @IsBoolean()
   unreadOnly?: boolean;
+  @IsOptional() @IsIn(['REMINDERS']) category?: 'REMINDERS';
 }
-

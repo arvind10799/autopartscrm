@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { exportFollowUp, TableFollowUp } from '../reminders/reminder-table';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
 import { OrderPaymentMethod } from '../../common/enums/order-payment-method.enum';
@@ -96,13 +101,21 @@ export class OrdersService {
     return order;
   }
 
-  async findAll(
-    queryOrdersDto: QueryOrdersDto,
-    user: AuthenticatedUser,
-  ) {
-    return this.ordersCacheService.rememberList(queryOrdersDto, user, () =>
-      this.ordersRepository.findAll(queryOrdersDto, user),
+  async findAll(queryOrdersDto: QueryOrdersDto, user: AuthenticatedUser) {
+    // Keep cached order rows, but read task state fresh after completing or snoozing a reminder.
+    const response = await this.ordersCacheService.rememberList(
+      queryOrdersDto,
+      user,
+      () => this.ordersRepository.findAll(queryOrdersDto, user),
     );
+    return {
+      ...response,
+      items: await this.ordersRepository.attachFollowUps(
+        response.items,
+        queryOrdersDto,
+        user,
+      ),
+    };
   }
 
   async exportExcel(
@@ -114,7 +127,12 @@ export class OrdersService {
       user,
     );
 
-    return this.buildOrdersWorkbook(orders, queryOrdersDto);
+    const enriched = await this.ordersRepository.attachFollowUps(
+      orders,
+      queryOrdersDto,
+      user,
+    );
+    return this.buildOrdersWorkbook(enriched, queryOrdersDto);
   }
 
   async findOne(id: string, user: AuthenticatedUser) {
@@ -166,7 +184,10 @@ export class OrdersService {
       );
     }
 
-    const existingOrder = await this.ordersRepository.findEditableById(id, user);
+    const existingOrder = await this.ordersRepository.findEditableById(
+      id,
+      user,
+    );
     this.validateUpdateAccess(updateOrderDto, user, existingOrder);
     const nextStatus = updateOrderDto.status ?? existingOrder.status;
     const nextPaymentMethod =
@@ -202,9 +223,7 @@ export class OrdersService {
     const hasNote = Boolean(updateOrderDto.note);
 
     if (!hasFieldChanges && !hasNote) {
-      throw new BadRequestException(
-        'No order changes or notes were detected.',
-      );
+      throw new BadRequestException('No order changes or notes were detected.');
     }
 
     if (hasFieldChanges) {
@@ -279,7 +298,10 @@ export class OrdersService {
     refundOrderDto: RefundOrderDto,
     user: AuthenticatedUser,
   ) {
-    const existingOrder = await this.ordersRepository.findEditableById(id, user);
+    const existingOrder = await this.ordersRepository.findEditableById(
+      id,
+      user,
+    );
     const refundType = refundOrderDto.refundType;
     const refundUpdate: {
       refundType: RefundType;
@@ -305,9 +327,7 @@ export class OrdersService {
       }
 
       if (!deductionReason) {
-        throw new BadRequestException(
-          'Reason for partial refund is required.',
-        );
+        throw new BadRequestException('Reason for partial refund is required.');
       }
 
       const deductionAmount = this.roundCurrencyAmount(
@@ -332,14 +352,20 @@ export class OrdersService {
         ? Number(refundUpdate.refundDeductionAmount ?? 0)
         : 0;
     const gpAmount = await this.calculateRefundGrossProfit(id, retainedAmount);
-    const formattedGp = this.formatCurrencyAmount(gpAmount, existingOrder.currency);
+    const formattedGp = this.formatCurrencyAmount(
+      gpAmount,
+      existingOrder.currency,
+    );
     const formattedDeduction = this.formatCurrencyAmount(
       Number(refundUpdate.refundDeductionAmount ?? 0),
       existingOrder.currency,
     );
     const formattedCustomerRefund = this.formatCurrencyAmount(
       refundType === RefundType.PARTIAL
-        ? Math.max(this.getOriginalPaidAmount(existingOrder) - retainedAmount, 0)
+        ? Math.max(
+            this.getOriginalPaidAmount(existingOrder) - retainedAmount,
+            0,
+          )
         : this.getOriginalPaidAmount(existingOrder),
       existingOrder.currency,
     );
@@ -401,12 +427,12 @@ export class OrdersService {
       Number(
         cost?.hasActualPurchaseAmount
           ? cost.purchaseAmount
-          : cost?.estimatedPurchaseAmount ?? 0,
+          : (cost?.estimatedPurchaseAmount ?? 0),
       ) +
       Number(
         cost?.hasActualShippingAmount
           ? cost.shippingAmount
-          : cost?.estimatedShippingAmount ?? 0,
+          : (cost?.estimatedShippingAmount ?? 0),
       ) +
       additionalAmount;
 
@@ -497,11 +523,18 @@ export class OrdersService {
       { header: 'Additional Cost', width: 18, money: true },
       { header: 'Total Cost', width: 16, money: true },
       { header: 'Gross Profit', width: 16, money: true },
+      { header: 'Next follow-up (customer time zone)', width: 58, wrap: true },
     ];
 
     return buildOrdersExportWorkbook({
       columns,
-      rows: orders.map((order) => this.buildOrderExportRow(order)),
+      rows: orders.map((order) => [
+        ...this.buildOrderExportRow(order),
+        exportFollowUp(
+          (order as typeof order & { followUp?: TableFollowUp | null })
+            .followUp,
+        ),
+      ]),
       sheetName: this.buildExportSheetName(queryOrdersDto),
     });
   }
@@ -560,7 +593,8 @@ export class OrdersService {
     const effectivePartCost = actualPartCost ?? estimatedPartCost ?? 0;
     const effectiveShippingCost =
       actualShippingCost ?? estimatedShippingCost ?? 0;
-    const totalCost = effectivePartCost + effectiveShippingCost + additionalCost;
+    const totalCost =
+      effectivePartCost + effectiveShippingCost + additionalCost;
     const grossProfit = this.resolveGpSaleBasis(order) - totalCost;
 
     return [
@@ -645,7 +679,7 @@ export class OrdersService {
     const totalSaleAmount = Number(order.totalSaleAmount);
     const baseGpSaleBasis =
       order.status === OrderStatus.REFUNDED && refundType === RefundType.PARTIAL
-        ? refundDeductionAmount ?? 0
+        ? (refundDeductionAmount ?? 0)
         : order.status === OrderStatus.REFUNDED
           ? 0
           : totalSaleAmount;
@@ -729,7 +763,11 @@ export class OrdersService {
     normalizedStatus: OrderStatus,
     user: AuthenticatedUser,
   ) {
-    for (let attempt = 1; attempt <= OrdersService.maxOrderNumberAttempts; attempt += 1) {
+    for (
+      let attempt = 1;
+      attempt <= OrdersService.maxOrderNumberAttempts;
+      attempt += 1
+    ) {
       try {
         return await this.prismaService.$transaction(
           async (transactionClient) => {
@@ -742,17 +780,19 @@ export class OrdersService {
               status: normalizedStatus,
               totalSaleAmount: new Prisma.Decimal(createOrderDto.total),
             };
-            const createdOrder = await this.ordersRepository.createWithTransaction(
-              transactionClient,
-              createPayload,
-              user.userId,
-            );
+            const createdOrder =
+              await this.ordersRepository.createWithTransaction(
+                transactionClient,
+                createPayload,
+                user.userId,
+              );
 
             if (createOrderDto.leadId) {
               await this.leadsRepository.markAsConvertedWithTransaction(
                 transactionClient,
                 createOrderDto.leadId,
                 createdOrder.id,
+                createOrderDto.moveLeadReminders ?? true,
               );
             }
 
@@ -790,6 +830,7 @@ export class OrdersService {
 
   private buildOrderUpdateHistoryMessage(
     existingOrder: {
+      billingState?: string | null;
       salesNumber: string | null;
       customerName: string;
       partDescription: string;
@@ -845,6 +886,14 @@ export class OrdersService {
       existingOrder.customerPhone,
       nextCustomerPhone,
     );
+    if (updateOrderDto.billingState !== undefined) {
+      this.pushChangeLine(
+        changeLines,
+        'Billing state',
+        existingOrder.billingState,
+        updateOrderDto.billingState,
+      );
+    }
     this.pushChangeLine(
       changeLines,
       'Quantity',
@@ -884,8 +933,12 @@ export class OrdersService {
         : existingOrder.paymentMethod,
     );
 
-    const intakeDetails = this.normalizeIntakeDetails(existingOrder.intakeDetails);
-    for (const [field, label] of Object.entries(OrdersService.intakeHistoryLabels)) {
+    const intakeDetails = this.normalizeIntakeDetails(
+      existingOrder.intakeDetails,
+    );
+    for (const [field, label] of Object.entries(
+      OrdersService.intakeHistoryLabels,
+    )) {
       const nextValue = updateOrderDto[field as keyof UpdateOrderDto];
       if (nextValue !== undefined) {
         this.pushChangeLine(
@@ -952,26 +1005,27 @@ export class OrdersService {
       'shippingAt',
       'companyName',
     ]);
-    const emptyOnlySalesFields = new Set([
-      'vehicleVin',
-      'vehicleNotes',
-    ]);
-    const intakeDetails = this.normalizeIntakeDetails(existingOrder.intakeDetails);
-    const restrictedField = Object.entries(updateOrderDto).find(([field, value]) => {
-      if (value === undefined) {
-        return false;
-      }
+    const emptyOnlySalesFields = new Set(['vehicleVin', 'vehicleNotes']);
+    const intakeDetails = this.normalizeIntakeDetails(
+      existingOrder.intakeDetails,
+    );
+    const restrictedField = Object.entries(updateOrderDto).find(
+      ([field, value]) => {
+        if (value === undefined) {
+          return false;
+        }
 
-      if (alwaysAllowedSalesFields.has(field)) {
-        return false;
-      }
+        if (alwaysAllowedSalesFields.has(field)) {
+          return false;
+        }
 
-      if (!emptyOnlySalesFields.has(field)) {
-        return true;
-      }
+        if (!emptyOnlySalesFields.has(field)) {
+          return true;
+        }
 
-      return !this.isEmptySalesEditableValue(intakeDetails[field]);
-    });
+        return !this.isEmptySalesEditableValue(intakeDetails[field]);
+      },
+    );
 
     if (restrictedField) {
       throw new BadRequestException(
@@ -981,10 +1035,14 @@ export class OrdersService {
   }
 
   private isEmptySalesEditableValue(value: unknown): boolean {
-    return value === null || value === undefined || String(value).trim().length === 0;
+    return (
+      value === null || value === undefined || String(value).trim().length === 0
+    );
   }
 
-  private normalizeIntakeDetails(value: Prisma.JsonValue): Record<string, unknown> {
+  private normalizeIntakeDetails(
+    value: Prisma.JsonValue,
+  ): Record<string, unknown> {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       return value as Record<string, unknown>;
     }

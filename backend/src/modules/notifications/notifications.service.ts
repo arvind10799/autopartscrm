@@ -3,6 +3,7 @@ import { Prisma, Role } from '@prisma/client';
 import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { PrismaService } from '../../database/prisma/prisma.service';
+import { taskScope } from '../reminders/task-workspace.service';
 import {
   NOTIFICATION_ENTITY_TYPES,
   NOTIFICATION_TYPES,
@@ -22,12 +23,37 @@ type NotificationPayload = {
 export class NotificationsService {
   constructor(private readonly prismaService: PrismaService) {}
 
+  private reminderVisibility(
+    user: AuthenticatedUser,
+  ): Prisma.NotificationWhereInput {
+    return {
+      OR: [
+        { reminderId: null },
+        { type: 'REMINDER_REASSIGNED' },
+        {
+          reminder: {
+            AND: [
+              { deletedAt: null },
+              {
+                  ...(user.role==='ADMIN'?{}:{OR:[taskScope(user,'MINE'),taskScope(user,'SENT')]}),
+              },
+            ],
+          },
+        },
+      ],
+    };
+  }
+
   findForUser(user: AuthenticatedUser, query: QueryNotificationsDto) {
     return this.prismaService.notification.findMany({
       where: {
         recipientUserId: user.userId,
         clearedAt: null,
+        AND: [this.reminderVisibility(user)],
         ...(query.unreadOnly ? { isRead: false } : {}),
+        ...(query.category === 'REMINDERS'
+          ? { type: { startsWith: 'REMINDER_' } }
+          : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: query.limit ?? 30,
@@ -35,15 +61,29 @@ export class NotificationsService {
   }
 
   async getUnreadCount(user: AuthenticatedUser) {
-    const count = await this.prismaService.notification.count({
-      where: {
-        recipientUserId: user.userId,
-        clearedAt: null,
-        isRead: false,
-      },
-    });
+    const [count, latestReminder] = await Promise.all([
+      this.prismaService.notification.count({
+        where: {
+          recipientUserId: user.userId,
+          clearedAt: null,
+          isRead: false,
+          AND: [this.reminderVisibility(user)],
+        },
+      }),
+      this.prismaService.notification.findFirst({
+        where: {
+          recipientUserId: user.userId,
+          clearedAt: null,
+          isRead: false,
+          type: { startsWith: 'REMINDER_' },
+          AND: [this.reminderVisibility(user)],
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, title: true, createdAt: true },
+      }),
+    ]);
 
-    return { count };
+    return { count, latestReminder };
   }
 
   async markRead(id: string, user: AuthenticatedUser) {
@@ -187,7 +227,9 @@ export class NotificationsService {
     const shipment = await this.findShipmentNotificationContext(shipmentId);
     if (!shipment) return;
 
-    const recipients = await this.findShipmentRecipients(shipment.order.createdById);
+    const recipients = await this.findShipmentRecipients(
+      shipment.order.createdById,
+    );
 
     await this.createForRecipients(recipients, {
       type: NOTIFICATION_TYPES.SHIPMENT_CREATED,
@@ -206,7 +248,9 @@ export class NotificationsService {
     const shipment = await this.findShipmentNotificationContext(shipmentId);
     if (!shipment) return;
 
-    const recipients = await this.findShipmentRecipients(shipment.order.createdById);
+    const recipients = await this.findShipmentRecipients(
+      shipment.order.createdById,
+    );
 
     await this.createForRecipients(recipients, {
       type: NOTIFICATION_TYPES.SHIPMENT_STATUS_UPDATED,
@@ -221,7 +265,9 @@ export class NotificationsService {
     const shipment = await this.findShipmentNotificationContext(shipmentId);
     if (!shipment) return;
 
-    const recipients = await this.findShipmentRecipients(shipment.order.createdById);
+    const recipients = await this.findShipmentRecipients(
+      shipment.order.createdById,
+    );
 
     await this.createForRecipients(recipients, {
       type: NOTIFICATION_TYPES.SHIPMENT_ACTIVITY,
@@ -241,7 +287,9 @@ export class NotificationsService {
       const order = await this.findOrderNotificationContext(entityId);
       if (!order) return;
 
-      const recipients = await this.findOrderActivityRecipients(order.createdById);
+      const recipients = await this.findOrderActivityRecipients(
+        order.createdById,
+      );
 
       await this.createForRecipients(recipients, {
         type: NOTIFICATION_TYPES.ORDER_NOTE_CREATED,
@@ -350,4 +398,3 @@ export class NotificationsService {
     return `Sale ${order.salesNumber ?? 'N/A'} · ${order.customerName}`;
   }
 }
-

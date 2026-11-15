@@ -1,0 +1,270 @@
+[
+  {
+    "key": "WEB_NEW",
+    "context": "WEBSITE_LEAD",
+    "trigger": "NEW_ASSIGNED",
+    "typeKey": "CALL",
+    "delayMinutes": 60,
+    "label": "Call the newly assigned website inquiry"
+  },
+  {
+    "key": "WEB_CONTACTED",
+    "context": "WEBSITE_LEAD",
+    "trigger": "CONTACTED",
+    "typeKey": "CALL",
+    "delayDays": 1,
+    "label": "Follow up with the contacted inquiry"
+  },
+  {
+    "key": "LEAD_PROSPECT",
+    "context": "LEAD",
+    "trigger": "PROSPECT",
+    "typeKey": "CALL",
+    "delayDays": 1,
+    "label": "Call this prospect"
+  },
+  {
+    "key": "LEAD_QUOTED",
+    "context": "LEAD",
+    "trigger": "QUOTED",
+    "typeKey": "QUOTE_FOLLOW_UP",
+    "delayDays": 2,
+    "label": "Follow up on the quote"
+  },
+  {
+    "key": "LEAD_CALLBACK",
+    "context": "LEAD",
+    "trigger": "CALL_BACK_LATER",
+    "typeKey": "CALL",
+    "requiresTime": true,
+    "label": "Choose the customer's callback time"
+  },
+  {
+    "key": "LEAD_SHOPPING",
+    "context": "LEAD",
+    "trigger": "SHOPPING_AROUND",
+    "typeKey": "QUOTE_FOLLOW_UP",
+    "delayDays": 3,
+    "label": "Follow up while the customer compares quotes"
+  },
+  {
+    "key": "ORDER_DRAFT",
+    "context": "ORDER",
+    "trigger": "DRAFT",
+    "typeKey": "CALL",
+    "delayDays": 1,
+    "label": "Follow up on the draft order"
+  },
+  {
+    "key": "ORDER_PARTIAL",
+    "context": "ORDER",
+    "trigger": "PARTIALLY_PAID",
+    "typeKey": "PAYMENT_FOLLOW_UP",
+    "delayDays": 1,
+    "label": "Follow up on the remaining payment"
+  },
+  {
+    "key": "ORDER_SIGNATURE",
+    "context": "ORDER",
+    "trigger": "SIGNATURE_REQUEST",
+    "typeKey": "SIGNATURE_FOLLOW_UP",
+    "delayMinutes": 1440,
+    "label": "Follow up on the invoice signature"
+  },
+  {
+    "key": "ORDER_LOCATE",
+    "context": "SHIPMENT_ORDER",
+    "trigger": "CONFIRMED",
+    "typeKey": "YARD_FOLLOW_UP",
+    "delayMinutes": 60,
+    "label": "Locate a yard for the confirmed order"
+  },
+  {
+    "key": "SHIP_PENDING",
+    "context": "SHIPMENT",
+    "trigger": "PENDING",
+    "typeKey": "YARD_FOLLOW_UP",
+    "delayMinutes": 60,
+    "label": "Follow up with the yard"
+  },
+  {
+    "key": "SHIP_LOCATING",
+    "context": "SHIPMENT",
+    "trigger": "LOCATING",
+    "typeKey": "YARD_FOLLOW_UP",
+    "delayMinutes": 60,
+    "label": "Check part availability with the yard"
+  },
+  {
+    "key": "SHIP_PRE_PURCHASE",
+    "context": "SHIPMENT",
+    "trigger": "PRE_PROCESSING",
+    "typeKey": "PURCHASE_CHECK",
+    "delayDays": 1,
+    "label": "Check the part purchase"
+  },
+  {
+    "key": "SHIP_PURCHASE",
+    "context": "SHIPMENT",
+    "trigger": "PURCHASE",
+    "typeKey": "PURCHASE_CHECK",
+    "delayDays": 1,
+    "label": "Follow up on the purchase"
+  },
+  {
+    "key": "SHIP_PRE_COST",
+    "context": "SHIPMENT",
+    "trigger": "PRE_PROCESSING",
+    "typeKey": "COST_ENTRY",
+    "delayMinutes": 60,
+    "missingCostOnly": true,
+    "label": "Enter the actual part cost"
+  },
+  {
+    "key": "SHIP_PURCHASE_COST",
+    "context": "SHIPMENT",
+    "trigger": "PURCHASE",
+    "typeKey": "COST_ENTRY",
+    "delayMinutes": 60,
+    "missingCostOnly": true,
+    "label": "Enter the actual part cost"
+  },
+  {
+    "key": "SHIP_SHIPPED",
+    "context": "SHIPMENT",
+    "trigger": "SHIPPED",
+    "typeKey": "TRACKING_CHECK",
+    "delayDays": 2,
+    "repeatDays": 2,
+    "stopStatus": "DELIVERED",
+    "label": "Check tracking every two days"
+  },
+  {
+    "key": "SHIP_TRANSIT",
+    "context": "SHIPMENT",
+    "trigger": "IN_TRANSIT",
+    "typeKey": "TRACKING_CHECK",
+    "delayDays": 2,
+    "repeatDays": 2,
+    "stopStatus": "DELIVERED",
+    "label": "Check tracking every two days"
+  },
+  {
+    "key": "SHIP_DISPUTED",
+    "context": "SHIPMENT",
+    "trigger": "DISPUTED",
+    "typeKey": "CARRIER_FOLLOW_UP",
+    "delayDays": 1,
+    "repeatDays": 1,
+    "stopStatus": "DELIVERED",
+    "label": "Follow up with the carrier daily"
+  },
+  {
+    "key": "SHIP_DELAYED",
+    "context": "SHIPMENT",
+    "trigger": "DELAYED",
+    "typeKey": "CARRIER_FOLLOW_UP",
+    "delayDays": 1,
+    "repeatDays": 1,
+    "stopStatus": "DELIVERED",
+    "label": "Follow up with the carrier daily"
+  },
+  {
+    "key": "SHIP_DISPUTE_SALES",
+    "context": "SHIPMENT",
+    "trigger": "DISPUTED",
+    "typeKey": "CUSTOM",
+    "assignment": "SALES_AGENT",
+    "delayMinutes": 60,
+    "label": "Update the customer about the dispute"
+  },
+  {
+    "key": "SHIP_DELAY_SALES",
+    "context": "SHIPMENT",
+    "trigger": "DELAYED",
+    "typeKey": "CUSTOM",
+    "assignment": "SALES_AGENT",
+    "delayMinutes": 60,
+    "label": "Update the customer about the delay"
+  },
+  {
+    "key": "SHIP_DELIVERED",
+    "context": "SHIPMENT",
+    "trigger": "DELIVERED",
+    "typeKey": "CUSTOMER_DELIVERY_CHECK_IN",
+    "assignment": "SALES_AGENT",
+    "delayDays": 1,
+    "label": "Check delivery with the customer"
+  },
+  {
+    "key": "REPL_WAITING",
+    "context": "REPLACEMENT",
+    "trigger": "WAITING_YARD_RESPONSE",
+    "typeKey": "REPLACEMENT_YARD_FOLLOW_UP",
+    "delayDays": 1,
+    "label": "Follow up on the replacement yard response"
+  },
+  {
+    "key": "REPL_CONTACTED",
+    "context": "REPLACEMENT",
+    "trigger": "YARD_CONTACTED",
+    "typeKey": "REPLACEMENT_YARD_FOLLOW_UP",
+    "delayDays": 1,
+    "label": "Follow up with the replacement yard"
+  },
+  {
+    "key": "REPL_AGREED",
+    "context": "REPLACEMENT",
+    "trigger": "AGREED",
+    "typeKey": "PICKUP_SCHEDULING",
+    "delayMinutes": 60,
+    "label": "Schedule replacement pickup"
+  },
+  {
+    "key": "REPL_DISAGREED",
+    "context": "REPLACEMENT",
+    "trigger": "DISAGREED",
+    "typeKey": "CUSTOM",
+    "assignment": "SALES_AGENT",
+    "delayMinutes": 60,
+    "label": "Update the customer about the replacement"
+  },
+  {
+    "key": "REPL_REFUND",
+    "context": "REPLACEMENT",
+    "trigger": "YARD_REFUNDING",
+    "typeKey": "CUSTOM",
+    "assignment": "SALES_AGENT",
+    "delayMinutes": 60,
+    "label": "Update the customer about the yard refund"
+  },
+  {
+    "key": "REPL_UNAVAILABLE",
+    "context": "REPLACEMENT",
+    "trigger": "YARD_DOESNT_HAVE_REPLACEMENT",
+    "typeKey": "CUSTOM",
+    "assignment": "SALES_AGENT",
+    "delayMinutes": 60,
+    "label": "Update the customer: replacement unavailable"
+  },
+  {
+    "key": "REPL_SHIPPED",
+    "context": "REPLACEMENT",
+    "trigger": "SHIPPED",
+    "typeKey": "TRACKING_CHECK",
+    "delayDays": 2,
+    "repeatDays": 2,
+    "stopStatus": "DELIVERED",
+    "label": "Check replacement tracking every two days"
+  },
+  {
+    "key": "REPL_TRANSIT",
+    "context": "REPLACEMENT",
+    "trigger": "IN_TRANSIT",
+    "typeKey": "TRACKING_CHECK",
+    "delayDays": 2,
+    "repeatDays": 2,
+    "stopStatus": "DELIVERED",
+    "label": "Check replacement tracking every two days"
+  }
+]

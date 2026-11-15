@@ -1,5 +1,7 @@
 'use client';
 
+import { RemindersPanel } from '@/features/reminders/RemindersPanel';
+
 import Link from 'next/link';
 import { getTableBackLabel, useDetailReturnHref } from '@/lib/filters/table-view-state';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -505,7 +507,19 @@ export function ReplacementDetailsView({
         {replacementUpdateCard}
         </div>
 
-        <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+        <aside className="space-y-5 lg:self-start">
+          <RemindersPanel
+            context="REPLACEMENT"
+            recordId={replacement.id}
+            recordRevision={replacement.updatedAt}
+            recordLabel={`${replacement.order.salesNumber || replacement.order.orderNumber} · ${replacement.order.customerName}`}
+            onChanged={async () => {
+              setOrderRefreshKey((value) => value + 1);
+              if (replacement.shipment?.id) {
+                setShipmentNotes(await notesApi.listByEntity('SHIPMENT', replacement.shipment.id));
+              }
+            }}
+          />
           <GrossProfitSummaryCard
             shipmentId={gpShipment?.id}
             orderId={replacement.orderId}

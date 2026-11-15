@@ -1,34 +1,31 @@
-'use client';
+"use client";
 
-import { Download, Plus, Search, X } from 'lucide-react';
+import { Download, Plus, Search, X } from "lucide-react";
 import {
   startTransition,
   useDeferredValue,
   useEffect,
   useMemo,
   useState,
-} from 'react';
-import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
-import { Button } from '@/components/ui/button';
+} from "react";
+import { DateRangeFilter } from "@/components/filters/DateRangeFilter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { useAuthStore } from "@/features/auth/store/auth.store";
+import { CreateOrderForm } from "@/features/orders/components/CreateOrderForm";
+import type { CreateOrderFormValues } from "@/features/orders/schemas/order.schema";
+import type { OrderSummary } from "@/features/orders/types/order.types";
+import { buildTimestampRangeQuery } from "@/lib/filters/date-range";
 import {
-  Card,
-  CardContent,
-  CardTitle,
-  CardHeader,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { useAuthStore } from '@/features/auth/store/auth.store';
-import { CreateOrderForm } from '@/features/orders/components/CreateOrderForm';
-import type { CreateOrderFormValues } from '@/features/orders/schemas/order.schema';
-import type { OrderSummary } from '@/features/orders/types/order.types';
-import {
-  buildTimestampRangeQuery,
-} from '@/lib/filters/date-range';
-import { parseTablePage, useTableDateRange, useTableQueryParam } from '@/lib/filters/table-view-state';
-import { toast } from '@/lib/stores/toast.store';
-import { getErrorMessage } from '@/lib/utils/error';
-import { getPacificTodayDateInputValue } from '@/lib/utils/pacific-date';
+  parseTablePage,
+  useTableDateRange,
+  useTableQueryParam,
+} from "@/lib/filters/table-view-state";
+import { toast } from "@/lib/stores/toast.store";
+import { getErrorMessage } from "@/lib/utils/error";
+import { getPacificTodayDateInputValue } from "@/lib/utils/pacific-date";
 import {
   ALL_LEAD_CONVERSION_FILTER,
   ALL_LEAD_STATUS_FILTER,
@@ -45,21 +42,23 @@ import {
   type LeadConversionFilter,
   type LeadStatusFilter,
   type UntouchedLeadsFilter,
-} from '../lib/leads.helpers';
-import { leadsApi } from '../api/leads-api';
-import { useLeadsList } from '../hooks/useLeadsList';
-import type { LeadSummary, LeadUser } from '../types/lead.types';
-import { LEAD_STATUSES } from '../types/lead.types';
-import { CreateLeadForm } from './CreateLeadForm';
-import { LeadsTable } from './LeadsTable';
+} from "../lib/leads.helpers";
+import { leadsApi } from "../api/leads-api";
+import { useLeadsList } from "../hooks/useLeadsList";
+import type { LeadSummary, LeadUser } from "../types/lead.types";
+import { LEAD_STATUSES } from "../types/lead.types";
+import { CreateLeadForm } from "./CreateLeadForm";
+import { LeadsTable } from "./LeadsTable";
 
-const ALL_AGENTS_FILTER = 'ALL';
+const ALL_AGENTS_FILTER = "ALL";
 
 function formatAgentFilterLabel(agent: LeadUser) {
-  return `${agent.name} (${agent.role === 'ADMIN' ? 'Admin' : 'Sales'})`;
+  return `${agent.name} (${agent.role === "ADMIN" ? "Admin" : "Sales"})`;
 }
 
-function buildOrderInitialValues(lead: LeadSummary): Partial<CreateOrderFormValues> {
+function buildOrderInitialValues(
+  lead: LeadSummary,
+): Partial<CreateOrderFormValues> {
   const quoteValue = lead.quote ?? undefined;
 
   return {
@@ -77,56 +76,83 @@ function buildOrderInitialValues(lead: LeadSummary): Partial<CreateOrderFormValu
     salePrice: quoteValue,
     total: quoteValue,
     currency: lead.quoteCurrency,
-    status: 'CONFIRMED',
+    status: "CONFIRMED",
     partialPayment: undefined,
-    note: lead.comments ?? '',
+    note: lead.comments ?? "",
   };
 }
 
 export function LeadsPageContent() {
+  const [noUpcoming, setNoUpcoming] = useTableQueryParam(
+    "noUpcoming",
+    "",
+    (v) => (v === "true" ? "true" : ""),
+  );
   const authUser = useAuthStore((state) => state.user);
-  const [searchTerm, setSearchTerm] = useTableQueryParam('q', '', (value) => value);
+  const [searchTerm, setSearchTerm] = useTableQueryParam(
+    "q",
+    "",
+    (value) => value,
+  );
   const [convertedFilter, setConvertedFilter] =
-    useTableQueryParam<LeadConversionFilter>('conversion', ALL_LEAD_CONVERSION_FILTER, parseLeadConversionFilter);
-  const [statusFilter, setStatusFilter] =
-    useTableQueryParam<LeadStatusFilter>('status', ALL_LEAD_STATUS_FILTER, parseLeadStatusFilter);
+    useTableQueryParam<LeadConversionFilter>(
+      "conversion",
+      ALL_LEAD_CONVERSION_FILTER,
+      parseLeadConversionFilter,
+    );
+  const [statusFilter, setStatusFilter] = useTableQueryParam<LeadStatusFilter>(
+    "status",
+    ALL_LEAD_STATUS_FILTER,
+    parseLeadStatusFilter,
+  );
   const [untouchedFilter, setUntouchedFilter] =
-    useTableQueryParam<UntouchedLeadsFilter>('untouched', ALL_UNTOUCHED_LEADS_FILTER, parseUntouchedLeadsFilter);
-  const [untouchedMode, setUntouchedMode] = useTableQueryParam<'PRESET' | 'CUSTOM'>(
-    'untouchedMode',
-    'PRESET',
-    (value) => value === 'CUSTOM' ? 'CUSTOM' : 'PRESET',
+    useTableQueryParam<UntouchedLeadsFilter>(
+      "untouched",
+      ALL_UNTOUCHED_LEADS_FILTER,
+      parseUntouchedLeadsFilter,
+    );
+  const [untouchedMode, setUntouchedMode] = useTableQueryParam<
+    "PRESET" | "CUSTOM"
+  >("untouchedMode", "PRESET", (value) =>
+    value === "CUSTOM" ? "CUSTOM" : "PRESET",
   );
-  const isCustomUntouched = untouchedMode === 'CUSTOM' || (
-    typeof untouchedFilter === 'number' &&
-    !UNTOUCHED_LEADS_DAY_OPTIONS.some((days) => days === untouchedFilter)
-  );
+  const isCustomUntouched =
+    untouchedMode === "CUSTOM" ||
+    (typeof untouchedFilter === "number" &&
+      !UNTOUCHED_LEADS_DAY_OPTIONS.some((days) => days === untouchedFilter));
   const [customDaysDraft, setCustomDaysDraft] = useState(
-    typeof untouchedFilter === 'number' ? String(untouchedFilter) : '',
+    typeof untouchedFilter === "number" ? String(untouchedFilter) : "",
   );
   const [customDaysError, setCustomDaysError] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useTableDateRange();
-  const [agentFilter, setAgentFilter] = useTableQueryParam<string | null>('agent', null, (value) => value || null);
+  const [agentFilter, setAgentFilter] = useTableQueryParam<string | null>(
+    "agent",
+    null,
+    (value) => value || null,
+  );
   const [leadAgents, setLeadAgents] = useState<LeadUser[]>([]);
-  const [page, setPage] = useTableQueryParam('page', 1, parseTablePage, false);
+  const [page, setPage] = useTableQueryParam("page", 1, parseTablePage, false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedEditLead, setSelectedEditLead] = useState<LeadSummary | null>(null);
+  const [selectedEditLead, setSelectedEditLead] = useState<LeadSummary | null>(
+    null,
+  );
   const [selectedConversionLead, setSelectedConversionLead] =
     useState<LeadSummary | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const activeSearch = deferredSearchTerm.trim();
   const searchPlaceholder =
-    authUser?.role === 'SALES'
-      ? 'Search by customer, email, phone, state, or vehicle'
-      : 'Search by customer, email, phone, adviser, state, or vehicle';
+    authUser?.role === "SALES"
+      ? "Search by customer, email, phone, state, or vehicle"
+      : "Search by customer, email, phone, adviser, state, or vehicle";
   const dateRangeQuery = useMemo(
     () => buildTimestampRangeQuery(dateFilter),
     [dateFilter],
   );
   const selectedAgentFilter =
-    agentFilter ?? (authUser?.role === 'SALES' ? authUser.userId : ALL_AGENTS_FILTER);
+    agentFilter ??
+    (authUser?.role === "SALES" ? authUser.userId : ALL_AGENTS_FILTER);
   const createdById =
     selectedAgentFilter === ALL_AGENTS_FILTER ? undefined : selectedAgentFilter;
   const agentOptions = useMemo(() => {
@@ -138,7 +164,7 @@ export function LeadsPageContent() {
 
     if (
       authUser &&
-      (authUser.role === 'ADMIN' || authUser.role === 'SALES') &&
+      (authUser.role === "ADMIN" || authUser.role === "SALES") &&
       !agents.has(authUser.userId)
     ) {
       agents.set(authUser.userId, {
@@ -159,6 +185,7 @@ export function LeadsPageContent() {
     createdFrom: dateRangeQuery.createdFrom,
     createdTo: dateRangeQuery.createdTo,
     createdById,
+    noUpcoming: noUpcoming === "true",
     untouchedDays:
       untouchedFilter === ALL_UNTOUCHED_LEADS_FILTER
         ? undefined
@@ -195,23 +222,27 @@ export function LeadsPageContent() {
   const handleUntouchedSelection = (value: string) => {
     setCustomDaysError(null);
 
-    if (value === 'CUSTOM') {
-      setCustomDaysDraft(isCustomUntouched && typeof untouchedFilter === 'number'
-        ? String(untouchedFilter)
-        : '');
-      setUntouchedMode('CUSTOM');
+    if (value === "CUSTOM") {
+      setCustomDaysDraft(
+        isCustomUntouched && typeof untouchedFilter === "number"
+          ? String(untouchedFilter)
+          : "",
+      );
+      setUntouchedMode("CUSTOM");
       handleUntouchedFilterChange(ALL_UNTOUCHED_LEADS_FILTER);
       return;
     }
 
-    setUntouchedMode('PRESET');
+    setUntouchedMode("PRESET");
     handleUntouchedFilterChange(parseUntouchedLeadsFilter(value));
   };
 
   const handleApplyCustomDays = () => {
     const days = parseUntouchedLeadsFilter(customDaysDraft);
     if (days === ALL_UNTOUCHED_LEADS_FILTER) {
-      setCustomDaysError(`Enter a whole number from 1 to ${MAX_UNTOUCHED_LEADS_DAYS}.`);
+      setCustomDaysError(
+        `Enter a whole number from 1 to ${MAX_UNTOUCHED_LEADS_DAYS}.`,
+      );
       return;
     }
 
@@ -233,28 +264,30 @@ export function LeadsPageContent() {
         limit: LEAD_PAGE_SIZE,
         search: activeSearch,
         converted:
-          convertedFilter === 'CONVERTED'
+          convertedFilter === "CONVERTED"
             ? true
-            : convertedFilter === 'OPEN'
+            : convertedFilter === "OPEN"
               ? false
               : undefined,
-        status: statusFilter === ALL_LEAD_STATUS_FILTER ? undefined : statusFilter,
+        status:
+          statusFilter === ALL_LEAD_STATUS_FILTER ? undefined : statusFilter,
         createdFrom: dateRangeQuery.createdFrom,
         createdTo: dateRangeQuery.createdTo,
         createdById,
+        noUpcoming: noUpcoming === "true",
         untouchedDays:
           untouchedFilter === ALL_UNTOUCHED_LEADS_FILTER
             ? undefined
             : untouchedFilter,
       });
       toast.success(
-        'Leads export started',
-        'The Excel file includes all leads matching the current filters.',
+        "Leads export started",
+        "The Excel file includes all leads matching the current filters.",
       );
     } catch (error) {
       toast.error(
-        'Export failed',
-        getErrorMessage(error, 'Unable to export leads right now.'),
+        "Export failed",
+        getErrorMessage(error, "Unable to export leads right now."),
       );
     } finally {
       setIsExporting(false);
@@ -265,18 +298,18 @@ export function LeadsPageContent() {
     const wasEditing = selectedEditLead !== null;
     setIsCreateModalOpen(false);
     setSelectedEditLead(null);
-    setSearchTerm('');
+    setSearchTerm("");
     setConvertedFilter(ALL_LEAD_CONVERSION_FILTER);
     setStatusFilter(ALL_LEAD_STATUS_FILTER);
     setUntouchedFilter(ALL_UNTOUCHED_LEADS_FILTER);
-    setUntouchedMode('PRESET');
-    setCustomDaysDraft('');
+    setUntouchedMode("PRESET");
+    setCustomDaysDraft("");
     setCustomDaysError(null);
     startTransition(() => setPage(1));
     setRefreshKey((currentValue) => currentValue + 1);
     toast.success(
-      `${lead.customerName} lead ${wasEditing ? 'updated' : 'created'}`,
-      `The leads table has been refreshed with the ${wasEditing ? 'updated' : 'latest'} sales intake data.`,
+      `${lead.customerName} lead ${wasEditing ? "updated" : "created"}`,
+      `The leads table has been refreshed with the ${wasEditing ? "updated" : "latest"} sales intake data.`,
     );
   };
 
@@ -304,7 +337,7 @@ export function LeadsPageContent() {
       `Order ${order.orderNumber} created`,
       convertedLead
         ? `${convertedLead.customerName}'s lead has been marked as converted.`
-        : 'The order was created successfully.',
+        : "The order was created successfully.",
     );
   };
 
@@ -314,7 +347,7 @@ export function LeadsPageContent() {
     }
 
     const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
 
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -322,7 +355,7 @@ export function LeadsPageContent() {
   }, [isCreateModalOpen, selectedConversionLead, selectedEditLead]);
 
   useEffect(() => {
-    if (authUser?.role !== 'ADMIN' && authUser?.role !== 'SALES') {
+    if (authUser?.role !== "ADMIN" && authUser?.role !== "SALES") {
       return;
     }
 
@@ -361,9 +394,9 @@ export function LeadsPageContent() {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                 <div
                   className={
-                    dateFilter.preset === 'CUSTOM'
-                      ? 'w-full xl:w-[34rem]'
-                      : 'w-full sm:w-60'
+                    dateFilter.preset === "CUSTOM"
+                      ? "w-full xl:w-[34rem]"
+                      : "w-full sm:w-60"
                   }
                 >
                   <DateRangeFilter
@@ -382,7 +415,9 @@ export function LeadsPageContent() {
                     value={selectedAgentFilter}
                     aria-label="Agent filter"
                     className="h-11 w-full rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-                    onChange={(event) => handleAgentFilterChange(event.target.value)}
+                    onChange={(event) =>
+                      handleAgentFilterChange(event.target.value)
+                    }
                   >
                     <option value={ALL_AGENTS_FILTER}>All agents</option>
                     {agentOptions.map((agent) => (
@@ -401,7 +436,7 @@ export function LeadsPageContent() {
                   onClick={() => void handleExportExcel()}
                 >
                   <Download className="h-4 w-4" />
-                  {isExporting ? 'Exporting...' : 'Export Excel'}
+                  {isExporting ? "Exporting..." : "Export Excel"}
                 </Button>
 
                 <Button
@@ -438,16 +473,20 @@ export function LeadsPageContent() {
                 <option value={ALL_LEAD_CONVERSION_FILTER}>
                   {formatLeadConversionFilterLabel(ALL_LEAD_CONVERSION_FILTER)}
                 </option>
-                <option value="OPEN">{formatLeadConversionFilterLabel('OPEN')}</option>
+                <option value="OPEN">
+                  {formatLeadConversionFilterLabel("OPEN")}
+                </option>
                 <option value="CONVERTED">
-                  {formatLeadConversionFilterLabel('CONVERTED')}
+                  {formatLeadConversionFilterLabel("CONVERTED")}
                 </option>
               </Select>
 
               <Select
                 value={statusFilter}
                 onChange={(event) =>
-                  handleStatusFilterChange(parseLeadStatusFilter(event.target.value))
+                  handleStatusFilterChange(
+                    parseLeadStatusFilter(event.target.value),
+                  )
                 }
                 className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               >
@@ -461,13 +500,28 @@ export function LeadsPageContent() {
 
               <div className="space-y-2">
                 <Select
-                  value={isCustomUntouched ? 'CUSTOM' : String(untouchedFilter)}
-                  onChange={(event) => handleUntouchedSelection(event.target.value)}
+                  aria-label="Upcoming reminder filter"
+                  value={noUpcoming}
+                  onChange={(e) =>
+                    setNoUpcoming(e.target.value === "true" ? "true" : "")
+                  }
+                  className="w-full sm:w-[190px]"
+                >
+                  <option value="">All follow-ups</option>
+                  <option value="true">No upcoming reminder</option>
+                </Select>
+                <Select
+                  value={isCustomUntouched ? "CUSTOM" : String(untouchedFilter)}
+                  onChange={(event) =>
+                    handleUntouchedSelection(event.target.value)
+                  }
                   className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                   aria-label="Not touched filter"
                 >
                   <option value={ALL_UNTOUCHED_LEADS_FILTER}>
-                    {formatUntouchedLeadsFilterLabel(ALL_UNTOUCHED_LEADS_FILTER)}
+                    {formatUntouchedLeadsFilterLabel(
+                      ALL_UNTOUCHED_LEADS_FILTER,
+                    )}
                   </option>
                   {UNTOUCHED_LEADS_DAY_OPTIONS.map((days) => (
                     <option key={days} value={days}>
@@ -501,10 +555,16 @@ export function LeadsPageContent() {
                         aria-label="Custom days not touched"
                         aria-invalid={customDaysError !== null}
                       />
-                      <Button type="submit" className="h-11 rounded-xl px-3">Apply</Button>
+                      <Button type="submit" className="h-11 rounded-xl px-3">
+                        Apply
+                      </Button>
                     </div>
-                    {customDaysError ? <p role="alert" className="text-xs text-destructive">{customDaysError}</p> : null}
-                    {typeof untouchedFilter === 'number' ? (
+                    {customDaysError ? (
+                      <p role="alert" className="text-xs text-destructive">
+                        {customDaysError}
+                      </p>
+                    ) : null}
+                    {typeof untouchedFilter === "number" ? (
                       <p className="text-xs text-muted-foreground">
                         Showing leads not touched for {untouchedFilter}+ days
                       </p>
@@ -534,9 +594,7 @@ export function LeadsPageContent() {
       </section>
 
       {isCreateModalOpen || selectedEditLead ? (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6"
-        >
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6">
           <div
             className="w-full max-w-5xl rounded-[1.25rem] border border-slate-200 bg-white shadow-2xl sm:rounded-[1.5rem] dark:border-slate-800 dark:bg-slate-950"
             onClick={(event) => event.stopPropagation()}
@@ -544,7 +602,7 @@ export function LeadsPageContent() {
             <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-5 sm:py-3.5">
               <div>
                 <h2 className="font-[var(--font-heading)] text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
-                  {selectedEditLead ? 'Edit lead' : 'Create lead'}
+                  {selectedEditLead ? "Edit lead" : "Create lead"}
                 </h2>
               </div>
 
@@ -573,9 +631,7 @@ export function LeadsPageContent() {
       ) : null}
 
       {selectedConversionLead ? (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6"
-        >
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6">
           <div
             className="w-full max-w-6xl rounded-[1.25rem] border border-border/70 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 sm:rounded-[1.75rem]"
             onClick={(event) => event.stopPropagation()}
@@ -586,7 +642,8 @@ export function LeadsPageContent() {
                   Convert lead to order
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  The customer, vehicle, quote, and notes from this lead are prefilled below.
+                  The customer, vehicle, quote, and notes from this lead are
+                  prefilled below.
                 </p>
               </div>
 

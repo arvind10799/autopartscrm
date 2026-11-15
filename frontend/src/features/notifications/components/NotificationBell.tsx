@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Bell,
@@ -12,8 +12,8 @@ import {
   Trash2,
   Truck,
   X,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -21,17 +21,25 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
-} from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { formatDateTime } from '@/features/orders/lib/order-formatters';
-import { cn } from '@/lib/utils/cn';
-import { notificationsApi } from '../api/notifications-api';
-import type { AppNotification } from '../types/notification.types';
+} from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { formatDateTime } from "@/features/orders/lib/order-formatters";
+import { cn } from "@/lib/utils/cn";
+import { notificationsApi } from "../api/notifications-api";
+import type { AppNotification } from "../types/notification.types";
+import { toast } from "@/lib/stores/toast.store";
+import { useAuthStore } from "@/features/auth/store/auth.store";
+import { openReminderAlert } from "@/features/reminders/ReminderAlertDialog";
 
 const POLL_INTERVAL_MS = 45000;
 
-type NotificationFilter = 'all' | 'unread' | 'orders' | 'shipments';
+type NotificationFilter =
+  | "all"
+  | "unread"
+  | "orders"
+  | "shipments"
+  | "reminders";
 
 type NotificationGroup = {
   key: string;
@@ -46,13 +54,16 @@ const NOTIFICATION_FILTERS: Array<{
   id: NotificationFilter;
   label: string;
 }> = [
-  { id: 'all', label: 'All' },
-  { id: 'unread', label: 'Unread' },
-  { id: 'orders', label: 'Orders' },
-  { id: 'shipments', label: 'Shipments' },
+  { id: "all", label: "All" },
+  { id: "unread", label: "Unread" },
+  { id: "orders", label: "Orders" },
+  { id: "shipments", label: "Shipments" },
+  { id: "reminders", label: "Reminders" },
 ];
 
 export function NotificationBell() {
+  const userId = useAuthStore((s) => s.user?.userId);
+  const mountedAt = useRef(Date.now());
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -62,7 +73,7 @@ export function NotificationBell() {
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeFilter, setActiveFilter] = useState<NotificationFilter>('all');
+  const [activeFilter, setActiveFilter] = useState<NotificationFilter>("all");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     () => new Set(),
   );
@@ -71,10 +82,28 @@ export function NotificationBell() {
     try {
       const unread = await notificationsApi.unreadCount();
       setUnreadCount(unread.count);
+      const latest = unread.latestReminder;
+      if (
+        latest &&
+        new Date(latest.createdAt).getTime() >= mountedAt.current &&
+        userId
+      ) {
+        let seen = false;
+        try {
+          const key = `crm-reminder-toast:${userId}`;
+          seen = localStorage.getItem(key) === latest.id;
+          if (!seen) localStorage.setItem(key, latest.id);
+        } catch {}
+        if (!seen)
+          toast.info(
+            latest.title,
+            "Open Notifications → Reminders to view and act on the task.",
+          );
+      }
     } catch {
       // Keep the last known badge count if the lightweight refresh fails.
     }
-  }, []);
+  }, [userId]);
 
   const refreshNotifications = useCallback(
     async (options?: { showSpinner?: boolean }) => {
@@ -85,13 +114,16 @@ export function NotificationBell() {
       setError(null);
       try {
         const [items, unread] = await Promise.all([
-          notificationsApi.list({ unreadOnly: activeFilter === 'unread' }),
+          notificationsApi.list({
+            unreadOnly: activeFilter === "unread",
+            remindersOnly: activeFilter === "reminders",
+          }),
           notificationsApi.unreadCount(),
         ]);
         setNotifications(items);
         setUnreadCount(unread.count);
       } catch {
-        setError('Unable to load notifications.');
+        setError("Unable to load notifications.");
       } finally {
         if (options?.showSpinner) {
           setIsRefreshing(false);
@@ -102,12 +134,24 @@ export function NotificationBell() {
   );
 
   useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") {
+        void refreshUnreadCount();
+        if (isOpen) void refreshNotifications();
+      }
+    };
+    window.addEventListener("crm:notifications-changed", refresh);
+    return () =>
+      window.removeEventListener("crm:notifications-changed", refresh);
+  }, [isOpen, refreshNotifications, refreshUnreadCount]);
+
+  useEffect(() => {
     if (isOpen) {
       return;
     }
 
     const refresh = () => {
-      if (document.visibilityState !== 'hidden') {
+      if (document.visibilityState !== "hidden") {
         void refreshUnreadCount();
       }
     };
@@ -118,16 +162,16 @@ export function NotificationBell() {
     }, POLL_INTERVAL_MS);
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === "visible") {
         refresh();
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [isOpen, refreshUnreadCount]);
 
@@ -153,9 +197,9 @@ export function NotificationBell() {
       }
     };
 
-    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener("mousedown", handlePointerDown);
 
-    return () => window.removeEventListener('mousedown', handlePointerDown);
+    return () => window.removeEventListener("mousedown", handlePointerDown);
   }, [isOpen]);
 
   const visibleNotifications = useMemo(
@@ -216,7 +260,7 @@ export function NotificationBell() {
     } catch {
       setUnreadCount(unreadBefore);
       setNotifications(notificationsBefore);
-      setError('Unable to mark notifications as read.');
+      setError("Unable to mark notifications as read.");
     } finally {
       setIsMutating(false);
     }
@@ -236,7 +280,7 @@ export function NotificationBell() {
     } catch {
       setUnreadCount(unreadBefore);
       setNotifications(notificationsBefore);
-      setError('Unable to clear notifications.');
+      setError("Unable to clear notifications.");
     } finally {
       setIsMutating(false);
     }
@@ -260,7 +304,9 @@ export function NotificationBell() {
     group: NotificationGroup,
     options?: { silent?: boolean },
   ) => {
-    const unreadItems = group.items.filter((notification) => !notification.isRead);
+    const unreadItems = group.items.filter(
+      (notification) => !notification.isRead,
+    );
 
     if (unreadItems.length === 0) {
       return;
@@ -286,7 +332,7 @@ export function NotificationBell() {
         await refreshNotifications();
       }
     } catch {
-      setError('Unable to mark that notification group as read.');
+      setError("Unable to mark that notification group as read.");
       await refreshNotifications();
     } finally {
       setIsMutating(false);
@@ -299,7 +345,9 @@ export function NotificationBell() {
   ) => {
     event.stopPropagation();
     setIsMutating(true);
-    const groupIds = new Set(group.items.map((notification) => notification.id));
+    const groupIds = new Set(
+      group.items.map((notification) => notification.id),
+    );
     const notificationsBefore = notifications;
     const unreadBefore = unreadCount;
 
@@ -318,7 +366,7 @@ export function NotificationBell() {
     } catch {
       setNotifications(notificationsBefore);
       setUnreadCount(unreadBefore);
-      setError('Unable to clear that notification group.');
+      setError("Unable to clear that notification group.");
     } finally {
       setIsMutating(false);
     }
@@ -337,7 +385,7 @@ export function NotificationBell() {
         <Bell className="h-4 w-4" />
         {unreadCount > 0 ? (
           <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff5a00] px-1.5 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white dark:ring-[#020b18]">
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         ) : null}
       </Button>
@@ -352,8 +400,8 @@ export function NotificationBell() {
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {unreadCount > 0
-                    ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
-                    : 'You are all caught up'}
+                    ? `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`
+                    : "You are all caught up"}
                 </p>
               </div>
               <div className="flex items-center gap-1">
@@ -365,7 +413,7 @@ export function NotificationBell() {
                   }
                 >
                   <RefreshCw
-                    className={cn('h-4 w-4', isRefreshing && 'animate-spin')}
+                    className={cn("h-4 w-4", isRefreshing && "animate-spin")}
                   />
                 </HeaderIconButton>
                 <HeaderIconButton
@@ -387,17 +435,17 @@ export function NotificationBell() {
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-4 gap-1 rounded-xl bg-white p-1 shadow-inner shadow-slate-950/[0.03] dark:bg-slate-950">
+            <div className="mt-3 grid grid-cols-5 gap-1 rounded-xl bg-white p-1 shadow-inner shadow-slate-950/[0.03] dark:bg-slate-950">
               {NOTIFICATION_FILTERS.map((filter) => (
                 <button
                   key={filter.id}
                   type="button"
                   onClick={() => handleFilterChange(filter.id)}
                   className={cn(
-                    'rounded-lg px-2 py-1.5 text-xs font-semibold transition',
+                    "rounded-lg px-2 py-1.5 text-xs font-semibold transition",
                     activeFilter === filter.id
-                      ? 'bg-[#ff5a00] text-white shadow-sm'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white',
+                      ? "bg-[#ff5a00] text-white shadow-sm"
+                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white",
                   )}
                 >
                   {filter.label}
@@ -462,7 +510,7 @@ function HeaderIconButton({
       variant="ghost"
       size="sm"
       className={cn(
-        'h-8 rounded-lg px-2 text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white',
+        "h-8 rounded-lg px-2 text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white",
         className,
       )}
       onClick={onClick}
@@ -503,14 +551,14 @@ function NotificationGroupCard({
       role="button"
       tabIndex={0}
       className={cn(
-        'w-full cursor-pointer overflow-hidden rounded-xl border text-left transition hover:bg-orange-50/60 dark:hover:bg-slate-900',
+        "w-full cursor-pointer overflow-hidden rounded-xl border text-left transition hover:bg-orange-50/60 dark:hover:bg-slate-900",
         isUnread
-          ? 'border-orange-200 bg-orange-50/80 shadow-sm shadow-orange-950/[0.04] dark:border-orange-900/50 dark:bg-orange-950/20'
-          : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950',
+          ? "border-orange-200 bg-orange-50/80 shadow-sm shadow-orange-950/[0.04] dark:border-orange-900/50 dark:bg-orange-950/20"
+          : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950",
       )}
       onClick={onToggle}
       onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
+        if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onToggle();
         }
@@ -519,7 +567,7 @@ function NotificationGroupCard({
       <div className="flex items-start gap-3 px-3 py-3">
         <div
           className={cn(
-            'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+            "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
             getNotificationIconTone(group.latest),
           )}
         >
@@ -547,7 +595,7 @@ function NotificationGroupCard({
                     className="rounded-full border-[#ff5a00]/30 bg-white px-2 py-0.5 text-[10px] text-[#d94d00] dark:bg-slate-950 dark:text-orange-300"
                   >
                     {group.unreadCount === 1
-                      ? 'New'
+                      ? "New"
                       : `${group.unreadCount} new`}
                   </Badge>
                 ) : null}
@@ -563,17 +611,17 @@ function NotificationGroupCard({
             </div>
             <button
               type="button"
-              aria-label={isExpanded ? 'Collapse group' : 'Expand group'}
+              aria-label={isExpanded ? "Collapse group" : "Expand group"}
               className={cn(
-                'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white',
-                isGrouped ? 'opacity-100' : 'opacity-0',
+                "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white",
+                isGrouped ? "opacity-100" : "opacity-0",
               )}
               tabIndex={isGrouped ? 0 : -1}
             >
               <ChevronDown
                 className={cn(
-                  'h-4 w-4 transition-transform',
-                  isExpanded && 'rotate-180',
+                  "h-4 w-4 transition-transform",
+                  isExpanded && "rotate-180",
                 )}
               />
             </button>
@@ -582,6 +630,52 @@ function NotificationGroupCard({
           <p className="line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
             {latestMessage}
           </p>
+          {group.items.find(
+            (n) => n.reminderId && n.type !== "REMINDER_REASSIGNED",
+          )?.reminderId ? (
+            <div
+              className="flex flex-wrap gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(
+                [
+                  "Complete",
+                  "Snooze 15 min",
+                  "Snooze 1 hour",
+                  "Task actions",
+                ] as const
+              ).map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  className="rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-secondary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const id = group.items.find(
+                      (n) => n.reminderId && n.type !== "REMINDER_REASSIGNED",
+                    )!.reminderId!;
+                    openReminderAlert({
+                      id,
+                      action:
+                        label === "Complete"
+                          ? "COMPLETE"
+                          : label.startsWith("Snooze")
+                            ? "SNOOZE"
+                            : undefined,
+                      minutes:
+                        label === "Snooze 15 min"
+                          ? 15
+                          : label === "Snooze 1 hour"
+                            ? 60
+                            : undefined,
+                    });
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <time
@@ -644,8 +738,8 @@ function NotificationTimelineItem({
     <div className="grid grid-cols-[0.75rem_1fr] gap-2 rounded-lg px-1 py-1.5">
       <span
         className={cn(
-          'mt-1.5 h-2 w-2 rounded-full',
-          notification.isRead ? 'bg-slate-300' : 'bg-[#ff5a00]',
+          "mt-1.5 h-2 w-2 rounded-full",
+          notification.isRead ? "bg-slate-300" : "bg-[#ff5a00]",
         )}
       />
       <div className="min-w-0">
@@ -691,7 +785,7 @@ function NotificationActionButton({
       title={label}
       disabled={disabled}
       className={cn(
-        'inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-slate-700 disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-white',
+        "inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-slate-700 disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-white",
         className,
       )}
       onClick={onClick}
@@ -747,13 +841,13 @@ function NotificationErrorState({
 
 function NotificationEmptyState({ filter }: { filter: NotificationFilter }) {
   const message =
-    filter === 'unread'
-      ? 'No unread notifications.'
-      : filter === 'orders'
-        ? 'No order notifications.'
-        : filter === 'shipments'
-          ? 'No shipment notifications.'
-          : 'No notifications yet.';
+    filter === "unread"
+      ? "No unread notifications."
+      : filter === "orders"
+        ? "No order notifications."
+        : filter === "shipments"
+          ? "No shipment notifications."
+          : "No notifications yet.";
 
   return (
     <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
@@ -805,15 +899,17 @@ function filterNotifications(
   notifications: AppNotification[],
   filter: NotificationFilter,
 ): AppNotification[] {
-  if (filter === 'orders') {
+  if (filter === "reminders")
+    return notifications.filter((n) => n.type.startsWith("REMINDER_"));
+  if (filter === "orders") {
     return notifications.filter(
-      (notification) => notification.entityType === 'ORDER',
+      (notification) => notification.entityType === "ORDER",
     );
   }
 
-  if (filter === 'shipments') {
+  if (filter === "shipments") {
     return notifications.filter(
-      (notification) => notification.entityType === 'SHIPMENT',
+      (notification) => notification.entityType === "SHIPMENT",
     );
   }
 
@@ -821,15 +917,15 @@ function filterNotifications(
 }
 
 function getNotificationIcon(notification: AppNotification) {
-  if (notification.type.includes('NOTE')) {
+  if (notification.type.includes("NOTE")) {
     return MessageSquare;
   }
 
-  if (notification.entityType === 'SHIPMENT') {
+  if (notification.entityType === "SHIPMENT") {
     return Truck;
   }
 
-  if (notification.entityType === 'ORDER') {
+  if (notification.entityType === "ORDER") {
     return ShoppingCart;
   }
 
@@ -837,34 +933,36 @@ function getNotificationIcon(notification: AppNotification) {
 }
 
 function getNotificationIconTone(notification: AppNotification) {
-  if (notification.type.includes('NOTE')) {
-    return 'bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-200';
+  if (notification.type.includes("NOTE")) {
+    return "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-200";
   }
 
-  if (notification.entityType === 'SHIPMENT') {
-    return 'bg-sky-50 text-[#0f6fb7] dark:bg-sky-950/30 dark:text-sky-200';
+  if (notification.entityType === "SHIPMENT") {
+    return "bg-sky-50 text-[#0f6fb7] dark:bg-sky-950/30 dark:text-sky-200";
   }
 
-  if (notification.entityType === 'ORDER') {
-    return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200';
+  if (notification.entityType === "ORDER") {
+    return "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200";
   }
 
-  return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+  return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200";
 }
 
 function getEntityLabel(notification: AppNotification) {
-  if (notification.entityType === 'SHIPMENT') {
-    return 'Shipment';
+  if (notification.type.startsWith("REMINDER_")) return "Reminder";
+  if (notification.entityType === "SHIPMENT") {
+    return "Shipment";
   }
 
-  if (notification.entityType === 'ORDER') {
-    return 'Order';
+  if (notification.entityType === "ORDER") {
+    return "Order";
   }
 
-  return 'Notification';
+  return "Notification";
 }
 
 function getNotificationContext(notification: AppNotification): string | null {
+  if (notification.type.startsWith("REMINDER_")) return null;
   const context = extractTrailingContext(notification.message);
 
   if (context) {
@@ -875,9 +973,10 @@ function getNotificationContext(notification: AppNotification): string | null {
 }
 
 function formatNotificationMessage(notification: AppNotification): string {
+  if (notification.type.startsWith("REMINDER_")) return notification.message;
   const messageWithoutContext = removeTrailingContext(notification.message);
 
-  if (notification.entityType !== 'SHIPMENT') {
+  if (notification.entityType !== "SHIPMENT") {
     return messageWithoutContext;
   }
 
@@ -915,7 +1014,7 @@ function extractTrailingContext(message: string): string | null {
 }
 
 function removeTrailingContext(message: string): string {
-  return message.replace(/\s+Sale\s+.+$/, '').trim();
+  return message.replace(/\s+Sale\s+.+$/, "").trim();
 }
 
 function formatRelativeTime(value: string): string {
@@ -925,10 +1024,13 @@ function formatRelativeTime(value: string): string {
     return formatDateTime(value);
   }
 
-  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  const elapsedSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - timestamp) / 1000),
+  );
 
   if (elapsedSeconds < 60) {
-    return 'Just now';
+    return "Just now";
   }
 
   const elapsedMinutes = Math.floor(elapsedSeconds / 60);
@@ -953,13 +1055,16 @@ function formatRelativeTime(value: string): string {
 }
 
 function resolveNotificationHref(notification: AppNotification): string {
-  if (notification.entityType === 'SHIPMENT') {
+  if (notification.type === "REMINDER_REASSIGNED") return "/my-tasks";
+  if (notification.reminderId)
+    return `/my-tasks?task=${notification.reminderId}`;
+  if (notification.entityType === "SHIPMENT") {
     return `/shipments/${notification.entityId}`;
   }
 
-  if (notification.entityType === 'ORDER') {
+  if (notification.entityType === "ORDER") {
     return `/orders/${notification.entityId}`;
   }
 
-  return '/dashboard';
+  return "/dashboard";
 }

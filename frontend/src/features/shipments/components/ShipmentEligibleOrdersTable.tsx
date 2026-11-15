@@ -1,16 +1,17 @@
-'use client';
+"use client";
+import { FollowUpCell } from "@/features/reminders/FollowUpCell";
 
-import type { ColumnDef } from '@tanstack/react-table';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { DataTable } from '@/components/data-table/DataTable';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils/cn';
-import { formatCurrency } from '@/features/orders/lib/order-formatters';
+import type { ColumnDef } from "@tanstack/react-table";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { DataTable } from "@/components/data-table/DataTable";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils/cn";
+import { formatCurrency } from "@/features/orders/lib/order-formatters";
 import type {
   OrderSummary,
   PaginationMeta,
-} from '@/features/orders/types/order.types';
-import { ShippingStatusCell } from './ShippingStatusCell';
+} from "@/features/orders/types/order.types";
+import { ShippingStatusCell } from "./ShippingStatusCell";
 
 function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
@@ -18,7 +19,7 @@ function getFirstName(name: string) {
 
 function getRangeLabel(meta: PaginationMeta, currentCount: number) {
   if (meta.total === 0 || currentCount === 0) {
-    return 'No eligible orders';
+    return "No eligible orders";
   }
 
   const start = (meta.page - 1) * meta.limit + 1;
@@ -48,15 +49,15 @@ export function ShipmentEligibleOrdersTable({
 }) {
   const columns: ColumnDef<OrderSummary>[] = [
     {
-      accessorKey: 'salesNumber',
-      header: 'Sale',
+      accessorKey: "salesNumber",
+      header: "Sale",
       meta: {
-        className: 'w-[12%]',
+        className: "w-[12%]",
       },
       cell: ({ row }) => (
         <div className="min-w-0 space-y-0.5">
           <p className="truncate font-semibold text-[#d94d00] dark:text-orange-300">
-            {row.original.salesNumber ?? '—'}
+            {row.original.salesNumber ?? "—"}
           </p>
           <p className="truncate text-xs font-medium text-muted-foreground">
             {row.original.orderNumber}
@@ -65,10 +66,10 @@ export function ShipmentEligibleOrdersTable({
       ),
     },
     {
-      accessorKey: 'customerName',
-      header: 'Customer',
+      accessorKey: "customerName",
+      header: "Customer",
       meta: {
-        className: 'w-[16%]',
+        className: "w-[16%]",
       },
       cell: ({ row }) => (
         <p className="truncate font-medium text-foreground">
@@ -77,10 +78,10 @@ export function ShipmentEligibleOrdersTable({
       ),
     },
     {
-      id: 'agent',
-      header: 'Advisor',
+      id: "agent",
+      header: "Advisor",
       meta: {
-        className: 'w-[10%]',
+        className: "w-[10%]",
       },
       cell: ({ row }) => (
         <p className="truncate font-medium text-foreground">
@@ -89,22 +90,25 @@ export function ShipmentEligibleOrdersTable({
       ),
     },
     {
-      accessorKey: 'partDescription',
-      header: 'Part',
+      accessorKey: "partDescription",
+      header: "Part",
       meta: {
-        className: 'w-[30%]',
+        className: "w-[30%]",
       },
       cell: ({ row }) => (
-        <p className="truncate text-sm text-foreground" title={row.original.partDescription}>
+        <p
+          className="truncate text-sm text-foreground"
+          title={row.original.partDescription}
+        >
           {row.original.partDescription}
         </p>
       ),
     },
     {
-      accessorKey: 'totalSaleAmount',
-      header: 'Sale Amount',
+      accessorKey: "totalSaleAmount",
+      header: "Sale Amount",
       meta: {
-        className: 'w-[12%]',
+        className: "w-[12%]",
       },
       cell: ({ row }) => (
         <span className="block truncate font-semibold text-foreground">
@@ -113,10 +117,10 @@ export function ShipmentEligibleOrdersTable({
       ),
     },
     {
-      accessorKey: 'latestShipmentStatus',
-      header: 'Status',
+      accessorKey: "latestShipmentStatus",
+      header: "Status",
       meta: {
-        className: 'w-[12%]',
+        className: "w-[12%]",
       },
       cell: ({ row }) => (
         <ShippingStatusCell
@@ -131,10 +135,16 @@ export function ShipmentEligibleOrdersTable({
       ),
     },
     {
-      id: 'action',
-      header: '',
+      id: "followUp",
+      header: "Next check",
+      meta: { className: "w-[150px] px-2" },
+      cell: ({ row }) => <FollowUpCell value={row.original.followUp} />,
+    },
+    {
+      id: "action",
+      header: "",
       meta: {
-        className: 'w-[8%]',
+        className: "w-[8%]",
       },
       cell: ({ row }) => {
         const isSelected = row.original.id === selectedOrderId;
@@ -145,15 +155,15 @@ export function ShipmentEligibleOrdersTable({
             onClick={() => onSelectOrder(row.original)}
             className={cn(
               buttonVariants({
-                variant: isSelected ? 'default' : 'ghost',
-                size: 'sm',
+                variant: isSelected ? "default" : "ghost",
+                size: "sm",
               }),
               isSelected
-                ? 'rounded-lg bg-[#ff5a00] px-3 text-white hover:bg-[#e65000]'
-                : 'rounded-lg px-3 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20',
+                ? "rounded-lg bg-[#ff5a00] px-3 text-white hover:bg-[#e65000]"
+                : "rounded-lg px-3 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20",
             )}
           >
-            {isSelected ? 'Open' : 'View'}
+            {isSelected ? "Open" : "View"}
             <ArrowRight className="h-4 w-4" />
           </button>
         );
@@ -172,23 +182,23 @@ export function ShipmentEligibleOrdersTable({
       error={error}
       onRetry={onRetry}
       density="compact"
-      layout="fit"
+      layout="scroll"
       renderMobileCard={(order) => {
         const isSelected = order.id === selectedOrderId;
 
         return (
           <article
             className={cn(
-              'rounded-2xl border bg-card p-3 shadow-sm',
+              "rounded-2xl border bg-card p-3 shadow-sm",
               isSelected
-                ? 'border-[#ff5a00]/50 ring-2 ring-orange-100 dark:ring-orange-950/30'
-                : 'border-border/70',
+                ? "border-[#ff5a00]/50 ring-2 ring-orange-100 dark:ring-orange-950/30"
+                : "border-border/70",
             )}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-[#d94d00] dark:text-orange-300">
-                  {order.salesNumber ?? '—'}
+                  {order.salesNumber ?? "—"}
                 </p>
                 <p className="truncate text-xs font-medium text-muted-foreground">
                   {order.orderNumber}
@@ -201,7 +211,16 @@ export function ShipmentEligibleOrdersTable({
 
             <div className="mt-3 grid gap-2 text-sm">
               <MobileField label="Customer" value={order.customerName} />
-              <MobileField label="Advisor" value={getFirstName(order.createdBy.name)} />
+              <MobileField
+                label="Advisor"
+                value={getFirstName(order.createdBy.name)}
+              />
+              <div className="flex justify-between gap-3">
+                <span className="text-xs text-muted-foreground">
+                  Next check
+                </span>
+                <FollowUpCell value={order.followUp} />
+              </div>
               <MobileField label="Part" value={order.partDescription} />
               <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -224,16 +243,16 @@ export function ShipmentEligibleOrdersTable({
               onClick={() => onSelectOrder(order)}
               className={cn(
                 buttonVariants({
-                  variant: isSelected ? 'default' : 'outline',
-                  size: 'sm',
+                  variant: isSelected ? "default" : "outline",
+                  size: "sm",
                 }),
-                'mt-3 h-9 w-full rounded-xl',
+                "mt-3 h-9 w-full rounded-xl",
                 isSelected
-                  ? 'bg-[#ff5a00] text-white hover:bg-[#e65000]'
-                  : 'border-[#ff5a00]/25 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20',
+                  ? "bg-[#ff5a00] text-white hover:bg-[#e65000]"
+                  : "border-[#ff5a00]/25 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:border-orange-900/40 dark:text-orange-300 dark:hover:bg-orange-950/20",
               )}
             >
-              {isSelected ? 'Selected' : 'View'}
+              {isSelected ? "Selected" : "View"}
               <ArrowRight className="h-4 w-4" />
             </button>
           </article>
@@ -285,7 +304,7 @@ function MobileField({ label, value }: { label: string; value: string }) {
         {label}
       </span>
       <span className="truncate font-medium text-foreground" title={value}>
-        {value || '—'}
+        {value || "—"}
       </span>
     </div>
   );

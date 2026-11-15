@@ -1,3 +1,4 @@
+import type { TableFollowUp } from '@/features/reminders/follow-up.schema';
 import type { OrderStatus } from '@/features/orders/types/order.types';
 
 export const SHIPMENT_STATUSES = [
@@ -91,6 +92,7 @@ export interface ShipmentCounts {
 }
 
 export interface ShipmentSummary {
+  followUp?:TableFollowUp|null;
   id: string;
   bolNumber: string | null;
   pickupNumber: string | null;

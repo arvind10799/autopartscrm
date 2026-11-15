@@ -1,4 +1,4 @@
-export type DashboardTab = 'sales-overview' | 'order-status' | 'agent-leads';
+export type DashboardTab = 'sales-overview' | 'order-status' | 'agent-leads' | 'follow-ups';
 
 export type AgentLeadStatus =
   | 'PROSPECT'

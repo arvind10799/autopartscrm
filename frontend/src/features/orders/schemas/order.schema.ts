@@ -1,3 +1,4 @@
+import { followUpSchema } from '@/features/reminders/follow-up.schema';
 import { z } from 'zod';
 import { invoiceRecordSchema } from '@/features/invoices/schemas/invoice.schema';
 import { formatUsPhoneNumber, hasCompleteUsPhoneNumber } from '@/lib/forms/phone-format';
@@ -352,6 +353,8 @@ const orderIntakeDetailsSchema = z.object({
 });
 
 const orderBackendSummarySchema = z.object({
+  followUp:followUpSchema.nullish(),
+  billingState: z.string().nullable().optional(),
   id: z.string(),
   orderNumber: z.string(),
   salesNumber: z.string().nullable().optional(),
@@ -413,8 +416,10 @@ const orderBackendSummarySchema = z.object({
 
 function normalizeOrderSummary(order: z.infer<typeof orderBackendSummarySchema>) {
   return {
+    followUp:order.followUp??null,
     id: order.id,
     orderNumber: order.orderNumber,
+    billingState: order.billingState ?? null,
     salesNumber: order.salesNumber ?? null,
     customerName: order.customerName,
     partDescription: order.partDescription,
@@ -531,6 +536,8 @@ export const nextOrderNumberSchema = z.object({
 });
 
 export const createOrderSchema = z.object({
+  moveLeadReminders: z.boolean().optional(),
+  billingState: z.string().trim().toUpperCase().regex(/^([A-Z]{2})?$/).optional(),
   leadId: z.string().uuid('Lead identifier is invalid.').optional(),
   advisorName: z
     .string()
@@ -695,6 +702,8 @@ export const createOrderSchema = z.object({
 });
 
 export const createOrderFormSchema = z.object({
+  moveLeadReminders: z.boolean().optional(),
+  billingState: z.string().trim().toUpperCase().regex(/^([A-Z]{2})?$/).optional(),
   leadId: z.preprocess(
     (value) => {
       if (typeof value !== 'string') {
@@ -928,6 +937,7 @@ export const createOrderFormSchema = z.object({
 }).pipe(createOrderSchema);
 
 export const updateOrderSchema = z.object({
+  billingState: z.string().trim().toUpperCase().regex(/^([A-Z]{2})?$/).optional(),
   salesNumber: createOptionalTextSchema(
     80,
     'Sales number must be 80 characters or fewer.',
@@ -986,6 +996,7 @@ export const updateOrderSchema = z.object({
 });
 
 export const updateOrderFormSchema = z.object({
+  billingState: z.string().trim().toUpperCase().regex(/^([A-Z]{2})?$/).optional(),
   salesNumber: z.string().max(80, 'Sales number must be 80 characters or fewer.').optional(),
   customerName: z.string().max(160).optional(),
   partDescription: z.string().max(255).optional(),

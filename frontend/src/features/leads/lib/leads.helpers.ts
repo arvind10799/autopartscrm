@@ -41,6 +41,7 @@ const searchTermSchema = z
   .transform((value) => (value.length > 0 ? value : undefined));
 
 export type NormalizedLeadsQuery = {
+  noUpcoming?:boolean;
   page: number;
   limit: number;
   search?: string;
@@ -172,6 +173,7 @@ export function parseLeadsQueryParams(
     page,
     limit,
     search,
+    noUpcoming:searchParams.get('noUpcoming')==='true'?true:undefined,
     converted:
       convertedValue === 'true'
         ? true
@@ -193,6 +195,7 @@ export function buildLeadsQueryString(query: NormalizedLeadsQuery): string {
     limit: String(query.limit),
   });
 
+  if(query.noUpcoming)baseSearchParams.set('noUpcoming','true');
   if (query.search) {
     baseSearchParams.set('search', query.search);
   }
@@ -227,6 +230,7 @@ export function normalizeLeadsListQuery(input: LeadsListQuery): LeadsListQuery {
     limit: input.limit,
     search: input.search?.trim() || undefined,
     converted: input.converted,
+    noUpcoming:input.noUpcoming||undefined,
     status: input.status,
     createdFrom: timestampRange.createdFrom,
     createdTo: timestampRange.createdTo,

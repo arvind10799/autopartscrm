@@ -18,7 +18,18 @@ describe('WebsiteLeadsRepository visibility and claiming', () => {
   const findUniqueOrThrow = jest.fn();
   const prisma = {
     websiteLead: { findMany, count, findFirst, updateMany, findUniqueOrThrow },
-    $transaction: (queries: Promise<unknown>[]) => Promise.all(queries),
+    reminder: { findMany: jest.fn().mockResolvedValue([]) },
+    $queryRaw: jest.fn().mockResolvedValue([]),
+    reminderSuggestion: {
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
+    reminderSuggestionRule: { findMany: jest.fn().mockResolvedValue([]) },
+    $transaction: (
+      operation: Promise<unknown>[] | ((tx: unknown) => Promise<unknown>),
+    ) =>
+      typeof operation === 'function'
+        ? operation(prisma)
+        : Promise.all(operation),
   } as unknown as PrismaService;
   const repository = new WebsiteLeadsRepository(prisma);
 
@@ -45,7 +56,9 @@ describe('WebsiteLeadsRepository visibility and claiming', () => {
         }),
       }),
     );
-    await repository.findAccessible('lead-id', salesUser).catch(() => undefined);
+    await repository
+      .findAccessible('lead-id', salesUser)
+      .catch(() => undefined);
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -68,19 +81,28 @@ describe('WebsiteLeadsRepository visibility and claiming', () => {
       { page: 1, limit: 20, assignment: 'UNASSIGNED' },
       salesUser,
     );
-    expect(findMany.mock.calls[0][0].where.AND[1]).toEqual({ assignedToId: null });
-    await repository.list({ page: 1, limit: 20, assignment: 'MINE' }, salesUser);
+    expect(findMany.mock.calls[0][0].where.AND[1]).toEqual({
+      assignedToId: null,
+    });
+    await repository.list(
+      { page: 1, limit: 20, assignment: 'MINE' },
+      salesUser,
+    );
     expect(findMany.mock.calls[1][0].where.AND[1]).toEqual({
       assignedToId: salesUser.userId,
     });
   });
 
   it('claims only a still-unassigned inquiry and rejects a competing claim', async () => {
-    updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 });
+    updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
     findUniqueOrThrow.mockResolvedValue({ assignedToId: salesUser.userId });
-    await expect(repository.claim('lead-id', salesUser)).resolves.toMatchObject({
-      assignedToId: salesUser.userId,
-    });
+    await expect(repository.claim('lead-id', salesUser)).resolves.toMatchObject(
+      {
+        assignedToId: salesUser.userId,
+      },
+    );
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: 'lead-id', assignedToId: null }),

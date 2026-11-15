@@ -1,4 +1,20 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  attachTableFollowUps,
+  futureReminderWhere,
+  actionableLeadStatuses,
+  TableFollowUp,
+} from '../reminders/reminder-table';
+import {
+  createWithSuggestionEvent,
+  automationSnapshot,
+  publishChangedSuggestions,
+} from '../reminders/reminder-automation-events';
+import { reconcileReminders } from '../reminders/reminder-lifecycle';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { LeadStatus } from '../../common/enums/lead-status.enum';
 import { Role } from '../../common/enums/role.enum';
@@ -65,7 +81,7 @@ const UNTOUCHED_LEAD_EXCLUDED_STATUSES = [
 
 export type LeadListRecord = Prisma.LeadGetPayload<{
   select: typeof leadListSelect;
-}>;
+}> & { followUp?: TableFollowUp | null };
 
 @Injectable()
 export class LeadsRepository {
@@ -73,36 +89,38 @@ export class LeadsRepository {
 
   async create(createLeadDto: CreateLeadDto, user: AuthenticatedUser) {
     try {
-      return await this.prismaService.lead.create({
-        data: {
-          leadDate: parsePacificDateInputValue(createLeadDto.leadDate),
-          adviserName: user.name,
-          cmpt: createLeadDto.cmpt,
-          customerPhone: createLeadDto.customerPhone.trim(),
-          customerName: createLeadDto.customerName.trim(),
-          customerEmail: createLeadDto.customerEmail,
-          state: createLeadDto.state,
-          partDescription: this.buildVehicleDescription(createLeadDto),
-          vehicleYear: createLeadDto.vehicleYear.trim(),
-          vehicleMake: createLeadDto.vehicleMake.trim(),
-          vehicleModel: createLeadDto.vehicleModel.trim(),
-          vehicleVariant: createLeadDto.vehicleVariant,
-          quote:
-            createLeadDto.quote !== undefined
-              ? new Prisma.Decimal(createLeadDto.quote)
-              : undefined,
-          quoteCurrency: createLeadDto.quoteCurrency ?? 'USD',
-          comments: createLeadDto.comments?.trim(),
-          prospects: createLeadDto.prospects?.trim() ?? '',
-          status: createLeadDto.status,
-          createdBy: {
-            connect: {
-              id: user.userId,
+      return await createWithSuggestionEvent(this.prismaService, 'LEAD', (tx) =>
+        tx.lead.create({
+          data: {
+            leadDate: parsePacificDateInputValue(createLeadDto.leadDate),
+            adviserName: user.name,
+            cmpt: createLeadDto.cmpt,
+            customerPhone: createLeadDto.customerPhone.trim(),
+            customerName: createLeadDto.customerName.trim(),
+            customerEmail: createLeadDto.customerEmail,
+            state: createLeadDto.state,
+            partDescription: this.buildVehicleDescription(createLeadDto),
+            vehicleYear: createLeadDto.vehicleYear.trim(),
+            vehicleMake: createLeadDto.vehicleMake.trim(),
+            vehicleModel: createLeadDto.vehicleModel.trim(),
+            vehicleVariant: createLeadDto.vehicleVariant,
+            quote:
+              createLeadDto.quote !== undefined
+                ? new Prisma.Decimal(createLeadDto.quote)
+                : undefined,
+            quoteCurrency: createLeadDto.quoteCurrency ?? 'USD',
+            comments: createLeadDto.comments?.trim(),
+            prospects: createLeadDto.prospects?.trim() ?? '',
+            status: createLeadDto.status,
+            createdBy: {
+              connect: {
+                id: user.userId,
+              },
             },
           },
-        },
-        select: leadListSelect,
-      });
+          select: leadListSelect,
+        }),
+      );
     } catch (error) {
       handlePrismaError(error, 'Lead');
     }
@@ -126,15 +144,28 @@ export class LeadsRepository {
       this.prismaService.lead.count({ where }),
     ]);
 
-    return createPaginatedResponse(data, total, page, limit);
+    return createPaginatedResponse(
+      await attachTableFollowUps(this.prismaService, data, 'LEAD', user),
+      total,
+      page,
+      limit,
+    );
   }
 
-  findAllForExport(queryLeadsDto: QueryLeadsDto, user: AuthenticatedUser) {
-    return this.prismaService.lead.findMany({
-      where: this.buildLeadListWhere(queryLeadsDto, user),
-      select: leadListSelect,
-      orderBy: [{ leadDate: 'desc' }, { createdAt: 'desc' }],
-    });
+  async findAllForExport(
+    queryLeadsDto: QueryLeadsDto,
+    user: AuthenticatedUser,
+  ) {
+    return attachTableFollowUps(
+      this.prismaService,
+      await this.prismaService.lead.findMany({
+        where: this.buildLeadListWhere(queryLeadsDto, user),
+        select: leadListSelect,
+        orderBy: [{ leadDate: 'desc' }, { createdAt: 'desc' }],
+      }),
+      'LEAD',
+      user,
+    );
   }
 
   async findConvertibleById(id: string, user: AuthenticatedUser) {
@@ -154,7 +185,9 @@ export class LeadsRepository {
     }
 
     if (lead.convertedAt) {
-      throw new BadRequestException('Lead has already been converted to an order.');
+      throw new BadRequestException(
+        'Lead has already been converted to an order.',
+      );
     }
 
     return lead;
@@ -195,65 +228,69 @@ export class LeadsRepository {
     }
 
     if (lead.convertedAt) {
-      throw new BadRequestException(
-        'Converted leads cannot be edited.',
-      );
+      throw new BadRequestException('Converted leads cannot be edited.');
     }
 
     return lead;
   }
 
-  async update(id: string, updateLeadDto: UpdateLeadDto) {
-    try {
-      const result = await this.prismaService.lead.updateMany({
-        where: {
-          id,
-          convertedAt: null,
-        },
-        data: {
-          leadDate: updateLeadDto.leadDate
-            ? parsePacificDateInputValue(updateLeadDto.leadDate)
-            : undefined,
-          cmpt: updateLeadDto.cmpt,
-          customerPhone: updateLeadDto.customerPhone,
-          customerName: updateLeadDto.customerName,
-          customerEmail: updateLeadDto.customerEmail,
-          state: updateLeadDto.state,
-          partDescription: this.shouldRefreshVehicleDescription(updateLeadDto)
-            ? this.buildVehicleDescription(updateLeadDto)
-            : undefined,
-          vehicleYear: updateLeadDto.vehicleYear,
-          vehicleMake: updateLeadDto.vehicleMake,
-          vehicleModel: updateLeadDto.vehicleModel,
-          vehicleVariant: updateLeadDto.vehicleVariant,
-          quote:
-            updateLeadDto.quote !== undefined
-              ? new Prisma.Decimal(updateLeadDto.quote)
+  async update(id: string, updateLeadDto: UpdateLeadDto, actorId?: string) {
+    return this.prismaService.$transaction(async (tx) => {
+      try {
+        const before = await automationSnapshot(tx, 'LEAD', id);
+        const result = await tx.lead.updateMany({
+          where: {
+            id,
+            convertedAt: null,
+          },
+          data: {
+            leadDate: updateLeadDto.leadDate
+              ? parsePacificDateInputValue(updateLeadDto.leadDate)
               : undefined,
-          quoteCurrency: updateLeadDto.quoteCurrency,
-          comments: updateLeadDto.comments,
-          prospects: updateLeadDto.prospects,
-          status: updateLeadDto.status,
-        },
-      });
+            cmpt: updateLeadDto.cmpt,
+            customerPhone: updateLeadDto.customerPhone,
+            customerName: updateLeadDto.customerName,
+            customerEmail: updateLeadDto.customerEmail,
+            state: updateLeadDto.state,
+            partDescription: this.shouldRefreshVehicleDescription(updateLeadDto)
+              ? this.buildVehicleDescription(updateLeadDto)
+              : undefined,
+            vehicleYear: updateLeadDto.vehicleYear,
+            vehicleMake: updateLeadDto.vehicleMake,
+            vehicleModel: updateLeadDto.vehicleModel,
+            vehicleVariant: updateLeadDto.vehicleVariant,
+            quote:
+              updateLeadDto.quote !== undefined
+                ? new Prisma.Decimal(updateLeadDto.quote)
+                : undefined,
+            quoteCurrency: updateLeadDto.quoteCurrency,
+            comments: updateLeadDto.comments,
+            prospects: updateLeadDto.prospects,
+            status: updateLeadDto.status,
+          },
+        });
 
-      if (result.count !== 1) {
-        throw new BadRequestException('Converted leads cannot be edited.');
+        if (result.count !== 1) {
+          throw new BadRequestException('Converted leads cannot be edited.');
+        }
+
+        await reconcileReminders(tx, { leadId: id }, actorId);
+        await publishChangedSuggestions(tx, 'LEAD', id, before);
+        return await tx.lead.findUniqueOrThrow({
+          where: { id },
+          select: leadListSelect,
+        });
+      } catch (error) {
+        handlePrismaError(error, 'Lead');
       }
-
-      return await this.prismaService.lead.findUniqueOrThrow({
-        where: { id },
-        select: leadListSelect,
-      });
-    } catch (error) {
-      handlePrismaError(error, 'Lead');
-    }
+    });
   }
 
   async markAsConvertedWithTransaction(
     transactionClient: Prisma.TransactionClient,
     leadId: string,
     orderId: string,
+    moveReminders = true,
   ) {
     const result = await transactionClient.lead.updateMany({
       where: {
@@ -271,6 +308,12 @@ export class LeadsRepository {
         'Lead could not be converted because it was already converted.',
       );
     }
+    await reconcileReminders(
+      transactionClient,
+      { leadId },
+      undefined,
+      moveReminders,
+    );
   }
 
   findLeadAgents() {
@@ -318,13 +361,28 @@ export class LeadsRepository {
       restrictSalesToOwn: false,
     });
     const search = queryLeadsDto.search?.trim();
-    const convertedFilter = this.normalizeConvertedFilter(queryLeadsDto.converted);
+    const convertedFilter = this.normalizeConvertedFilter(
+      queryLeadsDto.converted,
+    );
     const createdById = queryLeadsDto.createdById?.trim();
     const leadDateFilter = buildCreatedAtFilter(
       queryLeadsDto.createdFrom,
       queryLeadsDto.createdTo,
     );
     const untouchedDays = queryLeadsDto.untouchedDays;
+    if (queryLeadsDto.noUpcoming === 'true') {
+      where.AND = [
+        {
+          convertedOrderId: null,
+          status: { in: [...actionableLeadStatuses] },
+          reminders: { none: futureReminderWhere('LEAD', user) },
+        },
+      ];
+      if (user.role === 'SALES')
+        (where.AND as Prisma.LeadWhereInput[]).push({
+          createdById: user.userId,
+        });
+    }
 
     if (createdById) {
       where.createdById = createdById;
@@ -348,7 +406,11 @@ export class LeadsRepository {
       where.updatedAt = { lte: untouchedCutoff };
       where.convertedAt = null;
       where.AND = [
-        ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+        ...(Array.isArray(where.AND)
+          ? where.AND
+          : where.AND
+            ? [where.AND]
+            : []),
         {
           status: {
             notIn: UNTOUCHED_LEAD_EXCLUDED_STATUSES,
@@ -467,7 +529,9 @@ export class LeadsRepository {
       .slice(0, 255);
   }
 
-  private shouldRefreshVehicleDescription(updateLeadDto: UpdateLeadDto): boolean {
+  private shouldRefreshVehicleDescription(
+    updateLeadDto: UpdateLeadDto,
+  ): boolean {
     return [
       updateLeadDto.vehicleYear,
       updateLeadDto.vehicleMake,

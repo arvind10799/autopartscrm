@@ -44,7 +44,9 @@ describe('ShipmentsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     notificationsService.notifyShipmentCreated.mockResolvedValue(undefined);
-    notificationsService.notifyShipmentStatusUpdated.mockResolvedValue(undefined);
+    notificationsService.notifyShipmentStatusUpdated.mockResolvedValue(
+      undefined,
+    );
     notesService.create.mockResolvedValue(undefined);
     service = new ShipmentsService(
       shipmentsRepository as never,
@@ -68,8 +70,16 @@ describe('ShipmentsService', () => {
       bolNumber: 'BOL-123',
       orderId: 'order-id',
       status: PrismaShipmentStatus.PENDING,
+      costs: [],
+      order: { totalSaleAmount: 100, paymentMethod: null, currency: 'USD' },
     });
 
+    shipmentsRepository.findOne.mockResolvedValue({
+      id: 'shipment-id',
+      bolNumber: 'BOL-123',
+      orderId: 'order-id',
+      status: PrismaShipmentStatus.PENDING,
+    });
     const result = await service.create(
       {
         bolNumber: 'BOL-123',
@@ -133,6 +143,8 @@ describe('ShipmentsService', () => {
       status: PrismaShipmentStatus.SHIPPED,
       proNumber: null,
       shippedAt: new Date('2026-08-22T10:00:00.000Z'),
+      costs: [],
+      order: { totalSaleAmount: 100, paymentMethod: null, currency: 'USD' },
     });
 
     await expect(
@@ -151,12 +163,14 @@ describe('ShipmentsService', () => {
   });
 
   it('sets the PRO number when moving a shipment to in transit', async () => {
-    shipmentsRepository.findOne.mockResolvedValue({
+    shipmentsRepository.findOne.mockResolvedValueOnce({
       id: 'shipment-id',
       orderId: 'order-id',
       status: PrismaShipmentStatus.SHIPPED,
       proNumber: null,
       shippedAt: new Date('2026-08-22T10:00:00.000Z'),
+      costs: [],
+      order: { totalSaleAmount: 100, paymentMethod: null, currency: 'USD' },
     });
     shipmentsRepository.updateStatus.mockResolvedValue({
       id: 'shipment-id',
@@ -164,8 +178,17 @@ describe('ShipmentsService', () => {
       bolNumber: 'BOL-123',
       status: PrismaShipmentStatus.IN_TRANSIT,
       proNumber: 'PRO-456',
+      costs: [],
+      order: { totalSaleAmount: 100, paymentMethod: null, currency: 'USD' },
     });
 
+    shipmentsRepository.findOne.mockResolvedValue({
+      id: 'shipment-id',
+      orderId: 'order-id',
+      bolNumber: 'BOL-123',
+      status: PrismaShipmentStatus.IN_TRANSIT,
+      proNumber: 'PRO-456',
+    });
     const result = await service.updateStatus(
       'shipment-id',
       {
@@ -195,7 +218,9 @@ describe('ShipmentsService', () => {
         shippedAt: undefined,
       }),
     );
-    expect(notificationsService.notifyShipmentStatusUpdated).toHaveBeenCalledWith(
+    expect(
+      notificationsService.notifyShipmentStatusUpdated,
+    ).toHaveBeenCalledWith(
       'shipment-id',
       PrismaShipmentStatus.SHIPPED,
       PrismaShipmentStatus.IN_TRANSIT,

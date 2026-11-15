@@ -1,3 +1,8 @@
+import { reconcileReminders } from '../reminders/reminder-lifecycle';
+import {
+  automationSnapshot,
+  publishChangedSuggestions,
+} from '../reminders/reminder-automation-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Role } from '../../common/enums/role.enum';
@@ -194,15 +199,21 @@ export class InvoicesRepository {
 
   async update(id: string, data: Prisma.InvoiceUncheckedUpdateInput) {
     try {
-      return await this.prismaService.invoice.update({
-        where: { id },
-        data,
-        include: {
-          order: {
-            select: invoiceOrderReferenceSelect,
+      return await this.prismaService.$transaction(async (tx) => {
+        const before = await automationSnapshot(tx, 'INVOICE', id);
+        const result = await tx.invoice.update({
+          where: { id },
+          data,
+          include: {
+            order: {
+              select: invoiceOrderReferenceSelect,
+            },
+            auditEvents: invoiceAuditEventsInclude,
           },
-          auditEvents: invoiceAuditEventsInclude,
-        },
+        });
+        await reconcileReminders(tx, { orderId: result.orderId }, undefined);
+        await publishChangedSuggestions(tx, 'INVOICE', id, before);
+        return result;
       });
     } catch (error) {
       handlePrismaError(error, 'Invoice');

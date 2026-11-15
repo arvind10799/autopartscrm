@@ -1,3 +1,4 @@
+import type { TableFollowUp } from '@/features/reminders/follow-up.schema';
 import type { InvoiceRecord } from '@/features/invoices/types/invoice.types';
 
 export const ORDER_STATUSES = [
@@ -88,6 +89,8 @@ export interface OrderIntakeDetails {
 }
 
 export interface OrderSummary {
+  followUp?:TableFollowUp|null;
+  billingState?: string | null;
   id: string;
   orderNumber: string;
   salesNumber: string | null;
@@ -207,6 +210,7 @@ export interface OrdersListResponse {
 }
 
 export interface OrdersListQuery {
+  reminderContext?:'ORDER'|'SHIPMENT_ORDER';
   page: number;
   limit: number;
   search?: string;
@@ -223,6 +227,8 @@ export interface OrdersListQuery {
 export type OrderAgeingRange = '0-7' | '8-14' | '15-30' | '31+';
 
 export interface CreateOrderInput {
+  billingState?: string;
+  moveLeadReminders?: boolean;
   leadId?: string;
   advisorName: string;
   orderNumber: string;
@@ -267,6 +273,7 @@ export interface NextOrderNumber {
 }
 
 export interface UpdateOrderInput {
+  billingState?: string;
   salesNumber?: string;
   customerName?: string;
   partDescription?: string;

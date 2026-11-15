@@ -14,6 +14,7 @@ import {
   Min,
 } from 'class-validator';
 import { OrderPaymentMethod } from '../../../common/enums/order-payment-method.enum';
+import { US_STATE_CODES } from '../../reminders/reminder-time';
 import { OrderStatus } from '../../../common/enums/order-status.enum';
 import {
   trimToLowerCaseEmail,
@@ -22,6 +23,13 @@ import {
 } from '../../../common/utils/transform.util';
 
 export class UpdateOrderDto {
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() || null : value,
+  )
+  @IsOptional()
+  @IsIn(US_STATE_CODES)
+  billingState?: string | null;
+
   @Transform(({ value }) => trimToUndefined(value))
   @IsOptional()
   @IsString()

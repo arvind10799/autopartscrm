@@ -1,3 +1,4 @@
+import { followUpSchema } from '@/features/reminders/follow-up.schema';
 import { z } from 'zod';
 import { ORDER_STATUSES } from '@/features/orders/types/order.types';
 import { SHIPMENT_STATUSES } from '../types/shipment.types';
@@ -118,6 +119,7 @@ const shipmentPaginationMetaSchema = z.object({
 });
 
 const shipmentBackendSummarySchema = z.object({
+  followUp:followUpSchema.nullish(),
   id: entityIdSchema,
   bolNumber: z.string().nullable(),
   pickupNumber: z.string().nullable().optional(),
@@ -146,6 +148,7 @@ function normalizeShipmentSummary(
   shipment: z.infer<typeof shipmentBackendSummarySchema>,
 ) {
   return {
+    followUp:shipment.followUp??null,
     id: shipment.id,
     bolNumber: shipment.bolNumber,
     pickupNumber: shipment.pickupNumber ?? null,

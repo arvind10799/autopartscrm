@@ -1,4 +1,5 @@
 const CACHE_NAME = 'mee-auto-parts-crm-static-v1';
+importScripts('/reminder-sw.js');
 const STATIC_PATHS = [
   '/manifest.webmanifest',
   '/icons/icon-192.png',

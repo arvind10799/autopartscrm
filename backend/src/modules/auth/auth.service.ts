@@ -210,8 +210,19 @@ export class AuthService {
             leads: true,
             orders: true,
             notes: true,
+            remindersOwned: true,
+            remindersCreated: true,
+            remindersCompleted: true,
+            remindersWorking: true,
+            reminderHistory: true,
+            reminderDeliveries: true,
+            reminderDigests: true,
+            reminderSeriesCreated:true,
+            reminderSuggestionDecisions:true,
+            reminderAutomationAudits:true,
           },
         },
+        reminderPreferences: { select: { userId: true } },
       },
     });
 
@@ -226,7 +237,18 @@ export class AuthService {
     const activityCount =
       existingUser._count.leads +
       existingUser._count.orders +
-      existingUser._count.notes;
+      existingUser._count.notes +
+      existingUser._count.remindersOwned +
+      existingUser._count.remindersCreated +
+      existingUser._count.remindersCompleted +
+      existingUser._count.remindersWorking +
+      existingUser._count.reminderHistory +
+      existingUser._count.reminderDeliveries +
+        (existingUser._count.reminderDigests ?? 0) +
+        (existingUser._count.reminderSeriesCreated ?? 0) +
+        (existingUser._count.reminderSuggestionDecisions ?? 0) +
+        (existingUser._count.reminderAutomationAudits ?? 0) +
+      (existingUser.reminderPreferences ? 1 : 0);
 
     if (activityCount > 0) {
       throw new ConflictException(

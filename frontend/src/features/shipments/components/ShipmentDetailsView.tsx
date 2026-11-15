@@ -1,5 +1,7 @@
 'use client';
 
+import { RemindersPanel } from '@/features/reminders/RemindersPanel';
+
 import Link from 'next/link';
 import { getTableBackLabel, useDetailReturnHref } from '@/lib/filters/table-view-state';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -359,8 +361,18 @@ export function ShipmentDetailsView({ shipmentId }: { shipmentId: string }) {
           />
         </div>
 
-        <div className="grid gap-5 xl:sticky xl:top-6 xl:self-start">
-          <ShipmentNotesHistoryCard
+        <div className="grid gap-5 xl:self-start">
+          <RemindersPanel
+            context="SHIPMENT"
+            recordId={shipment.id}
+            recordRevision={`${shipment.updatedAt}:${shipment.costs.map((cost) => cost.updatedAt).join(',')}`}
+            recordLabel={`${shipment.order.salesNumber || shipment.order.orderNumber} · ${shipment.order.customerName}`}
+            onChanged={async () => {
+              await refreshShipment();
+              setOrderRefreshKey((value) => value + 1);
+            }}
+          />
+          <ShipmentNotesHistoryCard key={orderRefreshKey}
             shipment={shipment}
             order={invoiceOrder}
             orderNotes={invoiceOrder?.notes ?? []}

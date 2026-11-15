@@ -98,7 +98,12 @@ describe('OrdersService', () => {
     expect(ordersRepository.createWithTransaction).not.toHaveBeenCalled();
   });
 
-  it('rejects quantity changes for sales users', async () => {
+  it('rejects quantity changes for sales users after verifying record access', async () => {
+    ordersRepository.findEditableById.mockResolvedValue({
+      partDescription: 'Synthetic part',
+      customerEmail: null,
+      intakeDetails: {},
+    });
     await expect(
       service.update(
         'order-id',
@@ -109,7 +114,10 @@ describe('OrdersService', () => {
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
 
-    expect(ordersRepository.findEditableById).not.toHaveBeenCalled();
+    expect(ordersRepository.findEditableById).toHaveBeenCalledWith(
+      'order-id',
+      salesUser,
+    );
     expect(ordersRepository.update).not.toHaveBeenCalled();
   });
 
@@ -152,13 +160,17 @@ describe('OrdersService', () => {
     );
     expect(notesService.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining('Customer name: Metro Parts -> Metro Auto Parts'),
+        content: expect.stringContaining(
+          'Customer name: Metro Parts -> Metro Auto Parts',
+        ),
       }),
       adminUser,
     );
     expect(notesService.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining('Advisor name: Sales User -> Admin User'),
+        content: expect.stringContaining(
+          'Advisor name: Sales User -> Admin User',
+        ),
       }),
       adminUser,
     );

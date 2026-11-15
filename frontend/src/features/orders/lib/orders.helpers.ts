@@ -50,6 +50,7 @@ const searchTermSchema = z
 const userIdSchema = z.string().uuid();
 
 export type NormalizedOrdersQuery = {
+  reminderContext?:'ORDER'|'SHIPMENT_ORDER';
   page: number;
   limit: number;
   search?: string;
@@ -192,6 +193,7 @@ export function parseOrdersQueryParams(
     page,
     limit,
     search,
+    reminderContext:searchParams.get('reminderContext')==='SHIPMENT_ORDER'?'SHIPMENT_ORDER':undefined,
     status: statusValue && isOrderStatus(statusValue) ? statusValue : undefined,
     shipmentStatus:
       shipmentStatusValue && isShipmentStatus(shipmentStatusValue)
@@ -217,6 +219,7 @@ export function buildOrdersQueryString(query: NormalizedOrdersQuery): string {
     limit: String(query.limit),
   });
 
+  if(query.reminderContext)baseSearchParams.set('reminderContext',query.reminderContext);
   if (query.search) {
     baseSearchParams.set('search', query.search);
   }
@@ -261,6 +264,7 @@ export function normalizeOrdersListQuery(
     limit: input.limit,
     search: input.search?.trim() || undefined,
     status: input.status,
+    reminderContext:input.reminderContext,
     shipmentStatus: input.shipmentStatus,
     hasShipment: input.hasShipment,
     hasReplacement: input.hasReplacement,
@@ -274,6 +278,7 @@ export function normalizeOrdersListQuery(
 export function toBackendCreateOrderPayload(order: CreateOrderInput) {
   return {
     leadId: order.leadId,
+    moveLeadReminders: order.moveLeadReminders,
     advisorName: order.advisorName,
     orderNumber: order.orderNumber,
     salesNumber: order.salesNumber,
@@ -290,6 +295,7 @@ export function toBackendCreateOrderPayload(order: CreateOrderInput) {
     vehicleNotes: order.vehicleNotes,
     vehicleConfiguration: order.vehicleConfiguration,
     billingAddress: order.billingAddress,
+    billingState: order.billingState,
     billingPerson: order.billingPerson,
     billingPhone: order.billingPhone,
     shippingAddress: order.shippingAddress,
@@ -335,6 +341,7 @@ export function toBackendUpdateOrderPayload(order: UpdateOrderInput) {
     vehicleNotes: order.vehicleNotes,
     vehicleConfiguration: order.vehicleConfiguration,
     billingAddress: order.billingAddress,
+    billingState: order.billingState,
     billingPerson: order.billingPerson,
     billingPhone: order.billingPhone,
     shippingAddress: order.shippingAddress,

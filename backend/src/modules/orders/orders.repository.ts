@@ -1,4 +1,19 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  attachTableFollowUps,
+  orderReminderContext,
+  TableFollowUp,
+} from '../reminders/reminder-table';
+import {
+  createWithSuggestionEvent,
+  automationSnapshot,
+  publishChangedSuggestions,
+} from '../reminders/reminder-automation-events';
+import { reconcileReminders } from '../reminders/reminder-lifecycle';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   OrderStatus as PrismaOrderStatus,
   Prisma,
@@ -32,8 +47,8 @@ type CreateOrderPayload = CreateOrderDto & {
 
 type UpdateOrderPayload = Omit<UpdateOrderDto, 'note'> &
   OrderResolutionUpdate & {
-  totalSaleAmount?: Prisma.Decimal;
-};
+    totalSaleAmount?: Prisma.Decimal;
+  };
 
 const SHIPMENT_WORKFLOW_STATUSES = [
   PrismaShipmentStatus.PENDING,
@@ -54,6 +69,7 @@ const orderListSelect = {
   partDescription: true,
   customerEmail: true,
   customerPhone: true,
+  billingState: true,
   price: true,
   quantity: true,
   totalSaleAmount: true,
@@ -334,6 +350,7 @@ const orderDetailInclude = {
 
 const orderEditableSelect = {
   id: true,
+  billingState: true,
   orderNumber: true,
   salesNumber: true,
   customerName: true,
@@ -361,7 +378,9 @@ export class OrdersRepository {
     const dateSegment = this.buildOrderNumberDateSegment(new Date());
     const prefix = `${OrdersRepository.orderNumberPrefix}${dateSegment}`;
     const suffixStart = prefix.length + 1;
-    const rows = await client.$queryRaw<Array<{ maxSuffix: number | bigint | null }>>(
+    const rows = await client.$queryRaw<
+      Array<{ maxSuffix: number | bigint | null }>
+    >(
       Prisma.sql`
         SELECT MAX(CAST(SUBSTRING("orderNumber" FROM ${suffixStart}::integer) AS INTEGER)) AS "maxSuffix"
         FROM "Order"
@@ -376,7 +395,11 @@ export class OrdersRepository {
   }
 
   async create(createOrderDto: CreateOrderPayload, createdById: string) {
-    return this.createWithClient(this.prismaService, createOrderDto, createdById);
+    return this.createWithClient(
+      this.prismaService,
+      createOrderDto,
+      createdById,
+    );
   }
 
   async createWithTransaction(
@@ -384,7 +407,11 @@ export class OrdersRepository {
     createOrderDto: CreateOrderPayload,
     createdById: string,
   ) {
-    return this.createWithClient(transactionClient, createOrderDto, createdById);
+    return this.createWithClient(
+      transactionClient,
+      createOrderDto,
+      createdById,
+    );
   }
 
   private async createWithClient(
@@ -393,39 +420,52 @@ export class OrdersRepository {
     createdById: string,
   ) {
     try {
-      return await client.order.create({
-        data: {
-          orderNumber: createOrderDto.orderNumber.trim(),
-          salesNumber: createOrderDto.salesNumber?.trim(),
-          customerName: createOrderDto.customerName.trim(),
-          partDescription: createOrderDto.partDescription.trim(),
-          customerEmail: createOrderDto.customerEmail?.trim().toLowerCase(),
-          customerPhone: createOrderDto.customerPhone?.trim(),
-          intakeDetails: this.buildIntakeDetailsPayload(createOrderDto),
-          price: createOrderDto.price,
+      return await createWithSuggestionEvent(client, 'ORDER', (tx) =>
+        tx.order.create({
+          data: {
+            orderNumber: createOrderDto.orderNumber.trim(),
+            salesNumber: createOrderDto.salesNumber?.trim(),
+            customerName: createOrderDto.customerName.trim(),
+            partDescription: createOrderDto.partDescription.trim(),
+            customerEmail: createOrderDto.customerEmail?.trim().toLowerCase(),
+            customerPhone: createOrderDto.customerPhone?.trim(),
+            billingState: createOrderDto.billingState,
+            intakeDetails: this.buildIntakeDetailsPayload(createOrderDto),
+            price: createOrderDto.price,
 
-          quantity: createOrderDto.quantity,
-          totalSaleAmount: createOrderDto.totalSaleAmount,
-          currency: createOrderDto.currency ?? 'USD',
-          status: createOrderDto.status ?? PrismaOrderStatus.DRAFT,
-          paymentMethod: createOrderDto.paymentMethod,
-          createdBy: {
-            connect: {
-              id: createdById,
+            quantity: createOrderDto.quantity,
+            totalSaleAmount: createOrderDto.totalSaleAmount,
+            currency: createOrderDto.currency ?? 'USD',
+            status: createOrderDto.status ?? PrismaOrderStatus.DRAFT,
+            paymentMethod: createOrderDto.paymentMethod,
+            createdBy: {
+              connect: {
+                id: createdById,
+              },
             },
           },
-        },
-        select: orderListSelect,
-      });
+          select: orderListSelect,
+        }),
+      );
     } catch (error) {
       handlePrismaError(error, 'Order');
     }
   }
 
-  async findAll(
-    queryOrdersDto: QueryOrdersDto,
+  attachFollowUps<T extends { id: string }>(
+    items: T[],
+    query: QueryOrdersDto,
     user: AuthenticatedUser,
   ) {
+    return attachTableFollowUps(
+      this.prismaService,
+      items,
+      orderReminderContext(user, query.reminderContext),
+      user,
+    );
+  }
+
+  async findAll(queryOrdersDto: QueryOrdersDto, user: AuthenticatedUser) {
     const { page, limit, skip } = getPaginationParams(
       queryOrdersDto.page,
       queryOrdersDto.limit,
@@ -535,6 +575,8 @@ export class OrdersRepository {
 
   async update(id: string, updateOrderDto: UpdateOrderPayload) {
     const data: Prisma.OrderUncheckedUpdateInput = {};
+    if (updateOrderDto.billingState !== undefined)
+      data.billingState = updateOrderDto.billingState;
 
     if (updateOrderDto.customerName !== undefined) {
       data.customerName = updateOrderDto.customerName.trim();
@@ -599,10 +641,16 @@ export class OrdersRepository {
     }
 
     try {
-      return await this.prismaService.order.update({
-        where: { id },
-        data,
-        select: orderListSelect,
+      return await this.prismaService.$transaction(async (tx) => {
+        const before = await automationSnapshot(tx, 'ORDER', id);
+        const result = await tx.order.update({
+          where: { id },
+          data,
+          select: orderListSelect,
+        });
+        await reconcileReminders(tx, { orderId: id }, undefined);
+        await publishChangedSuggestions(tx, 'ORDER', id, before);
+        return result;
       });
     } catch (error) {
       handlePrismaError(error, 'Order');
@@ -1002,7 +1050,10 @@ export class OrdersRepository {
       PACIFIC_TIME_ZONE,
     );
     const firstPassDate = new Date(utcTimestamp - firstPassOffset);
-    const finalOffset = this.getTimeZoneOffsetMs(firstPassDate, PACIFIC_TIME_ZONE);
+    const finalOffset = this.getTimeZoneOffsetMs(
+      firstPassDate,
+      PACIFIC_TIME_ZONE,
+    );
 
     return new Date(utcTimestamp - finalOffset);
   }

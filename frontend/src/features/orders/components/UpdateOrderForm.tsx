@@ -1,4 +1,5 @@
 'use client';
+import { BillingStateSelect } from '@/features/reminders/BillingStateSelect';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, History, PencilLine, RotateCcw } from 'lucide-react';
@@ -142,6 +143,7 @@ export function UpdateOrderForm({
       vehicleNotes: order.intakeDetails.vehicleNotes ?? '',
       vehicleConfiguration: order.intakeDetails.vehicleConfiguration ?? '',
       billingAddress: order.intakeDetails.billingAddress ?? '',
+      billingState: order.billingState ?? '',
       billingPerson: order.intakeDetails.billingPerson ?? '',
       billingPhone: formatUsPhoneNumber(order.intakeDetails.billingPhone ?? ''),
       shippingAddress: order.intakeDetails.shippingAddress ?? '',
@@ -360,6 +362,11 @@ export function UpdateOrderForm({
                 />
               </EditorField>
               <div className="space-y-2 sm:col-span-2">
+                <label className="block space-y-2 text-sm font-medium">
+                  Billing state
+                  <BillingStateSelect {...form.register('billingState')} />
+                </label>
+                <p className="text-xs text-muted-foreground">This state sets the customer’s reminder time zone. Update it when the billing address changes state.</p>
                 <Label htmlFor="billingAddress">Billing address</Label>
                 <Textarea id="billingAddress" rows={2} {...form.register('billingAddress')} />
               </div>

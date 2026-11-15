@@ -1,5 +1,7 @@
 'use client';
 
+import { RemindersPanel } from '@/features/reminders/RemindersPanel';
+
 import type { ReactNode } from 'react';
 import {
   ArrowLeft,
@@ -116,6 +118,7 @@ export function CreateShipmentWorkspace() {
   );
 
   const { ordersResponse, isLoading, error } = useOrdersList({
+    reminderContext:'SHIPMENT_ORDER',
     page,
     search: activeSearch,
     shipmentStatus: shipmentStatusFilter,
@@ -392,7 +395,14 @@ export function ShipmentOrderWorkspacePage({ orderId }: { orderId: string }) {
           </Card>
         </div>
 
-        <aside className="xl:sticky xl:top-6 xl:self-start">
+        <aside className="space-y-4 xl:self-start">
+          <RemindersPanel
+            context="SHIPMENT_ORDER"
+            recordId={order.id}
+            recordRevision={`${order.updatedAt}:${order.invoice?.updatedAt ?? ''}`}
+            recordLabel={`${order.salesNumber || order.orderNumber} · ${order.customerName}`}
+            onChanged={() => setRefreshKey((value) => value + 1)}
+          />
           <ShipmentWorkspaceNotesCard
             order={order}
             shipment={latestShipment}

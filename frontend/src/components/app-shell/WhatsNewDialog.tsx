@@ -7,19 +7,18 @@ import type { UserRole } from '@/features/auth/types/auth.types';
 import {
   CURRENT_RELEASE,
   getReleaseHighlights,
-  hasReleaseHighlights,
 } from '@/lib/config/current-release';
 
 export function WhatsNewDialog({
   open,
   role,
   onDismiss,
-  onOpenWebsiteLeads,
+  onOpenMyTasks,
 }: {
   open: boolean;
   role: UserRole;
   onDismiss: () => void;
-  onOpenWebsiteLeads: () => void;
+  onOpenMyTasks: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const highlights = getReleaseHighlights(role);
@@ -67,9 +66,7 @@ export function WhatsNewDialog({
           {CURRENT_RELEASE.title}
         </h2>
         <p id="whats-new-description" className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-          {hasReleaseHighlights(role)
-            ? 'A simpler way to manage requests from your website.'
-            : 'This release focuses on the Website Leads sales workspace.'}
+          {CURRENT_RELEASE.description}
         </p>
       </div>
 
@@ -91,9 +88,9 @@ export function WhatsNewDialog({
 
       <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-7">
         <Button variant="outline" onClick={onDismiss}>Got it</Button>
-        {hasReleaseHighlights(role) ? (
-          <Button onClick={onOpenWebsiteLeads}>
-            Open Website Leads <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        {highlights.length > 0 ? (
+          <Button onClick={onOpenMyTasks}>
+            Open My Tasks <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         ) : null}
       </div>

@@ -1,3 +1,4 @@
+import { IsIn as ReminderIsIn } from 'class-validator';
 import {
   IsEnum,
   IsIn,
@@ -18,6 +19,7 @@ export type WebsiteLeadAssignmentFilter =
   (typeof WEBSITE_LEAD_ASSIGNMENT_FILTERS)[number];
 
 export class QueryWebsiteLeadsDto extends PaginationQueryDto {
+  @IsOptional() @ReminderIsIn(['true', 'false']) noUpcoming?: string;
   @IsOptional()
   @IsString()
   @MaxLength(160)

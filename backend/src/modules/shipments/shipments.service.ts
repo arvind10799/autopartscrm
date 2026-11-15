@@ -124,8 +124,8 @@ export class ShipmentsService {
     return this.shipmentsRepository.findOne(shipment.id);
   }
 
-  findAll(queryShipmentsDto: QueryShipmentsDto) {
-    return this.shipmentsRepository.findAll(queryShipmentsDto);
+  findAll(queryShipmentsDto: QueryShipmentsDto, user: AuthenticatedUser) {
+    return this.shipmentsRepository.findAll(queryShipmentsDto, user);
   }
 
   findOne(id: string) {
@@ -141,10 +141,12 @@ export class ShipmentsService {
     const currentStatus = existingShipment.status;
     const nextStatus = updateShipmentStatusDto.status as PrismaShipmentStatus;
     const existingCost = existingShipment.costs[0] ?? null;
-    const canOverrideShipment = user.role === Role.ADMIN || user.role === Role.SHIPPING;
+    const canOverrideShipment =
+      user.role === Role.ADMIN || user.role === Role.SHIPPING;
     const hasCostPayload = this.hasCostPayload(updateShipmentStatusDto);
     const hasShipmentEditorDataPayload =
-      canOverrideShipment && this.hasShipmentDataPayload(updateShipmentStatusDto);
+      canOverrideShipment &&
+      this.hasShipmentDataPayload(updateShipmentStatusDto);
 
     if (currentStatus === nextStatus) {
       if (!hasCostPayload && !hasShipmentEditorDataPayload) {
@@ -420,7 +422,9 @@ export class ShipmentsService {
         additionalAmount,
         grossProfit,
         currency,
-        ...(payload.costNotes !== undefined ? { notes: payload.costNotes } : {}),
+        ...(payload.costNotes !== undefined
+          ? { notes: payload.costNotes }
+          : {}),
       },
     });
   }

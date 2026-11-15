@@ -91,7 +91,7 @@ export function useTableDetailHref(listPath: string): (detailPath: string) => st
 
 export function getDetailReturnHref(search: string, fallback: string): string {
   const returnTo = new URLSearchParams(search).get('returnTo');
-  if (!returnTo || !/^\/(leads|website-leads|orders|shipments|replacement-orders)(?:\?|$)/.test(returnTo)) {
+  if (!returnTo || !/^\/(leads|website-leads|orders|shipments|replacement-orders|my-tasks|calendar)(?:\?|$)/.test(returnTo)) {
     return fallback;
   }
 
@@ -99,6 +99,8 @@ export function getDetailReturnHref(search: string, fallback: string): string {
 }
 
 export function getTableBackLabel(href: string): string | null {
+  if (href.startsWith('/my-tasks')) return 'Back to my tasks';
+  if (href.startsWith('/calendar')) return 'Back to calendar';
   if (href.startsWith('/leads')) return 'Back to leads';
   if (href.startsWith('/website-leads')) return 'Back to website leads';
   if (href.startsWith('/orders')) return 'Back to orders';

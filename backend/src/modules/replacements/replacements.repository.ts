@@ -1,3 +1,9 @@
+import {
+  createWithSuggestionEvent,
+  automationSnapshot,
+  publishChangedSuggestions,
+} from '../reminders/reminder-automation-events';
+import { reconcileReminders } from '../reminders/reminder-lifecycle';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   Prisma,
@@ -90,45 +96,48 @@ export class ReplacementsRepository {
     return Boolean(shipment);
   }
 
-  async create(
-    data: {
-      orderId: string;
-      shipmentId?: string | null;
-      customerReason: string;
-      yardUpdate?: string | null;
-      replacementStatus: PrismaReplacementStatus;
-      replacementProNumber?: string | null;
-      replacementCarrierName?: string | null;
-      createdById: string;
-    },
-  ) {
+  async create(data: {
+    orderId: string;
+    shipmentId?: string | null;
+    customerReason: string;
+    yardUpdate?: string | null;
+    replacementStatus: PrismaReplacementStatus;
+    replacementProNumber?: string | null;
+    replacementCarrierName?: string | null;
+    createdById: string;
+  }) {
     try {
-      return await this.prismaService.replacementRequest.create({
-        data: {
-          orderId: data.orderId,
-          shipmentId: data.shipmentId ?? null,
-          customerReason: data.customerReason,
-          yardUpdate: data.yardUpdate ?? null,
-          replacementStatus: data.replacementStatus,
-          replacementProNumber: data.replacementProNumber ?? null,
-          replacementCarrierName: data.replacementCarrierName ?? null,
-          createdById: data.createdById,
-          updatedById: data.createdById,
-          histories: {
-            create: {
-              action: 'CREATED',
-              summary: `Replacement request created with status ${data.replacementStatus}.`,
-              nextStatus: data.replacementStatus,
+      return await createWithSuggestionEvent(
+        this.prismaService,
+        'REPLACEMENT',
+        (tx) =>
+          tx.replacementRequest.create({
+            data: {
+              orderId: data.orderId,
+              shipmentId: data.shipmentId ?? null,
               customerReason: data.customerReason,
               yardUpdate: data.yardUpdate ?? null,
+              replacementStatus: data.replacementStatus,
               replacementProNumber: data.replacementProNumber ?? null,
               replacementCarrierName: data.replacementCarrierName ?? null,
               createdById: data.createdById,
+              updatedById: data.createdById,
+              histories: {
+                create: {
+                  action: 'CREATED',
+                  summary: `Replacement request created with status ${data.replacementStatus}.`,
+                  nextStatus: data.replacementStatus,
+                  customerReason: data.customerReason,
+                  yardUpdate: data.yardUpdate ?? null,
+                  replacementProNumber: data.replacementProNumber ?? null,
+                  replacementCarrierName: data.replacementCarrierName ?? null,
+                  createdById: data.createdById,
+                },
+              },
             },
-          },
-        },
-        include: replacementInclude,
-      });
+            include: replacementInclude,
+          }),
+      );
     } catch (error) {
       handlePrismaError(error, 'replacement request');
     }
@@ -188,46 +197,59 @@ export class ReplacementsRepository {
     },
   ) {
     try {
-      return await this.prismaService.replacementRequest.update({
-        where: { id },
-        data: {
-          ...(data.customerReason !== undefined
-            ? { customerReason: data.customerReason }
-            : {}),
-          ...(data.yardUpdate !== undefined ? { yardUpdate: data.yardUpdate } : {}),
-          ...(data.replacementStatus
-            ? { replacementStatus: data.replacementStatus }
-            : {}),
-          ...(data.replacementProNumber !== undefined
-            ? { replacementProNumber: data.replacementProNumber }
-            : {}),
-          ...(data.replacementCarrierName !== undefined
-            ? { replacementCarrierName: data.replacementCarrierName }
-            : {}),
-          updatedById: data.updatedById,
-          histories: {
-            create: {
-              action: data.history.action,
-              summary: data.history.summary,
-              previousStatus: data.history.previousStatus,
-              nextStatus: data.history.nextStatus,
-              customerReason: data.history.customerReason,
-              yardUpdate: data.history.yardUpdate,
-              replacementProNumber: data.history.replacementProNumber,
-              replacementCarrierName: data.history.replacementCarrierName,
-              createdById: data.updatedById,
+      return await this.prismaService.$transaction(async (tx) => {
+        const before = await automationSnapshot(tx, 'REPLACEMENT', id);
+        const result = await tx.replacementRequest.update({
+          where: { id },
+          data: {
+            ...(data.customerReason !== undefined
+              ? { customerReason: data.customerReason }
+              : {}),
+            ...(data.yardUpdate !== undefined
+              ? { yardUpdate: data.yardUpdate }
+              : {}),
+            ...(data.replacementStatus
+              ? { replacementStatus: data.replacementStatus }
+              : {}),
+            ...(data.replacementProNumber !== undefined
+              ? { replacementProNumber: data.replacementProNumber }
+              : {}),
+            ...(data.replacementCarrierName !== undefined
+              ? { replacementCarrierName: data.replacementCarrierName }
+              : {}),
+            updatedById: data.updatedById,
+            histories: {
+              create: {
+                action: data.history.action,
+                summary: data.history.summary,
+                previousStatus: data.history.previousStatus,
+                nextStatus: data.history.nextStatus,
+                customerReason: data.history.customerReason,
+                yardUpdate: data.history.yardUpdate,
+                replacementProNumber: data.history.replacementProNumber,
+                replacementCarrierName: data.history.replacementCarrierName,
+                createdById: data.updatedById,
+              },
             },
           },
-        },
-        include: replacementInclude,
+          include: replacementInclude,
+        });
+        await reconcileReminders(tx, { replacementId: id }, data.updatedById);
+        await publishChangedSuggestions(tx, 'REPLACEMENT', id, before);
+        return result;
       });
     } catch (error) {
       handlePrismaError(error, 'replacement request');
     }
   }
 
-  private buildWhere(query: QueryReplacementsDto): Prisma.ReplacementRequestWhereInput {
-    const createdAtFilter = buildCreatedAtFilter(query.createdFrom, query.createdTo);
+  private buildWhere(
+    query: QueryReplacementsDto,
+  ): Prisma.ReplacementRequestWhereInput {
+    const createdAtFilter = buildCreatedAtFilter(
+      query.createdFrom,
+      query.createdTo,
+    );
     const trimmedSearch = query.search?.trim();
     const filters: Prisma.ReplacementRequestWhereInput[] = [];
 

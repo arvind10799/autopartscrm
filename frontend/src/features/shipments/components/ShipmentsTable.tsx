@@ -1,28 +1,31 @@
-'use client';
+"use client";
+import { FollowUpCell } from "@/features/reminders/FollowUpCell";
 
-import type { ColumnDef } from '@tanstack/react-table';
-import Link from 'next/link';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { DataTable } from '@/components/data-table/DataTable';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils/cn';
-import { useTableDetailHref } from '@/lib/filters/table-view-state';
+import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { DataTable } from "@/components/data-table/DataTable";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils/cn";
+import { useTableDetailHref } from "@/lib/filters/table-view-state";
 import type {
   ShipmentPaginationMeta,
   ShipmentSummary,
-} from '../types/shipment.types';
-import { ShippingStatusCell } from './ShippingStatusCell';
+} from "../types/shipment.types";
+import { ShippingStatusCell } from "./ShippingStatusCell";
 
 function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
 }
 
-const buildColumns = (detailHref: (path: string) => string): ColumnDef<ShipmentSummary>[] => [
+const buildColumns = (
+  detailHref: (path: string) => string,
+): ColumnDef<ShipmentSummary>[] => [
   {
-    accessorKey: 'order.salesNumber',
-    header: 'Sale',
+    accessorKey: "order.salesNumber",
+    header: "Sale",
     meta: {
-      className: 'w-[12%]',
+      className: "w-[12%]",
     },
     cell: ({ row }) => (
       <div className="min-w-0 space-y-0.5">
@@ -30,7 +33,7 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<ShipmentS
           href={detailHref(`/shipments/${row.original.id}`)}
           className="block truncate font-semibold text-[#d94d00] transition hover:text-[#ff5a00] dark:text-orange-300 dark:hover:text-orange-200"
         >
-          {row.original.order.salesNumber ?? '—'}
+          {row.original.order.salesNumber ?? "—"}
         </Link>
         <p className="truncate text-xs font-medium text-muted-foreground">
           {row.original.order.orderNumber}
@@ -39,10 +42,10 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<ShipmentS
     ),
   },
   {
-    accessorKey: 'order.customerName',
-    header: 'Customer',
+    accessorKey: "order.customerName",
+    header: "Customer",
     meta: {
-      className: 'w-[16%]',
+      className: "w-[16%]",
     },
     cell: ({ row }) => (
       <p className="truncate font-medium text-foreground">
@@ -51,10 +54,10 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<ShipmentS
     ),
   },
   {
-    accessorKey: 'order.createdBy.name',
-    header: 'Advisor',
+    accessorKey: "order.createdBy.name",
+    header: "Advisor",
     meta: {
-      className: 'w-[10%]',
+      className: "w-[10%]",
     },
     cell: ({ row }) => (
       <p className="truncate font-medium text-foreground">
@@ -63,39 +66,42 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<ShipmentS
     ),
   },
   {
-    accessorKey: 'order.partDescription',
-    header: 'Part',
+    accessorKey: "order.partDescription",
+    header: "Part",
     meta: {
-      className: 'w-[28%]',
+      className: "w-[28%]",
     },
     cell: ({ row }) => (
-      <p className="truncate text-sm text-foreground" title={row.original.order.partDescription}>
+      <p
+        className="truncate text-sm text-foreground"
+        title={row.original.order.partDescription}
+      >
         {row.original.order.partDescription}
       </p>
     ),
   },
   {
-    accessorKey: 'carrierName',
-    header: 'PRO Details',
+    accessorKey: "carrierName",
+    header: "PRO Details",
     meta: {
-      className: 'w-[14%]',
+      className: "w-[14%]",
     },
     cell: ({ row }) => (
       <div className="min-w-0 space-y-0.5">
         <p className="truncate text-sm font-medium text-foreground">
-          {row.original.carrierName ?? 'Carrier pending'}
+          {row.original.carrierName ?? "Carrier pending"}
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {row.original.proNumber ?? 'PRO pending'}
+          {row.original.proNumber ?? "PRO pending"}
         </p>
       </div>
     ),
   },
   {
-    accessorKey: 'currentStatus',
-    header: 'Status',
+    accessorKey: "currentStatus",
+    header: "Status",
     meta: {
-      className: 'w-[12%]',
+      className: "w-[12%]",
     },
     cell: ({ row }) => (
       <ShippingStatusCell
@@ -110,17 +116,23 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<ShipmentS
     ),
   },
   {
-    id: 'details',
-    header: '',
+    id: "followUp",
+    header: "Next check",
+    meta: { className: "w-[150px] px-2" },
+    cell: ({ row }) => <FollowUpCell value={row.original.followUp} />,
+  },
+  {
+    id: "details",
+    header: "",
     meta: {
-      className: 'w-[8%]',
+      className: "w-[8%]",
     },
     cell: ({ row }) => (
       <Link
         href={detailHref(`/shipments/${row.original.id}`)}
         className={cn(
-          buttonVariants({ variant: 'ghost', size: 'sm' }),
-          'rounded-lg px-2 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20',
+          buttonVariants({ variant: "ghost", size: "sm" }),
+          "rounded-lg px-2 text-[#d94d00] hover:bg-orange-50 hover:text-[#c94700] dark:text-orange-300 dark:hover:bg-orange-950/20",
         )}
       >
         View
@@ -132,7 +144,7 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<ShipmentS
 
 function getRangeLabel(meta: ShipmentPaginationMeta, currentCount: number) {
   if (meta.total === 0 || currentCount === 0) {
-    return 'No results';
+    return "No results";
   }
 
   const normalizedPage =
@@ -158,7 +170,7 @@ export function ShipmentsTable({
   onRetry: () => void;
   onPageChange: (page: number) => void;
 }) {
-  const detailHref = useTableDetailHref('/shipments');
+  const detailHref = useTableDetailHref("/shipments");
   const columns = buildColumns(detailHref);
   const totalPages = meta.totalPages;
 
@@ -171,7 +183,7 @@ export function ShipmentsTable({
       error={error}
       onRetry={onRetry}
       density="compact"
-      layout="fit"
+      layout="scroll"
       renderMobileCard={(shipment) => (
         <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
           <div className="flex items-start justify-between gap-3">
@@ -180,7 +192,7 @@ export function ShipmentsTable({
                 href={detailHref(`/shipments/${shipment.id}`)}
                 className="block truncate text-base font-semibold text-[#d94d00] dark:text-orange-300"
               >
-                {shipment.order.salesNumber ?? '—'}
+                {shipment.order.salesNumber ?? "—"}
               </Link>
               <p className="truncate text-xs font-medium text-muted-foreground">
                 {shipment.order.orderNumber}
@@ -199,17 +211,30 @@ export function ShipmentsTable({
 
           <div className="mt-3 grid gap-2 text-sm">
             <MobileField label="Customer" value={shipment.order.customerName} />
-            <MobileField label="Advisor" value={getFirstName(shipment.order.createdBy.name)} />
+            <MobileField
+              label="Advisor"
+              value={getFirstName(shipment.order.createdBy.name)}
+            />
+            <div className="flex justify-between gap-3">
+              <span className="text-xs text-muted-foreground">Next check</span>
+              <FollowUpCell value={shipment.followUp} />
+            </div>
             <MobileField label="Part" value={shipment.order.partDescription} />
-            <MobileField label="Carrier" value={shipment.carrierName ?? 'Carrier pending'} />
-            <MobileField label="PRO" value={shipment.proNumber ?? 'PRO pending'} />
+            <MobileField
+              label="Carrier"
+              value={shipment.carrierName ?? "Carrier pending"}
+            />
+            <MobileField
+              label="PRO"
+              value={shipment.proNumber ?? "PRO pending"}
+            />
           </div>
 
           <Link
             href={detailHref(`/shipments/${shipment.id}`)}
             className={cn(
-              buttonVariants({ variant: 'default', size: 'sm' }),
-              'mt-3 h-9 w-full rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]',
+              buttonVariants({ variant: "default", size: "sm" }),
+              "mt-3 h-9 w-full rounded-xl bg-[#ff5a00] text-white hover:bg-[#e65000]",
             )}
           >
             View shipment
@@ -263,7 +288,7 @@ function MobileField({ label, value }: { label: string; value: string }) {
         {label}
       </span>
       <span className="truncate font-medium text-foreground" title={value}>
-        {value || '—'}
+        {value || "—"}
       </span>
     </div>
   );

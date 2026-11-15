@@ -23,6 +23,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { OrdersModule } from './modules/orders/orders.module';
 import { ReplacementsModule } from './modules/replacements/replacements.module';
 import { ReleasesModule } from './modules/releases/releases.module';
+import { RemindersModule } from './modules/reminders/reminders.module';
 import { RingCentralModule } from './modules/ringcentral/ringcentral.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
@@ -42,6 +43,7 @@ import { WebsiteLeadsModule } from './modules/website-leads/website-leads.module
     OrdersModule,
     ReplacementsModule,
     ReleasesModule,
+    RemindersModule,
     RingCentralModule,
     AppConnectModule,
     ShipmentsModule,

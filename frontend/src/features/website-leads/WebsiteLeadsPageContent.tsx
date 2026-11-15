@@ -1,23 +1,24 @@
-'use client';
+"use client";
+import { FollowUpCell } from "@/features/reminders/FollowUpCell";
 
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { ArrowRight, Globe2, Inbox, Search, X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { useAuthStore } from '@/features/auth/store/auth.store';
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, Globe2, Inbox, Search, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DateRangeFilter } from "@/components/filters/DateRangeFilter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 import {
   parseTablePage,
   useTableDateRange,
   useTableDetailHref,
   useTableQueryParam,
-} from '@/lib/filters/table-view-state';
-import { cn } from '@/lib/utils/cn';
-import { formatPacificDateTime } from '@/lib/utils/pacific-date';
+} from "@/lib/filters/table-view-state";
+import { cn } from "@/lib/utils/cn";
+import { formatPacificDateTime } from "@/lib/utils/pacific-date";
 import {
   websiteLeadsApi,
   WEBSITE_LEAD_ASSIGNMENT_FILTERS,
@@ -27,20 +28,20 @@ import {
   type WebsiteLeadAssignmentFilter,
   type WebsiteLeadList,
   type WebsiteLeadStatus,
-} from './website-leads-api';
+} from "./website-leads-api";
 import {
   WebsiteLeadAssignmentBadge,
   WebsiteLeadStatusBadge,
-} from './WebsiteLeadBadges';
-import { useWebsiteLeadsSummary } from './WebsiteLeadsSummaryProvider';
-import { buildWebsiteLeadSubmittedRangeQuery } from './website-lead-date-range';
+} from "./WebsiteLeadBadges";
+import { useWebsiteLeadsSummary } from "./WebsiteLeadsSummaryProvider";
+import { buildWebsiteLeadSubmittedRangeQuery } from "./website-lead-date-range";
 
 const PAGE_SIZE = 20;
 const statusLabel: Record<WebsiteLeadStatus, string> = {
-  NEW: 'New',
-  CONTACTED: 'Contacted',
-  CLOSED: 'Closed',
-  CONVERTED: 'Converted',
+  NEW: "New",
+  CONTACTED: "Contacted",
+  CLOSED: "Closed",
+  CONVERTED: "Converted",
 };
 
 function requestTitle(item: WebsiteLead) {
@@ -48,8 +49,8 @@ function requestTitle(item: WebsiteLead) {
     item.partRequested ||
     [item.vehicleYear, item.vehicleMake, item.vehicleModel]
       .filter(Boolean)
-      .join(' ') ||
-    'Part request'
+      .join(" ") ||
+    "Part request"
   );
 }
 
@@ -57,35 +58,50 @@ export function WebsiteLeadsPageContent() {
   const user = useAuthStore((state) => state.user);
   const role = user?.role;
   const { summary } = useWebsiteLeadsSummary();
-  const [search, setSearch] = useTableQueryParam('q', '', (value) => value);
-  const [status, setStatus] = useTableQueryParam('status', '', (value) =>
-    WEBSITE_LEAD_STATUSES.includes(value as WebsiteLeadStatus) ? value : '',
+  const [noUpcoming, setNoUpcoming] = useTableQueryParam(
+    "noUpcoming",
+    "",
+    (v) => (v === "true" ? "true" : ""),
+  );
+  const [search, setSearch] = useTableQueryParam("q", "", (value) => value);
+  const [status, setStatus] = useTableQueryParam("status", "", (value) =>
+    WEBSITE_LEAD_STATUSES.includes(value as WebsiteLeadStatus) ? value : "",
   );
   const [assignment, setAssignment] =
-    useTableQueryParam<WebsiteLeadAssignmentFilter>('assignment', 'ALL', (value) =>
-      WEBSITE_LEAD_ASSIGNMENT_FILTERS.includes(
-        value as WebsiteLeadAssignmentFilter,
-      )
-        ? (value as WebsiteLeadAssignmentFilter)
-        : 'ALL',
+    useTableQueryParam<WebsiteLeadAssignmentFilter>(
+      "assignment",
+      "ALL",
+      (value) =>
+        WEBSITE_LEAD_ASSIGNMENT_FILTERS.includes(
+          value as WebsiteLeadAssignmentFilter,
+        )
+          ? (value as WebsiteLeadAssignmentFilter)
+          : "ALL",
     );
-  const [agent, setAgent] = useTableQueryParam('agent', '', (value) => value);
+  const [agent, setAgent] = useTableQueryParam("agent", "", (value) => value);
   const [dateFilter, setDateFilter] = useTableDateRange();
-  const [page, setPage] = useTableQueryParam('page', 1, parseTablePage, false);
-  const detailHref = useTableDetailHref('/website-leads');
+  const [page, setPage] = useTableQueryParam("page", 1, parseTablePage, false);
+  const detailHref = useTableDetailHref("/website-leads");
   const deferredSearch = useDeferredValue(search);
   const [agents, setAgents] = useState<WebsiteLeadAgent[]>([]);
   const [data, setData] = useState<WebsiteLeadList | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const hasFilters = Boolean(search || status || agent || assignment !== 'ALL' || dateFilter.preset !== 'ALL');
+  const hasFilters = Boolean(
+    noUpcoming ||
+    search ||
+    status ||
+    agent ||
+    assignment !== "ALL" ||
+    dateFilter.preset !== "ALL",
+  );
   const { createdFrom, createdTo } = useMemo(
     () => buildWebsiteLeadSubmittedRangeQuery(dateFilter),
     [dateFilter.preset, dateFilter.from, dateFilter.to],
   );
 
   useEffect(() => {
-    if (role !== 'ADMIN') return;
+    if (role !== "ADMIN") return;
     void websiteLeadsApi
       .agents()
       .then(setAgents)
@@ -100,13 +116,16 @@ export function WebsiteLeadsPageContent() {
       .list({
         page,
         limit: PAGE_SIZE,
+        noUpcoming: noUpcoming === "true" || undefined,
         search: deferredSearch || undefined,
         status: status ? (status as WebsiteLeadStatus) : undefined,
         createdFrom,
         createdTo,
-        assignment: assignment !== 'ALL' ? assignment : undefined,
+        assignment: assignment !== "ALL" ? assignment : undefined,
         assignedToId:
-          role === 'ADMIN' && assignment === 'ALL' ? agent || undefined : undefined,
+          role === "ADMIN" && assignment === "ALL"
+            ? agent || undefined
+            : undefined,
       })
       .then((result) => {
         if (active) setData(result);
@@ -116,7 +135,7 @@ export function WebsiteLeadsPageContent() {
           setError(
             caught instanceof Error
               ? caught.message
-              : 'Unable to load website leads.',
+              : "Unable to load website leads.",
           );
       })
       .finally(() => {
@@ -125,18 +144,29 @@ export function WebsiteLeadsPageContent() {
     return () => {
       active = false;
     };
-  }, [page, deferredSearch, status, assignment, agent, role, createdFrom, createdTo]);
+  }, [
+    noUpcoming,
+    page,
+    deferredSearch,
+    status,
+    assignment,
+    agent,
+    role,
+    createdFrom,
+    createdTo,
+  ]);
 
   function clearFilters() {
-    setSearch('');
-    setStatus('');
-    setAgent('');
-    setAssignment('ALL');
-    setDateFilter({ preset: 'ALL', from: '', to: '' });
+    setNoUpcoming("");
+    setSearch("");
+    setStatus("");
+    setAgent("");
+    setAssignment("ALL");
+    setDateFilter({ preset: "ALL", from: "", to: "" });
   }
 
   function chooseAssignment(value: WebsiteLeadAssignmentFilter) {
-    setAgent('');
+    setAgent("");
     setAssignment(value);
   }
 
@@ -145,9 +175,13 @@ export function WebsiteLeadsPageContent() {
     label: string;
     count: number | undefined;
   }> = [
-    { value: 'ALL', label: 'All visible', count: summary?.totalCount },
-    { value: 'UNASSIGNED', label: 'Unassigned', count: summary?.unassignedCount },
-    { value: 'MINE', label: 'Assigned to me', count: summary?.mineCount },
+    { value: "ALL", label: "All visible", count: summary?.totalCount },
+    {
+      value: "UNASSIGNED",
+      label: "Unassigned",
+      count: summary?.unassignedCount,
+    },
+    { value: "MINE", label: "Assigned to me", count: summary?.mineCount },
   ];
 
   return (
@@ -168,17 +202,26 @@ export function WebsiteLeadsPageContent() {
         </div>
         {summary && summary.newCount > 0 ? (
           <Badge variant="warning" className="px-3 py-1.5 font-semibold">
-            {summary.newCount} new {summary.newCount === 1 ? 'request' : 'requests'}
+            {summary.newCount} new{" "}
+            {summary.newCount === 1 ? "request" : "requests"}
           </Badge>
         ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <SummaryCard label="New requests" value={summary?.newCount} tone="orange" />
-        <SummaryCard label="Unassigned" value={summary?.unassignedCount} tone="blue" />
         <SummaryCard
-          label={role === 'SALES' ? 'Assigned to me' : 'Total website leads'}
-          value={role === 'SALES' ? summary?.mineCount : summary?.totalCount}
+          label="New requests"
+          value={summary?.newCount}
+          tone="orange"
+        />
+        <SummaryCard
+          label="Unassigned"
+          value={summary?.unassignedCount}
+          tone="blue"
+        />
+        <SummaryCard
+          label={role === "SALES" ? "Assigned to me" : "Total website leads"}
+          value={role === "SALES" ? summary?.mineCount : summary?.totalCount}
           tone="slate"
         />
       </div>
@@ -191,9 +234,9 @@ export function WebsiteLeadsPageContent() {
                 Inquiries
               </h3>
               <p className="text-xs text-muted-foreground">
-                {role === 'SALES'
-                  ? 'Review unassigned requests or follow up on your own.'
-                  : 'Review, assign, and convert website requests.'}
+                {role === "SALES"
+                  ? "Review unassigned requests or follow up on your own."
+                  : "Review, assign, and convert website requests."}
               </p>
             </div>
             {hasFilters ? (
@@ -202,7 +245,10 @@ export function WebsiteLeadsPageContent() {
               </Button>
             ) : null}
           </div>
-          <div className="mt-4 flex flex-wrap gap-2" aria-label="Assignment filters">
+          <div
+            className="mt-4 flex flex-wrap gap-2"
+            aria-label="Assignment filters"
+          >
             {filters.map((filter) => (
               <button
                 key={filter.value}
@@ -210,10 +256,10 @@ export function WebsiteLeadsPageContent() {
                 onClick={() => chooseAssignment(filter.value)}
                 aria-pressed={assignment === filter.value}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400',
+                  "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400",
                   assignment === filter.value
-                    ? 'border-[#ff5a00] bg-orange-50 text-[#c2410c] dark:bg-orange-950/40 dark:text-orange-200'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-orange-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300',
+                    ? "border-[#ff5a00] bg-orange-50 text-[#c2410c] dark:bg-orange-950/40 dark:text-orange-200"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-orange-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
                 )}
               >
                 {filter.label}
@@ -225,10 +271,13 @@ export function WebsiteLeadsPageContent() {
               </button>
             ))}
           </div>
-          <div className={cn(
-            'mt-4 grid items-start gap-3 md:grid-cols-[minmax(0,1fr)_180px] lg:grid-cols-[minmax(0,1fr)_170px_190px]',
-            role === 'ADMIN' && 'xl:grid-cols-[minmax(0,1fr)_170px_190px_190px]',
-          )}>
+          <div
+            className={cn(
+              "mt-4 grid items-start gap-3 md:grid-cols-[minmax(0,1fr)_180px] xl:grid-cols-[minmax(0,1fr)_170px_190px]",
+              role === "ADMIN" &&
+                "xl:grid-cols-[minmax(0,1fr)_170px_190px_190px]",
+            )}
+          >
             <label className="relative">
               <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -251,7 +300,19 @@ export function WebsiteLeadsPageContent() {
                 </option>
               ))}
             </Select>
-            <div className={cn(dateFilter.preset === 'CUSTOM' && 'lg:col-span-2')}>
+            <Select
+              aria-label="Upcoming reminder filter"
+              value={noUpcoming}
+              onChange={(e) =>
+                setNoUpcoming(e.target.value === "true" ? "true" : "")
+              }
+            >
+              <option value="">All follow-ups</option>
+              <option value="true">No upcoming reminder</option>
+            </Select>
+            <div
+              className={cn(dateFilter.preset === "CUSTOM" && "lg:col-span-2")}
+            >
               <DateRangeFilter
                 value={dateFilter}
                 onChange={setDateFilter}
@@ -262,13 +323,15 @@ export function WebsiteLeadsPageContent() {
                 dateLabel="Received"
                 compactControls
               />
-              <p className="mt-1 text-[11px] text-muted-foreground">Received date · Pacific time</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Received date · Pacific time
+              </p>
             </div>
-            {role === 'ADMIN' ? (
+            {role === "ADMIN" ? (
               <Select
                 aria-label="Agent filter"
                 value={agent}
-                disabled={assignment !== 'ALL'}
+                disabled={assignment !== "ALL"}
                 onChange={(event) => setAgent(event.target.value)}
               >
                 <option value="">All agents</option>
@@ -283,18 +346,24 @@ export function WebsiteLeadsPageContent() {
         </div>
 
         <CardContent className="p-0">
-          <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_150px_160px_140px_24px] gap-4 border-b border-border/70 bg-slate-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400 lg:grid">
+          <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_130px_130px_150px_110px_24px] gap-4 border-b border-border/70 bg-slate-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400 xl:grid">
             <span>Customer</span>
             <span>Request</span>
             <span>Received</span>
             <span>Assignment</span>
+            <span>Next follow-up</span>
             <span>Status</span>
             <span className="sr-only">Open</span>
           </div>
           {error ? (
-            <div className="px-5 py-10 text-center text-sm text-destructive">{error}</div>
+            <div className="px-5 py-10 text-center text-sm text-destructive">
+              {error}
+            </div>
           ) : loading ? (
-            <div className="px-5 py-10 text-center text-sm text-muted-foreground" role="status">
+            <div
+              className="px-5 py-10 text-center text-sm text-muted-foreground"
+              role="status"
+            >
               Loading website leads…
             </div>
           ) : data?.items.length === 0 ? (
@@ -303,8 +372,8 @@ export function WebsiteLeadsPageContent() {
               <p className="font-medium">No website leads found</p>
               <p className="max-w-sm text-sm text-muted-foreground">
                 {hasFilters
-                  ? 'Try another search or clear the filters to see more inquiries.'
-                  : 'New quote and part requests will appear here.'}
+                  ? "Try another search or clear the filters to see more inquiries."
+                  : "New quote and part requests will appear here."}
               </p>
               {hasFilters ? (
                 <Button variant="outline" size="sm" onClick={clearFilters}>
@@ -317,31 +386,43 @@ export function WebsiteLeadsPageContent() {
               <Link
                 key={item.id}
                 href={detailHref(`/website-leads/${item.id}`)}
-                aria-label={`Open website lead from ${item.customerName || item.customerPhone || item.customerEmail || 'unnamed customer'}`}
+                aria-label={`Open website lead from ${item.customerName || item.customerPhone || item.customerEmail || "unnamed customer"}`}
                 className={cn(
-                  'group grid gap-3 border-b border-border/70 px-4 py-4 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 dark:hover:bg-slate-900/70 sm:px-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_150px_160px_140px_24px] lg:items-center lg:gap-4',
-                  item.status === 'NEW' && 'border-l-[3px] border-l-orange-400 bg-orange-50/40 dark:bg-orange-950/10',
+                  "group grid gap-3 border-b border-border/70 px-4 py-4 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 dark:hover:bg-slate-900/70 sm:px-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_130px_130px_150px_110px_24px] xl:items-center xl:gap-4",
+                  item.status === "NEW" &&
+                    "border-l-[3px] border-l-orange-400 bg-orange-50/40 dark:bg-orange-950/10",
                 )}
               >
                 <span className="min-w-0">
                   <strong className="block truncate text-sm text-slate-950 dark:text-white">
-                    {item.customerName || item.customerPhone || item.customerEmail || 'Unnamed inquiry'}
+                    {item.customerName ||
+                      item.customerPhone ||
+                      item.customerEmail ||
+                      "Unnamed inquiry"}
                   </strong>
                   <span className="block truncate text-xs text-muted-foreground">
-                    {item.customerPhone || item.customerEmail || 'No contact number'}
+                    {item.customerPhone ||
+                      item.customerEmail ||
+                      "No contact number"}
                   </span>
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium">{requestTitle(item)}</span>
+                  <span className="block truncate text-sm font-medium">
+                    {requestTitle(item)}
+                  </span>
                   <span className="block truncate text-xs text-muted-foreground">
-                    {item.source === 'QUOTE' ? 'Quote request' : 'Part request'}
-                    {[item.vehicleYear, item.vehicleMake, item.vehicleModel].some(Boolean)
-                      ? ` · ${[item.vehicleYear, item.vehicleMake, item.vehicleModel].filter(Boolean).join(' ')}`
-                      : ''}
+                    {item.source === "QUOTE" ? "Quote request" : "Part request"}
+                    {[
+                      item.vehicleYear,
+                      item.vehicleMake,
+                      item.vehicleModel,
+                    ].some(Boolean)
+                      ? ` · ${[item.vehicleYear, item.vehicleMake, item.vehicleModel].filter(Boolean).join(" ")}`
+                      : ""}
                   </span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  <span className="mr-1 lg:hidden">Received</span>
+                  <span className="mr-1 xl:hidden">Received</span>
                   {formatPacificDateTime(item.submittedAt)}
                 </span>
                 <span>
@@ -350,8 +431,16 @@ export function WebsiteLeadsPageContent() {
                     isMine={item.assignedToId === user?.userId}
                   />
                 </span>
-                <span><WebsiteLeadStatusBadge status={item.status} /></span>
-                <ArrowRight className="hidden h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-orange-600 lg:block" />
+                <span>
+                  <span className="block text-[10px] uppercase text-muted-foreground xl:hidden">
+                    Next follow-up
+                  </span>
+                  <FollowUpCell value={item.followUp} interactive={false} />
+                </span>
+                <span>
+                  <WebsiteLeadStatusBadge status={item.status} />
+                </span>
+                <ArrowRight className="hidden h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-orange-600 xl:block" />
               </Link>
             ))
           )}
@@ -359,7 +448,12 @@ export function WebsiteLeadsPageContent() {
           {!loading && !error && data && data.meta.total > 0 ? (
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 text-sm text-muted-foreground sm:px-5">
               <span>
-                {Math.min((data.meta.page - 1) * PAGE_SIZE + 1, data.meta.total)}–{Math.min(data.meta.page * PAGE_SIZE, data.meta.total)} of {data.meta.total}
+                {Math.min(
+                  (data.meta.page - 1) * PAGE_SIZE + 1,
+                  data.meta.total,
+                )}
+                –{Math.min(data.meta.page * PAGE_SIZE, data.meta.total)} of{" "}
+                {data.meta.total}
               </span>
               <div className="flex items-center gap-2">
                 <Button
@@ -370,7 +464,9 @@ export function WebsiteLeadsPageContent() {
                 >
                   Previous
                 </Button>
-                <span className="hidden text-xs sm:inline">Page {data.meta.page} of {data.meta.totalPages}</span>
+                <span className="hidden text-xs sm:inline">
+                  Page {data.meta.page} of {data.meta.totalPages}
+                </span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -395,18 +491,22 @@ function SummaryCard({
 }: {
   label: string;
   value: number | undefined;
-  tone: 'orange' | 'blue' | 'slate';
+  tone: "orange" | "blue" | "slate";
 }) {
   const toneClass = {
-    orange: 'border-orange-200 bg-orange-50/70 dark:border-orange-900 dark:bg-orange-950/20',
-    blue: 'border-sky-200 bg-sky-50/70 dark:border-sky-900 dark:bg-sky-950/20',
-    slate: 'border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/50',
+    orange:
+      "border-orange-200 bg-orange-50/70 dark:border-orange-900 dark:bg-orange-950/20",
+    blue: "border-sky-200 bg-sky-50/70 dark:border-sky-900 dark:bg-sky-950/20",
+    slate:
+      "border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/50",
   }[tone];
   return (
-    <div className={cn('rounded-2xl border px-4 py-3 sm:px-5', toneClass)}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+    <div className={cn("rounded-2xl border px-4 py-3 sm:px-5", toneClass)}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
       <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-950 dark:text-white">
-        {value ?? '—'}
+        {value ?? "—"}
       </p>
     </div>
   );

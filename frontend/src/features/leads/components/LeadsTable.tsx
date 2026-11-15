@@ -1,23 +1,23 @@
-'use client';
+"use client";
+import { FollowUpCell } from "@/features/reminders/FollowUpCell";
 
-import type { ColumnDef } from '@tanstack/react-table';
-import type { MouseEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  ChevronLeft,
-  ChevronRight,
-  PencilLine,
-  RefreshCw,
-} from 'lucide-react';
-import { DataTable } from '@/components/data-table/DataTable';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import type { UserRole } from '@/features/auth/types/auth.types';
-import { cn } from '@/lib/utils/cn';
-import { useTableDetailHref } from '@/lib/filters/table-view-state';
-import { formatDate, formatLeadCurrency } from '../lib/lead-formatters';
-import { formatLeadStatusLabel } from '../lib/leads.helpers';
-import type { LeadStatus, LeadSummary, PaginationMeta } from '../types/lead.types';
+import type { ColumnDef } from "@tanstack/react-table";
+import type { MouseEvent } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight, PencilLine, RefreshCw } from "lucide-react";
+import { DataTable } from "@/components/data-table/DataTable";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { UserRole } from "@/features/auth/types/auth.types";
+import { cn } from "@/lib/utils/cn";
+import { useTableDetailHref } from "@/lib/filters/table-view-state";
+import { formatDate, formatLeadCurrency } from "../lib/lead-formatters";
+import { formatLeadStatusLabel } from "../lib/leads.helpers";
+import type {
+  LeadStatus,
+  LeadSummary,
+  PaginationMeta,
+} from "../types/lead.types";
 
 function getFirstName(name: string) {
   return name.trim().split(/\s+/)[0] || name;
@@ -27,7 +27,7 @@ function formatUpdatedAge(value: string) {
   const timestamp = new Date(value).getTime();
 
   if (Number.isNaN(timestamp)) {
-    return '';
+    return "";
   }
 
   const elapsedSeconds = Math.max(
@@ -36,7 +36,7 @@ function formatUpdatedAge(value: string) {
   );
 
   if (elapsedSeconds < 60) {
-    return 'just now';
+    return "just now";
   }
 
   const elapsedMinutes = Math.floor(elapsedSeconds / 60);
@@ -48,50 +48,52 @@ function formatUpdatedAge(value: string) {
   const elapsedHours = Math.floor(elapsedMinutes / 60);
 
   if (elapsedHours < 24) {
-    return `${elapsedHours} ${elapsedHours === 1 ? 'hour' : 'hours'} ago`;
+    return `${elapsedHours} ${elapsedHours === 1 ? "hour" : "hours"} ago`;
   }
 
   const elapsedDays = Math.floor(elapsedHours / 24);
 
   if (elapsedDays < 30) {
-    return `${elapsedDays} ${elapsedDays === 1 ? 'day' : 'days'} ago`;
+    return `${elapsedDays} ${elapsedDays === 1 ? "day" : "days"} ago`;
   }
 
   const elapsedMonths = Math.floor(elapsedDays / 30);
 
   if (elapsedMonths < 12) {
-    return `${elapsedMonths} ${elapsedMonths === 1 ? 'month' : 'months'} ago`;
+    return `${elapsedMonths} ${elapsedMonths === 1 ? "month" : "months"} ago`;
   }
 
   const elapsedYears = Math.floor(elapsedMonths / 12);
-  return `${elapsedYears} ${elapsedYears === 1 ? 'year' : 'years'} ago`;
+  return `${elapsedYears} ${elapsedYears === 1 ? "year" : "years"} ago`;
 }
 
 function formatVehicleSummary(lead: LeadSummary) {
-  return [lead.vehicleYear, lead.vehicleMake, lead.vehicleModel]
-    .map((value) => value?.trim())
-    .filter(Boolean)
-    .join(' ') || '--';
+  return (
+    [lead.vehicleYear, lead.vehicleMake, lead.vehicleModel]
+      .map((value) => value?.trim())
+      .filter(Boolean)
+      .join(" ") || "--"
+  );
 }
 
-function getLeadStatusTone(status: LeadStatus | 'CONVERTED') {
-  const toneClasses: Record<LeadStatus | 'CONVERTED', string> = {
+function getLeadStatusTone(status: LeadStatus | "CONVERTED") {
+  const toneClasses: Record<LeadStatus | "CONVERTED", string> = {
     CONVERTED:
-      'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300',
+      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300",
     PROSPECT:
-      'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-300',
+      "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-300",
     QUOTED:
-      'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-300',
+      "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-300",
     CALL_BACK_LATER:
-      'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300',
+      "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300",
     SHOPPING_AROUND:
-      'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/50 dark:bg-violet-950/30 dark:text-violet-300',
+      "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/50 dark:bg-violet-950/30 dark:text-violet-300",
     NOT_INTERESTED:
-      'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300',
+      "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
     NEEDS_LOCALLY:
-      'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300',
+      "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300",
     WE_DONT_SALE:
-      'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300',
+      "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300",
   };
 
   return toneClasses[status];
@@ -118,10 +120,13 @@ function buildColumns(
 ): ColumnDef<LeadSummary>[] {
   const columns: ColumnDef<LeadSummary>[] = [
     {
-      accessorKey: 'date',
-      header: 'Date',
+      accessorKey: "date",
+      header: "Date",
       meta: {
-        className: role === 'ADMIN' ? 'w-[10%] overflow-hidden px-2' : 'w-[11%] overflow-hidden px-2',
+        className:
+          role === "ADMIN"
+            ? "w-[10%] overflow-hidden px-2"
+            : "w-[11%] overflow-hidden px-2",
       },
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -141,10 +146,13 @@ function buildColumns(
       ),
     },
     {
-      accessorKey: 'customerName',
-      header: 'Customer',
+      accessorKey: "customerName",
+      header: "Customer",
       meta: {
-        className: role === 'ADMIN' ? 'w-[15%] overflow-hidden px-2' : 'w-[18%] overflow-hidden px-2',
+        className:
+          role === "ADMIN"
+            ? "w-[15%] overflow-hidden px-2"
+            : "w-[18%] overflow-hidden px-2",
       },
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -160,10 +168,13 @@ function buildColumns(
       ),
     },
     {
-      accessorKey: 'customerPhone',
-      header: 'Phone No.',
+      accessorKey: "customerPhone",
+      header: "Phone No.",
       meta: {
-        className: role === 'ADMIN' ? 'w-[13%] overflow-hidden px-2' : 'w-[14%] overflow-hidden px-2',
+        className:
+          role === "ADMIN"
+            ? "w-[13%] overflow-hidden px-2"
+            : "w-[14%] overflow-hidden px-2",
       },
       cell: ({ row }) => (
         <p
@@ -175,10 +186,13 @@ function buildColumns(
       ),
     },
     {
-      accessorKey: 'partDescription',
-      header: 'Vehicle',
+      accessorKey: "partDescription",
+      header: "Vehicle",
       meta: {
-        className: role === 'ADMIN' ? 'w-[24%] overflow-hidden px-2' : 'w-[27%] overflow-hidden px-2',
+        className:
+          role === "ADMIN"
+            ? "w-[24%] overflow-hidden px-2"
+            : "w-[27%] overflow-hidden px-2",
       },
       cell: ({ row }) => (
         <p
@@ -190,52 +204,66 @@ function buildColumns(
       ),
     },
     {
-      accessorKey: 'quote',
-      header: 'Quote',
+      accessorKey: "quote",
+      header: "Quote",
       meta: {
-        className: 'w-[10%] overflow-hidden px-2 text-right',
+        className: "w-[10%] overflow-hidden px-2 text-right",
       },
       cell: ({ row }) => (
         <span className="block truncate font-semibold text-slate-950 dark:text-white">
           {row.original.quote !== null
             ? formatLeadCurrency(row.original.quote, row.original.quoteCurrency)
-            : '--'}
+            : "--"}
         </span>
       ),
     },
     {
-      accessorKey: 'status',
-      header: 'Status',
+      accessorKey: "status",
+      header: "Status",
       meta: {
-        className: 'w-[12%] overflow-hidden px-2',
+        className: "w-[12%] overflow-hidden px-2",
       },
       cell: ({ row }) => {
-        const status = row.original.isConverted ? 'CONVERTED' : row.original.status;
+        const status = row.original.isConverted
+          ? "CONVERTED"
+          : row.original.status;
 
         return (
           <Badge
             variant="outline"
-            title={status === 'CONVERTED' ? 'Converted' : formatLeadStatusLabel(status)}
+            title={
+              status === "CONVERTED"
+                ? "Converted"
+                : formatLeadStatusLabel(status)
+            }
             className={cn(
-              'inline-flex max-w-full truncate whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold leading-tight',
+              "inline-flex max-w-full truncate whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold leading-tight",
               getLeadStatusTone(status),
             )}
           >
-            {status === 'CONVERTED' ? 'Converted' : formatLeadStatusLabel(status)}
+            {status === "CONVERTED"
+              ? "Converted"
+              : formatLeadStatusLabel(status)}
           </Badge>
         );
       },
     },
     {
-      id: 'actions',
-      header: '',
+      id: "followUp",
+      header: "Next follow-up",
+      meta: { className: "w-[150px] px-2" },
+      cell: ({ row }) => <FollowUpCell value={row.original.followUp} />,
+    },
+    {
+      id: "actions",
+      header: "",
       meta: {
-        className: 'w-[8%] overflow-hidden px-2 text-right',
+        className: "w-[8%] overflow-hidden px-2 text-right",
       },
       cell: ({ row }) => {
         const canManageLead =
-          role === 'ADMIN' ||
-          (role === 'SALES' && row.original.createdBy.id === currentUserId);
+          role === "ADMIN" ||
+          (role === "SALES" && row.original.createdBy.id === currentUserId);
 
         if (row.original.isConverted || !canManageLead) {
           return null;
@@ -277,10 +305,10 @@ function buildColumns(
 
   if (showAgentColumn) {
     columns.splice(2, 0, {
-      accessorKey: 'createdBy.name',
-      header: 'Agent',
+      accessorKey: "createdBy.name",
+      header: "Agent",
       meta: {
-        className: 'hidden w-[8%] overflow-hidden px-2 2xl:table-cell',
+        className: "hidden w-[8%] overflow-hidden px-2 2xl:table-cell",
       },
       cell: ({ row }) => (
         <p
@@ -298,7 +326,7 @@ function buildColumns(
 
 function getRangeLabel(meta: PaginationMeta, currentCount: number) {
   if (meta.total === 0 || currentCount === 0) {
-    return 'No results';
+    return "No results";
   }
 
   const start = (meta.page - 1) * meta.limit + 1;
@@ -333,7 +361,7 @@ export function LeadsTable({
   showAgentColumn?: boolean;
 }) {
   const router = useRouter();
-  const detailHref = useTableDetailHref('/leads');
+  const detailHref = useTableDetailHref("/leads");
   const totalPages = meta.totalPages;
   const columns = buildColumns(
     onConvert,
@@ -352,13 +380,13 @@ export function LeadsTable({
       error={error}
       onRetry={onRetry}
       density="compact"
-      layout="fit"
+      layout="scroll"
       onRowClick={(lead) => router.push(detailHref(getLeadDetailsHref(lead)))}
       renderMobileCard={(lead) => {
-        const status = lead.isConverted ? 'CONVERTED' : lead.status;
+        const status = lead.isConverted ? "CONVERTED" : lead.status;
         const canManageLead =
-          role === 'ADMIN' ||
-          (role === 'SALES' && lead.createdBy.id === currentUserId);
+          role === "ADMIN" ||
+          (role === "SALES" && lead.createdBy.id === currentUserId);
 
         return (
           <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
@@ -377,18 +405,29 @@ export function LeadsTable({
               <Badge
                 variant="outline"
                 className={cn(
-                  'shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold',
+                  "shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold",
                   getLeadStatusTone(status),
                 )}
               >
-                {status === 'CONVERTED' ? 'Converted' : formatLeadStatusLabel(status)}
+                {status === "CONVERTED"
+                  ? "Converted"
+                  : formatLeadStatusLabel(status)}
               </Badge>
             </div>
 
             <div className="mt-3 grid gap-2 text-sm">
               {showAgentColumn ? (
-                <MobileField label="Agent" value={getFirstName(lead.createdBy.name)} />
+                <MobileField
+                  label="Agent"
+                  value={getFirstName(lead.createdBy.name)}
+                />
               ) : null}
+              <div className="flex justify-between gap-3">
+                <span className="text-xs text-muted-foreground">
+                  Next follow-up
+                </span>
+                <FollowUpCell value={lead.followUp} />
+              </div>
               <MobileField label="Phone" value={lead.customerPhone} />
               <MobileField label="Vehicle" value={formatVehicleSummary(lead)} />
               <MobileField
@@ -396,7 +435,7 @@ export function LeadsTable({
                 value={
                   lead.quote !== null
                     ? formatLeadCurrency(lead.quote, lead.quoteCurrency)
-                    : '—'
+                    : "—"
                 }
               />
             </div>
@@ -478,7 +517,7 @@ function MobileField({ label, value }: { label: string; value: string }) {
         {label}
       </span>
       <span className="truncate font-medium text-foreground" title={value}>
-        {value || '—'}
+        {value || "—"}
       </span>
     </div>
   );

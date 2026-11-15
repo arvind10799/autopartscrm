@@ -1,3 +1,4 @@
+import type { TableFollowUp } from '@/features/reminders/follow-up.schema';
 export interface LeadUser {
   id: string;
   name: string;
@@ -28,6 +29,7 @@ export const LEAD_QUOTE_CURRENCIES = ['USD', 'CAD'] as const;
 export type LeadQuoteCurrency = (typeof LEAD_QUOTE_CURRENCIES)[number];
 
 export interface LeadSummary {
+  followUp?:TableFollowUp|null;
   id: string;
   date: string;
   adviserName: string;
@@ -70,6 +72,7 @@ export interface LeadsListResponse {
 }
 
 export interface LeadsListQuery {
+  noUpcoming?:boolean;
   page: number;
   limit: number;
   search?: string;
