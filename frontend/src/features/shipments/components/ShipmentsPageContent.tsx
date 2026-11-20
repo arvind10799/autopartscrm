@@ -54,7 +54,7 @@ export function ShipmentsPageContent() {
   const activeSearch = deferredSearchTerm.trim();
   const dateRangeQuery = useMemo(
     () => buildTimestampRangeQuery(dateFilter),
-    [dateFilter],
+    [dateFilter, refreshKey],
   );
   const { shipmentsResponse, isLoading, error } = useShipmentsList({
     page,

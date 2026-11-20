@@ -148,7 +148,7 @@ export function LeadsPageContent() {
       : "Search by customer, email, phone, adviser, state, or vehicle";
   const dateRangeQuery = useMemo(
     () => buildTimestampRangeQuery(dateFilter),
-    [dateFilter],
+    [dateFilter, refreshKey],
   );
   const selectedAgentFilter =
     agentFilter ??

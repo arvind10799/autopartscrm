@@ -1,7 +1,7 @@
 'use client';
 
 import type { Dispatch, SetStateAction } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   DATE_RANGE_PRESETS,
@@ -65,11 +65,13 @@ export function useTableDateRange(): [DateRangeFilterState, (value: DateRangeFil
     ? (presetRaw as DateRangePreset)
     : 'ALL';
   const defaultState = createDefaultDateRangeFilterState();
-  const value: DateRangeFilterState = {
-    preset,
-    from: searchParams.get('dateFrom') ?? defaultState.from,
-    to: searchParams.get('dateTo') ?? defaultState.to,
-  };
+  const from = searchParams.get('dateFrom') ?? defaultState.from;
+  const to = searchParams.get('dateTo') ?? defaultState.to;
+  // Loading and pagination must not recreate a relative date window.
+  const value = useMemo<DateRangeFilterState>(
+    () => ({ preset, from, to }),
+    [preset, from, to],
+  );
 
   const setValue = (next: DateRangeFilterState) => {
     updateTableUrl({

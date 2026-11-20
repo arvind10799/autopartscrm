@@ -150,7 +150,7 @@ export function ReplacementOrdersPageContent() {
   const activeSearch = deferredSearchTerm.trim();
   const dateRangeQuery = useMemo(
     () => buildTimestampRangeQuery(dateFilter),
-    [dateFilter],
+    [dateFilter, refreshKey],
   );
   const { replacementsResponse, isLoading, error } = useReplacementsList({
     page,

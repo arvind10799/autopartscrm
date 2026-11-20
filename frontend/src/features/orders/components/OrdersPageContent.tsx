@@ -87,7 +87,7 @@ export function OrdersPageContent() {
   const activeSearch = deferredSearchTerm.trim();
   const dateRangeQuery = useMemo(
     () => buildTimestampRangeQuery(dateFilter),
-    [dateFilter],
+    [dateFilter, refreshKey],
   );
   const selectedAgentFilter =
     agentFilter ?? (authUser?.role === 'SALES' ? authUser.userId : ALL_AGENTS_FILTER);
