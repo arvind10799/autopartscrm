@@ -120,7 +120,7 @@ function buildColumns(
       accessorKey: "date",
       header: "Date",
       meta: {
-        className: "w-[92px] px-2",
+        className: "w-[136px] px-2",
       },
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -143,15 +143,15 @@ function buildColumns(
       accessorKey: "customerName",
       header: "Customer",
       meta: {
-        className: "w-[136px] px-2",
+        className: "w-[21%] px-2",
       },
       cell: ({ row }) => (
         <div className="min-w-0">
-          <p className="truncate font-semibold text-slate-950 dark:text-white">
+          <p className="truncate font-semibold text-slate-950 dark:text-white" title={row.original.customerName}>
             {row.original.customerName}
           </p>
           {row.original.customerEmail ? (
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400" title={row.original.customerEmail}>
               {row.original.customerEmail}
             </p>
           ) : null}
@@ -222,7 +222,7 @@ function buildColumns(
                 : formatLeadStatusLabel(status)
             }
             className={cn(
-              "inline-flex max-w-full truncate whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold leading-tight",
+              "inline-block max-w-full truncate whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold leading-tight",
               getLeadStatusTone(status),
             )}
           >

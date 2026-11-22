@@ -459,53 +459,65 @@ export function LeadsPageContent() {
                 </Select>
               </label>
             </div>
-            <div className="crm-secondary-filterscrm-lead-secondary">
-              <Select
-                value={convertedFilter}
-                onChange={(event) =>
-                  handleConvertedFilterChange(
-                    parseLeadConversionFilter(event.target.value),
-                  )
-                }
-                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-              >
-                <option value={ALL_LEAD_CONVERSION_FILTER}>
-                  {formatLeadConversionFilterLabel(ALL_LEAD_CONVERSION_FILTER)}
-                </option>
-                <option value="OPEN">{formatLeadConversionFilterLabel("OPEN")}</option>
-                <option value="CONVERTED">
-                  {formatLeadConversionFilterLabel("CONVERTED")}
-                </option>
-              </Select>
-              <Select
-                value={statusFilter}
-                onChange={(event) =>
-                  handleStatusFilterChange(parseLeadStatusFilter(event.target.value))
-                }
-                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-              >
-                <option value={ALL_LEAD_STATUS_FILTER}>All statuses</option>
-                {LEAD_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {formatLeadStatusLabel(status)}
-                  </option>
-                ))}
-              </Select>
-              <Select
-                aria-label="Upcoming reminder filter"
-                value={noUpcoming}
-                onChange={(e) => setNoUpcoming(e.target.value === "true" ? "true" : "")}
-                className="h-11 w-full rounded-xl"
-              >
-                <option value="">All follow-ups</option>
-                <option value="true">No upcoming reminder</option>
-              </Select>
-              <div className="space-y-2">
+            <div className="crm-secondary-filters crm-lead-secondary">
+              <div>
+                <label htmlFor="leads-conversion">Conversion</label>
                 <Select
+                  id="leads-conversion"
+                  value={convertedFilter}
+                  onChange={(event) =>
+                    handleConvertedFilterChange(
+                      parseLeadConversionFilter(event.target.value),
+                    )
+                  }
+                  className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <option value={ALL_LEAD_CONVERSION_FILTER}>
+                    {formatLeadConversionFilterLabel(ALL_LEAD_CONVERSION_FILTER)}
+                  </option>
+                  <option value="OPEN">{formatLeadConversionFilterLabel("OPEN")}</option>
+                  <option value="CONVERTED">
+                    {formatLeadConversionFilterLabel("CONVERTED")}
+                  </option>
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="leads-status">Status</label>
+                <Select
+                  id="leads-status"
+                  value={statusFilter}
+                  onChange={(event) =>
+                    handleStatusFilterChange(parseLeadStatusFilter(event.target.value))
+                  }
+                  className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <option value={ALL_LEAD_STATUS_FILTER}>All statuses</option>
+                  {LEAD_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {formatLeadStatusLabel(status)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="leads-follow-up">Follow-up</label>
+                <Select
+                  id="leads-follow-up"
+                  value={noUpcoming}
+                  onChange={(e) => setNoUpcoming(e.target.value === "true" ? "true" : "")}
+                  className="h-11 w-full rounded-xl"
+                >
+                  <option value="">All follow-ups</option>
+                  <option value="true">No upcoming reminder</option>
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="leads-last-touched">Last touched</label>
+                <Select
+                  id="leads-last-touched"
                   value={isCustomUntouched ? "CUSTOM" : String(untouchedFilter)}
                   onChange={(event) => handleUntouchedSelection(event.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-                  aria-label="Not touched filter"
                 >
                   <option value={ALL_UNTOUCHED_LEADS_FILTER}>
                     {formatUntouchedLeadsFilterLabel(ALL_UNTOUCHED_LEADS_FILTER)}
@@ -562,7 +574,7 @@ export function LeadsPageContent() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4 p-3 sm:p-4">
+          <CardContent className="crm-leads-table space-y-4 p-3 sm:p-4">
             <LeadsTable
               leads={leadsResponse.items}
               meta={leadsResponse.meta}

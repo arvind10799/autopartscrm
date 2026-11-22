@@ -61,6 +61,17 @@
   gap: 12px;
   align-items: start;
 }
+.crm-leads-table .crm-records-table {
+  min-width: calc(var(--records-table-min-width) + 112px);
+}
+.crm-leads-table .crm-table-viewport {
+  position: relative;
+}
+.crm-leads-table .crm-records-table .truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .crm-table-cards {
   display: grid;
   gap: 12px;
@@ -173,7 +184,19 @@
   gap: 12px;
   align-items: start;
 }
-@container records-toolbar (min-width: 900px) {
+.crm-lead-secondary > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.crm-lead-secondary label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+@container records-toolbar (min-width: 760px) {
   .crm-lead-secondary {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
