@@ -688,7 +688,6 @@ export function UserManagement() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10 dark:hover:text-red-200"
                     onClick={handleDeleteUser}
                     disabled={
                       selectedUser.role === 'ADMIN' ||
@@ -724,7 +723,6 @@ export function UserManagement() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10"
                     disabled={
                       selectedUser.role === 'ADMIN' ||
                       !selectedUser.isActive ||
@@ -745,7 +743,6 @@ export function UserManagement() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-500/30 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
                     disabled={
                       selectedUser.role === 'ADMIN' ||
                       selectedUser.isActive ||

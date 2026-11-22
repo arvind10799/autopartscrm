@@ -457,7 +457,7 @@ function Workspace({ user, calendar }: { user: AuthUser; calendar: boolean }) {
     }
   };
   return (
-    <section className="space-y-5">
+    <section className="crm-brand-actions space-y-5">
       <ReminderPreferencesDisclosure />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -540,6 +540,7 @@ function Workspace({ user, calendar }: { user: AuthUser; calendar: boolean }) {
           <button
             key={key}
             type="button"
+            aria-pressed={filters.tab === tab}
             onClick={() => update({ tab })}
             className={cn(
               "rounded-2xl border bg-card p-4 text-left shadow-sm transition hover:border-primary",
@@ -750,6 +751,7 @@ function Workspace({ user, calendar }: { user: AuthUser; calendar: boolean }) {
                 key={tab}
                 size="sm"
                 variant={filters.tab === tab ? "default" : "ghost"}
+                aria-pressed={filters.tab === tab}
                 onClick={() => update({ tab, status: "" })}
               >
                 {title}
@@ -780,6 +782,7 @@ function Workspace({ user, calendar }: { user: AuthUser; calendar: boolean }) {
                 <Button
                   key={view}
                   variant={filters.view === view ? "default" : "ghost"}
+                  aria-pressed={filters.view === view}
                   size="sm"
                   onClick={() =>
                     update({

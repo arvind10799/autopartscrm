@@ -269,7 +269,7 @@ function PanelContent({
   return (
     <Card
       id="reminders"
-      className="min-w-0 scroll-mt-24 overflow-hidden border-border/70 shadow-sm"
+      className="crm-brand-actions min-w-0 scroll-mt-24 overflow-hidden border-border/70 shadow-sm"
     >
       <CardHeader className="space-y-3 border-b border-border/70 px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -864,7 +864,7 @@ export function ReminderDialog({
         if (!busy) onClose();
       }}
       aria-labelledby="reminder-dialog-title"
-      className="m-auto max-h-[90dvh] w-[calc(100%_-_1.5rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/45"
+      className="crm-brand-actions m-auto max-h-[90dvh] w-[calc(100%_-_1.5rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/45"
     >
       <form onSubmit={submitting}>
         <div className="flex items-center justify-between border-b border-border p-4">

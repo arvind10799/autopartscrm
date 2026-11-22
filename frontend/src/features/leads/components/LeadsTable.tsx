@@ -20,6 +20,10 @@ import type {
   PaginationMeta,
 } from "../types/lead.types";
 
+function getFirstName(name: string) {
+  return name.trim().split(/\s+/, 1)[0];
+}
+
 function formatUpdatedAge(value: string) {
   const timestamp = new Date(value).getTime();
 
@@ -143,7 +147,7 @@ function buildColumns(
       accessorKey: "customerName",
       header: "Customer",
       meta: {
-        className: "w-[21%] px-2",
+        className: "w-[clamp(148px,14cqi,192px)] px-2",
       },
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -243,7 +247,7 @@ function buildColumns(
       id: "actions",
       header: "Actions",
       meta: {
-        className: "w-[84px] px-2 text-right",
+        className: "w-[88px] px-2 text-right",
         sticky: "right",
       },
       cell: ({ row }) => {
@@ -294,14 +298,14 @@ function buildColumns(
       accessorKey: "createdBy.name",
       header: "Agent",
       meta: {
-        className: "w-[76px] px-2",
+        className: "w-[72px] px-2",
       },
       cell: ({ row }) => (
         <p
           className="truncate font-medium text-slate-700 dark:text-slate-200"
           title={row.original.createdBy.name}
         >
-          {row.original.createdBy.name}
+          {getFirstName(row.original.createdBy.name)}
         </p>
       ),
     });
@@ -407,7 +411,8 @@ export function LeadsTable({
               {showAgentColumn ? (
                 <MobileField
                   label="Agent"
-                  value={lead.createdBy.name}
+                  value={getFirstName(lead.createdBy.name)}
+                  title={lead.createdBy.name}
                 />
               ) : null}
               <div className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] gap-2">
@@ -467,13 +472,13 @@ export function LeadsTable({
   );
 }
 
-function MobileField({ label, value }: { label: string; value: string }) {
+function MobileField({ label, value, title = value }: { label: string; value: string; title?: string }) {
   return (
     <div className="grid min-w-0 grid-cols-[5rem_minmax(0,1fr)] gap-2">
       <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </span>
-      <span className="truncate font-medium text-foreground" title={value}>
+      <span className="truncate font-medium text-foreground" title={title}>
         {value || "—"}
       </span>
     </div>

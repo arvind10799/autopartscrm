@@ -2,6 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Brand palette for workspace controls, including reminder dialogs rendered in a portal. */
+.crm-brand-actions {
+  --action-accent: 20 100% 33%;
+  --action-ink: #062846;
+  --action-border: #637e93;
+  --action-tint: #fff1e9;
+}
+.dark .crm-brand-actions {
+  --action-accent: 22 100% 70%;
+  --action-ink: #edf5fb;
+  --action-border: #91aabc;
+  --action-tint: #062846;
+}
+.crm-brand-actions :where(button, a, summary, [role='button'], select, textarea, input) {
+  --primary: var(--action-accent);
+  --ring: var(--action-accent);
+  accent-color: hsl(var(--action-accent));
+}
+:where(.crm-brand-actions) :where(button:not([data-button-variant]), summary) {
+  color: var(--action-ink);
+}
+.crm-brand-actions [data-button-variant='default'] {
+  background-color: #c44500;
+  color: #fff;
+}
+.crm-brand-actions [data-button-variant='default']:enabled:hover {
+  background-color: #ae3d00;
+}
+.crm-brand-actions :is([data-button-variant='outline'], [data-button-variant='ghost']) {
+  color: var(--action-ink);
+}
+.crm-brand-actions [data-button-variant='outline'] {
+  border-color: var(--action-border);
+}
+.crm-brand-actions :is([data-button-variant='outline'], [data-button-variant='ghost']):enabled:hover {
+  color: hsl(var(--action-accent));
+  background-color: var(--action-tint);
+}
+.crm-brand-actions :is(button, a, summary, [role='button']):focus-visible {
+  outline: 2px solid hsl(var(--action-accent));
+  outline-offset: 2px;
+}
+
 /* Cards are mobile-only. Laptop tables scroll within their own record area. */
 .crm-data-table,
 .crm-website-records {
@@ -44,7 +87,7 @@
 .crm-records-table tr:hover > [data-sticky='right'] {
   background: hsl(var(--secondary));
 }
-.crm-table-viewport[data-overflow='true'] [data-sticky='right'] {
+.crm-table-viewport[data-overflow='true']:not(.crm-leads-table *) [data-sticky='right'] {
   position: static;
   box-shadow: none;
 }
@@ -62,10 +105,11 @@
   align-items: start;
 }
 .crm-leads-table .crm-records-table {
-  min-width: calc(var(--records-table-min-width) + 112px);
+  min-width: calc(var(--records-table-min-width) + 48px);
 }
 .crm-leads-table .crm-table-viewport {
   position: relative;
+  scroll-padding-inline-end: 88px;
 }
 .crm-leads-table .crm-records-table .truncate {
   overflow: hidden;
