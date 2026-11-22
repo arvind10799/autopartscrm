@@ -137,7 +137,7 @@ export const BillingStateSelect = forwardRef<HTMLInputElement, Props>(
               id={`${id}-options`}
               role="listbox"
               aria-label="Billing states"
-              className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-border bg-popover py-1 text-sm shadow-xl"
+              className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-border bg-card py-1 text-sm shadow-xl"
             >
               {choices.map(({ code, label }, index) => (
                 <button
