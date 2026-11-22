@@ -30,7 +30,7 @@ export const navigationConfig: NavigationItemConfig[] = [
     icon: Gauge,
     roles: ['ADMIN', 'SALES', 'SHIPPING'],
     group: 'workspace',
-    defaultFor: ['ADMIN'],
+    defaultFor: ['ADMIN', 'SALES'],
   },
   {
     href: '/my-tasks',
@@ -71,7 +71,6 @@ export const navigationConfig: NavigationItemConfig[] = [
     icon: ClipboardList,
     roles: ['ADMIN', 'SALES'],
     group: 'workspace',
-    defaultFor: ['SALES'],
   },
   {
     href: '/shipments',

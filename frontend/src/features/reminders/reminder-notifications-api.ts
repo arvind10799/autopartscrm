@@ -19,6 +19,10 @@ const settings = z.object({
   pending: z.number(),
   failed: z.number(),
   serverEnabled: z.boolean(),
+  checkedAt: z.string().optional(),
+  workerRecent: z.boolean().optional(),
+  workerLastSeenAt: z.string().nullable().optional(),
+  emailEnabled: z.boolean().optional(),
   pushConfigured: z.boolean(),
   emailConfigured: z.boolean(),
 });

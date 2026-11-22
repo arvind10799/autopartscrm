@@ -5,6 +5,7 @@ import { ReminderCalendarExportService } from './reminder-calendar-export.servic
 import { ReminderPolicySettingsController } from './reminder-policy-settings.controller';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { RedisModule } from '../../infrastructure/redis/redis.module';
 import { PrismaModule } from '../../database/prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { ReminderPreferencesController } from './reminder-preferences.controller';
@@ -21,7 +22,7 @@ import { ReminderAutomationController } from './reminder-automation.controller';
 import { ReminderAutomationService } from './reminder-automation.service';
 
 @Module({
-  imports: [PrismaModule, AuthModule, ConfigModule],
+  imports: [PrismaModule, AuthModule, ConfigModule, RedisModule],
   controllers: [
     ReminderInsightsController,
     ReminderPolicySettingsController,

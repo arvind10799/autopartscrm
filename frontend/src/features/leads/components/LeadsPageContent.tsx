@@ -26,6 +26,7 @@ import {
 import { toast } from "@/lib/stores/toast.store";
 import { getErrorMessage } from "@/lib/utils/error";
 import { getPacificTodayDateInputValue } from "@/lib/utils/pacific-date";
+import { normalizeUsState } from "@/lib/forms/us-states";
 import {
   ALL_LEAD_CONVERSION_FILTER,
   ALL_LEAD_STATUS_FILTER,
@@ -67,6 +68,7 @@ function buildOrderInitialValues(
     customerName: lead.customerName,
     customerEmail: lead.customerEmail ?? undefined,
     customerPhone: lead.customerPhone,
+    billingState: normalizeUsState(lead.state) ?? "",
     partDescription: lead.partDescription,
     vehicleYear: lead.vehicleYear ?? undefined,
     vehicleMake: lead.vehicleMake ?? undefined,
@@ -386,62 +388,25 @@ export function LeadsPageContent() {
     <>
       <section className="grid gap-4">
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+          <CardHeader className="crm-records-toolbar space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+            <div className="crm-toolbar-heading">
               <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
                 Leads Workspace
               </CardTitle>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <div
-                  className={
-                    dateFilter.preset === "CUSTOM"
-                      ? "w-full xl:w-[34rem]"
-                      : "w-full sm:w-60"
-                  }
-                >
-                  <DateRangeFilter
-                    value={dateFilter}
-                    onChange={setDateFilter}
-                    variant="inline"
-                    inlineCustomLayout="row"
-                  />
-                </div>
-
-                <label className="grid w-full gap-2 sm:w-44">
-                  <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                    Agent filter
-                  </span>
-                  <Select
-                    value={selectedAgentFilter}
-                    aria-label="Agent filter"
-                    className="h-11 w-full rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-                    onChange={(event) =>
-                      handleAgentFilterChange(event.target.value)
-                    }
-                  >
-                    <option value={ALL_AGENTS_FILTER}>All agents</option>
-                    {agentOptions.map((agent) => (
-                      <option key={agent.id} value={agent.id}>
-                        {formatAgentFilterLabel(agent)}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-
+              <div className="crm-toolbar-actions">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-11 w-full whitespace-nowrap rounded-xl px-5 font-semibold sm:w-auto"
+                  className="h-11 whitespace-nowrap rounded-xl px-5 font-semibold"
                   disabled={isExporting}
                   onClick={() => void handleExportExcel()}
                 >
                   <Download className="h-4 w-4" />
                   {isExporting ? "Exporting..." : "Export Excel"}
                 </Button>
-
                 <Button
                   size="lg"
-                  className="h-11 w-full whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000] sm:w-auto"
+                  className="h-11 whitespace-nowrap rounded-xl bg-[#ff5a00] px-5 font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-[#e65000]"
                   onClick={() => setIsCreateModalOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
@@ -449,18 +414,52 @@ export function LeadsPageContent() {
                 </Button>
               </div>
             </div>
-
-            <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px_240px]">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchTerm}
-                  onChange={(event) => handleSearchChange(event.target.value)}
-                  className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
-                  placeholder={searchPlaceholder}
+            <div className="crm-primary-filters">
+              <label className="crm-toolbar-search">
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  Search
+                </span>
+                <div className="crm-record-search">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchTerm}
+                    onChange={(event) => handleSearchChange(event.target.value)}
+                    className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
+                    placeholder={searchPlaceholder}
+                  />
+                </div>
+              </label>
+              <div
+                className="crm-date-control"
+                data-custom={dateFilter.preset === "CUSTOM"}
+              >
+                <DateRangeFilter
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  variant="inline"
+                  inlineCustomLayout="row"
                 />
               </div>
-
+              <label className="crm-agent-control">
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  Agent filter
+                </span>
+                <Select
+                  value={selectedAgentFilter}
+                  aria-label="Agent filter"
+                  className="h-11 w-full rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                  onChange={(event) => handleAgentFilterChange(event.target.value)}
+                >
+                  <option value={ALL_AGENTS_FILTER}>All agents</option>
+                  {agentOptions.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {formatAgentFilterLabel(agent)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            </div>
+            <div className="crm-secondary-filterscrm-lead-secondary">
               <Select
                 value={convertedFilter}
                 onChange={(event) =>
@@ -473,20 +472,15 @@ export function LeadsPageContent() {
                 <option value={ALL_LEAD_CONVERSION_FILTER}>
                   {formatLeadConversionFilterLabel(ALL_LEAD_CONVERSION_FILTER)}
                 </option>
-                <option value="OPEN">
-                  {formatLeadConversionFilterLabel("OPEN")}
-                </option>
+                <option value="OPEN">{formatLeadConversionFilterLabel("OPEN")}</option>
                 <option value="CONVERTED">
                   {formatLeadConversionFilterLabel("CONVERTED")}
                 </option>
               </Select>
-
               <Select
                 value={statusFilter}
                 onChange={(event) =>
-                  handleStatusFilterChange(
-                    parseLeadStatusFilter(event.target.value),
-                  )
+                  handleStatusFilterChange(parseLeadStatusFilter(event.target.value))
                 }
                 className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               >
@@ -497,31 +491,24 @@ export function LeadsPageContent() {
                   </option>
                 ))}
               </Select>
-
+              <Select
+                aria-label="Upcoming reminder filter"
+                value={noUpcoming}
+                onChange={(e) => setNoUpcoming(e.target.value === "true" ? "true" : "")}
+                className="h-11 w-full rounded-xl"
+              >
+                <option value="">All follow-ups</option>
+                <option value="true">No upcoming reminder</option>
+              </Select>
               <div className="space-y-2">
                 <Select
-                  aria-label="Upcoming reminder filter"
-                  value={noUpcoming}
-                  onChange={(e) =>
-                    setNoUpcoming(e.target.value === "true" ? "true" : "")
-                  }
-                  className="w-full sm:w-[190px]"
-                >
-                  <option value="">All follow-ups</option>
-                  <option value="true">No upcoming reminder</option>
-                </Select>
-                <Select
                   value={isCustomUntouched ? "CUSTOM" : String(untouchedFilter)}
-                  onChange={(event) =>
-                    handleUntouchedSelection(event.target.value)
-                  }
+                  onChange={(event) => handleUntouchedSelection(event.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                   aria-label="Not touched filter"
                 >
                   <option value={ALL_UNTOUCHED_LEADS_FILTER}>
-                    {formatUntouchedLeadsFilterLabel(
-                      ALL_UNTOUCHED_LEADS_FILTER,
-                    )}
+                    {formatUntouchedLeadsFilterLabel(ALL_UNTOUCHED_LEADS_FILTER)}
                   </option>
                   {UNTOUCHED_LEADS_DAY_OPTIONS.map((days) => (
                     <option key={days} value={days}>

@@ -6,11 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
-  ChevronLeft,
-  ChevronRight,
   PencilLine,
 } from "lucide-react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { TablePagination } from "@/components/data-table/TablePagination";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { useTableDetailHref } from "@/lib/filters/table-view-state";
@@ -34,7 +33,7 @@ function buildColumns(
       accessorKey: "salesNumber",
       header: "Sale",
       meta: {
-        className: "w-[11%]",
+        className: "w-[112px]",
       },
       cell: ({ row }) => (
         <div className="min-w-0 space-y-0.5">
@@ -54,7 +53,7 @@ function buildColumns(
       accessorKey: "customerName",
       header: "Customer",
       meta: {
-        className: "w-[16%]",
+        className: "w-[136px]",
       },
       cell: ({ row }) => (
         <p className="truncate font-medium text-foreground">
@@ -69,7 +68,7 @@ function buildColumns(
       accessorKey: "createdBy",
       header: "Advisor",
       meta: {
-        className: "w-[8%]",
+        className: "w-[76px]",
       },
       cell: ({ row }) => (
         <p className="truncate font-medium text-foreground">
@@ -84,7 +83,7 @@ function buildColumns(
       accessorKey: "partDescription",
       header: "Part",
       meta: {
-        className: role === "ADMIN" ? "w-[28%]" : "w-[36%]",
+        className: "",
       },
       cell: ({ row }) => (
         <p
@@ -99,7 +98,7 @@ function buildColumns(
       accessorKey: "totalSaleAmount",
       header: "Total",
       meta: {
-        className: "w-[10%]",
+        className: "w-[104px]",
       },
       cell: ({ row }) => (
         <span className="block truncate font-semibold text-foreground">
@@ -111,7 +110,7 @@ function buildColumns(
       accessorKey: "latestShipmentStatus",
       header: "Shipping",
       meta: {
-        className: "w-[12%]",
+        className: "w-[116px]",
       },
       cell: ({ row }) => (
         <ShippingStatusCell
@@ -127,14 +126,15 @@ function buildColumns(
     {
       id: "followUp",
       header: "Next follow-up",
-      meta: { className: "w-[150px] px-2" },
+      meta: { className: "w-[140px] px-2" },
       cell: ({ row }) => <FollowUpCell value={row.original.followUp} />,
     },
     {
       id: "actions",
-      header: "",
+      header: "Actions",
       meta: {
-        className: "w-[15%]",
+        className: "w-[124px]",
+        sticky: "right",
       },
       cell: ({ row }) => {
         const canEdit =
@@ -150,9 +150,10 @@ function buildColumns(
                 variant="outline"
                 size="sm"
                 onClick={() => onEdit(row.original.id)}
+                aria-label="Edit order"
               >
                 <PencilLine className="h-4 w-4" />
-                <span className="hidden xl:inline">Edit</span>
+                <span className="sr-only">Edit</span>
               </Button>
             ) : null}
             <Link
@@ -221,6 +222,8 @@ export function OrdersTable({
       onRetry={onRetry}
       density="compact"
       layout="scroll"
+      tableLabel="Orders"
+      columnLayout={role === "ADMIN" ? "wide" : "standard"}
       onRowClick={(order) => router.push(detailHref(`/orders/${order.id}`))}
       renderMobileCard={(order) => {
         const canEdit =
@@ -230,7 +233,7 @@ export function OrdersTable({
 
         return (
           <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <Link
                   href={detailHref(`/orders/${order.id}`)}
@@ -255,7 +258,7 @@ export function OrdersTable({
                   value={getFirstName(order.createdBy.name)}
                 />
               ) : null}
-              <div className="flex justify-between gap-3">
+              <div className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] gap-2">
                 <span className="text-xs text-muted-foreground">
                   Next follow-up
                 </span>
@@ -306,39 +309,7 @@ export function OrdersTable({
       }}
       emptyTitle="No orders found"
       emptyDescription="Try a different search term or clear the current status filter."
-      footer={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {getRangeLabel(meta, orders.length)}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasPreviousPage || isLoading}
-              onClick={() => onPageChange(meta.page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-
-            <span className="min-w-24 text-center text-sm text-muted-foreground">
-              Page {totalPages === 0 ? 0 : meta.page} of {totalPages}
-            </span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasNextPage || isLoading}
-              onClick={() => onPageChange(meta.page + 1)}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      }
+      footer={<TablePagination meta={meta} summary={getRangeLabel(meta, orders.length)} onPageChange={onPageChange} disabled={isLoading} />}
     />
   );
 }

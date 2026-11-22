@@ -177,6 +177,7 @@ export class LeadsRepository {
       select: {
         id: true,
         convertedAt: true,
+        state: true,
       },
     });
 

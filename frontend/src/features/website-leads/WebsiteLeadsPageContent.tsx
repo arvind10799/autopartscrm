@@ -1,5 +1,7 @@
 "use client";
 import { FollowUpCell } from "@/features/reminders/FollowUpCell";
+import { TablePagination } from "@/components/data-table/TablePagination";
+import { TableScrollArea } from "@/components/data-table/TableScrollArea";
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -227,7 +229,7 @@ export function WebsiteLeadsPageContent() {
       </div>
 
       <Card className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div className="border-b border-border/70 px-4 py-4 sm:px-6">
+        <div className="crm-records-toolbar border-b border-border/70 px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="text-base font-semibold text-slate-950 dark:text-white">
@@ -272,13 +274,9 @@ export function WebsiteLeadsPageContent() {
             ))}
           </div>
           <div
-            className={cn(
-              "mt-4 grid items-start gap-3 md:grid-cols-[minmax(0,1fr)_180px] xl:grid-cols-[minmax(0,1fr)_170px_190px]",
-              role === "ADMIN" &&
-                "xl:grid-cols-[minmax(0,1fr)_170px_190px_190px]",
-            )}
+            className="crm-filters mt-4"
           >
-            <label className="relative">
+            <label className="crm-record-search">
               <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 aria-label="Search website leads"
@@ -311,7 +309,7 @@ export function WebsiteLeadsPageContent() {
               <option value="true">No upcoming reminder</option>
             </Select>
             <div
-              className={cn(dateFilter.preset === "CUSTOM" && "lg:col-span-2")}
+              className={cn(dateFilter.preset === "CUSTOM" && "crm-wide-filter")}
             >
               <DateRangeFilter
                 value={dateFilter}
@@ -345,8 +343,9 @@ export function WebsiteLeadsPageContent() {
           </div>
         </div>
 
-        <CardContent className="p-0">
-          <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_130px_130px_150px_110px_24px] gap-4 border-b border-border/70 bg-slate-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400 xl:grid">
+        <CardContent className="crm-website-records p-0">
+          <TableScrollArea label="Website leads">
+          <div className="crm-website-header border-b border-border/70 bg-slate-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
             <span>Customer</span>
             <span>Request</span>
             <span>Received</span>
@@ -355,6 +354,7 @@ export function WebsiteLeadsPageContent() {
             <span>Status</span>
             <span className="sr-only">Open</span>
           </div>
+          <div className="crm-website-body">
           {error ? (
             <div className="px-5 py-10 text-center text-sm text-destructive">
               {error}
@@ -388,7 +388,7 @@ export function WebsiteLeadsPageContent() {
                 href={detailHref(`/website-leads/${item.id}`)}
                 aria-label={`Open website lead from ${item.customerName || item.customerPhone || item.customerEmail || "unnamed customer"}`}
                 className={cn(
-                  "group grid gap-3 border-b border-border/70 px-4 py-4 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 dark:hover:bg-slate-900/70 sm:px-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_130px_130px_150px_110px_24px] xl:items-center xl:gap-4",
+                  "crm-website-row group transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 dark:hover:bg-slate-900/70",
                   item.status === "NEW" &&
                     "border-l-[3px] border-l-orange-400 bg-orange-50/40 dark:bg-orange-950/10",
                 )}
@@ -405,8 +405,12 @@ export function WebsiteLeadsPageContent() {
                       item.customerEmail ||
                       "No contact number"}
                   </span>
+                  {item.customerPhone && item.customerEmail && (
+                    <span className="block truncate text-xs text-muted-foreground">{item.customerEmail}</span>
+                  )}
                 </span>
                 <span className="min-w-0">
+                  <span className="crm-website-label">Request</span>
                   <span className="block truncate text-sm font-medium">
                     {requestTitle(item)}
                   </span>
@@ -422,60 +426,37 @@ export function WebsiteLeadsPageContent() {
                   </span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  <span className="mr-1 xl:hidden">Received</span>
+                  <span className="crm-website-label">Received</span>
                   {formatPacificDateTime(item.submittedAt)}
                 </span>
                 <span>
+                  <span className="crm-website-label">Assignment</span>
                   <WebsiteLeadAssignmentBadge
                     name={item.assignedTo?.name || null}
                     isMine={item.assignedToId === user?.userId}
                   />
                 </span>
                 <span>
-                  <span className="block text-[10px] uppercase text-muted-foreground xl:hidden">
+                  <span className="crm-website-label">
                     Next follow-up
                   </span>
                   <FollowUpCell value={item.followUp} interactive={false} />
                 </span>
                 <span>
+                  <span className="crm-website-label">Status</span>
                   <WebsiteLeadStatusBadge status={item.status} />
                 </span>
-                <ArrowRight className="hidden h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-orange-600 xl:block" />
+                <ArrowRight className="crm-website-arrow h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-orange-600" />
               </Link>
             ))
           )}
+          </div>
 
+          </TableScrollArea>
           {!loading && !error && data && data.meta.total > 0 ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 text-sm text-muted-foreground sm:px-5">
-              <span>
-                {Math.min(
-                  (data.meta.page - 1) * PAGE_SIZE + 1,
-                  data.meta.total,
-                )}
-                –{Math.min(data.meta.page * PAGE_SIZE, data.meta.total)} of{" "}
-                {data.meta.total}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!data.meta.hasPreviousPage}
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                >
-                  Previous
-                </Button>
-                <span className="hidden text-xs sm:inline">
-                  Page {data.meta.page} of {data.meta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!data.meta.hasNextPage}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Next
-                </Button>
-              </div>
+            <div className="border-t border-border/70 px-4 py-4 sm:px-5">
+              <TablePagination meta={data.meta} onPageChange={setPage}
+                summary={`${Math.min((data.meta.page - 1) * PAGE_SIZE + 1, data.meta.total)}–${Math.min(data.meta.page * PAGE_SIZE, data.meta.total)} of ${data.meta.total} website leads`} />
             </div>
           ) : null}
         </CardContent>

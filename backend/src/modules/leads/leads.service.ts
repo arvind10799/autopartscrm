@@ -1,7 +1,10 @@
 import { exportFollowUp } from '../reminders/reminder-table';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { NoteEntityType } from '../../common/enums/note-entity-type.enum';
-import { getPacificTodayDateInputValue } from '../../common/utils/pacific-date.util';
+import {
+  formatPacificTimestamp,
+  getPacificTodayDateInputValue,
+} from '../../common/utils/pacific-date.util';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import {
   buildOrdersExportWorkbook,
@@ -106,8 +109,8 @@ export class LeadsService {
   ): Buffer {
     const columns: OrdersExportWorkbookInput['columns'] = [
       { header: 'Lead Date', width: 13 },
-      { header: 'Created Date', width: 22 },
-      { header: 'Updated Date', width: 22 },
+      { header: 'Created Date (Pacific)', width: 32 },
+      { header: 'Updated Date (Pacific)', width: 32 },
       { header: 'Agent Name', width: 22 },
       { header: 'Agent Email', width: 28 },
       { header: 'Adviser Name', width: 22 },
@@ -125,7 +128,7 @@ export class LeadsService {
       { header: 'Currency', width: 10 },
       { header: 'Lead Status', width: 18 },
       { header: 'Converted', width: 12 },
-      { header: 'Converted At', width: 22 },
+      { header: 'Converted At (Pacific)', width: 32 },
       { header: 'Converted Order', width: 18 },
       { header: 'Additional Quotes', width: 44, wrap: true },
       { header: 'Prospects', width: 44, wrap: true },
@@ -144,8 +147,8 @@ export class LeadsService {
   ): Array<string | number | null | undefined> {
     return [
       this.formatDateOnly(lead.leadDate),
-      this.formatDateTime(lead.createdAt),
-      this.formatDateTime(lead.updatedAt),
+      formatPacificTimestamp(lead.createdAt),
+      formatPacificTimestamp(lead.updatedAt),
       lead.createdBy.name,
       lead.createdBy.email,
       lead.adviserName,
@@ -163,7 +166,7 @@ export class LeadsService {
       lead.quoteCurrency,
       lead.status,
       lead.convertedAt ? 'Yes' : 'No',
-      this.formatDateTime(lead.convertedAt),
+      formatPacificTimestamp(lead.convertedAt),
       lead.convertedOrder?.orderNumber ?? null,
       lead.comments,
       lead.prospects,
@@ -172,7 +175,8 @@ export class LeadsService {
   }
 
   private buildExportSheetName(queryLeadsDto: QueryLeadsDto): string {
-    const exportDate = this.formatExportDate(new Date());
+    const [year, month, day] = getPacificTodayDateInputValue().split('-');
+    const exportDate = `${month}-${day}-${year}`;
     const hasActiveFilter = [
       queryLeadsDto.search,
       queryLeadsDto.converted,
@@ -199,21 +203,5 @@ export class LeadsService {
     const year = value.getUTCFullYear();
 
     return `${month}/${day}/${year}`;
-  }
-
-  private formatDateTime(value: Date | null | undefined): string {
-    if (!value) {
-      return '';
-    }
-
-    return value.toISOString().replace('T', ' ').slice(0, 19);
-  }
-
-  private formatExportDate(date: Date): string {
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const year = date.getFullYear();
-
-    return `${month}-${day}-${year}`;
   }
 }

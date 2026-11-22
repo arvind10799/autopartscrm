@@ -14,6 +14,7 @@ import { PrismaService } from '../../database/prisma/prisma.service';
 import { getPacificTodayDateInputValue } from '../../common/utils/pacific-date.util';
 import { OrdersJobsService } from '../jobs/orders-jobs.service';
 import { LeadsRepository } from '../leads/leads.repository';
+import { normalizeUsState } from '../reminders/reminder-time';
 import { NotesService } from '../notes/notes.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersCacheService } from './orders-cache.service';
@@ -54,7 +55,7 @@ export class OrdersService {
 
   async create(createOrderDto: CreateOrderDto, user: AuthenticatedUser) {
     const normalizedStatus = createOrderDto.status ?? OrderStatus.CONFIRMED;
-    const normalizedCreateOrderDto =
+    let normalizedCreateOrderDto =
       normalizedStatus === OrderStatus.CONFIRMED
         ? {
             ...createOrderDto,
@@ -72,10 +73,17 @@ export class OrdersService {
     );
 
     if (normalizedCreateOrderDto.leadId) {
-      await this.leadsRepository.findConvertibleById(
+      const lead = await this.leadsRepository.findConvertibleById(
         normalizedCreateOrderDto.leadId,
         user,
       );
+      // Omitted state inherits the lead. Explicit choices, including clearing it, win.
+      if (normalizedCreateOrderDto.billingState === undefined) {
+        normalizedCreateOrderDto = {
+          ...normalizedCreateOrderDto,
+          billingState: normalizeUsState(lead.state),
+        };
+      }
     }
 
     const order = await this.createWithGeneratedOrderNumber(
@@ -202,7 +210,14 @@ export class OrdersService {
       );
     }
 
-    if (user.role !== Role.ADMIN) {
+    const paymentChanged =
+      nextStatus !== existingOrder.status ||
+      nextPaymentMethod !== existingOrder.paymentMethod;
+    if (
+      paymentChanged &&
+      (OrdersService.paymentRequiredStatuses.has(nextStatus) ||
+        user.role !== Role.ADMIN)
+    ) {
       this.validatePaymentMethodForStatus(nextStatus, nextPaymentMethod);
     }
 
@@ -227,9 +242,17 @@ export class OrdersService {
     }
 
     if (hasFieldChanges) {
-      await this.ordersRepository.update(id, {
-        ...updateOrderDto,
-      });
+      if (
+        updateOrderDto.status !== undefined ||
+        updateOrderDto.paymentMethod !== undefined
+      ) {
+        await this.ordersRepository.update(id, updateOrderDto, {
+          status: existingOrder.status,
+          paymentMethod: existingOrder.paymentMethod,
+        });
+      } else {
+        await this.ordersRepository.update(id, updateOrderDto);
+      }
 
       await this.notesService.create(
         {

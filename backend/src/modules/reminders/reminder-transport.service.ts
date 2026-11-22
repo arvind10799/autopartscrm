@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import nodemailer from 'nodemailer';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { validatePushEndpoint } from './reminder-notification.service';
+import { reminderChannelSettings } from './reminder-worker-status';
 import type { ReminderPushSubscription } from '@prisma/client';
 
 export type ReminderMessage = {
@@ -20,21 +21,11 @@ export class ReminderTransportService {
     private readonly prisma: PrismaService,
   ) {}
   pushConfigured() {
-    return Boolean(
-      this.config.get('REMINDERS_VAPID_PUBLIC_KEY') &&
-      this.config.get('REMINDERS_VAPID_PRIVATE_KEY') &&
-      this.config.get('REMINDERS_VAPID_SUBJECT'),
-    );
+    return reminderChannelSettings(this.config).pushConfigured;
   }
   emailConfigured() {
-    return (
-      this.config.get('REMINDERS_EMAIL_ENABLED') === 'true' &&
-      Boolean(
-        this.config.get('SMTP_HOST') &&
-        this.config.get('SMTP_USER') &&
-        this.config.get('SMTP_PASS'),
-      )
-    );
+    const settings = reminderChannelSettings(this.config);
+    return settings.emailEnabled && settings.emailConfigured;
   }
   async push(deliveryId: string, userId: string, payload: ReminderMessage) {
     if (!this.pushConfigured()) return false;

@@ -2,8 +2,9 @@
 import { FollowUpCell } from "@/features/reminders/FollowUpCell";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { TablePagination } from "@/components/data-table/TablePagination";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { formatCurrency } from "@/features/orders/lib/order-formatters";
@@ -52,7 +53,7 @@ export function ShipmentEligibleOrdersTable({
       accessorKey: "salesNumber",
       header: "Sale",
       meta: {
-        className: "w-[12%]",
+        className: "w-[112px]",
       },
       cell: ({ row }) => (
         <div className="min-w-0 space-y-0.5">
@@ -69,7 +70,7 @@ export function ShipmentEligibleOrdersTable({
       accessorKey: "customerName",
       header: "Customer",
       meta: {
-        className: "w-[16%]",
+        className: "w-[128px]",
       },
       cell: ({ row }) => (
         <p className="truncate font-medium text-foreground">
@@ -81,7 +82,7 @@ export function ShipmentEligibleOrdersTable({
       id: "agent",
       header: "Advisor",
       meta: {
-        className: "w-[10%]",
+        className: "w-[72px]",
       },
       cell: ({ row }) => (
         <p className="truncate font-medium text-foreground">
@@ -93,7 +94,7 @@ export function ShipmentEligibleOrdersTable({
       accessorKey: "partDescription",
       header: "Part",
       meta: {
-        className: "w-[30%]",
+        className: "",
       },
       cell: ({ row }) => (
         <p
@@ -108,7 +109,7 @@ export function ShipmentEligibleOrdersTable({
       accessorKey: "totalSaleAmount",
       header: "Sale Amount",
       meta: {
-        className: "w-[12%]",
+        className: "w-[96px]",
       },
       cell: ({ row }) => (
         <span className="block truncate font-semibold text-foreground">
@@ -120,7 +121,7 @@ export function ShipmentEligibleOrdersTable({
       accessorKey: "latestShipmentStatus",
       header: "Status",
       meta: {
-        className: "w-[12%]",
+        className: "w-[120px]",
       },
       cell: ({ row }) => (
         <ShippingStatusCell
@@ -137,14 +138,15 @@ export function ShipmentEligibleOrdersTable({
     {
       id: "followUp",
       header: "Next check",
-      meta: { className: "w-[150px] px-2" },
+      meta: { className: "w-[144px] px-2" },
       cell: ({ row }) => <FollowUpCell value={row.original.followUp} />,
     },
     {
       id: "action",
-      header: "",
+      header: "Actions",
       meta: {
-        className: "w-[8%]",
+        className: "w-[88px]",
+        sticky: "right",
       },
       cell: ({ row }) => {
         const isSelected = row.original.id === selectedOrderId;
@@ -183,6 +185,7 @@ export function ShipmentEligibleOrdersTable({
       onRetry={onRetry}
       density="compact"
       layout="scroll"
+      tableLabel="Shipment orders"
       renderMobileCard={(order) => {
         const isSelected = order.id === selectedOrderId;
 
@@ -195,7 +198,7 @@ export function ShipmentEligibleOrdersTable({
                 : "border-border/70",
             )}
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-[#d94d00] dark:text-orange-300">
                   {order.salesNumber ?? "—"}
@@ -215,7 +218,7 @@ export function ShipmentEligibleOrdersTable({
                 label="Advisor"
                 value={getFirstName(order.createdBy.name)}
               />
-              <div className="flex justify-between gap-3">
+              <div className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] gap-2">
                 <span className="text-xs text-muted-foreground">
                   Next check
                 </span>
@@ -260,39 +263,7 @@ export function ShipmentEligibleOrdersTable({
       }}
       emptyTitle="No eligible orders"
       emptyDescription="Orders without a shipment will appear here."
-      footer={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {getRangeLabel(meta, orders.length)}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasPreviousPage || isLoading}
-              onClick={() => onPageChange(meta.page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-
-            <span className="min-w-24 text-center text-sm text-muted-foreground">
-              Page {totalPages === 0 ? 0 : meta.page} of {totalPages}
-            </span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasNextPage || isLoading}
-              onClick={() => onPageChange(meta.page + 1)}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      }
+      footer={<TablePagination meta={meta} summary={getRangeLabel(meta, orders.length)} onPageChange={onPageChange} disabled={isLoading} />}
     />
   );
 }

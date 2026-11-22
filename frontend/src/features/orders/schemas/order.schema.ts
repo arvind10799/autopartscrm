@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { invoiceRecordSchema } from '@/features/invoices/schemas/invoice.schema';
 import { formatUsPhoneNumber, hasCompleteUsPhoneNumber } from '@/lib/forms/phone-format';
 import { isFuturePacificDate } from '@/lib/utils/pacific-date';
+import { normalizeUsState } from '@/lib/forms/us-states';
 import {
   ORDER_PAYMENT_METHODS,
   ORDER_CURRENCIES,
@@ -18,6 +19,11 @@ const orderCurrencySchema = z.enum(ORDER_CURRENCIES);
 const orderRefundTypeSchema = z.enum(ORDER_REFUND_TYPES);
 const orderShipmentStatusSchema = z.enum(ORDER_SHIPMENT_STATUSES);
 const numericAmountSchema = z.coerce.number().finite();
+const billingStateSchema = z.string().trim()
+  .transform((value) => normalizeUsState(value) ?? value)
+  .refine((value) => value === '' || normalizeUsState(value) !== null,
+    'Select a state or enter its full name or two-letter abbreviation.')
+  .optional();
 const optionalStringAmountSchema = z.preprocess(
   (value) => (value === null || value === undefined ? undefined : String(value)),
   z.string().nullable().optional(),
@@ -505,7 +511,7 @@ const orderBackendDetailSchema = orderBackendSummarySchema.extend({
   invoice: invoiceRecordSchema.nullable().optional(),
 });
 
-function requiresPaymentMethod(status: z.infer<typeof orderStatusSchema>): boolean {
+export function requiresPaymentMethod(status?: z.infer<typeof orderStatusSchema>): boolean {
   return status === 'PARTIALLY_PAID' || status === 'CONFIRMED';
 }
 
@@ -537,7 +543,7 @@ export const nextOrderNumberSchema = z.object({
 
 export const createOrderSchema = z.object({
   moveLeadReminders: z.boolean().optional(),
-  billingState: z.string().trim().toUpperCase().regex(/^([A-Z]{2})?$/).optional(),
+  billingState: billingStateSchema,
   leadId: z.string().uuid('Lead identifier is invalid.').optional(),
   advisorName: z
     .string()
@@ -703,7 +709,7 @@ export const createOrderSchema = z.object({
 
 export const createOrderFormSchema = z.object({
   moveLeadReminders: z.boolean().optional(),
-  billingState: z.string().trim().toUpperCase().regex(/^([A-Z]{2})?$/).optional(),
+  billingState: billingStateSchema,
   leadId: z.preprocess(
     (value) => {
       if (typeof value !== 'string') {
@@ -937,7 +943,7 @@ export const createOrderFormSchema = z.object({
 }).pipe(createOrderSchema);
 
 export const updateOrderSchema = z.object({
-  billingState: z.string().trim().toUpperCase().regex(/^([A-Z]{2})?$/).optional(),
+  billingState: billingStateSchema,
   salesNumber: createOptionalTextSchema(
     80,
     'Sales number must be 80 characters or fewer.',
@@ -996,7 +1002,7 @@ export const updateOrderSchema = z.object({
 });
 
 export const updateOrderFormSchema = z.object({
-  billingState: z.string().trim().toUpperCase().regex(/^([A-Z]{2})?$/).optional(),
+  billingState: billingStateSchema,
   salesNumber: z.string().max(80, 'Sales number must be 80 characters or fewer.').optional(),
   customerName: z.string().max(160).optional(),
   partDescription: z.string().max(255).optional(),

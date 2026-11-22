@@ -1,4 +1,10 @@
 import { readReminderPolicy } from './reminder-policy-settings';
+import { RedisCacheService } from '../../infrastructure/redis/redis-cache.service';
+import {
+  REMINDER_WORKER_HEARTBEAT,
+  reminderChannelSettings,
+  type ReminderWorkerHeartbeat,
+} from './reminder-worker-status';
 import {
   BadRequestException,
   ForbiddenException,
@@ -53,6 +59,7 @@ export class ReminderNotificationService {
     private readonly queries: ReminderQueriesService,
     private readonly actions: ReminderActionsService,
     private readonly config: ConfigService,
+    private readonly cache: RedisCacheService,
   ) {}
   private active(user: AuthenticatedUser) {
     return this.core.assertActiveActor(this.prisma, user);
@@ -74,7 +81,7 @@ export class ReminderNotificationService {
   async settings(user: AuthenticatedUser) {
     await this.active(user);
     if (user.role !== 'ADMIN') throw new ForbiddenException();
-    const [settings, pending, failed] = await Promise.all([
+    const [settings, pending, failed, heartbeat] = await Promise.all([
       this.prisma.reminderSettings.findUniqueOrThrow({
         where: { id: 'default' },
       }),
@@ -82,22 +89,24 @@ export class ReminderNotificationService {
         where: { status: { in: ['PENDING', 'PROCESSING'] } },
       }),
       this.prisma.reminderDelivery.count({ where: { status: 'FAILED' } }),
+      this.cache.get<ReminderWorkerHeartbeat>(REMINDER_WORKER_HEARTBEAT),
     ]);
+    const checkedAt = new Date();
+    const recent =
+      heartbeat &&
+      checkedAt.getTime() - Date.parse(heartbeat.checkedAt) <= 120_000;
+    const channels = recent ? heartbeat : reminderChannelSettings(this.config);
     return {
       ...settings,
       pending,
       failed,
       serverEnabled: this.config.get('REMINDERS_DELIVERY_ENABLED') === 'true',
-      pushConfigured: Boolean(
-        this.config.get('REMINDERS_VAPID_PUBLIC_KEY') &&
-        this.config.get('REMINDERS_VAPID_PRIVATE_KEY') &&
-        this.config.get('REMINDERS_VAPID_SUBJECT'),
-      ),
-      emailConfigured: Boolean(
-        this.config.get('SMTP_HOST') &&
-        this.config.get('SMTP_USER') &&
-        this.config.get('SMTP_PASS'),
-      ),
+      checkedAt: checkedAt.toISOString(),
+      workerLastSeenAt: heartbeat?.checkedAt ?? null,
+      workerRecent: Boolean(recent),
+      pushConfigured: channels.pushConfigured,
+      emailConfigured: channels.emailConfigured,
+      emailEnabled: channels.emailEnabled,
     };
   }
   async updateSettings(

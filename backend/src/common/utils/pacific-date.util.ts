@@ -1,5 +1,20 @@
 const PACIFIC_TIME_ZONE = 'America/Los_Angeles';
 
+const pacificTimestamp = new Intl.DateTimeFormat('en-US', {
+  timeZone: PACIFIC_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  timeZoneName: 'short',
+});
+
+export function formatPacificTimestamp(value?: Date | null): string {
+  return value ? pacificTimestamp.format(value) : '';
+}
+
 export function parsePacificDateInputValue(value: string): Date {
   const [year, month, day] = value.split('-').map(Number);
 

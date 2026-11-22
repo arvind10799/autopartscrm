@@ -4,7 +4,7 @@ import { BillingStateSelect } from '@/features/reminders/BillingStateSelect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, History, PencilLine, RotateCcw } from 'lucide-react';
 import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import { ordersApi } from '../api/orders-api';
 import { formatDateTime } from '../lib/order-formatters';
 import { useOrderDetailWithRefresh } from '../hooks/useOrderDetail';
 import {
+  requiresPaymentMethod,
   updateOrderFormSchema,
   type UpdateOrderFormValues,
 } from '../schemas/order.schema';
@@ -81,6 +82,7 @@ export function UpdateOrderForm({
       vehicleNotes: '',
       vehicleConfiguration: '',
       billingAddress: '',
+      billingState: '',
       billingPerson: '',
       billingPhone: '',
       shippingAddress: '',
@@ -172,6 +174,20 @@ export function UpdateOrderForm({
 
     try {
       const parsedPayload = updateOrderFormSchema.parse(values);
+      if (canEditAllOrderFields && order) {
+        const status = parsedPayload.status ?? order.status;
+        const method = parsedPayload.paymentMethod === undefined
+          ? order.paymentMethod
+          : parsedPayload.paymentMethod;
+        if (requiresPaymentMethod(status) && !method &&
+            (status !== order.status || method !== order.paymentMethod)) {
+          form.setError('paymentMethod', {
+            type: 'manual',
+            message: 'Select a payment method for a paid or partially paid order.',
+          }, { shouldFocus: true });
+          return;
+        }
+      }
       const payload = canEditAllOrderFields
         ? parsedPayload
         : {
@@ -311,14 +327,26 @@ export function UpdateOrderForm({
                 </Select>
               </EditorField>
               <EditorField label="Payment method" id="paymentMethod">
-                <Select id="paymentMethod" {...form.register('paymentMethod')}>
-                  <option value="">Not required</option>
+                <Select
+                  id="paymentMethod"
+                  aria-invalid={Boolean(form.formState.errors.paymentMethod)}
+                  aria-describedby={form.formState.errors.paymentMethod ? 'payment-method-error' : undefined}
+                  {...form.register('paymentMethod')}
+                >
+                  <option value="">
+                    {requiresPaymentMethod(form.watch('status')) ? 'Select payment method' : 'Not required'}
+                  </option>
                   {ORDER_PAYMENT_METHODS.map((method) => (
                     <option key={method} value={method}>
                       {formatOrderPaymentMethod(method)}
                     </option>
                   ))}
                 </Select>
+                {form.formState.errors.paymentMethod && (
+                  <p id="payment-method-error" role="alert" className="text-xs text-destructive">
+                    {form.formState.errors.paymentMethod.message}
+                  </p>
+                )}
               </EditorField>
             </EditorSection>
 
@@ -362,10 +390,14 @@ export function UpdateOrderForm({
                 />
               </EditorField>
               <div className="space-y-2 sm:col-span-2">
-                <label className="block space-y-2 text-sm font-medium">
-                  Billing state
-                  <BillingStateSelect {...form.register('billingState')} />
-                </label>
+                <EditorField id="billingState" label="Billing state">
+                  <Controller name="billingState" control={form.control} render={({ field, fieldState }) => (
+                    <BillingStateSelect {...field} id="billingState" aria-invalid={fieldState.invalid} />
+                  )} />
+                  {form.formState.errors.billingState?.message && (
+                    <p className="text-xs text-destructive">{form.formState.errors.billingState.message}</p>
+                  )}
+                </EditorField>
                 <p className="text-xs text-muted-foreground">This state sets the customer’s reminder time zone. Update it when the billing address changes state.</p>
                 <Label htmlFor="billingAddress">Billing address</Label>
                 <Textarea id="billingAddress" rows={2} {...form.register('billingAddress')} />

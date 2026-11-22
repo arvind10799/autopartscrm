@@ -1,6 +1,11 @@
 'use client';
 
-import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import type {
+  CSSProperties,
+  KeyboardEvent,
+  MouseEvent,
+  ReactNode,
+} from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -13,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_TABLE_SKELETON_ROWS } from '@/lib/constants/app';
 import { cn } from '@/lib/utils/cn';
+import { TableScrollArea } from './TableScrollArea';
 
 type DataTableProps<TData> = {
   columns: ColumnDef<TData, unknown>[];
@@ -27,6 +33,8 @@ type DataTableProps<TData> = {
   skeletonRowCount?: number;
   density?: 'normal' | 'compact';
   layout?: 'scroll' | 'fit';
+  columnLayout?: 'standard' | 'wide';
+  tableLabel?: string;
   renderMobileCard?: (row: TData) => ReactNode;
   onRowClick?: (row: TData) => void;
 };
@@ -44,6 +52,8 @@ export function DataTable<TData>({
   skeletonRowCount = DEFAULT_TABLE_SKELETON_ROWS,
   density = 'normal',
   layout = 'scroll',
+  columnLayout = 'standard',
+  tableLabel = 'Records',
   renderMobileCard,
   onRowClick,
 }: DataTableProps<TData>) {
@@ -59,7 +69,9 @@ export function DataTable<TData>({
       ? 'px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground'
       : 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground';
   const bodyCellClassName =
-    density === 'compact' ? 'px-3 py-1.5 align-top text-sm' : 'px-4 py-3.5 align-top text-sm';
+    density === 'compact'
+      ? 'px-3 py-1.5 align-top text-sm'
+      : 'px-4 py-3.5 align-top text-sm';
   const skeletonCellClassName =
     density === 'compact' ? 'px-3 py-1.5 align-top' : 'px-4 py-3.5 align-top';
   const skeletonClassName =
@@ -71,20 +83,21 @@ export function DataTable<TData>({
     typeof meta.className === 'string'
       ? meta.className
       : '';
-  const handleRowClick = (
-    event: MouseEvent<HTMLElement>,
-    row: TData,
-  ) => {
+  const stickySide = (meta: unknown) =>
+    typeof meta === 'object' &&
+    meta !== null &&
+    'sticky' in meta &&
+    meta.sticky === 'right'
+      ? 'right'
+      : undefined;
+  const handleRowClick = (event: MouseEvent<HTMLElement>, row: TData) => {
     if (!onRowClick || shouldIgnoreRowInteraction(event.target)) {
       return;
     }
 
     onRowClick(row);
   };
-  const handleRowKeyDown = (
-    event: KeyboardEvent<HTMLElement>,
-    row: TData,
-  ) => {
+  const handleRowKeyDown = (event: KeyboardEvent<HTMLElement>, row: TData) => {
     if (
       !onRowClick ||
       shouldIgnoreRowInteraction(event.target) ||
@@ -98,25 +111,45 @@ export function DataTable<TData>({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm">
+    <div
+      className="crm-data-table min-w-0 max-w-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm"
+      data-has-cards={Boolean(renderMobileCard)}
+      style={
+        {
+          '--records-table-min-width':
+            columnLayout === 'wide' ? '960px' : '896px',
+        } as CSSProperties
+      }
+    >
       {renderMobileCard ? (
-        <div className="grid gap-3 p-3 sm:hidden">
+        <div className="crm-table-cards">
           {isLoading ? (
-            Array.from({ length: Math.min(skeletonRowCount, 5) }).map((_, index) => (
-              <div
-                key={`mobile-skeleton-${index}`}
-                className="rounded-2xl border border-border/70 bg-secondary/20 p-3"
-              >
-                <Skeleton className={cn(skeletonClassName, 'mb-3 h-5 w-28')} />
-                <Skeleton className={cn(skeletonClassName, 'mb-2 h-4 w-full')} />
-                <Skeleton className={cn(skeletonClassName, 'h-4 w-2/3')} />
-              </div>
-            ))
+            Array.from({ length: Math.min(skeletonRowCount, 5) }).map(
+              (_, index) => (
+                <div
+                  key={`mobile-skeleton-${index}`}
+                  className="rounded-2xl border border-border/70 bg-secondary/20 p-3"
+                >
+                  <Skeleton
+                    className={cn(skeletonClassName, 'mb-3 h-5 w-28')}
+                  />
+                  <Skeleton
+                    className={cn(skeletonClassName, 'mb-2 h-4 w-full')}
+                  />
+                  <Skeleton className={cn(skeletonClassName, 'h-4 w-2/3')} />
+                </div>
+              ),
+            )
           ) : error ? (
             <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-5 text-center text-sm text-destructive">
               <p>{error}</p>
               {onRetry ? (
-                <Button variant="outline" size="sm" onClick={onRetry} className="mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRetry}
+                  className="mt-3"
+                >
                   <RefreshCcw className="h-4 w-4" />
                   Retry
                 </Button>
@@ -135,9 +168,19 @@ export function DataTable<TData>({
                 key={getRowId?.(row, index) ?? index}
                 role={onRowClick ? 'button' : undefined}
                 tabIndex={onRowClick ? 0 : undefined}
-                className={cn(onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2')}
-                onClick={onRowClick ? (event) => handleRowClick(event, row) : undefined}
-                onKeyDown={onRowClick ? (event) => handleRowKeyDown(event, row) : undefined}
+                className={cn(
+                  'min-w-0',
+                  onRowClick &&
+                    'cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                )}
+                onClick={
+                  onRowClick ? (event) => handleRowClick(event, row) : undefined
+                }
+                onKeyDown={
+                  onRowClick
+                    ? (event) => handleRowKeyDown(event, row)
+                    : undefined
+                }
               >
                 {renderMobileCard(row)}
               </div>
@@ -149,18 +192,10 @@ export function DataTable<TData>({
           Swipe horizontally to view all table columns
         </div>
       ) : null}
-      <div
-        className={cn(
-          renderMobileCard && 'hidden sm:block',
-          layout === 'fit' ? 'overflow-hidden' : 'overflow-x-auto',
-        )}
-      >
+      <TableScrollArea label={tableLabel}>
         <table
-          className={
-            layout === 'fit'
-              ? 'w-full table-fixed border-collapse'
-              : 'min-w-[760px] w-full border-collapse'
-          }
+          className="crm-records-table w-full table-fixed border-collapse"
+          aria-label={tableLabel}
         >
           <thead className="bg-secondary/45">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -168,9 +203,12 @@ export function DataTable<TData>({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className={`${headerCellClassName} ${getColumnClassName(
-                      header.column.columnDef.meta,
-                    )}`}
+                    scope="col"
+                    data-sticky={stickySide(header.column.columnDef.meta)}
+                    className={cn(
+                      headerCellClassName,
+                      getColumnClassName(header.column.columnDef.meta),
+                    )}
                   >
                     {header.isPlaceholder
                       ? null
@@ -242,9 +280,14 @@ export function DataTable<TData>({
                   tabIndex={onRowClick ? 0 : undefined}
                   className={cn(
                     'border-t border-border/60 transition hover:bg-secondary/30',
-                    onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                    onRowClick &&
+                      'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                   )}
-                  onClick={onRowClick ? (event) => handleRowClick(event, row.original) : undefined}
+                  onClick={
+                    onRowClick
+                      ? (event) => handleRowClick(event, row.original)
+                      : undefined
+                  }
                   onKeyDown={
                     onRowClick
                       ? (event) => handleRowKeyDown(event, row.original)
@@ -254,11 +297,16 @@ export function DataTable<TData>({
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className={`${bodyCellClassName} ${getColumnClassName(
-                        cell.column.columnDef.meta,
-                      )}`}
+                      data-sticky={stickySide(cell.column.columnDef.meta)}
+                      className={cn(
+                        bodyCellClassName,
+                        getColumnClassName(cell.column.columnDef.meta),
+                      )}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -266,7 +314,7 @@ export function DataTable<TData>({
             )}
           </tbody>
         </table>
-      </div>
+      </TableScrollArea>
 
       {footer ? (
         <div className="border-t border-border/70 bg-card px-3 py-3 sm:px-4 sm:py-4">

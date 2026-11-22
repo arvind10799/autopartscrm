@@ -328,11 +328,36 @@ export function ReminderAdminSettings() {
                 .finally(() => setBusy(false));
             }}
           >
-            <p className="text-sm text-muted-foreground">
-              Server worker: {value.serverEnabled ? "enabled" : "disabled"} ·
-              Push: {value.pushConfigured ? "configured" : "not configured"} ·
-              SMTP: {value.emailConfigured ? "configured" : "not configured"}
-            </p>
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <p>
+                API reminder delivery is{" "}
+                {value.serverEnabled ? "enabled" : "disabled"}.
+              </p>
+              <p>
+                {value.workerRecent
+                  ? "The worker checked in recently."
+                  : "No recent worker check-in reported."}
+                {value.workerLastSeenAt &&
+                  ` Last check-in ${new Date(value.workerLastSeenAt).toLocaleString()}.`}
+              </p>
+              <p>
+                {value.workerRecent ? "Worker settings" : "API settings"} ·
+                Browser push{" "}
+                {value.pushConfigured ? "configured" : "not configured"} · SMTP{" "}
+                {value.emailConfigured ? "configured" : "not configured"} ·
+                Staff reminder email{" "}
+                {value.emailEnabled === undefined
+                  ? "status unknown"
+                  : value.emailEnabled
+                    ? "enabled"
+                    : "disabled"}
+              </p>
+              {value.checkedAt && (
+                <p className="text-xs">
+                  Status checked {new Date(value.checkedAt).toLocaleString()}.
+                </p>
+              )}
+            </div>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"

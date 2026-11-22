@@ -103,19 +103,15 @@ export function ShipmentsPageContent() {
     <section className="grid gap-4">
       <div className="grid gap-4">
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+          <CardHeader className="crm-records-toolbar space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
             <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
               Shipment table
             </CardTitle>
 
             <div
-              className={
-                dateFilter.preset === 'CUSTOM'
-                  ? 'grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start xl:grid-cols-[minmax(0,1fr)_220px_34rem]'
-                  : 'grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_minmax(22rem,28rem)] lg:items-start'
-              }
+              className="crm-toolbar-controls"
             >
-              <div className="relative">
+              <div className="crm-toolbar-search">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={searchTerm}
@@ -127,7 +123,7 @@ export function ShipmentsPageContent() {
 
               <Select
                 value={statusFilter}
-                className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                className="crm-toolbar-status h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                 onChange={(event) =>
                   handleStatusChange(parseShipmentStatusFilter(event.target.value))
                 }
@@ -141,11 +137,7 @@ export function ShipmentsPageContent() {
               </Select>
 
               <div
-                className={
-                  dateFilter.preset === 'CUSTOM'
-                    ? 'min-w-0 lg:col-span-2 xl:col-span-1'
-                    : 'min-w-0'
-                }
+                className="crm-date-control" data-custom={dateFilter.preset === "CUSTOM"}
               >
                 <DateRangeFilter
                   value={dateFilter}

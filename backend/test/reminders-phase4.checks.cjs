@@ -416,10 +416,13 @@ module.exports = async ({
     .get('/reminders/notifications/settings')
     .set('Authorization', `Bearer ${salesToken}`)
     .expect(403);
-  await request(server)
+  const readiness = await request(server)
     .get('/reminders/notifications/settings')
     .set('Authorization', `Bearer ${adminToken}`)
     .expect(200);
+  assert.equal(readiness.body.workerRecent, false);
+  assert.equal(readiness.body.workerLastSeenAt, null);
+  assert.equal(readiness.body.emailEnabled, false);
   await request(server)
     .patch('/reminders/notifications/settings')
     .set('Authorization', `Bearer ${adminToken}`)

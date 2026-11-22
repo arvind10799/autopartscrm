@@ -98,6 +98,46 @@ describe('OrdersService', () => {
     expect(ordersRepository.createWithTransaction).not.toHaveBeenCalled();
   });
 
+  it.each([OrderStatus.PARTIALLY_PAID, OrderStatus.CONFIRMED])(
+    'requires a payment method when Admin changes an order to %s',
+    async (status) => {
+      ordersRepository.findEditableById.mockResolvedValue({
+        status: OrderStatus.DRAFT,
+        paymentMethod: null,
+      });
+      await expect(
+        service.update('order-id', { status }, adminUser),
+      ).rejects.toThrow('Payment method is required');
+      ordersRepository.findEditableById.mockResolvedValue({
+        status,
+        paymentMethod: 'CASH',
+      });
+      await expect(
+        service.update('order-id', { paymentMethod: null }, adminUser),
+      ).rejects.toThrow('Payment method is required');
+      expect(ordersRepository.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it('allows a note on a historical paid order with a missing payment method', async () => {
+    ordersRepository.findEditableById.mockResolvedValue({
+      status: OrderStatus.CONFIRMED,
+      paymentMethod: null,
+      intakeDetails: {},
+    });
+    await service.update(
+      'order-id',
+      {
+        status: OrderStatus.CONFIRMED,
+        paymentMethod: null,
+        note: 'Internal update',
+      },
+      adminUser,
+    );
+    expect(ordersRepository.update).not.toHaveBeenCalled();
+    expect(notesService.create).toHaveBeenCalled();
+  });
+
   it('rejects quantity changes for sales users after verifying record access', async () => {
     ordersRepository.findEditableById.mockResolvedValue({
       partDescription: 'Synthetic part',

@@ -265,72 +265,70 @@ export function OrdersPageContent() {
     <>
       <section className="grid gap-4">
         <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-          <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+          <CardHeader className="crm-records-toolbar space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+            <div className="crm-toolbar-heading">
               <CardTitle className="shrink-0 text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
                 Orders table
               </CardTitle>
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
-                <div
-                  className={
-                    dateFilter.preset === 'CUSTOM'
-                      ? 'w-full xl:w-[34rem]'
-                      : 'w-full sm:w-60'
-                  }
-                >
-                  <DateRangeFilter
-                    value={dateFilter}
-                    onChange={setDateFilter}
-                    variant="inline"
-                    inlineCustomLayout="row"
-                  />
-                </div>
-
-                <label className="grid w-full gap-2 sm:w-44">
-                  <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                    Agent filter
-                  </span>
-                  <Select
-                    value={selectedAgentFilter}
-                    aria-label="Agent filter"
-                    className="h-11 w-full rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-                    onChange={(event) => handleAgentFilterChange(event.target.value)}
-                  >
-                    <option value={ALL_AGENTS_FILTER}>All agents</option>
-                    {agentOptions.map((agent) => (
-                      <option key={agent.id} value={agent.id}>
-                        {formatAgentFilterLabel(agent)}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-
+              <div className="crm-toolbar-actions">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-11 w-full whitespace-nowrap rounded-xl px-5 font-semibold sm:w-auto"
+                  className="h-11 whitespace-nowrap rounded-xl px-5 font-semibold"
                   disabled={isExporting}
                   onClick={() => void handleExportExcel()}
                 >
                   <Download className="h-4 w-4" />
                   {isExporting ? 'Exporting...' : 'Export Excel'}
                 </Button>
-
               </div>
             </div>
-
-            <div className="grid gap-3 xl:grid-cols-[1fr_180px_220px]">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchTerm}
-                  onChange={(event) => handleSearchChange(event.target.value)}
-                  className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
-                  placeholder="Search by order number, sales number, customer, phone, email, or part"
+            <div className="crm-primary-filters">
+              <label className="crm-toolbar-search">
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  Search
+                </span>
+                <div className="crm-record-search">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchTerm}
+                    onChange={(event) => handleSearchChange(event.target.value)}
+                    className="h-11 rounded-xl border-slate-200 bg-white pl-9 dark:border-slate-800 dark:bg-slate-900"
+                    placeholder="Search by order number, sales number, customer, phone, email, or part"
+                  />
+                </div>
+              </label>
+              <div
+                className="crm-date-control"
+                data-custom={dateFilter.preset === 'CUSTOM'}
+              >
+                <DateRangeFilter
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  variant="inline"
+                  inlineCustomLayout="row"
                 />
               </div>
-
+              <label className="crm-agent-control">
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  Agent filter
+                </span>
+                <Select
+                  value={selectedAgentFilter}
+                  aria-label="Agent filter"
+                  className="h-11 w-full rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                  onChange={(event) => handleAgentFilterChange(event.target.value)}
+                >
+                  <option value={ALL_AGENTS_FILTER}>All agents</option>
+                  {agentOptions.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {formatAgentFilterLabel(agent)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            </div>
+            <div className="crm-secondary-filters">
               <Select
                 value={ageingFilter}
                 aria-label="Orders aging filter"
@@ -345,7 +343,6 @@ export function OrdersPageContent() {
                   </option>
                 ))}
               </Select>
-
               <Select
                 value={shipmentStatusFilter}
                 aria-label="Shipping status filter"

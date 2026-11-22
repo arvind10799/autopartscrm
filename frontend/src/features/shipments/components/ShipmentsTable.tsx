@@ -3,8 +3,9 @@ import { FollowUpCell } from "@/features/reminders/FollowUpCell";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { TablePagination } from "@/components/data-table/TablePagination";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { useTableDetailHref } from "@/lib/filters/table-view-state";
@@ -25,7 +26,7 @@ const buildColumns = (
     accessorKey: "order.salesNumber",
     header: "Sale",
     meta: {
-      className: "w-[12%]",
+      className: "w-[112px]",
     },
     cell: ({ row }) => (
       <div className="min-w-0 space-y-0.5">
@@ -45,7 +46,7 @@ const buildColumns = (
     accessorKey: "order.customerName",
     header: "Customer",
     meta: {
-      className: "w-[16%]",
+      className: "w-[128px]",
     },
     cell: ({ row }) => (
       <p className="truncate font-medium text-foreground">
@@ -57,7 +58,7 @@ const buildColumns = (
     accessorKey: "order.createdBy.name",
     header: "Advisor",
     meta: {
-      className: "w-[10%]",
+      className: "w-[72px]",
     },
     cell: ({ row }) => (
       <p className="truncate font-medium text-foreground">
@@ -69,7 +70,7 @@ const buildColumns = (
     accessorKey: "order.partDescription",
     header: "Part",
     meta: {
-      className: "w-[28%]",
+      className: "",
     },
     cell: ({ row }) => (
       <p
@@ -84,7 +85,7 @@ const buildColumns = (
     accessorKey: "carrierName",
     header: "PRO Details",
     meta: {
-      className: "w-[14%]",
+      className: "w-[128px]",
     },
     cell: ({ row }) => (
       <div className="min-w-0 space-y-0.5">
@@ -101,7 +102,7 @@ const buildColumns = (
     accessorKey: "currentStatus",
     header: "Status",
     meta: {
-      className: "w-[12%]",
+      className: "w-[112px]",
     },
     cell: ({ row }) => (
       <ShippingStatusCell
@@ -118,14 +119,15 @@ const buildColumns = (
   {
     id: "followUp",
     header: "Next check",
-    meta: { className: "w-[150px] px-2" },
+    meta: { className: "w-[144px] px-2" },
     cell: ({ row }) => <FollowUpCell value={row.original.followUp} />,
   },
   {
     id: "details",
-    header: "",
+    header: "Actions",
     meta: {
-      className: "w-[8%]",
+      className: "w-[84px]",
+      sticky: "right",
     },
     cell: ({ row }) => (
       <Link
@@ -184,9 +186,10 @@ export function ShipmentsTable({
       onRetry={onRetry}
       density="compact"
       layout="scroll"
+      tableLabel="Shipments"
       renderMobileCard={(shipment) => (
         <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <Link
                 href={detailHref(`/shipments/${shipment.id}`)}
@@ -215,7 +218,7 @@ export function ShipmentsTable({
               label="Advisor"
               value={getFirstName(shipment.order.createdBy.name)}
             />
-            <div className="flex justify-between gap-3">
+            <div className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] gap-2">
               <span className="text-xs text-muted-foreground">Next check</span>
               <FollowUpCell value={shipment.followUp} />
             </div>
@@ -244,39 +247,7 @@ export function ShipmentsTable({
       )}
       emptyTitle="No shipments found"
       emptyDescription="Try a different search term or clear the current status filter."
-      footer={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {getRangeLabel(meta, shipments.length)}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasPreviousPage || isLoading}
-              onClick={() => onPageChange(meta.page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-
-            <span className="min-w-24 text-center text-sm text-muted-foreground">
-              Page {totalPages === 0 ? 0 : meta.page} of {totalPages}
-            </span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasNextPage || isLoading}
-              onClick={() => onPageChange(meta.page + 1)}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      }
+      footer={<TablePagination meta={meta} summary={getRangeLabel(meta, shipments.length)} onPageChange={onPageChange} disabled={isLoading} />}
     />
   );
 }

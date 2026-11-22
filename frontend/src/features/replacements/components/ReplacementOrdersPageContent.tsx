@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, ArrowUpRight } from 'lucide-react';
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table/DataTable';
+import { TablePagination } from '@/components/data-table/TablePagination';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,7 +36,7 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<Replaceme
   {
     accessorKey: 'order.salesNumber',
     header: 'Sale',
-    meta: { className: 'w-[15%]' },
+    meta: { className: 'w-[112px]' },
     cell: ({ row }) => (
       <div className="min-w-0">
         <Link
@@ -53,7 +54,7 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<Replaceme
   {
     accessorKey: 'order.customerName',
     header: 'Customer',
-    meta: { className: 'w-[16%]' },
+    meta: { className: 'w-[128px]' },
     cell: ({ row }) => (
       <div className="min-w-0">
         <p className="truncate font-semibold text-foreground">
@@ -68,7 +69,7 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<Replaceme
   {
     accessorKey: 'order.partDescription',
     header: 'Part',
-    meta: { className: 'w-[18%]' },
+    meta: { className: '' },
     cell: ({ row }) => (
       <p className="line-clamp-2 text-sm text-foreground">
         {row.original.order.partDescription}
@@ -78,7 +79,7 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<Replaceme
   {
     accessorKey: 'replacementStatus',
     header: 'Status',
-    meta: { className: 'w-[15%]' },
+    meta: { className: 'w-[144px]' },
     cell: ({ row }) => (
       <div className="space-y-1">
         <ReplacementStatusBadge status={row.original.replacementStatus} />
@@ -91,7 +92,7 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<Replaceme
   {
     accessorKey: 'customerReason',
     header: 'Reason / Yard',
-    meta: { className: 'w-[24%]' },
+    meta: { className: 'w-[176px]' },
     cell: ({ row }) => (
       <div className="space-y-1 text-sm">
         <p className="line-clamp-1 font-medium text-foreground">
@@ -106,7 +107,7 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<Replaceme
   {
     accessorKey: 'replacementProNumber',
     header: 'Transit',
-    meta: { className: 'w-[13%]' },
+    meta: { className: 'w-[120px]' },
     cell: ({ row }) => (
       <div className="min-w-0 text-sm">
         <p className="truncate font-semibold text-foreground">
@@ -120,8 +121,8 @@ const buildColumns = (detailHref: (path: string) => string): ColumnDef<Replaceme
   },
   {
     id: 'actions',
-    header: '',
-    meta: { className: 'w-[8%]' },
+    header: 'Actions',
+    meta: { className: 'w-[96px]', sticky: 'right' },
     cell: ({ row }) => (
       <Link href={detailHref(`/replacement-orders/${row.original.id}`)}>
         <Button
@@ -180,7 +181,7 @@ export function ReplacementOrdersPageContent() {
   return (
     <section className="grid gap-4">
       <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm shadow-slate-950/5 dark:border-slate-800 dark:bg-slate-950/80">
-        <CardHeader className="space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+        <CardHeader className="crm-records-toolbar space-y-3 border-b border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
             <CardTitle className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
               Replacement Orders
@@ -188,13 +189,9 @@ export function ReplacementOrdersPageContent() {
           </div>
 
           <div
-            className={
-              dateFilter.preset === 'CUSTOM'
-                ? 'grid gap-3 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start xl:grid-cols-[minmax(0,1fr)_260px_34rem]'
-                : 'grid gap-3 xl:grid-cols-[minmax(0,1fr)_260px_260px] xl:items-start'
-            }
+            className="crm-toolbar-controls"
           >
-            <div className="relative">
+            <div className="crm-toolbar-search">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchTerm}
@@ -209,7 +206,7 @@ export function ReplacementOrdersPageContent() {
 
             <Select
               value={statusFilter}
-              className="h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+              className="crm-toolbar-status h-11 rounded-xl border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
               onChange={(event) => {
                 setStatusFilter(parseReplacementStatusFilter(event.target.value));
                 startTransition(() => setPage(1));
@@ -224,11 +221,7 @@ export function ReplacementOrdersPageContent() {
             </Select>
 
             <div
-              className={
-                dateFilter.preset === 'CUSTOM'
-                  ? 'min-w-0 lg:col-span-2 xl:col-span-1'
-                  : 'min-w-0'
-              }
+              className="crm-date-control" data-custom={dateFilter.preset === "CUSTOM"}
             >
               <DateRangeFilter
                 value={dateFilter}
@@ -254,10 +247,11 @@ export function ReplacementOrdersPageContent() {
             emptyTitle="No replacement orders"
             emptyDescription="Replacement requests created from orders or shipments will appear here."
             density="compact"
-            layout="fit"
+            layout="scroll"
+            tableLabel="Replacement orders"
             renderMobileCard={(replacement) => (
               <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <Link
                       href={detailHref(`/replacement-orders/${replacement.id}`)}
@@ -295,33 +289,7 @@ export function ReplacementOrdersPageContent() {
                 </Link>
               </article>
             )}
-            footer={
-              <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-                <span>
-                  Showing page {replacementsResponse.meta.page} of{' '}
-                  {Math.max(replacementsResponse.meta.totalPages, 1)} ·{' '}
-                  {replacementsResponse.meta.total} replacement orders
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!replacementsResponse.meta.hasPreviousPage}
-                    onClick={() => setPage((currentPage) => Math.max(currentPage - 1, 1))}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!replacementsResponse.meta.hasNextPage}
-                    onClick={() => setPage((currentPage) => currentPage + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            }
+            footer={<TablePagination meta={replacementsResponse.meta} summary={`${replacementsResponse.meta.total} replacement orders`} onPageChange={setPage} disabled={isLoading} />}
           />
         </CardContent>
       </Card>

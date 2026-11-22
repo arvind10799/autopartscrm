@@ -1,4 +1,9 @@
 import { readReminderPolicy } from './reminder-policy-settings';
+import { RedisCacheService } from '../../infrastructure/redis/redis-cache.service';
+import {
+  REMINDER_WORKER_HEARTBEAT,
+  reminderChannelSettings,
+} from './reminder-worker-status';
 import {
   Injectable,
   Logger,
@@ -64,6 +69,7 @@ export class ReminderDeliveryService implements OnModuleInit, OnModuleDestroy {
   private timer?: ReturnType<typeof setInterval>;
   private running?: Promise<void>;
   private stopping = false;
+  private lastHeartbeat = 0;
   private cursor?: { dueAt: Date; id: string };
   constructor(
     private readonly prisma: PrismaService,
@@ -71,12 +77,27 @@ export class ReminderDeliveryService implements OnModuleInit, OnModuleDestroy {
     private readonly core: RemindersService,
     private readonly transport: ReminderTransportService,
     private readonly config: ConfigService,
+    private readonly cache: RedisCacheService,
   ) {}
   onModuleInit() {
     if (this.config.get('REMINDERS_DELIVERY_ENABLED') !== 'true') return;
     const run = () => {
       if (!this.running && !this.stopping)
         this.running = this.tick()
+          .then(() => {
+            const now = Date.now();
+            if (now - this.lastHeartbeat < 30_000) return;
+            this.lastHeartbeat = now;
+            // Cache writes handle outages and run independently of delivery.
+            void this.cache.set(
+              REMINDER_WORKER_HEARTBEAT,
+              {
+                checkedAt: new Date(now).toISOString(),
+                ...reminderChannelSettings(this.config),
+              },
+              86400,
+            );
+          })
           .catch(() =>
             this.logger.error(
               'Reminder batch failed; durable work remains available for retry.',

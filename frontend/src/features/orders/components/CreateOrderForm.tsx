@@ -4,7 +4,7 @@ import { BillingStateSelect } from '@/features/reminders/BillingStateSelect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1051,10 +1051,11 @@ export function CreateOrderForm({
                     />
                   </Field>
 
-                  <label className="block space-y-2 text-sm font-medium">
-                    Billing state
-                    <BillingStateSelect {...form.register('billingState')} />
-                  </label>
+                  <Field id="billingState" label="Billing state" error={form.formState.errors.billingState?.message}>
+                    <Controller name="billingState" control={form.control} render={({ field, fieldState }) => (
+                      <BillingStateSelect {...field} id="billingState" aria-invalid={fieldState.invalid} />
+                    )} />
+                  </Field>
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -1297,7 +1298,7 @@ export function CreateOrderForm({
               <Textarea
                 id="note"
                 rows={3}
-                placeholder="Add a handoff note, customer update, or internal context for this order"
+                placeholder="Add an internal note or customer update"
                 className="min-h-[88px] rounded-xl"
                 {...form.register('note')}
               />

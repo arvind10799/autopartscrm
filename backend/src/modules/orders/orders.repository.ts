@@ -11,6 +11,7 @@ import {
 import { reconcileReminders } from '../reminders/reminder-lifecycle';
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -573,7 +574,11 @@ export class OrdersRepository {
     return order;
   }
 
-  async update(id: string, updateOrderDto: UpdateOrderPayload) {
+  async update(
+    id: string,
+    updateOrderDto: UpdateOrderPayload,
+    expectedPayment?: Pick<Prisma.OrderWhereInput, 'status' | 'paymentMethod'>,
+  ) {
     const data: Prisma.OrderUncheckedUpdateInput = {};
     if (updateOrderDto.billingState !== undefined)
       data.billingState = updateOrderDto.billingState;
@@ -644,7 +649,7 @@ export class OrdersRepository {
       return await this.prismaService.$transaction(async (tx) => {
         const before = await automationSnapshot(tx, 'ORDER', id);
         const result = await tx.order.update({
-          where: { id },
+          where: { id, ...expectedPayment },
           data,
           select: orderListSelect,
         });
@@ -653,6 +658,15 @@ export class OrdersRepository {
         return result;
       });
     } catch (error) {
+      if (
+        expectedPayment &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new ConflictException(
+          'Order payment details changed. Refresh the order and try again.',
+        );
+      }
       handlePrismaError(error, 'Order');
     }
   }

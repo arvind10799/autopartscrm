@@ -1,6 +1,21 @@
 # Reminder delivery — Phase 4
 
-Status: implemented locally, pending separately approved deployment and transport activation. No AWS connection, live migration, real push, SMTP email, or customer SMS was used. Phases 1–4 are still one uncommitted local change set.
+## Current behavior
+
+User Center → Reminders shows the time of the last successful worker check-in.
+An enabled worker publishes a check-in to the shared Redis cache after a successful
+poll, at most once every 30 seconds. The screen shows the worker's channel settings
+when its check-in is at most two minutes old. Otherwise it shows the API's
+configuration. The timestamp dates the snapshot. A missing check-in can also mean
+the cache is unavailable. Verifying receipt requires an enrolled staff device or
+a test mailbox. Staff email requires both SMTP credentials and the reminder email switch.
+
+The working marker defaults to 120 minutes and the repeated-snooze flag to three
+snoozes. Admin can change both under User Center → Reminders. The staff email
+digest and the Day, Week and Month calendar views are implemented.
+
+The original Phase 4 verification used synthetic data and mocked transports. The
+deployment and transport activation steps below are historical rollout instructions.
 
 ## Behavior
 

@@ -4,8 +4,9 @@ import { FollowUpCell } from "@/features/reminders/FollowUpCell";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { MouseEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, PencilLine, RefreshCw } from "lucide-react";
+import { PencilLine, RefreshCw } from "lucide-react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { TablePagination } from "@/components/data-table/TablePagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { UserRole } from "@/features/auth/types/auth.types";
@@ -18,10 +19,6 @@ import type {
   LeadSummary,
   PaginationMeta,
 } from "../types/lead.types";
-
-function getFirstName(name: string) {
-  return name.trim().split(/\s+/)[0] || name;
-}
 
 function formatUpdatedAge(value: string) {
   const timestamp = new Date(value).getTime();
@@ -123,10 +120,7 @@ function buildColumns(
       accessorKey: "date",
       header: "Date",
       meta: {
-        className:
-          role === "ADMIN"
-            ? "w-[10%] overflow-hidden px-2"
-            : "w-[11%] overflow-hidden px-2",
+        className: "w-[92px] px-2",
       },
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -149,10 +143,7 @@ function buildColumns(
       accessorKey: "customerName",
       header: "Customer",
       meta: {
-        className:
-          role === "ADMIN"
-            ? "w-[15%] overflow-hidden px-2"
-            : "w-[18%] overflow-hidden px-2",
+        className: "w-[136px] px-2",
       },
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -171,10 +162,7 @@ function buildColumns(
       accessorKey: "customerPhone",
       header: "Phone No.",
       meta: {
-        className:
-          role === "ADMIN"
-            ? "w-[13%] overflow-hidden px-2"
-            : "w-[14%] overflow-hidden px-2",
+        className: "w-[122px] px-2",
       },
       cell: ({ row }) => (
         <p
@@ -189,10 +177,7 @@ function buildColumns(
       accessorKey: "partDescription",
       header: "Vehicle",
       meta: {
-        className:
-          role === "ADMIN"
-            ? "w-[24%] overflow-hidden px-2"
-            : "w-[27%] overflow-hidden px-2",
+        className: "px-2",
       },
       cell: ({ row }) => (
         <p
@@ -207,7 +192,7 @@ function buildColumns(
       accessorKey: "quote",
       header: "Quote",
       meta: {
-        className: "w-[10%] overflow-hidden px-2 text-right",
+        className: "w-[96px] px-2 text-right",
       },
       cell: ({ row }) => (
         <span className="block truncate font-semibold text-slate-950 dark:text-white">
@@ -221,7 +206,7 @@ function buildColumns(
       accessorKey: "status",
       header: "Status",
       meta: {
-        className: "w-[12%] overflow-hidden px-2",
+        className: "w-[112px] px-2",
       },
       cell: ({ row }) => {
         const status = row.original.isConverted
@@ -251,14 +236,15 @@ function buildColumns(
     {
       id: "followUp",
       header: "Next follow-up",
-      meta: { className: "w-[150px] px-2" },
+      meta: { className: "w-[140px] px-2" },
       cell: ({ row }) => <FollowUpCell value={row.original.followUp} />,
     },
     {
       id: "actions",
-      header: "",
+      header: "Actions",
       meta: {
-        className: "w-[8%] overflow-hidden px-2 text-right",
+        className: "w-[84px] px-2 text-right",
+        sticky: "right",
       },
       cell: ({ row }) => {
         const canManageLead =
@@ -308,14 +294,14 @@ function buildColumns(
       accessorKey: "createdBy.name",
       header: "Agent",
       meta: {
-        className: "hidden w-[8%] overflow-hidden px-2 2xl:table-cell",
+        className: "w-[76px] px-2",
       },
       cell: ({ row }) => (
         <p
           className="truncate font-medium text-slate-700 dark:text-slate-200"
           title={row.original.createdBy.name}
         >
-          {getFirstName(row.original.createdBy.name)}
+          {row.original.createdBy.name}
         </p>
       ),
     });
@@ -381,6 +367,8 @@ export function LeadsTable({
       onRetry={onRetry}
       density="compact"
       layout="scroll"
+      tableLabel="Leads"
+      columnLayout={showAgentColumn ? "wide" : "standard"}
       onRowClick={(lead) => router.push(detailHref(getLeadDetailsHref(lead)))}
       renderMobileCard={(lead) => {
         const status = lead.isConverted ? "CONVERTED" : lead.status;
@@ -390,7 +378,7 @@ export function LeadsTable({
 
         return (
           <article className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-foreground">
                   {lead.customerName}
@@ -419,16 +407,17 @@ export function LeadsTable({
               {showAgentColumn ? (
                 <MobileField
                   label="Agent"
-                  value={getFirstName(lead.createdBy.name)}
+                  value={lead.createdBy.name}
                 />
               ) : null}
-              <div className="flex justify-between gap-3">
+              <div className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] gap-2">
                 <span className="text-xs text-muted-foreground">
                   Next follow-up
                 </span>
                 <FollowUpCell value={lead.followUp} />
               </div>
               <MobileField label="Phone" value={lead.customerPhone} />
+              {lead.customerEmail && <MobileField label="Email" value={lead.customerEmail} />}
               <MobileField label="Vehicle" value={formatVehicleSummary(lead)} />
               <MobileField
                 label="Quote"
@@ -473,39 +462,7 @@ export function LeadsTable({
       }}
       emptyTitle="No leads found"
       emptyDescription="Create a new lead or clear the current search and conversion filters."
-      footer={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {getRangeLabel(meta, leads.length)}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasPreviousPage || isLoading}
-              onClick={() => onPageChange(meta.page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-
-            <span className="min-w-24 text-center text-sm text-slate-500 dark:text-slate-400">
-              Page {totalPages === 0 ? 0 : meta.page} of {totalPages}
-            </span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!meta.hasNextPage || isLoading}
-              onClick={() => onPageChange(meta.page + 1)}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      }
+      footer={<TablePagination meta={meta} summary={getRangeLabel(meta, leads.length)} onPageChange={onPageChange} disabled={isLoading} />}
     />
   );
 }

@@ -607,7 +607,8 @@ async function main() {
     .overrideProvider(ConfigService)
     .useValue({
       get: (key, fallback) =>
-        key === 'JWT_SECRET' ? 'synthetic-phase1-test-secret' : fallback,
+        key === 'JWT_SECRET' ? 'synthetic-phase1-test-secret' :
+          key === 'REDIS_CACHE_ENABLED' ? 'false' : fallback,
     })
     .compile();
   const app = moduleRef.createNestApplication();
