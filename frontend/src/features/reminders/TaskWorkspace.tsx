@@ -18,6 +18,10 @@ import {
   RefreshCw,
   Search,
   GripVertical,
+  SlidersHorizontal,
+  Clock3,
+  CircleAlert,
+  CircleCheck,
   ArrowUpRight,
   X,
 } from "lucide-react";
@@ -28,7 +32,7 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import { ReminderPreferencesDisclosure } from "./ReminderNotificationSettings";
+import { ReminderNotificationSettings } from "./ReminderNotificationSettings";
 import type { AuthUser } from "@/features/auth/types/auth.types";
 import {
   ReminderDialog,
@@ -57,6 +61,7 @@ import {
   shiftCalendarMonth,
   taskDayLabel,
 } from "./task-calendar";
+import { TaskTable } from "./TaskTable";
 import { useTaskSummary } from "./TaskSummaryProvider";
 
 type Filters = {
@@ -207,6 +212,8 @@ function Workspace({ user, calendar }: { user: AuthUser; calendar: boolean }) {
   );
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [zoneBusy, setZoneBusy] = useState(false);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [moreFilters, setMoreFilters] = useState(false);
   const initialZoneReady = useRef(Boolean(summary?.displayTimeZone));
   const hadExplicitDay = useRef(Boolean(search.get("day")));
   const revisionFn = useCallback(() => setRevision((v) => v + 1), []);
@@ -260,6 +267,7 @@ function Workspace({ user, calendar }: { user: AuthUser; calendar: boolean }) {
           ? filters.to
           : undefined,
       calendar: isTimeline,
+      highlights: calendar,
       limit: isTimeline ? 500 : 20,
       page: Number(filters.page),
       displayTimeZone: zone,
@@ -292,19 +300,26 @@ function Workspace({ user, calendar }: { user: AuthUser; calendar: boolean }) {
     for (const key of filterKeys)
       if (filters[key]) query.set(key, filters[key]);
     const returnTo = `${calendar ? "/calendar" : "/my-tasks"}?${query}`;
+    const withReturnTo = (row: TaskItem) => {
+      if (!row.record.href) return row;
+      const [pathname, hash] = row.record.href.split("#");
+      return {
+        ...row,
+        record: {
+          ...row.record,
+          href: `${pathname}?returnTo=${encodeURIComponent(returnTo)}${hash ? `#${hash}` : ""}`,
+        },
+      };
+    };
     return {
       ...data,
-      items: data.items.map((row) => {
-        if (!row.record.href) return row;
-        const [pathname, hash] = row.record.href.split("#");
-        return {
-          ...row,
-          record: {
-            ...row.record,
-            href: `${pathname}?returnTo=${encodeURIComponent(returnTo)}${hash ? `#${hash}` : ""}`,
-          },
-        };
-      }),
+      items: data.items.map(withReturnTo),
+      highlights: data.highlights
+        ? {
+            ...data.highlights,
+            upcoming: data.highlights.upcoming.map(withReturnTo),
+          }
+        : undefined,
     };
   }, [data, filters, calendar]);
   useEffect(() => {
@@ -457,28 +472,753 @@ function Workspace({ user, calendar }: { user: AuthUser; calendar: boolean }) {
     }
   };
   return (
-    <section className="crm-brand-actions space-y-5">
-      <ReminderPreferencesDisclosure />
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section className="crm-brand-actions crm-task-workspace space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">
-            Follow-ups & task assignment
-          </p>
-          <h1 className="mt-1 text-2xl font-bold">
-            {calendar ? "Calendar" : "My Tasks"}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">
             {calendar
-              ? "Plan follow-ups and coordinate your next steps."
-              : user.role === "SHIPPING"
-                ? "Your shared Shipping queue and personal tasks."
-                : "Your next follow-ups, assignments, and handoffs in one place."}
+              ? user.role === "ADMIN"
+                ? "Team Calendar"
+                : "Calendar"
+              : "My Tasks"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {calendar
+              ? "Customer follow-ups, shipping commitments, and team priorities."
+              : "Your follow-ups, customer commitments, and team handoffs."}
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={() => setPreferencesOpen(true)}>
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            Preferences
+          </Button>
+          <Button
+            variant="outline"
+            aria-label="Refresh tasks"
+            onClick={() => {
+              revisionFn();
+              refreshSummary();
+            }}
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+          </Button>
+          {calendar && (
+            <Button
+              variant="outline"
+              disabled={loading}
+              onClick={() => {
+                void downloadReminderFile(
+                  "calendar-export.ics",
+                  {
+                    ...params,
+                    highlights: undefined,
+                    from: params.from ?? today,
+                    to: params.to ?? shiftTaskDate(today, 30),
+                  },
+                  "crm-tasks.ics",
+                ).catch((e) => setError(message(e)));
+              }}
+            >
+              <CalendarDays className="mr-2 h-4 w-4" />
+              Export calendar
+            </Button>
+          )}
+          <Button onClick={() => setCreate({})}>
+            <Plus className="mr-2 h-4 w-4" />
+            New task
+          </Button>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {(
+          [
+            [
+              "Overdue",
+              "overdue",
+              "OVERDUE",
+              CircleAlert,
+              "Needs immediate attention",
+            ],
+            [
+              "Due today",
+              "today",
+              "TODAY",
+              Clock3,
+              "Follow-ups scheduled today",
+            ],
+            [
+              calendar ? "Next 7 days" : "Upcoming",
+              "upcoming",
+              "UPCOMING",
+              CalendarDays,
+              "Scheduled for later",
+            ],
+            [
+              "Completed",
+              "done",
+              "DONE",
+              CircleCheck,
+              "Tasks successfully closed",
+            ],
+          ] as const
+        ).map(([title, key, tab, Icon, description]) => (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={filters.tab === tab}
+            onClick={() =>
+              update({ tab: filters.tab === tab ? "ALL" : tab, status: "" })
+            }
+            className={cn(
+              "crm-task-stat rounded-2xl border bg-card p-5 text-left shadow-sm transition hover:border-orange-400",
+              filters.tab === tab
+                ? "border-orange-500 ring-1 ring-orange-500/15"
+                : "border-border",
+              calendar && "flex items-center gap-3",
+            )}
+          >
+            {calendar && (
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-300">
+                <Icon className="h-5 w-5" />
+              </span>
+            )}
+            <span className="block flex-1">
+              {!calendar && (
+                <span className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+                  {title}
+                  <Icon className="h-5 w-5 text-orange-600 dark:text-orange-300" />
+                </span>
+              )}
+              <span
+                className={cn(
+                  "block font-bold tracking-tight",
+                  calendar ? "text-2xl" : "mt-4 text-3xl",
+                )}
+              >
+                {data ? data.counts[key] : "—"}
+              </span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {calendar ? title : description}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+      <div
+        className={
+          calendar
+            ? "grid items-start gap-4 2xl:grid-cols-[minmax(0,1fr)_260px]"
+            : ""
+        }
+      >
+        <Card className="min-w-0 overflow-hidden border-border shadow-sm">
+          <CardContent
+            className={cn("space-y-4 p-4 sm:p-5", !calendar && "pb-0 sm:pb-0")}
+          >
+            <div
+              className={cn(
+                "flex items-center justify-between gap-3",
+                calendar && "hidden",
+              )}
+            >
+              <div>
+                <h2 className="text-lg font-bold tracking-tight">
+                  {calendar ? "Schedule" : "Task workspace"}
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {calendar
+                    ? zoneLabels[zone] + " time"
+                    : "Search, prioritize, and manage your tasks."}
+                </p>
+              </div>
+              <span className="rounded-md bg-secondary px-2 py-1 text-xs text-muted-foreground">
+                {data
+                  ? `${data.total} ${data.total === 1 ? "task" : "tasks"}`
+                  : "Loading…"}
+              </span>
+            </div>
+            <div className="crm-task-search-row flex flex-wrap gap-2.5">
+              <div className="relative min-w-52 flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  aria-label="Search tasks"
+                  className="pl-9"
+                  placeholder="Search sale/order number, customer, phone, or title"
+                  value={filters.search}
+                  onChange={(e) => update({ search: e.target.value })}
+                />
+              </div>
+              {user.role === "ADMIN" && (
+                <Select
+                  aria-label="Task owner"
+                  className="w-auto min-w-40"
+                  value={filters.ownerId}
+                  onChange={(e) =>
+                    update({
+                      ownerId: e.target.value,
+                      scope: "TEAM",
+                      view: filters.view === "queue" ? "agenda" : filters.view,
+                    })
+                  }
+                >
+                  <option value="">All owners</option>
+                  {data?.owners.map((owner) => (
+                    <option key={owner.id} value={owner.id}>
+                      {owner.name}
+                      {owner.isActive ? "" : " (inactive)"}
+                    </option>
+                  ))}
+                </Select>
+              )}
+              <Select
+                className="w-auto min-w-36"
+                aria-label="Task priority"
+                value={filters.priority}
+                onChange={(e) => update({ priority: e.target.value })}
+              >
+                <option value="">All priorities</option>
+                {["HIGH", "MEDIUM", "LOW"].map((priority) => (
+                  <option key={priority} value={priority}>
+                    {label(priority)}
+                  </option>
+                ))}
+              </Select>
+              <Button
+                variant="outline"
+                aria-expanded={moreFilters}
+                className="crm-task-filter-toggle"
+                aria-controls="task-more-filters"
+                onClick={() => setMoreFilters((value) => !value)}
+              >
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                More filters
+              </Button>
+            </div>
+            <div id="task-more-filters" hidden={!moreFilters}>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                <label className="crm-task-filter-field">
+                  <span>Task scope</span>
+                  <Select
+                    aria-label="Task scope"
+                    value={filters.scope}
+                    onChange={(e) =>
+                      update({
+                        scope: e.target.value,
+                        view:
+                          filters.view === "queue" ? "agenda" : filters.view,
+                        ownerId: "",
+                      })
+                    }
+                    className="w-full min-w-0"
+                  >
+                    {scopes.map((scope) => (
+                      <option key={scope} value={scope}>
+                        {
+                          (
+                            {
+                              MINE: "My tasks",
+                              TEAM: "Team tasks",
+                              QUEUE: "Shipping queue",
+                              SENT: "Sent handoffs",
+                              UNASSIGNED: "Unassigned / inactive owners",
+                            } as Record<string, string>
+                          )[scope]
+                        }
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+
+                <label className="crm-task-filter-field">
+                  <span>Record type</span>
+                  <Select
+                    aria-label="Task record type"
+                    value={filters.context}
+                    onChange={(e) => update({ context: e.target.value })}
+                  >
+                    <option value="">All record types</option>
+                    {contextOptions.map((context) => (
+                      <option key={context} value={context}>
+                        {contextLabels[context]}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                <label className="crm-task-filter-field">
+                  <span>Task type</span>
+                  <Select
+                    aria-label="Task type"
+                    value={filters.typeKey}
+                    onChange={(e) => update({ typeKey: e.target.value })}
+                  >
+                    <option value="">All task types</option>
+                    {data?.types.map((type) => (
+                      <option key={type.key} value={type.key}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                <label className="crm-task-filter-field">
+                  <span>Task status</span>
+                  <Select
+                    aria-label="Task status"
+                    value={filters.status}
+                    onChange={(e) =>
+                      update({ status: e.target.value, tab: "ALL" })
+                    }
+                  >
+                    <option value="">Open & snoozed</option>
+                    {["OPEN", "SNOOZED", "COMPLETED", "CANCELLED"].map(
+                      (status) => (
+                        <option key={status} value={status}>
+                          {label(status)}
+                        </option>
+                      ),
+                    )}
+                  </Select>
+                </label>
+                {(user.role === "SHIPPING" || user.role === "ADMIN") && (
+                  <label className="crm-task-filter-field">
+                    <span>Working status</span>
+                    <Select
+                      aria-label="Working task filter"
+                      value={filters.working}
+                      onChange={(e) => update({ working: e.target.value })}
+                    >
+                      <option value="">All working markers</option>
+                      <option value="true">Working on it: mine</option>
+                    </Select>
+                  </label>
+                )}
+                {user.role === "ADMIN" && (
+                  <label className="crm-task-filter-field">
+                    <span>Snooze count</span>
+                    <Select
+                      aria-label="Snooze flags"
+                      value={filters.flagged}
+                      onChange={(event) =>
+                        update({ flagged: event.target.value })
+                      }
+                    >
+                      <option value="">All snooze counts</option>
+                      <option value="true">Repeated snoozes</option>
+                    </Select>
+                  </label>
+                )}
+                <label className="crm-task-filter-field">
+                  <span>Task origin</span>
+                  <Select
+                    aria-label="Handoff filter"
+                    value={filters.handoff}
+                    onChange={(event) =>
+                      update({ handoff: event.target.value })
+                    }
+                  >
+                    <option value="">All task origins</option>
+                    <option value="true">Handoffs only</option>
+                  </Select>
+                </label>
+
+                {!isTimeline && (
+                  <div className="contents">
+                    <label className="crm-task-filter-field">
+                      From
+                      <Input
+                        type="date"
+                        value={filters.from}
+                        onChange={(e) => update({ from: e.target.value })}
+                      />
+                    </label>
+                    <label className="crm-task-filter-field">
+                      Through
+                      <Input
+                        type="date"
+                        value={filters.to}
+                        onChange={(e) => update({ to: e.target.value })}
+                      />
+                    </label>
+                  </div>
+                )}
+                {calendar && (
+                  <label className="crm-task-filter-field">
+                    <span>Calendar colors</span>
+                    <Select
+                      aria-label="Calendar colors"
+                      value={filters.color}
+                      onChange={(event) =>
+                        update({ color: event.target.value })
+                      }
+                    >
+                      <option value="priority">Color by priority</option>
+                      <option value="type">Color by type</option>
+                    </Select>
+                  </label>
+                )}
+              </div>
+              <div className="flex justify-end pt-3">
+                <Button
+                  className="crm-task-clear"
+                  variant="ghost"
+                  onClick={() =>
+                    setFilters(
+                      initialFilters(
+                        new URLSearchParams(),
+                        user,
+                        calendar,
+                        zone,
+                      ),
+                    )
+                  }
+                >
+                  Clear filters
+                </Button>
+              </div>
+            </div>
+            <div
+              className={cn(
+                "crm-task-tabs flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-2",
+                calendar && "hidden",
+              )}
+            >
+              {(
+                [
+                  ["All tasks", "ALL", "all"],
+                  ["Overdue", "OVERDUE", "overdue"],
+                  ["Due today", "TODAY", "today"],
+                  ["Upcoming", "UPCOMING", "upcoming"],
+                  ["Handed to me", "HANDED", "handed"],
+                  ["Completed", "DONE", "done"],
+                  ["Cancelled", "CANCELLED", "cancelled"],
+                ] as const
+              ).map(([title, tab, count]) => (
+                <Button
+                  key={tab}
+                  className="crm-task-tab"
+                  size="sm"
+                  variant={filters.tab === tab ? "default" : "ghost"}
+                  aria-pressed={filters.tab === tab}
+                  onClick={() => update({ tab, status: "" })}
+                >
+                  {title}
+                  <span className="crm-task-count">
+                    {data?.counts[count] ?? "—"}
+                  </span>
+                </Button>
+              ))}
+              {(filters.tab === "HANDED" || filters.tab === "NEW") &&
+                !!data?.counts.newHandoffs && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void acknowledge()}
+                  >
+                    Mark received tasks seen
+                  </Button>
+                )}
+            </div>
+          </CardContent>
+          {calendar && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border bg-card p-4">
+              <div className="crm-calendar-views order-2 flex flex-wrap gap-1 rounded-xl bg-secondary/50 p-1">
+                {["week", "month", "day", "agenda", "queue"]
+                  .filter((view) => view !== "queue" || user.role !== "SALES")
+                  .map((view) => (
+                    <Button
+                      key={view}
+                      variant={filters.view === view ? "default" : "ghost"}
+                      aria-pressed={filters.view === view}
+                      size="sm"
+                      onClick={() =>
+                        update({
+                          view,
+                          scope:
+                            view === "queue"
+                              ? "QUEUE"
+                              : filters.scope === "QUEUE"
+                                ? "MINE"
+                                : filters.scope,
+                        })
+                      }
+                    >
+                      {view === "queue" ? "Shipping queue" : label(view)}
+                    </Button>
+                  ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="mr-2 text-sm font-bold">
+                  {calendarRangeLabel(filters.day, days, filters.view)}
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  aria-label="Previous calendar period"
+                  onClick={() =>
+                    update({
+                      day:
+                        filters.view === "month"
+                          ? shiftCalendarMonth(filters.day, -1)
+                          : shiftTaskDate(
+                              filters.day,
+                              filters.view === "day" ? -1 : -7,
+                            ),
+                    })
+                  }
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Input
+                  aria-label="Calendar date"
+                  type="date"
+                  className="w-auto"
+                  value={filters.day}
+                  onChange={(e) => {
+                    if (e.target.value) update({ day: e.target.value });
+                  }}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  aria-label="Next calendar period"
+                  onClick={() =>
+                    update({
+                      day:
+                        filters.view === "month"
+                          ? shiftCalendarMonth(filters.day, 1)
+                          : shiftTaskDate(
+                              filters.day,
+                              filters.view === "day" ? 1 : 7,
+                            ),
+                    })
+                  }
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => update({ day: today })}
+                >
+                  Today
+                </Button>
+                <span className="text-[10px] text-muted-foreground">
+                  {zoneLabels[zone]}
+                </span>
+              </div>
+            </div>
+          )}
+          {error && (
+            <div
+              role="alert"
+              className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+            >
+              {error}
+              <Button variant="ghost" size="sm" onClick={revisionFn}>
+                Retry
+              </Button>
+            </div>
+          )}
+          {loading && !data && (
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              Loading your tasks…
+            </p>
+          )}
+          {data && isTimeline ? (
+            <CalendarBoard
+              data={viewData ?? data}
+              focusDay={filters.day}
+              days={days}
+              view={filters.view}
+              zone={zone}
+              today={today}
+              color={filters.color}
+              onTask={setSelectedTask}
+              onDrop={onDrop}
+              onSlot={createSlot}
+              onDay={(day) => update({ day, view: "day" })}
+            />
+          ) : (
+            data && (
+              <>
+                <TaskTable
+                  items={(viewData ?? data).items}
+                  zone={zone}
+                  onDetails={setSelectedTask}
+                  onAction={open}
+                />
+                <div className="p-4 md:hidden">
+                  <TaskList
+                    data={viewData ?? data}
+                    zone={zone}
+                    today={today}
+                    user={user}
+                    open={open}
+                    changed={changed}
+                    onError={setError}
+                    onRecord={(href) => router.push(href)}
+                  />
+                </div>
+                {!data.items.length && (
+                  <div className="hidden md:block">
+                    <EmptyTasks />
+                  </div>
+                )}
+              </>
+            )
+          )}
+          {data && data.total > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-4 text-xs text-muted-foreground">
+              <span>
+                {(data.page - 1) * data.limit + 1}–
+                {Math.min(data.page * data.limit, data.total)} of {data.total}{" "}
+                tasks
+                {isTimeline && data.total > data.limit
+                  ? " · Use Next to see the remaining events; day counts include all matching tasks."
+                  : ""}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={Number(filters.page) <= 1 || loading}
+                  onClick={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      page: String(Number(prev.page) - 1),
+                    }))
+                  }
+                >
+                  Previous
+                </Button>
+                <span>
+                  Page {filters.page} of {Math.ceil(data.total / data.limit)}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={
+                    Number(filters.page) * data.limit >= data.total || loading
+                  }
+                  onClick={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      page: String(Number(prev.page) + 1),
+                    }))
+                  }
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+        {calendar && (
+          <aside
+            className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-1"
+            aria-label="Calendar highlights"
+          >
+            <Card className="p-5 shadow-sm">
+              <h2 className="font-semibold">Coming up next</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Next scheduled tasks · {zoneLabels[zone]}
+              </p>
+              {loading ? (
+                <p className="py-5 text-xs text-muted-foreground">
+                  Loading upcoming tasks…
+                </p>
+              ) : data?.highlights?.upcoming.length ? (
+                <div className="mt-2 divide-y divide-border">
+                  {(viewData?.highlights?.upcoming ?? []).map((row) => (
+                    <button
+                      key={row.id}
+                      className="flex w-full gap-3 py-4 text-left hover:underline"
+                      onClick={() => setSelectedTask(row)}
+                    >
+                      <span className="flex h-12 w-10 shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-secondary/40">
+                        <span className="text-base font-bold">
+                          {row.displayDay.slice(-2)}
+                        </span>
+                        <span className="text-[9px] uppercase text-muted-foreground">
+                          {new Date(row.dueAt).toLocaleDateString("en-US", {
+                            timeZone: zone,
+                            month: "short",
+                          })}
+                        </span>
+                      </span>
+                      <span className="min-w-0">
+                        <span className="line-clamp-2 text-xs font-semibold">
+                          {row.title}
+                        </span>
+                        <span className="mt-1 block text-[10px] text-muted-foreground">
+                          {new Date(row.dueAt).toLocaleTimeString("en-US", {
+                            timeZone: zone,
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}{" "}
+                          · {row.owner?.name ?? "Shipping queue"}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-5 text-xs text-muted-foreground">
+                  {error
+                    ? "Upcoming tasks could not be loaded."
+                    : "No upcoming tasks match these filters."}
+                </p>
+              )}
+            </Card>
+            <Card className="border-orange-200 bg-orange-50/60 p-5 shadow-sm dark:border-orange-900 dark:bg-orange-950/20">
+              <h2 className="flex items-center justify-between gap-2 text-sm font-semibold">
+                Needs your attention
+                <CircleAlert className="h-4 w-4 text-orange-600 dark:text-orange-300" />
+              </h2>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                {loading
+                  ? "Checking overdue tasks…"
+                  : data?.highlights
+                    ? `${data.highlights.overdue} overdue tasks match your filters.`
+                    : "Overdue count unavailable."}
+              </p>
+              <Button
+                className="mt-3 px-0"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const query = new URLSearchParams();
+                  for (const key of [
+                    "scope",
+                    "search",
+                    "context",
+                    "typeKey",
+                    "priority",
+                    "ownerId",
+                    "working",
+                    "flagged",
+                    "handoff",
+                  ] as const)
+                    if (filters[key]) query.set(key, filters[key]);
+                  query.set("tab", "OVERDUE");
+                  router.push(`/my-tasks?${query}`);
+                }}
+              >
+                Review overdue tasks →
+              </Button>
+            </Card>
+          </aside>
+        )}
+      </div>
+      {preferencesOpen && (
+        <TaskModal
+          title="Preferences"
+          onClose={() => setPreferencesOpen(false)}
+        >
+          <label className="mb-5 block text-sm font-medium">
             Display time zone
             <Select
+              className="mt-2"
               aria-label="Task display time zone"
               value={zone}
               disabled={zoneBusy}
@@ -491,467 +1231,8 @@ function Workspace({ user, calendar }: { user: AuthUser; calendar: boolean }) {
               ))}
             </Select>
           </label>
-          <Button
-            variant="outline"
-            aria-label="Refresh tasks"
-            onClick={() => {
-              revisionFn();
-              refreshSummary();
-            }}
-          >
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-          </Button>
-          {calendar ? (
-            <Button
-              variant="outline"
-              disabled={loading}
-              title="Downloads a snapshot of the selected range, or the next 30 days. Scheduled occurrences only; importing again may duplicate events in your calendar."
-              onClick={() => {
-                const today = localInput(new Date(), zone).slice(0, 10);
-                void downloadReminderFile(
-                  "calendar-export.ics",
-                  {
-                    ...params,
-                    from: params.from ?? today,
-                    to: params.to ?? shiftTaskDate(today, 30),
-                  },
-                  "crm-tasks.ics",
-                ).catch((e) => setError(message(e)));
-              }}
-            >
-              Export calendar
-            </Button>
-          ) : null}
-          <Button onClick={() => setCreate({})}>
-            <Plus className="mr-1 h-4 w-4" />
-            Add task
-          </Button>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {(
-          [
-            ["Overdue", "overdue", "OVERDUE"],
-            ["Due today", "today", "TODAY"],
-            ["Next 7 days", "upcoming", "UPCOMING"],
-            ["New handoffs", "newHandoffs", "NEW"],
-          ] as const
-        ).map(([title, key, tab]) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={filters.tab === tab}
-            onClick={() => update({ tab })}
-            className={cn(
-              "rounded-2xl border bg-card p-4 text-left shadow-sm transition hover:border-primary",
-              filters.tab === tab
-                ? "border-primary ring-1 ring-primary/20"
-                : "border-border",
-            )}
-          >
-            <span className="text-xs font-medium text-muted-foreground">
-              {title}
-            </span>
-            <span
-              className={cn(
-                "mt-1 block text-2xl font-semibold",
-                key === "overdue" && !!data?.counts.overdue && "text-red-600",
-              )}
-            >
-              {data ? data.counts[key] : "—"}
-            </span>
-          </button>
-        ))}
-      </div>
-      <Card>
-        <CardContent className="space-y-3 p-4">
-          <div className="flex flex-wrap gap-2">
-            <Select
-              aria-label="Task scope"
-              value={filters.scope}
-              onChange={(e) =>
-                update({
-                  scope: e.target.value,
-                  view: filters.view === "queue" ? "agenda" : filters.view,
-                  ownerId: "",
-                })
-              }
-              className="w-auto min-w-40"
-            >
-              {scopes.map((scope) => (
-                <option key={scope} value={scope}>
-                  {
-                    (
-                      {
-                        MINE: "My tasks",
-                        TEAM: "Team tasks",
-                        QUEUE: "Shipping queue",
-                        SENT: "Sent handoffs",
-                        UNASSIGNED: "Unassigned / inactive owners",
-                      } as Record<string, string>
-                    )[scope]
-                  }
-                </option>
-              ))}
-            </Select>
-            <div className="relative min-w-52 flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                aria-label="Search tasks"
-                className="pl-9"
-                placeholder="Search sale/order number, customer, phone, or title"
-                value={filters.search}
-                onChange={(e) => update({ search: e.target.value })}
-              />
-            </div>
-            {user.role === "ADMIN" && (
-              <Select
-                aria-label="Task owner"
-                className="w-auto min-w-40"
-                value={filters.ownerId}
-                onChange={(e) =>
-                  update({
-                    ownerId: e.target.value,
-                    scope: "TEAM",
-                    view: filters.view === "queue" ? "agenda" : filters.view,
-                  })
-                }
-              >
-                <option value="">All owners</option>
-                {data?.owners.map((owner) => (
-                  <option key={owner.id} value={owner.id}>
-                    {owner.name}
-                    {owner.isActive ? "" : " (inactive)"}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
-            <Select
-              aria-label="Task record type"
-              value={filters.context}
-              onChange={(e) => update({ context: e.target.value })}
-            >
-              <option value="">All record types</option>
-              {contextOptions.map((context) => (
-                <option key={context} value={context}>
-                  {contextLabels[context]}
-                </option>
-              ))}
-            </Select>
-            <Select
-              aria-label="Task type"
-              value={filters.typeKey}
-              onChange={(e) => update({ typeKey: e.target.value })}
-            >
-              <option value="">All task types</option>
-              {data?.types.map((type) => (
-                <option key={type.key} value={type.key}>
-                  {type.label}
-                </option>
-              ))}
-            </Select>
-            <Select
-              aria-label="Task priority"
-              value={filters.priority}
-              onChange={(e) => update({ priority: e.target.value })}
-            >
-              <option value="">All priorities</option>
-              {["HIGH", "MEDIUM", "LOW"].map((priority) => (
-                <option key={priority} value={priority}>
-                  {label(priority)}
-                </option>
-              ))}
-            </Select>
-            <Select
-              aria-label="Task status"
-              value={filters.status}
-              onChange={(e) => update({ status: e.target.value, tab: "ALL" })}
-            >
-              <option value="">Open & snoozed</option>
-              {["OPEN", "SNOOZED", "COMPLETED", "CANCELLED"].map((status) => (
-                <option key={status} value={status}>
-                  {label(status)}
-                </option>
-              ))}
-            </Select>
-            {(user.role === "SHIPPING" || user.role === "ADMIN") && (
-              <Select
-                aria-label="Working task filter"
-                value={filters.working}
-                onChange={(e) => update({ working: e.target.value })}
-              >
-                <option value="">All working markers</option>
-                <option value="true">Working on it: mine</option>
-              </Select>
-            )}
-            {user.role === "ADMIN" && (
-              <Select
-                aria-label="Snooze flags"
-                value={filters.flagged}
-                onChange={(event) => update({ flagged: event.target.value })}
-              >
-                <option value="">All snooze counts</option>
-                <option value="true">Repeated snoozes</option>
-              </Select>
-            )}
-            <Select
-              aria-label="Handoff filter"
-              value={filters.handoff}
-              onChange={(event) => update({ handoff: event.target.value })}
-            >
-              <option value="">All task origins</option>
-              <option value="true">Handoffs only</option>
-            </Select>
-            <Button
-              variant="ghost"
-              onClick={() =>
-                setFilters(
-                  initialFilters(new URLSearchParams(), user, calendar, zone),
-                )
-              }
-            >
-              Clear filters
-            </Button>
-          </div>
-          {!isTimeline && (
-            <div className="flex flex-wrap items-end gap-2">
-              <label className="text-xs text-muted-foreground">
-                From
-                <Input
-                  type="date"
-                  value={filters.from}
-                  onChange={(e) => update({ from: e.target.value })}
-                />
-              </label>
-              <label className="text-xs text-muted-foreground">
-                Through
-                <Input
-                  type="date"
-                  value={filters.to}
-                  onChange={(e) => update({ to: e.target.value })}
-                />
-              </label>
-            </div>
-          )}
-          <div className="flex flex-wrap items-center gap-1 border-t border-border pt-3">
-            {(
-              [
-                ["All", "ALL", "all"],
-                ["Overdue", "OVERDUE", "overdue"],
-                ["Today", "TODAY", "today"],
-                ["Upcoming", "UPCOMING", "upcoming"],
-                ["Handed to me", "HANDED", "handed"],
-                ["Done", "DONE", "done"],
-                ["Cancelled", "CANCELLED", "cancelled"],
-              ] as const
-            ).map(([title, tab, count]) => (
-              <Button
-                key={tab}
-                size="sm"
-                variant={filters.tab === tab ? "default" : "ghost"}
-                aria-pressed={filters.tab === tab}
-                onClick={() => update({ tab, status: "" })}
-              >
-                {title}
-                <span className="ml-1 text-xs opacity-75">
-                  {data?.counts[count] ?? "—"}
-                </span>
-              </Button>
-            ))}
-            {(filters.tab === "HANDED" || filters.tab === "NEW") &&
-              !!data?.counts.newHandoffs && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void acknowledge()}
-                >
-                  Mark received tasks seen
-                </Button>
-              )}
-          </div>
-        </CardContent>
-      </Card>
-      {calendar && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
-          <div className="flex flex-wrap gap-1">
-            {views
-              .filter((view) => view !== "queue" || user.role !== "SALES")
-              .map((view) => (
-                <Button
-                  key={view}
-                  variant={filters.view === view ? "default" : "ghost"}
-                  aria-pressed={filters.view === view}
-                  size="sm"
-                  onClick={() =>
-                    update({
-                      view,
-                      scope:
-                        view === "queue"
-                          ? "QUEUE"
-                          : filters.scope === "QUEUE"
-                            ? "MINE"
-                            : filters.scope,
-                    })
-                  }
-                >
-                  {view === "queue" ? "Shipping queue" : label(view)}
-                </Button>
-              ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              aria-label="Previous calendar period"
-              onClick={() =>
-                update({
-                  day:
-                    filters.view === "month"
-                      ? shiftCalendarMonth(filters.day, -1)
-                      : shiftTaskDate(
-                          filters.day,
-                          filters.view === "day" ? -1 : -7,
-                        ),
-                })
-              }
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Input
-              aria-label="Calendar date"
-              type="date"
-              className="w-auto"
-              value={filters.day}
-              onChange={(e) => {
-                if (e.target.value) update({ day: e.target.value });
-              }}
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              aria-label="Next calendar period"
-              onClick={() =>
-                update({
-                  day:
-                    filters.view === "month"
-                      ? shiftCalendarMonth(filters.day, 1)
-                      : shiftTaskDate(
-                          filters.day,
-                          filters.view === "day" ? 1 : 7,
-                        ),
-                })
-              }
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => update({ day: today })}
-            >
-              Today
-            </Button>
-            <Select
-              aria-label="Calendar colors"
-              className="w-auto"
-              value={filters.color}
-              onChange={(e) => update({ color: e.target.value })}
-            >
-              <option value="priority">Color by priority</option>
-              <option value="type">Color by type</option>
-            </Select>
-          </div>
-        </div>
-      )}
-      {error && (
-        <div
-          role="alert"
-          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
-        >
-          {error}
-          <Button variant="ghost" size="sm" onClick={revisionFn}>
-            Retry
-          </Button>
-        </div>
-      )}
-      {loading && !data && (
-        <p className="p-8 text-center text-sm text-muted-foreground">
-          Loading your tasks…
-        </p>
-      )}
-      {data && isTimeline ? (
-        <CalendarBoard
-          data={viewData ?? data}
-          focusDay={filters.day}
-          days={days}
-          view={filters.view}
-          zone={zone}
-          today={today}
-          color={filters.color}
-          onTask={setSelectedTask}
-          onDrop={onDrop}
-          onSlot={createSlot}
-          onDay={(day) => update({ day, view: "day" })}
-        />
-      ) : (
-        data && (
-          <TaskList
-            data={viewData ?? data}
-            zone={zone}
-            today={today}
-            user={user}
-            open={open}
-            changed={changed}
-            onError={setError}
-            onRecord={(href) => router.push(href)}
-          />
-        )
-      )}
-      {data && data.total > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-          <span>
-            {(data.page - 1) * data.limit + 1}–
-            {Math.min(data.page * data.limit, data.total)} of {data.total} tasks
-            {isTimeline && data.total > data.limit
-              ? " · Use Next to see the remaining events; day counts include all matching tasks."
-              : ""}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={Number(filters.page) <= 1 || loading}
-              onClick={() =>
-                setFilters((prev) => ({
-                  ...prev,
-                  page: String(Number(prev.page) - 1),
-                }))
-              }
-            >
-              Previous
-            </Button>
-            <span>
-              Page {filters.page} of {Math.ceil(data.total / data.limit)}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={
-                Number(filters.page) * data.limit >= data.total || loading
-              }
-              onClick={() =>
-                setFilters((prev) => ({
-                  ...prev,
-                  page: String(Number(prev.page) + 1),
-                }))
-              }
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+          <ReminderNotificationSettings />
+        </TaskModal>
       )}
       {dialog && (
         <ReminderDialog
@@ -1311,7 +1592,7 @@ function TaskModal({
         onClose();
       }}
       aria-label={title}
-      className="m-auto max-h-[90dvh] w-[calc(100%_-_1.5rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-5 text-foreground shadow-2xl backdrop:bg-slate-950/40"
+      className="crm-brand-actions m-auto max-h-[90dvh] w-[calc(100%_-_1.5rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-5 text-foreground shadow-2xl backdrop:bg-slate-950/40"
     >
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">{title}</h2>
@@ -1523,7 +1804,7 @@ function CalendarBoard({
         onTask(row);
       }}
       className={cn(
-        "block w-full rounded-lg border border-border border-l-4 bg-card p-2 text-left text-xs shadow-sm hover:ring-1 hover:ring-primary",
+        "block w-full rounded-xl border border-orange-200 border-l-[3px] bg-orange-50/50 p-2.5 text-left text-xs transition hover:ring-1 hover:ring-orange-400 dark:border-orange-900 dark:bg-orange-950/20",
         color === "type"
           ? palette[
               Array.from(row.typeKey).reduce((n, c) => n + c.charCodeAt(0), 0) %
@@ -1536,6 +1817,13 @@ function CalendarBoard({
               : "border-l-slate-300",
       )}
     >
+      <span className="mb-1.5 block text-[10px] font-semibold text-orange-700 dark:text-orange-300">
+        {new Intl.DateTimeFormat("en-US", {
+          timeZone: zone,
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date(row.dueAt))}
+      </span>
       <span className="flex items-start gap-1">
         {row.actions.edit && (
           <GripVertical className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
@@ -1543,12 +1831,11 @@ function CalendarBoard({
         <span className="line-clamp-2 font-semibold">{row.title}</span>
       </span>
       <span className="mt-1 block text-muted-foreground">
-        {new Intl.DateTimeFormat("en-US", {
-          timeZone: zone,
-          hour: "numeric",
-          minute: "2-digit",
-        }).format(new Date(row.dueAt))}{" "}
-        · {row.record.reference}
+        {row.record.reference} ·{" "}
+        {row.owner?.name ??
+          (row.ownerKind === "SHIPPING_QUEUE"
+            ? "Shipping queue"
+            : "Unassigned")}
       </span>
     </button>
   );
@@ -1562,6 +1849,80 @@ function CalendarBoard({
       onDrop(e.dataTransfer.getData("text/plain"), day, hour);
     },
   });
+  if (view === "week")
+    return (
+      <div className="overflow-x-auto" aria-label="Weekly schedule">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 text-xs text-muted-foreground">
+          <span>Weekly schedule · Select a task to view details</span>
+          <span>{data.items.length} tasks shown</span>
+        </div>
+        <div className="grid min-w-[700px] grid-cols-7">
+          {days.map((day) => {
+            const items = data.items.filter((row) => row.displayDay === day);
+            return (
+              <div
+                key={day}
+                className={cn(
+                  "flex min-h-[430px] flex-col border-r border-border last:border-r-0",
+                  day === today && "bg-orange-50/40 dark:bg-orange-950/10",
+                )}
+                {...dropProps(day)}
+              >
+                <button
+                  className="flex h-16 shrink-0 items-center justify-center gap-2 border-b border-border text-xs"
+                  onClick={() => onDay(day)}
+                  aria-label={`Open ${day}`}
+                >
+                  <span className="text-muted-foreground">
+                    {new Date(`${day}T12:00Z`).toLocaleDateString("en-US", {
+                      timeZone: "UTC",
+                      weekday: "short",
+                    })}
+                  </span>
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full text-base font-bold",
+                      day === today && "bg-[#ff671f] !text-white",
+                    )}
+                  >
+                    {Number(day.slice(-2))}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {data.dayCounts[day] || ""}
+                  </span>
+                </button>
+                <div className="flex-1 space-y-2 p-2">
+                  {items.length ? (
+                    items.slice(0, 3).map(event)
+                  ) : (
+                    <p className="pt-8 text-center text-[10px] leading-relaxed text-muted-foreground">
+                      {data.dayCounts[day]
+                        ? "More tasks on another page"
+                        : "No tasks scheduled"}
+                    </p>
+                  )}
+                  {(data.dayCounts[day] ?? items.length) > 3 && (
+                    <button
+                      className="w-full py-2 text-left text-xs font-medium hover:underline"
+                      onClick={() => onDay(day)}
+                    >
+                      View all {data.dayCounts[day] ?? items.length} tasks →
+                    </button>
+                  )}
+                </div>
+                <button
+                  className="px-2 py-4 text-xs text-muted-foreground hover:underline"
+                  aria-label={`Add task on ${day}`}
+                  onClick={() => onSlot(day, 10)}
+                >
+                  + Add task
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   if (view === "month")
     return (
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
@@ -1697,4 +2058,23 @@ function CalendarBoard({
       </div>
     </div>
   );
+}
+
+function calendarRangeLabel(day: string, days: string[], view: string) {
+  if (view === "agenda") return "Task agenda";
+  if (view === "queue") return "Shipping queue";
+  const date = (value: string, options: Intl.DateTimeFormatOptions) =>
+    new Date(`${value}T12:00Z`).toLocaleDateString("en-US", {
+      timeZone: "UTC",
+      ...options,
+    });
+  if (view === "month") return date(day, { month: "long", year: "numeric" });
+  if (view === "day")
+    return date(day, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  return `${date(days[0], { month: "short", day: "numeric" })} – ${date(days[days.length - 1], { month: "short", day: "numeric", year: "numeric" })}`;
 }

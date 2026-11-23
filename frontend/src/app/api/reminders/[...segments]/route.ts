@@ -89,6 +89,7 @@ export async function GET(request: Request, { params }: RouteContext) {
       "flagged",
       "handoff",
       "calendar",
+      "highlights",
       "page",
       "limit",
     ];

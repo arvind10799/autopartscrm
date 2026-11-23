@@ -104,7 +104,7 @@ export function ReminderAlertDialog() {
         e.preventDefault();
         close();
       }}
-      className="crm-brand-actions w-[calc(100%-2rem)] max-w-lg rounded-2xl border bg-background p-6 text-foreground shadow-xl backdrop:bg-black/40"
+      className="crm-brand-actions crm-reminder-ui w-[calc(100%-2rem)] max-w-lg rounded-2xl border bg-background p-6 text-foreground shadow-xl backdrop:bg-black/40"
     >
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-lg font-semibold">

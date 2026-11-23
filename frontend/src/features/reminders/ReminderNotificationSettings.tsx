@@ -2,6 +2,7 @@
 import { ReminderPolicySettings } from "./ReminderPolicySettings";
 import { ReminderAutomationSettings } from "./ReminderAutomationSettings";
 import { useEffect, useState } from "react";
+import { BellRing, Clock3, UserRound, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -91,7 +92,7 @@ export function ReminderNotificationSettings({ userId }: { userId?: string }) {
   }, [own]);
   return (
     <section
-      className="rounded-xl border bg-card p-4 sm:p-5"
+      className="crm-brand-actions crm-reminder-ui crm-reminder-preferences rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
       aria-label="Reminder preferences"
     >
       <h3 className="font-semibold">
@@ -260,6 +261,7 @@ export function ReminderNotificationSettings({ userId }: { userId?: string }) {
   );
 }
 export function ReminderAdminSettings() {
+  const [section, setSection] = useState("delivery");
   const [value, setValue] = useState<ReminderSettings | null>(null),
     [users, setUsers] = useState<Array<{ id: string; name: string }>>([]),
     [userId, setUserId] = useState(""),
@@ -283,171 +285,306 @@ export function ReminderAdminSettings() {
     };
   }, []);
   return (
-    <div className="space-y-5">
-      <section className="rounded-xl border bg-card p-5">
-        <h2 className="text-lg font-semibold">Reminder notifications</h2>
-        {error ? (
-          <p role="alert" className="my-3 text-sm text-red-600">
-            {error}
+    <div className="crm-brand-actions crm-reminder-ui crm-reminder-settings space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Reminder settings</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Manage delivery, user preferences, scheduling, and follow-up rules.
+        </p>
+      </div>
+      <div
+        role="tablist"
+        aria-label="Reminder settings sections"
+        className="crm-reminder-settings-nav flex gap-6 overflow-x-auto border-b border-border"
+        onKeyDown={(event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
+            return;
+          event.preventDefault();
+          const tabs = Array.from(
+            event.currentTarget.querySelectorAll<HTMLButtonElement>(
+              '[role="tab"]',
+            ),
+          );
+          const index = tabs.indexOf(
+            document.activeElement as HTMLButtonElement,
+          );
+          const next =
+            event.key === "Home"
+              ? 0
+              : event.key === "End"
+                ? tabs.length - 1
+                : (index +
+                    (event.key === "ArrowRight" ? 1 : -1) +
+                    tabs.length) %
+                  tabs.length;
+          tabs[next]?.click();
+          tabs[next]?.focus();
+        }}
+      >
+        {(
+          [
+            ["delivery", "Delivery & alerts", BellRing],
+            ["preferences", "User preferences", UserRound],
+            ["scheduling", "Scheduling", Clock3],
+            ["automation", "Suggestions & repeats", Workflow],
+          ] as const
+        ).map(([key, title, Icon]) => (
+          <button
+            key={key}
+            id={`reminder-settings-tab-${key}`}
+            role="tab"
+            type="button"
+            aria-selected={section === key}
+            aria-controls={`reminder-settings-panel-${key}`}
+            tabIndex={section === key ? 0 : -1}
+            onClick={() => setSection(key)}
+            className="flex shrink-0 items-center gap-2 whitespace-nowrap border-b-[3px] border-transparent py-3 text-xs font-semibold"
+          >
+            <Icon className="h-4 w-4" />
+            {title}
+          </button>
+        ))}
+      </div>
+      <div
+        role="tabpanel"
+        id="reminder-settings-panel-delivery"
+        aria-labelledby="reminder-settings-tab-delivery"
+        hidden={section !== "delivery"}
+      >
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+          <h2 className="text-lg font-bold tracking-tight">
+            Reminder notifications
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Delivery status and alert timing for your team.
           </p>
-        ) : null}
-        {saved ? (
-          <p role="status" className="my-3 text-sm text-emerald-700">
-            {saved}
-          </p>
-        ) : null}
-        {value ? (
-          <form
-            className="mt-4 space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setBusy(true);
-              setError("");
-              setSaved("");
-              const {
-                deliveryEnabled,
-                secondAlertMinutes,
-                escalationMinutes,
-                workingMarkerMinutes,
-                snoozeFlagCount,
-              } = value;
-              void reminderNotificationsApi
-                .saveSettings({
+          {error ? (
+            <p role="alert" className="my-3 text-sm text-red-600">
+              {error}
+            </p>
+          ) : null}
+          {saved ? (
+            <p role="status" className="my-3 text-sm text-emerald-700">
+              {saved}
+            </p>
+          ) : null}
+          {value ? (
+            <form
+              className="mt-4 space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setBusy(true);
+                setError("");
+                setSaved("");
+                const {
                   deliveryEnabled,
                   secondAlertMinutes,
                   escalationMinutes,
                   workingMarkerMinutes,
                   snoozeFlagCount,
-                })
-                .then(() => setSaved("Notification settings saved."))
-                .catch(() =>
-                  setError(
-                    "Unable to save notification settings. Check the allowed ranges.",
-                  ),
-                )
-                .finally(() => setBusy(false));
-            }}
-          >
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <p>
-                API reminder delivery is{" "}
-                {value.serverEnabled ? "enabled" : "disabled"}.
-              </p>
-              <p>
-                {value.workerRecent
-                  ? "The worker checked in recently."
-                  : "No recent worker check-in reported."}
-                {value.workerLastSeenAt &&
-                  ` Last check-in ${new Date(value.workerLastSeenAt).toLocaleString()}.`}
-              </p>
-              <p>
-                {value.workerRecent ? "Worker settings" : "API settings"} ·
-                Browser push{" "}
-                {value.pushConfigured ? "configured" : "not configured"} · SMTP{" "}
-                {value.emailConfigured ? "configured" : "not configured"} ·
-                Staff reminder email{" "}
-                {value.emailEnabled === undefined
-                  ? "status unknown"
-                  : value.emailEnabled
-                    ? "enabled"
-                    : "disabled"}
-              </p>
-              {value.checkedAt && (
-                <p className="text-xs">
-                  Status checked {new Date(value.checkedAt).toLocaleString()}.
+                } = value;
+                void reminderNotificationsApi
+                  .saveSettings({
+                    deliveryEnabled,
+                    secondAlertMinutes,
+                    escalationMinutes,
+                    workingMarkerMinutes,
+                    snoozeFlagCount,
+                  })
+                  .then(() => setSaved("Notification settings saved."))
+                  .catch(() =>
+                    setError(
+                      "Unable to save notification settings. Check the allowed ranges.",
+                    ),
+                  )
+                  .finally(() => setBusy(false));
+              }}
+            >
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {[
+                  [
+                    "Server delivery",
+                    value.serverEnabled ? "Enabled" : "Disabled",
+                    value.serverEnabled,
+                  ],
+                  [
+                    "Worker",
+                    value.workerRecent ? "Running" : "No recent check-in",
+                    value.workerRecent,
+                  ],
+                  [
+                    "Browser push",
+                    value.pushConfigured ? "Configured" : "Setup needed",
+                    value.pushConfigured,
+                  ],
+                  [
+                    "SMTP",
+                    value.emailConfigured ? "Configured" : "Setup needed",
+                    value.emailConfigured,
+                  ],
+                ].map(([title, status, ready]) => (
+                  <div
+                    key={String(title)}
+                    className="min-w-0 rounded-xl border border-border bg-secondary/20 p-4"
+                  >
+                    <p className="text-[11px] text-muted-foreground">{title}</p>
+                    <p className="mt-2 flex items-center gap-2 text-xs font-semibold">
+                      <span
+                        className={
+                          ready
+                            ? "h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500"
+                            : "h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400"
+                        }
+                      />
+                      {status}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+                <p>
+                  {value.workerRecent ? "Worker settings" : "API settings"} ·
+                  Staff reminder email{" "}
+                  {value.emailEnabled === undefined
+                    ? "status unknown"
+                    : value.emailEnabled
+                      ? "enabled"
+                      : "disabled"}
                 </p>
-              )}
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={value.deliveryEnabled}
-                onChange={(e) =>
-                  setValue({ ...value, deliveryEnabled: e.target.checked })
-                }
-              />
-              Enable reminder delivery
-            </label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {(
-                [
+                {value.workerLastSeenAt && (
+                  <p>
+                    Last worker check-in{" "}
+                    {new Date(value.workerLastSeenAt).toLocaleString()}.
+                  </p>
+                )}
+                {value.checkedAt && (
+                  <p>
+                    Status checked {new Date(value.checkedAt).toLocaleString()}.
+                  </p>
+                )}
+              </div>
+              <label className="flex items-center gap-3 rounded-xl border border-border bg-secondary/20 p-4 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={value.deliveryEnabled}
+                  onChange={(e) =>
+                    setValue({ ...value, deliveryEnabled: e.target.checked })
+                  }
+                />
+                Enable reminder delivery
+              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {(
                   [
-                    "secondAlertMinutes",
-                    "Second alert after (minutes)",
-                    15,
-                    240,
-                  ],
-                  [
-                    "escalationMinutes",
-                    "Escalate to Admin after (minutes)",
-                    30,
-                    1440,
-                  ],
-                  [
-                    "workingMarkerMinutes",
-                    "Working marker duration (minutes)",
-                    30,
-                    480,
-                  ],
-                  ["snoozeFlagCount", "Flag after this many snoozes", 1, 10],
-                ] as const
-              ).map(([field, label, min, max]) => (
-                <label className="text-sm" key={field}>
-                  {label}
-                  <Input
-                    aria-label={label}
-                    type="number"
-                    min={min}
-                    max={max}
-                    required={field === "workingMarkerMinutes"}
-                    placeholder="Off"
-                    value={value[field] ?? ""}
-                    onChange={(e) =>
-                      setValue({
-                        ...value,
-                        [field]:
-                          e.target.value === "" ? null : Number(e.target.value),
-                      })
-                    }
-                  />
-                  {field !== "workingMarkerMinutes" ? (
-                    <span className="text-xs text-muted-foreground">
-                      Leave blank to switch off.
-                    </span>
-                  ) : null}
-                </label>
-              ))}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {value.pending} pending / processing · {value.failed} failed
-              deliveries
-            </p>
-            <Button type="submit" disabled={busy}>
-              {busy ? "Saving…" : "Save notification settings"}
-            </Button>
-          </form>
-        ) : !error ? (
-          <p className="mt-3 text-sm">Loading settings…</p>
-        ) : null}
-      </section>
-      <label className="block text-sm">
-        User preferences
-        <Select
-          aria-label="Reminder preference user"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-        >
-          <option value="">My preferences</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
-          ))}
-        </Select>
-      </label>
-      <ReminderNotificationSettings key={userId} userId={userId || undefined} />
-      <ReminderAutomationSettings />
-      <ReminderPolicySettings />
+                    [
+                      "secondAlertMinutes",
+                      "Second alert after (minutes)",
+                      15,
+                      240,
+                    ],
+                    [
+                      "escalationMinutes",
+                      "Escalate to Admin after (minutes)",
+                      30,
+                      1440,
+                    ],
+                    [
+                      "workingMarkerMinutes",
+                      "Working marker duration (minutes)",
+                      30,
+                      480,
+                    ],
+                    ["snoozeFlagCount", "Flag after this many snoozes", 1, 10],
+                  ] as const
+                ).map(([field, label, min, max]) => (
+                  <label className="text-sm" key={field}>
+                    {label}
+                    <Input
+                      aria-label={label}
+                      type="number"
+                      min={min}
+                      max={max}
+                      required={field === "workingMarkerMinutes"}
+                      placeholder="Off"
+                      value={value[field] ?? ""}
+                      onChange={(e) =>
+                        setValue({
+                          ...value,
+                          [field]:
+                            e.target.value === ""
+                              ? null
+                              : Number(e.target.value),
+                        })
+                      }
+                    />
+                    {field !== "workingMarkerMinutes" ? (
+                      <span className="text-xs text-muted-foreground">
+                        Leave blank to switch off.
+                      </span>
+                    ) : null}
+                  </label>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <span className="rounded-md bg-secondary px-2.5 py-1.5">
+                  {value.pending} pending / processing
+                </span>
+                <span className="rounded-md bg-secondary px-2.5 py-1.5">
+                  {value.failed} failed deliveries
+                </span>
+              </div>
+              <Button type="submit" disabled={busy}>
+                {busy ? "Saving…" : "Save notification settings"}
+              </Button>
+            </form>
+          ) : !error ? (
+            <p className="mt-3 text-sm">Loading settings…</p>
+          ) : null}
+        </section>
+      </div>
+      <div
+        role="tabpanel"
+        id="reminder-settings-panel-preferences"
+        aria-labelledby="reminder-settings-tab-preferences"
+        hidden={section !== "preferences"}
+        className="space-y-4"
+      >
+        <label className="block max-w-sm text-sm">
+          User preferences
+          <Select
+            aria-label="Reminder preference user"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+          >
+            <option value="">My preferences</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <ReminderNotificationSettings
+          key={userId}
+          userId={userId || undefined}
+        />
+      </div>
+      <div
+        role="tabpanel"
+        id="reminder-settings-panel-scheduling"
+        aria-labelledby="reminder-settings-tab-scheduling"
+        hidden={section !== "scheduling"}
+      >
+        <ReminderPolicySettings />
+      </div>
+      <div
+        role="tabpanel"
+        id="reminder-settings-panel-automation"
+        aria-labelledby="reminder-settings-tab-automation"
+        hidden={section !== "automation"}
+      >
+        <ReminderAutomationSettings />
+      </div>
     </div>
   );
 }

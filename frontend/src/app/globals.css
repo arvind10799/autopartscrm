@@ -45,6 +45,190 @@
   outline-offset: 2px;
 }
 
+.crm-task-table th {
+  padding: 14px 18px;
+  border-block: 1px solid hsl(var(--border));
+  background: hsl(var(--secondary) / 0.35);
+  color: hsl(var(--muted-foreground));
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.crm-task-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid hsl(var(--border));
+  vertical-align: top;
+}
+.crm-task-table tbody tr:hover {
+  background: hsl(var(--secondary) / 0.2);
+}
+.crm-task-table th:last-child,
+.crm-task-table td:last-child {
+  position: sticky;
+  right: 0;
+  background: hsl(var(--card));
+}
+.crm-brand-actions:is(.crm-task-workspace, .crm-reminder-ui) [data-button-variant] {
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.crm-brand-actions:is(.crm-task-workspace, .crm-reminder-ui) [data-button-variant='default'] {
+  background: #ff671f;
+  color: #fff;
+  box-shadow: 0 4px 10px #ff671f20;
+}
+.crm-brand-actions:is(.crm-task-workspace, .crm-reminder-ui) [data-button-variant='default']:enabled:hover {
+  background: #ec5511;
+}
+.crm-brand-actions:is(.crm-task-workspace, .crm-reminder-ui) [data-button-variant='outline'] {
+  border-color: hsl(var(--border));
+  box-shadow: 0 1px 2px #06284605;
+}
+:is(.crm-task-workspace, .crm-reminder-ui) :is(input:not([type='checkbox']), select, textarea) {
+  min-width: 0;
+  border-radius: 9px;
+  border-color: hsl(var(--border));
+  box-shadow: none;
+  font-size: 12px;
+}
+.crm-task-workspace .crm-task-filter-toggle[aria-expanded='true'] {
+  border-color: #ff671f66;
+  background: #fff4ed;
+  color: #d54a08;
+}
+.dark .crm-task-workspace .crm-task-filter-toggle[aria-expanded='true'] {
+  background: #ff671f15;
+  color: #ffad83;
+}
+.crm-task-filter-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  color: hsl(var(--foreground));
+  font-size: 11px;
+  font-weight: 500;
+}
+.crm-task-workspace #task-more-filters {
+  padding-block: 4px 0;
+}
+.crm-task-workspace .crm-task-tabs {
+  gap: 0 24px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  border-top: 0;
+  padding-top: 0;
+}
+.crm-task-table :is(.rounded-md, .rounded-lg) {
+  border-radius: 6px;
+}
+.crm-brand-actions.crm-task-workspace .crm-task-tab {
+  position: relative;
+  height: 48px;
+  padding-inline: 0;
+  border-radius: 0;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  box-shadow: none;
+}
+.crm-brand-actions.crm-task-workspace .crm-task-tab[aria-pressed='true'],
+.crm-brand-actions.crm-task-workspace .crm-task-tab:enabled:hover {
+  background: transparent;
+  color: #ed580e;
+}
+.crm-task-tab[aria-pressed='true']::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: #ff671f;
+  content: '';
+}
+.crm-task-count {
+  min-width: 17px;
+  border-radius: 4px;
+  background: hsl(var(--secondary));
+  padding: 2px 4px;
+  font-size: 10px;
+  line-height: 1;
+  text-align: center;
+}
+.crm-task-tab[aria-pressed='true'] .crm-task-count {
+  background: #ff671f15;
+}
+.crm-brand-actions.crm-task-workspace .crm-calendar-views [data-button-variant] {
+  height: 32px;
+  padding-inline: 12px;
+  border-radius: 7px;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  box-shadow: none;
+}
+.crm-brand-actions.crm-task-workspace .crm-calendar-views [aria-pressed='true'],
+.crm-brand-actions.crm-task-workspace .crm-calendar-views [data-button-variant]:enabled:hover {
+  background: hsl(var(--card));
+  color: #ed580e;
+  box-shadow: 0 1px 3px #0628460d;
+}
+.crm-brand-actions.crm-task-workspace .crm-task-clear {
+  height: auto;
+  padding: 0;
+  color: #ed580e;
+}
+.dark .crm-task-workspace .crm-task-tab[aria-pressed='true'],
+.dark .crm-task-workspace .crm-calendar-views [aria-pressed='true'],
+.dark .crm-task-workspace .crm-task-clear {
+  color: #ffad83;
+}
+.crm-reminder-ui .crm-reminder-history-toggle {
+  color: #ed580e;
+}
+.crm-reminder-ui .crm-reminder-settings-nav [aria-selected='true'] {
+  border-color: #ff671f;
+  color: #ed580e;
+}
+.crm-reminder-settings-nav [aria-selected='false'] {
+  color: hsl(var(--muted-foreground));
+}
+.crm-reminder-settings section :is(h2, h3) {
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.crm-reminder-settings section > h2 {
+  font-size: 18px;
+}
+.crm-reminder-settings :is(label:has(input:not([type='checkbox'])), label:has(select)) {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.crm-reminder-settings label > span {
+  font-size: 11px;
+  font-weight: 400;
+}
+.crm-reminder-settings :is(input[type='checkbox'], .crm-reminder-preferences input[type='checkbox']) {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  accent-color: #ff671f;
+}
+.crm-reminder-settings section :is(details, form.rounded-lg) {
+  border-color: hsl(var(--border));
+  border-radius: 10px;
+}
+.dark .crm-reminder-ui .crm-reminder-history-toggle,
+.dark .crm-reminder-ui .crm-reminder-settings-nav [aria-selected='true'] {
+  color: #ffad83;
+}
+
 /* Cards are mobile-only. Laptop tables scroll within their own record area. */
 .crm-data-table,
 .crm-website-records {

@@ -85,6 +85,12 @@ export class QueryTaskWorkspaceDto {
   )
   @IsBoolean()
   calendar?: boolean;
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === 'true' ? true : value === 'false' ? false : value,
+  )
+  @IsBoolean()
+  highlights?: boolean;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100000) page: number =
     1;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(500) limit: number =

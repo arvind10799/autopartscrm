@@ -6,7 +6,7 @@ import { ReminderAdminSettings } from "@/features/reminders/ReminderNotification
 export function UserCenterWorkspace() {
   const [tab, setTab] = useState<"users" | "reminders">("users");
   return (
-    <div className="crm-brand-actions space-y-5">
+    <div className="crm-brand-actions crm-reminder-ui space-y-5">
       <div className="flex gap-2">
         <Button
           variant={tab === "users" ? "default" : "outline"}

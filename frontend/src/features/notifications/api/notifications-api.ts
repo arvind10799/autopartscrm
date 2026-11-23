@@ -11,19 +11,30 @@ import {
 import type {
   AppNotification,
   NotificationUnreadCount,
+  NotificationCategory,
 } from "../types/notification.types";
 
-function buildNotificationGroupQuery(entityType: string, entityId: string) {
-  return new URLSearchParams({ entityType, entityId }).toString();
+function buildNotificationGroupQuery(
+  entityType: string,
+  entityId: string,
+  category?: NotificationCategory,
+) {
+  return new URLSearchParams({
+    entityType,
+    entityId,
+    ...(category ? { category } : {}),
+  }).toString();
 }
 
 export const notificationsApi = {
   async list(options?: {
     unreadOnly?: boolean;
     remindersOnly?: boolean;
+    category?: NotificationCategory;
   }): Promise<AppNotification[]> {
     const searchParams = new URLSearchParams({ limit: "30" });
     if (options?.remindersOnly) searchParams.set("category", "REMINDERS");
+    if (options?.category) searchParams.set("category", options.category);
 
     if (options?.unreadOnly) {
       searchParams.set("unreadOnly", "true");
@@ -60,18 +71,23 @@ export const notificationsApi = {
     });
   },
 
-  async markAllRead(): Promise<void> {
+  async markAllRead(category?: NotificationCategory): Promise<void> {
     const response = await axiosBrowser.patch<ApiEnvelope<unknown>>(
-      "/api/notifications/read-all",
+      `/api/notifications/read-all${category ? `?category=${category}` : ""}`,
     );
     assertApiSuccess(response, "Unable to mark notifications as read.");
   },
 
-  async markGroupRead(entityType: string, entityId: string): Promise<void> {
+  async markGroupRead(
+    entityType: string,
+    entityId: string,
+    category?: NotificationCategory,
+  ): Promise<void> {
     const response = await axiosBrowser.patch<ApiEnvelope<unknown>>(
       `/api/notifications/group/read?${buildNotificationGroupQuery(
         entityType,
         entityId,
+        category,
       )}`,
     );
     parseApiData(response, notificationActionResultSchema, {
@@ -87,11 +103,16 @@ export const notificationsApi = {
     assertApiSuccess(response, "Unable to clear notification.");
   },
 
-  async clearGroup(entityType: string, entityId: string): Promise<void> {
+  async clearGroup(
+    entityType: string,
+    entityId: string,
+    category?: NotificationCategory,
+  ): Promise<void> {
     const response = await axiosBrowser.patch<ApiEnvelope<unknown>>(
       `/api/notifications/group/clear?${buildNotificationGroupQuery(
         entityType,
         entityId,
+        category,
       )}`,
     );
     parseApiData(response, notificationActionResultSchema, {
@@ -100,9 +121,9 @@ export const notificationsApi = {
     });
   },
 
-  async clearAll(): Promise<void> {
+  async clearAll(category?: NotificationCategory): Promise<void> {
     const response = await axiosBrowser.patch<ApiEnvelope<unknown>>(
-      "/api/notifications/clear-all",
+      `/api/notifications/clear-all${category ? `?category=${category}` : ""}`,
     );
     assertApiSuccess(response, "Unable to clear notifications.");
   },

@@ -37,7 +37,7 @@ export function ReminderAutomationSettings() {
   };
   return (
     <section
-      className="space-y-4 rounded-xl border bg-card p-4 sm:p-5"
+      className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
       aria-label="Reminder automation settings"
     >
       <h2 className="text-lg font-semibold">
@@ -225,7 +225,7 @@ function TypeEditor({
           />
           Available for new reminders
         </label>
-        <Button type="submit" size="sm" variant="outline" disabled={busy}>
+        <Button type="submit" size="sm" disabled={busy}>
           Save type
         </Button>
       </div>
@@ -352,7 +352,7 @@ function RuleEditor({
           Calendar-day delay preserves the customer's local clock; minute delay
           is used when the day delay is zero.
         </p>
-        <Button type="submit" size="sm" variant="outline" disabled={busy}>
+        <Button type="submit" size="sm" disabled={busy}>
           Save suggestion rule
         </Button>
       </form>

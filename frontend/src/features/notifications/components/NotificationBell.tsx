@@ -2,6 +2,7 @@
 
 import {
   Bell,
+  AlarmClock,
   CheckCheck,
   ChevronDown,
   ExternalLink,
@@ -27,19 +28,17 @@ import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/features/orders/lib/order-formatters";
 import { cn } from "@/lib/utils/cn";
 import { notificationsApi } from "../api/notifications-api";
-import type { AppNotification } from "../types/notification.types";
+import type {
+  AppNotification,
+  NotificationCategory,
+} from "../types/notification.types";
 import { toast } from "@/lib/stores/toast.store";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { openReminderAlert } from "@/features/reminders/ReminderAlertDialog";
 
 const POLL_INTERVAL_MS = 45000;
 
-type NotificationFilter =
-  | "all"
-  | "unread"
-  | "orders"
-  | "shipments"
-  | "reminders";
+type NotificationFilter = "all" | "unread" | "orders" | "shipments";
 
 type NotificationGroup = {
   key: string;
@@ -58,7 +57,6 @@ const NOTIFICATION_FILTERS: Array<{
   { id: "unread", label: "Unread" },
   { id: "orders", label: "Orders" },
   { id: "shipments", label: "Shipments" },
-  { id: "reminders", label: "Reminders" },
 ];
 
 export function NotificationBell() {
@@ -72,7 +70,19 @@ export function NotificationBell() {
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [category, setCategory] = useState<NotificationCategory>("GENERAL");
+  const [unreadCounts, setUnreadCounts] = useState({
+    GENERAL: 0,
+    REMINDERS: 0,
+  });
+  const unreadCount = unreadCounts[category];
+  const setUnreadCount = (next: number | ((count: number) => number)) =>
+    setUnreadCounts((previous) => ({
+      ...previous,
+      [category]: typeof next === "function" ? next(previous[category]) : next,
+    }));
+  const requestVersion = useRef(0);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>("all");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     () => new Set(),
@@ -81,7 +91,10 @@ export function NotificationBell() {
   const refreshUnreadCount = useCallback(async () => {
     try {
       const unread = await notificationsApi.unreadCount();
-      setUnreadCount(unread.count);
+      setUnreadCounts({
+        GENERAL: unread.notificationCount,
+        REMINDERS: unread.reminderCount,
+      });
       const latest = unread.latestReminder;
       if (
         latest &&
@@ -97,7 +110,7 @@ export function NotificationBell() {
         if (!seen)
           toast.info(
             latest.title,
-            "Open Notifications → Reminders to view and act on the task.",
+            "Open the reminder icon beside Notifications to view and act on the task.",
           );
       }
     } catch {
@@ -112,32 +125,42 @@ export function NotificationBell() {
       }
 
       setError(null);
+      const version = ++requestVersion.current;
       try {
         const [items, unread] = await Promise.all([
           notificationsApi.list({
             unreadOnly: activeFilter === "unread",
-            remindersOnly: activeFilter === "reminders",
+            category,
           }),
           notificationsApi.unreadCount(),
         ]);
+        if (version !== requestVersion.current) return;
         setNotifications(items);
-        setUnreadCount(unread.count);
+        setUnreadCounts({
+          GENERAL: unread.notificationCount,
+          REMINDERS: unread.reminderCount,
+        });
       } catch {
-        setError("Unable to load notifications.");
+        if (version === requestVersion.current)
+          setError(
+            category === "REMINDERS"
+              ? "Unable to load reminders."
+              : "Unable to load notifications.",
+          );
       } finally {
-        if (options?.showSpinner) {
+        if (options?.showSpinner && version === requestVersion.current) {
           setIsRefreshing(false);
         }
       }
     },
-    [activeFilter],
+    [activeFilter, category],
   );
 
   useEffect(() => {
     const refresh = () => {
       if (document.visibilityState === "visible") {
-        void refreshUnreadCount();
         if (isOpen) void refreshNotifications();
+        else void refreshUnreadCount();
       }
     };
     window.addEventListener("crm:notifications-changed", refresh);
@@ -180,10 +203,14 @@ export function NotificationBell() {
       return;
     }
 
+    let active = true;
     setIsLoading(true);
     void refreshNotifications().finally(() => {
-      setIsLoading(false);
+      if (active) setIsLoading(false);
     });
+    return () => {
+      active = false;
+    };
   }, [isOpen, refreshNotifications]);
 
   useEffect(() => {
@@ -197,14 +224,28 @@ export function NotificationBell() {
       }
     };
 
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
     window.addEventListener("mousedown", handlePointerDown);
-
-    return () => window.removeEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [isOpen]);
 
   const visibleNotifications = useMemo(
-    () => filterNotifications(notifications, activeFilter),
-    [activeFilter, notifications],
+    () =>
+      filterNotifications(notifications, activeFilter).filter((item) =>
+        category === "REMINDERS"
+          ? item.type.startsWith("REMINDER_")
+          : !item.type.startsWith("REMINDER_"),
+      ),
+    [activeFilter, notifications, category],
   );
 
   const groups = useMemo(
@@ -212,8 +253,18 @@ export function NotificationBell() {
     [visibleNotifications],
   );
 
-  const handleToggle = () => {
-    setIsOpen((current) => !current);
+  const handleToggle = (next: NotificationCategory) => {
+    if (next !== category) {
+      ++requestVersion.current;
+      setCategory(next);
+      setActiveFilter("all");
+      setNotifications([]);
+      setExpandedGroups(new Set());
+      setError(null);
+      setIsRefreshing(false);
+      setIsLoading(true);
+      setIsOpen(true);
+    } else setIsOpen((current) => !current);
   };
 
   const handleFilterChange = (filter: NotificationFilter) => {
@@ -255,7 +306,7 @@ export function NotificationBell() {
     );
 
     try {
-      await notificationsApi.markAllRead();
+      await notificationsApi.markAllRead(category);
       await refreshNotifications();
     } catch {
       setUnreadCount(unreadBefore);
@@ -276,7 +327,8 @@ export function NotificationBell() {
     setExpandedGroups(new Set());
 
     try {
-      await notificationsApi.clearAll();
+      await notificationsApi.clearAll(category);
+      await refreshNotifications();
     } catch {
       setUnreadCount(unreadBefore);
       setNotifications(notificationsBefore);
@@ -327,7 +379,11 @@ export function NotificationBell() {
     );
 
     try {
-      await notificationsApi.markGroupRead(group.entityType, group.entityId);
+      await notificationsApi.markGroupRead(
+        group.entityType,
+        group.entityId,
+        category,
+      );
       if (!options?.silent) {
         await refreshNotifications();
       }
@@ -362,7 +418,12 @@ export function NotificationBell() {
     });
 
     try {
-      await notificationsApi.clearGroup(group.entityType, group.entityId);
+      await notificationsApi.clearGroup(
+        group.entityType,
+        group.entityId,
+        category,
+      );
+      await refreshNotifications();
     } catch {
       setNotifications(notificationsBefore);
       setUnreadCount(unreadBefore);
@@ -373,41 +434,74 @@ export function NotificationBell() {
   };
 
   return (
-    <div ref={containerRef} className="relative min-w-0 shrink-0">
-      <Button
-        variant="outline"
-        size="sm"
-        className="relative h-9 w-9 rounded-full border-slate-200 bg-white px-0 text-slate-900 shadow-sm hover:border-[#ff5a00]/35 hover:bg-orange-50 hover:text-[#ff5a00] sm:h-10 sm:w-10 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-orange-950/20 dark:hover:text-orange-300"
-        onClick={handleToggle}
-        aria-label="Open notifications"
-        aria-expanded={isOpen}
-      >
-        <Bell className="h-4 w-4" />
-        {unreadCount > 0 ? (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff5a00] px-1.5 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white dark:ring-[#020b18]">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        ) : null}
-      </Button>
+    <div
+      ref={containerRef}
+      className="relative flex min-w-0 shrink-0 items-center gap-1 sm:gap-2"
+    >
+      {(
+        [
+          ["GENERAL", "Open notifications", Bell],
+          ["REMINDERS", "Open reminders", AlarmClock],
+        ] as const
+      ).map(([key, label, Icon]) => (
+        <Button
+          key={key}
+          variant="outline"
+          size="sm"
+          disabled={isMutating}
+          className={cn(
+            "relative h-9 w-9 rounded-full border-slate-200 bg-white px-0 text-slate-900 shadow-sm hover:border-[#ff671f]/35 hover:bg-orange-50 hover:text-[#ff671f] sm:h-10 sm:w-10 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-orange-950/20 dark:hover:text-orange-300",
+            isOpen &&
+              category === key &&
+              "border-orange-300 bg-orange-50 text-orange-600 dark:border-orange-900 dark:bg-orange-950/20",
+          )}
+          onClick={(event) => {
+            triggerRef.current = event.currentTarget;
+            handleToggle(key);
+          }}
+          aria-label={label}
+          title={key === "REMINDERS" ? "Reminder alerts" : "Notifications"}
+          aria-expanded={isOpen && category === key}
+        >
+          <Icon className="h-4 w-4" />
+          {unreadCounts[key] > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff671f] px-1.5 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white dark:ring-[#020b18]">
+              {unreadCounts[key] > 99 ? "99+" : unreadCounts[key]}
+            </span>
+          )}
+        </Button>
+      ))}
 
       {isOpen ? (
-        <div className="fixed inset-x-3 top-16 z-50 max-h-[calc(100svh_-_5rem)] max-w-[calc(100dvw_-_1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[28rem] sm:max-w-[calc(100vw_-_2rem)] dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/40">
+        <div
+          role="region"
+          aria-label={
+            category === "REMINDERS" ? "Reminder alerts" : "Notifications"
+          }
+          className="fixed inset-x-3 top-16 z-50 max-h-[calc(100svh_-_5rem)] max-w-[calc(100dvw_-_1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[28rem] sm:max-w-[calc(100vw_-_2rem)] dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/40"
+        >
           <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/80">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-semibold text-slate-950 dark:text-white">
-                  Notifications
+                  {category === "REMINDERS"
+                    ? "Reminder alerts"
+                    : "Notifications"}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {unreadCount > 0
-                    ? `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`
+                    ? `${unreadCount} unread ${category === "REMINDERS" ? "reminder" : "notification"}${unreadCount === 1 ? "" : "s"}`
                     : "You are all caught up"}
                 </p>
               </div>
               <div className="flex items-center gap-1">
                 <HeaderIconButton
-                  label="Refresh notifications"
-                  disabled={isLoading || isRefreshing}
+                  label={
+                    category === "REMINDERS"
+                      ? "Refresh reminder alerts"
+                      : "Refresh notifications"
+                  }
+                  disabled={isLoading || isRefreshing || isMutating}
                   onClick={() =>
                     void refreshNotifications({ showSpinner: true })
                   }
@@ -425,7 +519,11 @@ export function NotificationBell() {
                   <CheckCheck className="h-4 w-4" />
                 </HeaderIconButton>
                 <HeaderIconButton
-                  label="Clear all notifications"
+                  label={
+                    category === "REMINDERS"
+                      ? "Clear all reminder alerts"
+                      : "Clear all notifications"
+                  }
                   disabled={isMutating || notifications.length === 0}
                   onClick={handleClearAll}
                   className="text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
@@ -435,11 +533,21 @@ export function NotificationBell() {
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-5 gap-1 rounded-xl bg-white p-1 shadow-inner shadow-slate-950/[0.03] dark:bg-slate-950">
-              {NOTIFICATION_FILTERS.map((filter) => (
+            <div
+              className={cn(
+                "mt-3 grid gap-1 rounded-xl bg-white p-1 shadow-inner shadow-slate-950/[0.03] dark:bg-slate-950",
+                category === "REMINDERS" ? "grid-cols-2" : "grid-cols-4",
+              )}
+            >
+              {NOTIFICATION_FILTERS.filter(
+                (filter) =>
+                  category !== "REMINDERS" ||
+                  ["all", "unread"].includes(filter.id),
+              ).map((filter) => (
                 <button
                   key={filter.id}
                   type="button"
+                  disabled={isMutating}
                   onClick={() => handleFilterChange(filter.id)}
                   className={cn(
                     "rounded-lg px-2 py-1.5 text-xs font-semibold transition",
@@ -463,7 +571,10 @@ export function NotificationBell() {
                 onRetry={() => void refreshNotifications({ showSpinner: true })}
               />
             ) : groups.length === 0 ? (
-              <NotificationEmptyState filter={activeFilter} />
+              <NotificationEmptyState
+                filter={activeFilter}
+                reminders={category === "REMINDERS"}
+              />
             ) : (
               <div className="space-y-2">
                 {groups.map((group) => (
@@ -839,9 +950,18 @@ function NotificationErrorState({
   );
 }
 
-function NotificationEmptyState({ filter }: { filter: NotificationFilter }) {
-  const message =
-    filter === "unread"
+function NotificationEmptyState({
+  filter,
+  reminders,
+}: {
+  filter: NotificationFilter;
+  reminders: boolean;
+}) {
+  const message = reminders
+    ? filter === "unread"
+      ? "No unread reminder alerts."
+      : "No reminder alerts yet."
+    : filter === "unread"
       ? "No unread notifications."
       : filter === "orders"
         ? "No order notifications."
@@ -899,8 +1019,6 @@ function filterNotifications(
   notifications: AppNotification[],
   filter: NotificationFilter,
 ): AppNotification[] {
-  if (filter === "reminders")
-    return notifications.filter((n) => n.type.startsWith("REMINDER_"));
   if (filter === "orders") {
     return notifications.filter(
       (notification) => notification.entityType === "ORDER",
@@ -917,6 +1035,7 @@ function filterNotifications(
 }
 
 function getNotificationIcon(notification: AppNotification) {
+  if (notification.type.startsWith("REMINDER_")) return AlarmClock;
   if (notification.type.includes("NOTE")) {
     return MessageSquare;
   }
@@ -933,6 +1052,8 @@ function getNotificationIcon(notification: AppNotification) {
 }
 
 function getNotificationIconTone(notification: AppNotification) {
+  if (notification.type.startsWith("REMINDER_"))
+    return "bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-300";
   if (notification.type.includes("NOTE")) {
     return "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-200";
   }

@@ -10,6 +10,7 @@ import {
 } from './notifications.constants';
 import { GroupNotificationsDto } from './dto/group-notifications.dto';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
+import type { NotificationCategory } from './dto/notification-category.dto';
 
 type NotificationPayload = {
   type: string;
@@ -23,6 +24,15 @@ type NotificationPayload = {
 export class NotificationsService {
   constructor(private readonly prismaService: PrismaService) {}
 
+  private categoryFilter(
+    category?: NotificationCategory,
+  ): Prisma.NotificationWhereInput {
+    if (category === 'REMINDERS') return { type: { startsWith: 'REMINDER_' } };
+    if (category === 'GENERAL')
+      return { NOT: { type: { startsWith: 'REMINDER_' } } };
+    return {};
+  }
+
   private reminderVisibility(
     user: AuthenticatedUser,
   ): Prisma.NotificationWhereInput {
@@ -35,7 +45,9 @@ export class NotificationsService {
             AND: [
               { deletedAt: null },
               {
-                  ...(user.role==='ADMIN'?{}:{OR:[taskScope(user,'MINE'),taskScope(user,'SENT')]}),
+                ...(user.role === 'ADMIN'
+                  ? {}
+                  : { OR: [taskScope(user, 'MINE'), taskScope(user, 'SENT')] }),
               },
             ],
           },
@@ -51,9 +63,7 @@ export class NotificationsService {
         clearedAt: null,
         AND: [this.reminderVisibility(user)],
         ...(query.unreadOnly ? { isRead: false } : {}),
-        ...(query.category === 'REMINDERS'
-          ? { type: { startsWith: 'REMINDER_' } }
-          : {}),
+        ...this.categoryFilter(query.category),
       },
       orderBy: { createdAt: 'desc' },
       take: query.limit ?? 30,
@@ -61,14 +71,16 @@ export class NotificationsService {
   }
 
   async getUnreadCount(user: AuthenticatedUser) {
-    const [count, latestReminder] = await Promise.all([
-      this.prismaService.notification.count({
+    const [counts, latestReminder] = await Promise.all([
+      this.prismaService.notification.groupBy({
+        by: ['type'],
         where: {
           recipientUserId: user.userId,
           clearedAt: null,
           isRead: false,
           AND: [this.reminderVisibility(user)],
         },
+        _count: { _all: true },
       }),
       this.prismaService.notification.findFirst({
         where: {
@@ -83,7 +95,16 @@ export class NotificationsService {
       }),
     ]);
 
-    return { count, latestReminder };
+    const count = counts.reduce((total, group) => total + group._count._all, 0);
+    const reminderCount = counts
+      .filter((group) => group.type.startsWith('REMINDER_'))
+      .reduce((total, group) => total + group._count._all, 0);
+    return {
+      count,
+      reminderCount,
+      notificationCount: count - reminderCount,
+      latestReminder,
+    };
   }
 
   async markRead(id: string, user: AuthenticatedUser) {
@@ -102,12 +123,13 @@ export class NotificationsService {
     return { id };
   }
 
-  async markAllRead(user: AuthenticatedUser) {
+  async markAllRead(user: AuthenticatedUser, category?: NotificationCategory) {
     const result = await this.prismaService.notification.updateMany({
       where: {
         recipientUserId: user.userId,
         clearedAt: null,
         isRead: false,
+        ...this.categoryFilter(category),
       },
       data: {
         isRead: true,
@@ -126,6 +148,7 @@ export class NotificationsService {
         isRead: false,
         entityType: query.entityType,
         entityId: query.entityId,
+        ...this.categoryFilter(query.category),
       },
       data: {
         isRead: true,
@@ -153,12 +176,13 @@ export class NotificationsService {
     return { id };
   }
 
-  async clearAll(user: AuthenticatedUser) {
+  async clearAll(user: AuthenticatedUser, category?: NotificationCategory) {
     const now = new Date();
     const result = await this.prismaService.notification.updateMany({
       where: {
         recipientUserId: user.userId,
         clearedAt: null,
+        ...this.categoryFilter(category),
       },
       data: {
         isRead: true,
@@ -178,6 +202,7 @@ export class NotificationsService {
         clearedAt: null,
         entityType: query.entityType,
         entityId: query.entityId,
+        ...this.categoryFilter(query.category),
       },
       data: {
         isRead: true,

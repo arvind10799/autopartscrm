@@ -352,6 +352,7 @@ export class TaskWorkspaceService {
       }
       if (q.working)
         filters.push({ workingById: user.userId, workingUntil: { gt: now } });
+      const highlightFilters = [...filters];
       if (q.tab === 'DONE') filters.push({ status: 'COMPLETED' });
       else if (q.tab === 'CANCELLED') filters.push({ status: 'CANCELLED' });
       else if (!q.status) filters.push(active);
@@ -424,7 +425,26 @@ export class TaskWorkspaceService {
           ],
         });
       }
+      if (search) highlightFilters.push(filters[filters.length - 1]);
       const where: Prisma.ReminderWhereInput = { AND: filters };
+      const highlights =
+        q.highlights && !exporting
+          ? await Promise.all([
+              tx.reminder.findMany({
+                where: {
+                  AND: [...highlightFilters, active, { dueAt: { gte: now } }],
+                },
+                include: taskInclude,
+                orderBy: [{ dueAt: 'asc' }, { id: 'asc' }],
+                take: 4,
+              }),
+              tx.reminder.count({
+                where: {
+                  AND: [...highlightFilters, active, { dueAt: { lt: now } }],
+                },
+              }),
+            ])
+          : undefined;
       const limit = exporting
           ? 5001
           : Math.min(q.limit ?? 20, q.calendar ? 500 : 50),
@@ -489,6 +509,16 @@ export class TaskWorkspaceService {
         types,
         owners,
         dayCounts,
+        ...(highlights
+          ? {
+              highlights: {
+                upcoming: highlights[0].map((row) =>
+                  this.present(row, user, zone, now),
+                ),
+                overdue: highlights[1],
+              },
+            }
+          : {}),
         policy: await readReminderPolicy(tx),
         displayTimeZone: zone,
         asOf: now.toISOString(),

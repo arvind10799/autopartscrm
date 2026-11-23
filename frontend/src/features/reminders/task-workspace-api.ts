@@ -62,6 +62,9 @@ const workspaceSchema = z.object({
     }),
   ),
   dayCounts: z.record(z.number()),
+  highlights: z
+    .object({ upcoming: z.array(taskItemSchema), overdue: z.number() })
+    .optional(),
   displayTimeZone: z.string(),
   asOf: z.string(),
 });

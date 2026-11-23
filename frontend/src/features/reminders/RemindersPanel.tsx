@@ -22,6 +22,7 @@ import {
   BellRing,
   Check,
   Clock3,
+  ChevronDown,
   History,
   Plus,
   RefreshCw,
@@ -269,19 +270,46 @@ function PanelContent({
   return (
     <Card
       id="reminders"
-      className="crm-brand-actions min-w-0 scroll-mt-24 overflow-hidden border-border/70 shadow-sm"
+      className="crm-brand-actions crm-reminder-ui min-w-0 scroll-mt-24 overflow-hidden border-border shadow-sm"
     >
-      <CardHeader className="space-y-3 border-b border-border/70 px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BellRing className="h-4 w-4 text-orange-500" />
-            Reminders
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline">{data?.openCount ?? 0} open</Badge>
-            {!!data?.overdueCount && (
-              <Badge variant="danger">{data.overdueCount} overdue</Badge>
-            )}
+      <CardHeader className="space-y-4 border-b border-border px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-300">
+              <BellRing className="h-4 w-4" />
+            </span>
+            <div>
+              <CardTitle className="text-base font-bold tracking-tight">
+                Reminders
+              </CardTitle>
+              <div
+                className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground"
+                aria-live="polite"
+              >
+                <span>
+                  {data
+                    ? `${data.openCount} open`
+                    : error
+                      ? "Unavailable"
+                      : "Loading…"}
+                </span>
+                {!!data?.overdueCount && (
+                  <span className="font-medium text-orange-700 dark:text-orange-300">
+                    · {data.overdueCount} overdue
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              disabled={!data?.canCreate}
+              onClick={() => setModal({ mode: "create" })}
+            >
+              <Plus className="h-4 w-4" />
+              Add reminder
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -293,12 +321,13 @@ function PanelContent({
             </Button>
           </div>
         </div>
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <label className="space-y-1 text-xs text-muted-foreground">
-            Your display time zone
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <Clock3 className="h-3.5 w-3.5" />
+            Display time zone
             <Select
               aria-label="Reminder display time zone"
-              className="h-8 max-w-44 text-xs"
+              className="h-8 w-32 text-xs"
               value={data?.displayTimeZone ?? displayZones[0]}
               disabled={!data || zoneBusy}
               onChange={async (e) => {
@@ -320,17 +349,14 @@ function PanelContent({
               ))}
             </Select>
           </label>
-          <Button
-            size="sm"
-            disabled={!data?.canCreate}
-            onClick={() => setModal({ mode: "create" })}
-          >
-            <Plus className="h-4 w-4" />
-            Add reminder
-          </Button>
+          {data && data.timeZone !== data.displayTimeZone && (
+            <span className="text-[10px] text-muted-foreground">
+              Customer time · {zoneLabels[data.timeZone] ?? data.timeZone}
+            </span>
+          )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 p-3.5">
+      <CardContent className="space-y-3 p-4 sm:p-5">
         {error && (
           <p
             role="alert"
@@ -370,9 +396,12 @@ function PanelContent({
         )}
         {normal.map((row) => renderRow(row))}
         {data && !normal.length && (
-          <p className="py-3 text-sm text-muted-foreground">
-            No open reminders.
-          </p>
+          <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-secondary/20 px-4 py-5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-card text-muted-foreground">
+              <Clock3 className="h-4 w-4" />
+            </span>
+            <p className="text-xs text-muted-foreground">No open reminders.</p>
+          </div>
         )}
         {shippingStrip && (
           <section className="rounded-xl border border-blue-200 bg-blue-50/40 p-3 dark:border-blue-900 dark:bg-blue-950/20">
@@ -410,14 +439,25 @@ function PanelContent({
         )}
         <button
           type="button"
-          className="flex items-center gap-2 text-xs font-medium text-primary"
+          aria-expanded={showHistory}
+          aria-controls="record-reminder-history"
+          className="crm-reminder-history-toggle flex w-full items-center gap-2 border-t border-border pt-3 text-xs font-medium"
           onClick={() => setShowHistory((x) => !x)}
         >
           <History className="h-4 w-4" />
           {showHistory ? "Hide history" : "Show history"}
+          <ChevronDown
+            className={cn(
+              "ml-auto h-3.5 w-3.5 transition-transform",
+              showHistory && "rotate-180",
+            )}
+          />
         </button>
         {showHistory && (
-          <div className="space-y-3 border-t border-border pt-3">
+          <div id="record-reminder-history" className="space-y-3 pt-1">
+            {loading && !past && (
+              <p className="text-xs text-muted-foreground">Loading history…</p>
+            )}
             {past?.items.map((row) => renderRow(row, true))}
             {past && !past.items.length && (
               <p className="text-xs text-muted-foreground">
@@ -512,7 +552,7 @@ export function ReminderRow({
   return (
     <article
       className={cn(
-        "space-y-2 rounded-xl border border-border border-l-4 bg-card p-3",
+        "crm-reminder-row space-y-2 rounded-xl border border-border border-l-[3px] bg-card p-3.5",
         row.priority === "HIGH"
           ? "border-l-red-500"
           : row.priority === "MEDIUM"
@@ -582,9 +622,9 @@ export function ReminderRow({
               : "")}
         </p>
       )}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5 border-t border-border/60 pt-2.5">
         {!history && row.actions.complete && (
-          <SmallButton onClick={() => open("complete")}>
+          <SmallButton variant="default" onClick={() => open("complete")}>
             <Check className="h-3 w-3" />
             Complete
           </SmallButton>
@@ -597,14 +637,18 @@ export function ReminderRow({
         )}
         {!history && row.actions.edit && (
           <>
-            <SmallButton onClick={() => open("edit")}>Edit</SmallButton>
-            <SmallButton onClick={() => open("cancel")}>
+            <SmallButton variant="ghost" onClick={() => open("edit")}>
+              Edit
+            </SmallButton>
+            <SmallButton variant="ghost" onClick={() => open("cancel")}>
               {row.series?.isActive ? "Stop repeating" : "Cancel"}
             </SmallButton>
           </>
         )}
         {!history && row.actions.delete && (
-          <SmallButton onClick={() => open("delete")}>Delete</SmallButton>
+          <SmallButton variant="ghost" onClick={() => open("delete")}>
+            Delete
+          </SmallButton>
         )}
         {!history && row.actions.work && (
           <SmallButton
@@ -624,21 +668,25 @@ export function ReminderRow({
             {row.workingBy ? "Working on it" : "Work on this"}
           </SmallButton>
         )}
-        <SmallButton onClick={() => open("history")}>History</SmallButton>
+        <SmallButton variant="ghost" onClick={() => open("history")}>
+          History
+        </SmallButton>
       </div>
     </article>
   );
 }
 function SmallButton({
   children,
+  variant = "outline",
   ...props
 }: {
   children: ReactNode;
   onClick: () => void | Promise<void>;
   disabled?: boolean;
+  variant?: "default" | "outline" | "ghost";
 }) {
   return (
-    <Button {...props} variant="outline" size="sm" className="h-7 px-2 text-xs">
+    <Button {...props} variant={variant} size="sm" className="h-7 px-2 text-xs">
       {children}
     </Button>
   );
@@ -864,7 +912,7 @@ export function ReminderDialog({
         if (!busy) onClose();
       }}
       aria-labelledby="reminder-dialog-title"
-      className="crm-brand-actions m-auto max-h-[90dvh] w-[calc(100%_-_1.5rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/45"
+      className="crm-brand-actions crm-reminder-ui m-auto max-h-[90dvh] w-[calc(100%_-_1.5rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/45"
     >
       <form onSubmit={submitting}>
         <div className="flex items-center justify-between border-b border-border p-4">

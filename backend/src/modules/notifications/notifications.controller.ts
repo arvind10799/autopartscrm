@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/role.guard';
 import { GroupNotificationsDto } from './dto/group-notifications.dto';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
+import { NotificationCategoryDto } from './dto/notification-category.dto';
 import { NotificationsService } from './notifications.service';
 
 @Roles(Role.ADMIN, Role.SALES, Role.SHIPPING)
@@ -68,8 +69,11 @@ export class NotificationsController {
 
   @Patch('read-all')
   @ResponseMessage('All notifications marked as read.')
-  markAllRead(@CurrentUser() user: AuthenticatedUser) {
-    return this.notificationsService.markAllRead(user);
+  markAllRead(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: NotificationCategoryDto,
+  ) {
+    return this.notificationsService.markAllRead(user, query.category);
   }
 
   @Patch(':id/clear')
@@ -83,8 +87,10 @@ export class NotificationsController {
 
   @Patch('clear-all')
   @ResponseMessage('Notifications cleared.')
-  clearAll(@CurrentUser() user: AuthenticatedUser) {
-    return this.notificationsService.clearAll(user);
+  clearAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: NotificationCategoryDto,
+  ) {
+    return this.notificationsService.clearAll(user, query.category);
   }
 }
-

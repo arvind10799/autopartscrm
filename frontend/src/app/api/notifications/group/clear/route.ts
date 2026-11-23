@@ -5,6 +5,8 @@ export async function PATCH(request: Request) {
   const entityType = url.searchParams.get('entityType');
   const entityId = url.searchParams.get('entityId');
   const query = new URLSearchParams();
+  const category = url.searchParams.get('category');
+  if (category) query.set('category', category);
 
   if (entityType) {
     query.set('entityType', entityType);

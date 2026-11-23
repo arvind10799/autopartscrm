@@ -15,5 +15,9 @@ export interface AppNotification {
 
 export interface NotificationUnreadCount {
   count: number;
+  notificationCount: number;
+  reminderCount: number;
   latestReminder?: { id: string; title: string; createdAt: string } | null;
 }
+
+export type NotificationCategory = "GENERAL" | "REMINDERS";

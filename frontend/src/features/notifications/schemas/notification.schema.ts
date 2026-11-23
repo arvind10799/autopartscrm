@@ -19,6 +19,8 @@ export const notificationsListSchema = z.array(notificationSchema);
 
 export const notificationUnreadCountSchema = z.object({
   count: z.number(),
+  notificationCount: z.number(),
+  reminderCount: z.number(),
   latestReminder: z
     .object({ id: z.string(), title: z.string(), createdAt: z.string() })
     .nullable()

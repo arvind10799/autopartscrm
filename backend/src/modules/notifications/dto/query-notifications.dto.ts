@@ -1,7 +1,8 @@
 import { Type, Transform } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, Max, Min, IsIn } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { NotificationCategoryDto } from './notification-category.dto';
 
-export class QueryNotificationsDto {
+export class QueryNotificationsDto extends NotificationCategoryDto {
   @Type(() => Number)
   @IsOptional()
   @IsInt()
@@ -15,5 +16,4 @@ export class QueryNotificationsDto {
   @IsOptional()
   @IsBoolean()
   unreadOnly?: boolean;
-  @IsOptional() @IsIn(['REMINDERS']) category?: 'REMINDERS';
 }
